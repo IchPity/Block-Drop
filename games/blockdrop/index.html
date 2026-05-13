@@ -19,22 +19,6 @@
       gap: 12px;
     }
 
-    #back-btn {
-      align-self: flex-start;
-      background: none;
-      border: 2px solid #0f3460;
-      color: #a0a0c0;
-      padding: 6px 16px;
-      font-size: 13px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.15s;
-      text-decoration: none;
-      display: inline-block;
-    }
-
-    #back-btn:hover { border-color: #e94560; color: #fff; }
-
     #wrapper {
       display: flex;
       gap: 20px;
@@ -52,7 +36,7 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
-      min-width: 120px;
+      min-width: 180px;
     }
 
     .panel-box {
@@ -155,6 +139,7 @@
       font-size: 12px;
       color: #ccc;
       line-height: 1.8;
+      min-height: 110px;
     }
 
     .highscore-list span {
@@ -205,31 +190,37 @@
     #mode-badge.classic  { background: #e94560; color: #fff; }
     #mode-badge.standard { background: #0090c0; color: #fff; }
 
-    .hs-tabs {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 10px;
+    #hs-mode-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #555;
+      margin-bottom: 8px;
     }
 
-    .hs-tab {
-      font-size: 13px;
-      font-weight: 600;
-      padding: 6px 14px;
-      border-radius: 5px;
-      cursor: pointer;
-      border: 1px solid #0f3460;
-      color: #888;
-      background: none;
-      transition: all 0.15s;
+    #back-container {
+      text-align: center;
+      padding: 18px 0 6px;
+      width: 100%;
     }
 
-    .hs-tab:hover { color: #ccc; border-color: #2a5490; }
-    .hs-tab.active { background: #0f3460; color: #eee; }
+    .menu-back {
+      display: inline-block;
+      color: #444;
+      text-decoration: none;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 7px 20px;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 6px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .menu-back:hover { color: #bbb; border-color: rgba(255,255,255,0.18); }
   </style>
 </head>
 <body>
-<a id="back-btn" href="../../index.html">&#8592; Main Menu</a>
-
 <div id="wrapper">
   <!-- Left panel -->
   <div id="left-panel">
@@ -272,8 +263,8 @@
       <h1>BLOCK DROP</h1>
       <p>Choose your mode</p>
       <div class="mode-btns">
-        <button class="mode-btn selected" id="mode-classic">Classic<small>Speed increases</small></button>
-        <button class="mode-btn" id="mode-standard">Standard<small>Fixed speed</small></button>
+        <button class="mode-btn" id="mode-classic">Classic<small>Speed increases</small></button>
+        <button class="mode-btn selected" id="mode-standard">Standard<small>Fixed speed</small></button>
       </div>
       <button class="btn" id="start-btn">Start Game</button>
     </div>
@@ -287,13 +278,14 @@
     </div>
     <div class="panel-box">
       <h3>High Scores</h3>
-      <div class="hs-tabs">
-        <button class="hs-tab active" id="hs-tab-classic">Classic</button>
-        <button class="hs-tab" id="hs-tab-standard">Standard</button>
-      </div>
+      <div id="hs-mode-label">Standard</div>
       <div class="highscore-list" id="hs-list"></div>
     </div>
   </div>
+</div>
+
+<div id="back-container">
+  <a class="menu-back" href="../../">&#8592; Zurück zum Menü</a>
 </div>
 
 <script src="game.js"></script>
