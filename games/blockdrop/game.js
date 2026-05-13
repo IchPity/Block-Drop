@@ -1,18 +1,57 @@
 'use strict';
 
 // ── Achievements ───────────────────────────────────────────────────────────
-let _achToastTimer = null;
+const ACH_DEFS = {
+  bd_first:    { name: 'Anfänger',               desc: 'Dein erstes Spiel gestartet',         icon: '🎮' },
+  bd_tetris:   { name: 'TETRIS!',                desc: '4 Zeilen auf einmal gelöscht',         icon: '✨' },
+  bd_combo5:   { name: 'Combo Maniac',           desc: '5× Kombo erreicht',                    icon: '🔥' },
+  bd_level10:  { name: 'Speed Junkie',           desc: 'Level 10 im Classic Modus erreicht',   icon: '⚡' },
+  bd_score50k: { name: 'Großverdiener',          desc: '50.000 Punkte in einem Spiel',         icon: '💰' },
+  bd_lines100: { name: 'Linienkiller',           desc: '100 Zeilen in einem Spiel gelöscht',   icon: '💥' },
+  bd_harddrop: { name: 'Kein Zeit für Langsam', desc: '25 Hard Drops in einem Spiel',         icon: '⬇️' },
+  bd_no_hold:  { name: 'Ich brauch kein Hold',  desc: 'Spiel ohne Hold beendet',              icon: '🙅' },
+  bd_score250k:{ name: 'Legende',               desc: '250.000 Punkte in einem Spiel',        icon: '🏆' },
+};
 
-function showAchToast(name) {
-  const el = document.getElementById('ach-toast');
-  if (!el) return;
-  el.innerHTML = `🏆 Achievement! &nbsp;<b>${name}</b>`;
-  el.classList.add('show');
-  clearTimeout(_achToastTimer);
-  _achToastTimer = setTimeout(() => el.classList.remove('show'), 4000);
+let _achDismiss = null;
+
+function showAchOverlay(id) {
+  const def = ACH_DEFS[id];
+  if (!def) return;
+  const overlay = document.getElementById('ach-overlay');
+  if (!overlay) return;
+
+  document.getElementById('ach-icon-big').textContent = def.icon;
+  document.getElementById('ach-name-big').textContent = def.name;
+  document.getElementById('ach-desc-big').textContent = def.desc;
+
+  const game = window._game;
+  const wasPaused = game && game.state === 'playing';
+  if (wasPaused) {
+    game.state = 'achievement';
+    cancelAnimationFrame(game.animFrame);
+    game.clearLockDelay();
+  }
+
+  overlay.classList.add('show');
+
+  const dismiss = () => {
+    overlay.classList.remove('show');
+    overlay.removeEventListener('click', dismiss);
+    clearTimeout(_achDismiss);
+    if (wasPaused && game.state === 'achievement') {
+      game.state = 'playing';
+      game.lastDrop = performance.now();
+      game.loop(performance.now());
+    }
+  };
+
+  clearTimeout(_achDismiss);
+  _achDismiss = setTimeout(dismiss, 4000);
+  overlay.addEventListener('click', dismiss);
 }
 
-async function tryUnlock(id, name) {
+async function tryUnlock(id) {
   try {
     const res  = await fetch('/api/achievements', {
       method:  'POST',
@@ -20,7 +59,7 @@ async function tryUnlock(id, name) {
       body:    JSON.stringify({ id, unlockedAt: new Date().toISOString() }),
     });
     const data = await res.json();
-    if (data.new) showAchToast(name);
+    if (data.new) showAchOverlay(id);
   } catch(e) {}
 }
 
@@ -211,7 +250,7 @@ class BlockDrop {
     this.spawnPiece();
     this.overlay.style.display = 'none';
     this.updateUI();
-    tryUnlock('bd_first', 'Anfänger');
+    tryUnlock('bd_first');
     this.loop();
   }
 
@@ -284,7 +323,7 @@ class BlockDrop {
     while (this.tryMove(0, 1)) dropped++;
     this.score += dropped * 2;
     this.hardDropCount++;
-    if (this.hardDropCount === 25) tryUnlock('bd_harddrop', 'Kein Zeit für Langsam');
+    if (this.hardDropCount === 25) tryUnlock('bd_harddrop');
     this.lock();
   }
 
@@ -452,12 +491,12 @@ class BlockDrop {
       this.lines += lines;
       this.level = Math.floor(this.lines / 10) + 1;
 
-      if (lines === 4)                                       tryUnlock('bd_tetris',    'TETRIS!');
-      if (this.combo >= 4)                                   tryUnlock('bd_combo5',    'Combo Maniac');
-      if (this.level >= 10 && this.mode === 'classic')       tryUnlock('bd_level10',   'Speed Junkie');
-      if (this.score >= 50000)                               tryUnlock('bd_score50k',  'Großverdiener');
-      if (this.score >= 250000)                              tryUnlock('bd_score250k', 'Legende');
-      if (this.lines >= 100)                                 tryUnlock('bd_lines100',  'Linienkiller');
+      if (lines === 4)                                 tryUnlock('bd_tetris');
+      if (this.combo >= 4)                             tryUnlock('bd_combo5');
+      if (this.level >= 10 && this.mode === 'classic') tryUnlock('bd_level10');
+      if (this.score >= 50000)                         tryUnlock('bd_score50k');
+      if (this.score >= 250000)                        tryUnlock('bd_score250k');
+      if (this.lines >= 100)                           tryUnlock('bd_lines100');
     } else {
       this.combo = -1;
     }
@@ -710,7 +749,7 @@ class BlockDrop {
     cancelAnimationFrame(this.animFrame);
     this.clearLockDelay();
     this.clearAnim = null;
-    if (!this.holdEverUsed && this.score > 0) tryUnlock('bd_no_hold', 'Ich brauch kein Hold');
+    if (!this.holdEverUsed && this.score > 0) tryUnlock('bd_no_hold');
     await dbSaveScore(this.score, this.mode, this.level, this.lines);
     await this.renderHighScores(this.mode);
     const modeLabel = this.mode === 'standard' ? 'Standard' : 'Classic';
@@ -756,6 +795,7 @@ class BlockDrop {
 
   // ── Input ─────────────────────────────────────────────────────────────────
   onKey(e) {
+    if (this.state === 'achievement') return;
     if (this.state === 'paused') {
       if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') this.resume();
       return;

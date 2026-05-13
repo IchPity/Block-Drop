@@ -230,6 +230,64 @@
         .fw-progress-fill { height:100%;border-radius:100px;transition:width 1s linear; }
         .fw-next { font-size:.63rem;color:var(--muted); }
         .fw-next b { color:var(--muted2);font-weight:600; }
+
+        /* Achievement overlay */
+        #ach-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 20000; pointer-events: none;
+            transition: background 0.35s;
+        }
+        #ach-overlay.show { background: rgba(0,0,0,0.82); pointer-events: all; }
+
+        #ach-modal {
+            background: #0b0b1e;
+            border: 1px solid rgba(240,192,0,0.25);
+            border-radius: 20px;
+            padding: 44px 64px;
+            text-align: center;
+            position: relative; overflow: hidden;
+            box-shadow: 0 0 100px rgba(240,192,0,0.1), 0 32px 80px rgba(0,0,0,0.95);
+            transform: scale(0.55) translateY(48px);
+            opacity: 0;
+            transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s;
+        }
+        #ach-overlay.show #ach-modal { transform: scale(1) translateY(0); opacity: 1; }
+
+        #ach-modal::before {
+            content: '';
+            position: absolute; top: 0; left: -100%;
+            width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, #f0c000, transparent);
+        }
+        #ach-overlay.show #ach-modal::before { animation: achShimmer 2s 0.5s ease-in-out infinite; }
+        @keyframes achShimmer { 0% { left:-100%; } 100% { left:200%; } }
+
+        .ach-label {
+            font-size: 0.65rem; letter-spacing: 4px; text-transform: uppercase;
+            color: #f0c000; margin-bottom: 18px;
+        }
+        #ach-icon-big {
+            font-size: 68px; display: block; margin-bottom: 14px;
+            transform: scale(0);
+        }
+        #ach-overlay.show #ach-icon-big {
+            animation: achIconPop 0.55s 0.2s both cubic-bezier(0.34,1.56,0.64,1);
+        }
+        @keyframes achIconPop {
+            from { transform: scale(0) rotate(-15deg); }
+            to   { transform: scale(1) rotate(0deg); }
+        }
+        #ach-name-big { font-size: 1.3rem; font-weight: 900; color: #fff; margin-bottom: 8px; }
+        #ach-desc-big { font-size: 0.78rem; color: #404050; line-height: 1.5; }
+        .ach-hint {
+            font-size: 0.6rem; color: #252535; text-transform: uppercase;
+            letter-spacing: 2px; margin-top: 28px;
+            opacity: 0;
+        }
+        #ach-overlay.show .ach-hint { animation: achHintFade 0.6s 1.8s both; }
+        @keyframes achHintFade { from { opacity:0; } to { opacity:1; } }
     </style>
 </head>
 <body>
@@ -267,6 +325,17 @@
 
 <!-- Toast notification -->
 <div class="toast" id="toast"></div>
+
+<!-- Achievement overlay -->
+<div id="ach-overlay">
+  <div id="ach-modal">
+    <div class="ach-label">Achievement freigeschaltet!</div>
+    <span id="ach-icon-big"></span>
+    <div id="ach-name-big"></div>
+    <div id="ach-desc-big"></div>
+    <div class="ach-hint">Klicken zum Schließen</div>
+  </div>
+</div>
 
 <!-- Floating widget (fallback when PiP not available) -->
 <div class="float-widget" id="floatWidget">
@@ -675,8 +744,27 @@ function showToast(msg) {
 // ─── Achievements ─────────────────────────────────────────────
 const SU_OPEN_TIME = Date.now();
 let su15Checked = false;
+let _achDismiss = null;
 
-async function tryUnlock(id, name) {
+function showAchOverlay(def) {
+    const overlay = document.getElementById('ach-overlay');
+    if (!overlay) return;
+    document.getElementById('ach-icon-big').textContent = def.icon;
+    document.getElementById('ach-name-big').textContent = def.name;
+    document.getElementById('ach-desc-big').textContent = def.desc;
+    overlay.classList.add('show');
+
+    const dismiss = () => {
+        overlay.classList.remove('show');
+        overlay.removeEventListener('click', dismiss);
+        clearTimeout(_achDismiss);
+    };
+    clearTimeout(_achDismiss);
+    _achDismiss = setTimeout(dismiss, 5000);
+    overlay.addEventListener('click', dismiss);
+}
+
+async function tryUnlock(id, def) {
     try {
         const res  = await fetch('/api/achievements', {
             method:  'POST',
@@ -684,14 +772,18 @@ async function tryUnlock(id, name) {
             body:    JSON.stringify({ id, unlockedAt: new Date().toISOString() }),
         });
         const data = await res.json();
-        if (data.new) showToast(`🏆 Achievement! ${name}`);
+        if (data.new) showAchOverlay(def);
     } catch(e) {}
 }
 
 function checkAchievements() {
     if (!su15Checked && Date.now() - SU_OPEN_TIME >= 15 * 60 * 1000) {
         su15Checked = true;
-        tryUnlock('su_15min', 'du hast wirklich keine Lust oder');
+        tryUnlock('su_15min', {
+            name: 'du hast wirklich keine Lust oder',
+            desc: '15 Minuten auf der SchulUhr verbracht',
+            icon: '😴',
+        });
     }
 }
 
