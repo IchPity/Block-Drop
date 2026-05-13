@@ -9,6 +9,34 @@
                          "level":  1,
                          "lines":  0,
                          "date":  "2026-05-12T09:17:24.559Z"
+                     },
+                     {
+                         "mode":  "standard",
+                         "score":  4498,
+                         "level":  2,
+                         "lines":  14,
+                         "date":  "2026-05-12T19:59:30.854Z"
+                     },
+                     {
+                         "mode":  "standard",
+                         "score":  28123,
+                         "level":  6,
+                         "lines":  54,
+                         "date":  "2026-05-12T20:05:29.397Z"
+                     },
+                     {
+                         "mode":  "standard",
+                         "score":  281483,
+                         "level":  19,
+                         "lines":  188,
+                         "date":  "2026-05-13T08:20:50.767Z"
+                     },
+                     {
+                         "mode":  "standard",
+                         "score":  80478,
+                         "level":  10,
+                         "lines":  93,
+                         "date":  "2026-05-13T08:26:42.638Z"
                      }
                  ]
 }
