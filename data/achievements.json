@@ -1,1 +1,12 @@
-{ "unlocked": [] }
+﻿{
+    "unlocked":  [
+                     {
+                         "id":  "bd_first",
+                         "unlockedAt":  "2026-05-13T10:17:24.845Z"
+                     },
+                     {
+                         "id":  "bd_tetris",
+                         "unlockedAt":  "2026-05-13T10:18:10.813Z"
+                     }
+                 ]
+}
