@@ -1,6 +1,7 @@
 #Requires -Version 5.1
-$dir    = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$dbFile = Join-Path $dir 'data\scores.json'
+$dir     = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$dbFile  = Join-Path $dir 'data\scores.json'
+$achFile = Join-Path $dir 'data\achievements.json'
 
 function Load-Scores([string]$mode) {
     if (-not (Test-Path $dbFile)) { return @() }
@@ -35,6 +36,27 @@ function Save-Score($entry) {
         Set-Content $dbFile -Encoding utf8
 }
 
+function Load-Achievements {
+    if (-not (Test-Path $achFile)) { return '{"unlocked":[]}' }
+    try { return Get-Content $achFile -Raw -Encoding utf8 }
+    catch { return '{"unlocked":[]}' }
+}
+
+function Save-Achievement($entry) {
+    $unlocked = @()
+    if (Test-Path $achFile) {
+        try {
+            $parsed   = Get-Content $achFile -Raw -Encoding utf8 | ConvertFrom-Json
+            $unlocked = @($parsed.unlocked | Where-Object { $_ })
+        } catch {}
+    }
+    if ($unlocked | Where-Object { $_.id -eq $entry.id }) { return $false }
+    $new      = [PSCustomObject]@{ id = [string]$entry.id; unlockedAt = [string]$entry.unlockedAt }
+    $unlocked += $new
+    [PSCustomObject]@{ unlocked = $unlocked } | ConvertTo-Json -Depth 5 | Set-Content $achFile -Encoding utf8
+    return $true
+}
+
 $listener = [System.Net.HttpListener]::new()
 $listener.Prefixes.Add('http://localhost:3000/')
 $listener.Start()
@@ -65,6 +87,22 @@ try {
                 $body  = [System.IO.StreamReader]::new($req.InputStream, [System.Text.Encoding]::UTF8).ReadToEnd()
                 Save-Score (ConvertFrom-Json $body)
                 $bytes = [System.Text.Encoding]::UTF8.GetBytes('{"ok":true}')
+                $res.ContentType     = 'application/json'
+                $res.ContentLength64 = $bytes.Length
+                $res.OutputStream.Write($bytes, 0, $bytes.Length)
+
+            } elseif ($p -eq '/api/achievements' -and $req.HttpMethod -eq 'GET') {
+                $json  = Load-Achievements
+                $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
+                $res.ContentType     = 'application/json'
+                $res.ContentLength64 = $bytes.Length
+                $res.OutputStream.Write($bytes, 0, $bytes.Length)
+
+            } elseif ($p -eq '/api/achievements' -and $req.HttpMethod -eq 'POST') {
+                $body  = [System.IO.StreamReader]::new($req.InputStream, [System.Text.Encoding]::UTF8).ReadToEnd()
+                $isNew = Save-Achievement (ConvertFrom-Json $body)
+                $json  = if ($isNew) { '{"ok":true,"new":true}' } else { '{"ok":true,"new":false}' }
+                $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
                 $res.ContentType     = 'application/json'
                 $res.ContentLength64 = $bytes.Length
                 $res.OutputStream.Write($bytes, 0, $bytes.Length)
