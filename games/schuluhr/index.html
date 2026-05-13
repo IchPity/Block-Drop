@@ -672,9 +672,32 @@ function showToast(msg) {
     document.addEventListener('mouseup', () => { if(dragging){dragging=false;w.classList.remove('dragging');} });
 })();
 
+// ─── Achievements ─────────────────────────────────────────────
+const SU_OPEN_TIME = Date.now();
+let su15Checked = false;
+
+async function tryUnlock(id, name) {
+    try {
+        const res  = await fetch('/api/achievements', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ id, unlockedAt: new Date().toISOString() }),
+        });
+        const data = await res.json();
+        if (data.new) showToast(`🏆 Achievement! ${name}`);
+    } catch(e) {}
+}
+
+function checkAchievements() {
+    if (!su15Checked && Date.now() - SU_OPEN_TIME >= 15 * 60 * 1000) {
+        su15Checked = true;
+        tryUnlock('su_15min', 'du hast wirklich keine Lust oder');
+    }
+}
+
 // ─── Start ────────────────────────────────────────────────────
 update();
-setInterval(update, 1000);
+setInterval(() => { update(); checkAchievements(); }, 1000);
 </script>
 </body>
 </html>

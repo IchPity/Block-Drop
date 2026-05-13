@@ -1,5 +1,29 @@
 'use strict';
 
+// ── Achievements ───────────────────────────────────────────────────────────
+let _achToastTimer = null;
+
+function showAchToast(name) {
+  const el = document.getElementById('ach-toast');
+  if (!el) return;
+  el.innerHTML = `🏆 Achievement! &nbsp;<b>${name}</b>`;
+  el.classList.add('show');
+  clearTimeout(_achToastTimer);
+  _achToastTimer = setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+async function tryUnlock(id, name) {
+  try {
+    const res  = await fetch('/api/achievements', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ id, unlockedAt: new Date().toISOString() }),
+    });
+    const data = await res.json();
+    if (data.new) showAchToast(name);
+  } catch(e) {}
+}
+
 // ── Constants ──────────────────────────────────────────────────────────────
 const COLS = 10;
 const ROWS = 20;
@@ -169,8 +193,10 @@ class BlockDrop {
     this.level     = 1;
     this.combo     = -1;
     this.bag       = new Bag();
-    this.holdKey   = null;
-    this.holdUsed  = false;
+    this.holdKey       = null;
+    this.holdUsed      = false;
+    this.holdEverUsed  = false;
+    this.hardDropCount = 0;
     this.lockDelay = 500;
     this.lockTimer = null;
     this.animFrame = null;
@@ -185,6 +211,7 @@ class BlockDrop {
     this.spawnPiece();
     this.overlay.style.display = 'none';
     this.updateUI();
+    tryUnlock('bd_first', 'Anfänger');
     this.loop();
   }
 
@@ -256,6 +283,8 @@ class BlockDrop {
     let dropped = 0;
     while (this.tryMove(0, 1)) dropped++;
     this.score += dropped * 2;
+    this.hardDropCount++;
+    if (this.hardDropCount === 25) tryUnlock('bd_harddrop', 'Kein Zeit für Langsam');
     this.lock();
   }
 
@@ -422,6 +451,13 @@ class BlockDrop {
       this.score += base + comboBonus;
       this.lines += lines;
       this.level = Math.floor(this.lines / 10) + 1;
+
+      if (lines === 4)                                       tryUnlock('bd_tetris',    'TETRIS!');
+      if (this.combo >= 4)                                   tryUnlock('bd_combo5',    'Combo Maniac');
+      if (this.level >= 10 && this.mode === 'classic')       tryUnlock('bd_level10',   'Speed Junkie');
+      if (this.score >= 50000)                               tryUnlock('bd_score50k',  'Großverdiener');
+      if (this.score >= 250000)                              tryUnlock('bd_score250k', 'Legende');
+      if (this.lines >= 100)                                 tryUnlock('bd_lines100',  'Linienkiller');
     } else {
       this.combo = -1;
     }
@@ -432,6 +468,7 @@ class BlockDrop {
     if (this.holdUsed) return;
     this.clearLockDelay();
     const type = this.current.type;
+    this.holdEverUsed = true;
     if (this.holdKey) {
       const tmp = this.holdKey;
       this.holdKey = type;
@@ -673,6 +710,7 @@ class BlockDrop {
     cancelAnimationFrame(this.animFrame);
     this.clearLockDelay();
     this.clearAnim = null;
+    if (!this.holdEverUsed && this.score > 0) tryUnlock('bd_no_hold', 'Ich brauch kein Hold');
     await dbSaveScore(this.score, this.mode, this.level, this.lines);
     await this.renderHighScores(this.mode);
     const modeLabel = this.mode === 'standard' ? 'Standard' : 'Classic';
