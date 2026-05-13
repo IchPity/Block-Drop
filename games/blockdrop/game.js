@@ -128,8 +128,7 @@ class BlockDrop {
     this.overlay   = document.getElementById('overlay');
     this.startBtn  = document.getElementById('start-btn');
 
-    this.selectedMode = 'classic';
-    this.hsViewMode   = 'classic';
+    this.selectedMode = 'standard';
     this.clearAnim    = null;
     this.shake        = null;
 
@@ -138,7 +137,7 @@ class BlockDrop {
     document.addEventListener('keydown', e => this.onKey(e));
 
     this.state = 'idle';
-    this.renderHighScores('classic');
+    this.renderHighScores('standard');
     this.drawIdleBoard();
   }
 
@@ -150,26 +149,12 @@ class BlockDrop {
       this.selectedMode = 'classic';
       btnClassic.classList.add('selected');
       btnStandard.classList.remove('selected');
+      this.renderHighScores('classic');
     });
     btnStandard.addEventListener('click', () => {
       this.selectedMode = 'standard';
       btnStandard.classList.add('selected');
       btnClassic.classList.remove('selected');
-    });
-
-    const tabClassic  = document.getElementById('hs-tab-classic');
-    const tabStandard = document.getElementById('hs-tab-standard');
-    if (!tabClassic) return;
-    tabClassic.addEventListener('click', () => {
-      this.hsViewMode = 'classic';
-      tabClassic.classList.add('active');
-      tabStandard.classList.remove('active');
-      this.renderHighScores('classic');
-    });
-    tabStandard.addEventListener('click', () => {
-      this.hsViewMode = 'standard';
-      tabStandard.classList.add('active');
-      tabClassic.classList.remove('active');
       this.renderHighScores('standard');
     });
   }
@@ -671,7 +656,9 @@ class BlockDrop {
     }
   }
 
-  async renderHighScores(mode = 'classic') {
+  async renderHighScores(mode = 'standard') {
+    const labelEl = document.getElementById('hs-mode-label');
+    if (labelEl) labelEl.textContent = mode === 'standard' ? 'Standard' : 'Classic';
     const hs = await dbLoadScores(mode);
     this.hsListEl.innerHTML = hs.length
       ? hs.slice(0, 5).map((s, i) =>
@@ -688,7 +675,6 @@ class BlockDrop {
     this.clearAnim = null;
     await dbSaveScore(this.score, this.mode, this.level, this.lines);
     await this.renderHighScores(this.mode);
-    this._setHsTab(this.mode);
     const modeLabel = this.mode === 'standard' ? 'Standard' : 'Classic';
     this.overlay.innerHTML = `
       <h1 style="color:#e94560">GAME OVER</h1>
@@ -704,19 +690,6 @@ class BlockDrop {
     this.overlay.style.display = 'flex';
     this._bindModeButtons();
     document.getElementById('start-btn').addEventListener('click', () => this.startGame(this.selectedMode));
-  }
-
-  _setHsTab(mode) {
-    const tabClassic  = document.getElementById('hs-tab-classic');
-    const tabStandard = document.getElementById('hs-tab-standard');
-    if (!tabClassic) return;
-    if (mode === 'standard') {
-      tabStandard.classList.add('active'); tabClassic.classList.remove('active');
-      this.hsViewMode = 'standard';
-    } else {
-      tabClassic.classList.add('active'); tabStandard.classList.remove('active');
-      this.hsViewMode = 'classic';
-    }
   }
 
   togglePause() {

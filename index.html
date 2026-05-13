@@ -14,34 +14,19 @@
       color: #eee;
     }
 
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background: radial-gradient(ellipse 80% 40% at 50% 0%, rgba(233,69,96,0.07) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
-    }
-
     .container {
-      position: relative;
-      z-index: 1;
-      max-width: 1060px;
+      max-width: 960px;
       margin: 0 auto;
       padding: 0 36px;
     }
 
-    /* ── Header ── */
     header {
-      padding: 64px 0 52px;
+      padding: 56px 0 44px;
       border-bottom: 1px solid rgba(255,255,255,0.05);
-      margin-bottom: 52px;
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
+      margin-bottom: 44px;
     }
 
-    .header-left .eyebrow {
+    .eyebrow {
       font-size: 10px;
       letter-spacing: 4px;
       text-transform: uppercase;
@@ -49,36 +34,25 @@
       margin-bottom: 10px;
     }
 
-    .header-left h1 {
-      font-size: 44px;
+    header h1 {
+      font-size: 40px;
       font-weight: 900;
       letter-spacing: -0.5px;
       color: #fff;
       line-height: 1;
     }
 
-    .header-right {
-      font-size: 12px;
-      color: #2a2a3a;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      text-align: right;
-      line-height: 1.8;
-    }
-
-    /* ── Grid ── */
     .games-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-      padding-bottom: 80px;
+      gap: 18px;
+      padding-bottom: 72px;
     }
 
-    /* ── Card ── */
     .game-card {
-      background: #0d0d1a;
-      border: 1px solid rgba(255,255,255,0.05);
-      border-radius: 6px;
+      background: #0c0c1a;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
       overflow: hidden;
       text-decoration: none;
       color: inherit;
@@ -87,515 +61,229 @@
       transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
     }
 
-    .game-card.available {
-      cursor: pointer;
-    }
-
+    .game-card.available { cursor: pointer; }
     .game-card.available:hover {
-      border-color: rgba(233, 69, 96, 0.45);
-      transform: translateY(-4px);
-      box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(233,69,96,0.12);
+      border-color: rgba(233,69,96,0.4);
+      transform: translateY(-3px);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(233,69,96,0.08);
     }
 
-    .game-card.unavailable {
-      cursor: default;
-      opacity: 0.5;
-    }
+    .game-card.unavailable { cursor: default; opacity: 0.38; }
 
-    /* ── Thumbnail ── */
     .card-thumb {
-      height: 148px;
-      position: relative;
-      overflow: hidden;
+      height: 140px;
       display: flex;
       align-items: center;
       justify-content: center;
+      overflow: hidden;
     }
 
-    .card-thumb .watermark {
-      font-size: 64px;
-      font-weight: 900;
-      letter-spacing: -2px;
-      text-transform: uppercase;
-      opacity: 0.06;
-      color: #fff;
-      user-select: none;
-      white-space: nowrap;
-      position: absolute;
-    }
+    .thumb-blockdrop { background: linear-gradient(145deg, #0d0005 0%, #280010 55%, #0d0005 100%); }
+    .thumb-schuluhr  { background: linear-gradient(145deg, #00060d 0%, #001428 55%, #00060d 100%); }
+    .thumb-snake     { background: linear-gradient(145deg, #00090a 0%, #001f10 55%, #00090a 100%); }
+    .thumb-pong      { background: linear-gradient(145deg, #00040d 0%, #000e30 55%, #00040d 100%); }
+    .thumb-space     { background: linear-gradient(145deg, #04000d 0%, #120030 55%, #04000d 100%); }
+    .thumb-memory    { background: linear-gradient(145deg, #0d0700 0%, #2a1800 55%, #0d0700 100%); }
+    .thumb-mines     { background: linear-gradient(145deg, #00070d 0%, #001820 55%, #00070d 100%); }
 
-    .card-thumb .thumb-art {
-      position: relative;
-      z-index: 1;
-    }
+    /* Clock art */
+    .clock-art { position: relative; width: 72px; height: 72px; opacity: 0.75; }
+    .clock-face { width: 72px; height: 72px; border-radius: 50%; border: 3px solid #38bdf8; position: absolute; top: 0; left: 0; box-shadow: 0 0 18px rgba(56,189,248,0.25); }
+    .clock-center { position: absolute; width: 6px; height: 6px; background: #38bdf8; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+    .clock-hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom center; border-radius: 2px; }
+    .clock-hand-h { width: 3px; height: 22px; background: #38bdf8; margin-left: -1.5px; transform: rotate(-60deg); }
+    .clock-hand-m { width: 2px; height: 28px; background: #7dd3fc; margin-left: -1px; transform: rotate(80deg); }
+    .clock-hand-s { width: 1px; height: 30px; background: #e94560; margin-left: -0.5px; transform: rotate(200deg); }
 
-    /* Thumb gradients per game */
-    .thumb-blockdrop  { background: linear-gradient(145deg, #0d0005 0%, #280010 55%, #0d0005 100%); }
-    .thumb-schuluhr   { background: linear-gradient(145deg, #00060d 0%, #001428 55%, #00060d 100%); }
-    .thumb-snake      { background: linear-gradient(145deg, #00090a 0%, #001f10 55%, #00090a 100%); }
-    .thumb-pong       { background: linear-gradient(145deg, #00040d 0%, #000e30 55%, #00040d 100%); }
-    .thumb-space      { background: linear-gradient(145deg, #04000d 0%, #120030 55%, #04000d 100%); }
-    .thumb-memory     { background: linear-gradient(145deg, #0d0700 0%, #2a1800 55%, #0d0700 100%); }
-    .thumb-mines      { background: linear-gradient(145deg, #00070d 0%, #001820 55%, #00070d 100%); }
-
-    /* SchulUhr clock art */
-    .clock-art {
-      position: relative;
-      width: 72px;
-      height: 72px;
-      opacity: 0.75;
-    }
-    .clock-face {
-      width: 72px;
-      height: 72px;
-      border-radius: 50%;
-      border: 3px solid #38bdf8;
-      position: absolute;
-      top: 0; left: 0;
-      box-shadow: 0 0 18px rgba(56,189,248,0.25);
-    }
-    .clock-center {
-      position: absolute;
-      width: 6px; height: 6px;
-      background: #38bdf8;
-      border-radius: 50%;
-      top: 50%; left: 50%;
-      transform: translate(-50%,-50%);
-    }
-    .clock-hand {
-      position: absolute;
-      bottom: 50%; left: 50%;
-      transform-origin: bottom center;
-      border-radius: 2px;
-    }
-    .clock-hand-h {
-      width: 3px; height: 22px;
-      background: #38bdf8;
-      margin-left: -1.5px;
-      transform: rotate(-60deg);
-    }
-    .clock-hand-m {
-      width: 2px; height: 28px;
-      background: #7dd3fc;
-      margin-left: -1px;
-      transform: rotate(80deg);
-    }
-    .clock-hand-s {
-      width: 1px; height: 30px;
-      background: #e94560;
-      margin-left: -0.5px;
-      transform: rotate(200deg);
-    }
-
-    /* CSS block-art for Block Drop thumbnail */
-    .blocks-art {
-      display: grid;
-      grid-template-columns: repeat(5, 14px);
-      grid-template-rows: repeat(4, 14px);
-      gap: 3px;
-      opacity: 0.7;
-    }
-
+    /* Block art */
+    .blocks-art { display: grid; grid-template-columns: repeat(5, 14px); grid-template-rows: repeat(4, 14px); gap: 3px; opacity: 0.7; }
     .b { border-radius: 2px; }
-    .b-r { background: #e94560; }
-    .b-y { background: #f0c000; }
-    .b-c { background: #00cfcf; }
-    .b-p { background: #a000f0; }
-    .b-g { background: #00b800; }
-    .b-o { background: #e07000; }
+    .b-r { background: #e94560; } .b-y { background: #f0c000; } .b-c { background: #00cfcf; }
+    .b-p { background: #a000f0; } .b-g { background: #00b800; } .b-o { background: #e07000; }
     .b-n { background: transparent; }
 
-    /* CSS dot-art for Snake */
-    .snake-art {
-      width: 72px;
-      height: 72px;
-      position: relative;
-      opacity: 0.6;
-    }
-
-    .snake-art::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(circle 6px at 12px 12px, #00c060 100%, transparent 100%),
-        radial-gradient(circle 6px at 28px 12px, #00c060 100%, transparent 100%),
-        radial-gradient(circle 6px at 44px 12px, #00c060 100%, transparent 100%),
-        radial-gradient(circle 6px at 44px 28px, #00c060 100%, transparent 100%),
-        radial-gradient(circle 6px at 44px 44px, #00c060 100%, transparent 100%),
-        radial-gradient(circle 6px at 28px 44px, #00c060 100%, transparent 100%),
-        radial-gradient(circle 6px at 12px 44px, #00c060 100%, transparent 100%),
-        radial-gradient(circle 6px at 12px 60px, #00c060 100%, transparent 100%),
-        radial-gradient(circle 5px at 55px 55px, #e94560 100%, transparent 100%);
-    }
+    /* Snake art */
+    .snake-art { width: 72px; height: 72px; position: relative; opacity: 0.6; }
+    .snake-art::before { content: ''; position: absolute; inset: 0; background:
+      radial-gradient(circle 6px at 12px 12px, #00c060 100%, transparent 100%),
+      radial-gradient(circle 6px at 28px 12px, #00c060 100%, transparent 100%),
+      radial-gradient(circle 6px at 44px 12px, #00c060 100%, transparent 100%),
+      radial-gradient(circle 6px at 44px 28px, #00c060 100%, transparent 100%),
+      radial-gradient(circle 6px at 44px 44px, #00c060 100%, transparent 100%),
+      radial-gradient(circle 6px at 28px 44px, #00c060 100%, transparent 100%),
+      radial-gradient(circle 6px at 12px 44px, #00c060 100%, transparent 100%),
+      radial-gradient(circle 6px at 12px 60px, #00c060 100%, transparent 100%),
+      radial-gradient(circle 5px at 55px 55px, #e94560 100%, transparent 100%); }
 
     /* Pong art */
-    .pong-art {
-      display: flex;
-      align-items: center;
-      gap: 28px;
-      opacity: 0.55;
-    }
-
-    .pong-paddle {
-      width: 6px;
-      height: 36px;
-      background: #4080ff;
-      border-radius: 3px;
-    }
-
-    .pong-ball {
-      width: 10px;
-      height: 10px;
-      background: #fff;
-      border-radius: 50%;
-    }
-
-    .pong-net {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .pong-net-seg {
-      width: 3px;
-      height: 8px;
-      background: rgba(255,255,255,0.2);
-      border-radius: 1px;
-    }
+    .pong-art { display: flex; align-items: center; gap: 28px; opacity: 0.55; }
+    .pong-paddle { width: 6px; height: 36px; background: #4080ff; border-radius: 3px; }
+    .pong-ball { width: 10px; height: 10px; background: #fff; border-radius: 50%; }
+    .pong-net { display: flex; flex-direction: column; gap: 6px; }
+    .pong-net-seg { width: 3px; height: 8px; background: rgba(255,255,255,0.2); border-radius: 1px; }
 
     /* Space art */
-    .space-art {
-      position: relative;
-      width: 60px;
-      height: 60px;
-      opacity: 0.5;
-    }
-
-    .space-art::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(circle 2px at 10px 8px, #fff 100%, transparent 100%),
-        radial-gradient(circle 1px at 30px 15px, #fff 100%, transparent 100%),
-        radial-gradient(circle 2px at 52px 5px, #fff 100%, transparent 100%),
-        radial-gradient(circle 1px at 45px 35px, #fff 100%, transparent 100%),
-        radial-gradient(circle 2px at 5px 45px, #fff 100%, transparent 100%),
-        radial-gradient(circle 1px at 55px 50px, #fff 100%, transparent 100%);
-    }
-
-    .space-ship {
-      position: absolute;
-      bottom: 8px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 0;
-      height: 0;
-      border-left: 8px solid transparent;
-      border-right: 8px solid transparent;
-      border-bottom: 20px solid #a060ff;
-    }
+    .space-art { position: relative; width: 60px; height: 60px; opacity: 0.5; }
+    .space-art::before { content: ''; position: absolute; inset: 0; background:
+      radial-gradient(circle 2px at 10px 8px, #fff 100%, transparent 100%),
+      radial-gradient(circle 1px at 30px 15px, #fff 100%, transparent 100%),
+      radial-gradient(circle 2px at 52px 5px, #fff 100%, transparent 100%),
+      radial-gradient(circle 1px at 45px 35px, #fff 100%, transparent 100%),
+      radial-gradient(circle 2px at 5px 45px, #fff 100%, transparent 100%),
+      radial-gradient(circle 1px at 55px 50px, #fff 100%, transparent 100%); }
+    .space-ship { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 20px solid #a060ff; }
 
     /* Memory art */
-    .memory-art {
-      display: grid;
-      grid-template-columns: repeat(3, 18px);
-      gap: 5px;
-      opacity: 0.5;
-    }
-
-    .mem-card {
-      width: 18px;
-      height: 22px;
-      border-radius: 2px;
-      border: 1px solid rgba(255,255,255,0.2);
-    }
-
+    .memory-art { display: grid; grid-template-columns: repeat(3, 18px); gap: 5px; opacity: 0.5; }
+    .mem-card { width: 18px; height: 22px; border-radius: 2px; border: 1px solid rgba(255,255,255,0.2); }
     .mem-card.flipped { background: #c87800; border-color: #c87800; }
 
     /* Mines art */
-    .mines-art {
-      display: grid;
-      grid-template-columns: repeat(5, 12px);
-      gap: 2px;
-      opacity: 0.5;
-    }
-
-    .mine-cell {
-      width: 12px;
-      height: 12px;
-      background: #0a3040;
-      border-radius: 1px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 6px;
-      color: rgba(255,255,255,0.5);
-    }
-
+    .mines-art { display: grid; grid-template-columns: repeat(5, 12px); gap: 2px; opacity: 0.5; }
+    .mine-cell { width: 12px; height: 12px; background: #0a3040; border-radius: 1px; display: flex; align-items: center; justify-content: center; font-size: 6px; color: rgba(255,255,255,0.5); }
     .mine-cell.boom { background: #e94560; }
 
-    /* ── Card body ── */
-    .card-body {
-      padding: 16px 18px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      flex: 1;
-    }
+    /* Card body */
+    .card-body { padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+    .card-tag { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: #e94560; font-weight: 600; }
+    .unavailable .card-tag { color: #252535; }
+    .card-title { font-size: 14px; font-weight: 700; color: #fff; }
+    .unavailable .card-title { color: #2a2a3a; }
+    .card-desc { font-size: 11px; color: #2e2e42; line-height: 1.6; margin-top: 2px; }
+    .card-footer { margin-top: 12px; }
 
-    .card-tag {
-      font-size: 9px;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: #e94560;
-      font-weight: 600;
-    }
-
-    .unavailable .card-tag { color: #2a2a3a; }
-
-    .card-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: #fff;
-      letter-spacing: 0.3px;
-    }
-
-    .unavailable .card-title { color: #333; }
-
-    .card-desc {
-      font-size: 11px;
-      color: #2e2e40;
-      line-height: 1.6;
-      margin-top: 3px;
-    }
-
-    .card-footer {
-      margin-top: 14px;
-    }
-
-    .play-btn {
-      display: inline-block;
-      background: #e94560;
-      color: #fff;
-      border: none;
-      padding: 6px 20px;
-      font-size: 10px;
-      font-weight: 700;
-      border-radius: 3px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      transition: background 0.15s;
-      pointer-events: none;
-    }
-
+    .play-btn { display: inline-block; background: #e94560; color: #fff; border: none; padding: 5px 18px; font-size: 10px; font-weight: 700; border-radius: 4px; letter-spacing: 2px; text-transform: uppercase; pointer-events: none; }
     .game-card.available:hover .play-btn { background: #c73652; }
 
-    .soon-badge {
-      display: inline-block;
-      font-size: 9px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #1e1e2e;
-      padding: 5px 14px;
-      border: 1px solid #1a1a28;
-      border-radius: 3px;
-    }
+    .soon-badge { display: inline-block; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #1e1e2e; padding: 4px 12px; border: 1px solid #1a1a28; border-radius: 4px; }
 
-    /* ── Footer ── */
-    footer {
-      border-top: 1px solid rgba(255,255,255,0.04);
-      padding: 28px 0;
-      text-align: center;
-    }
-
-    footer span {
-      font-size: 10px;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: #1a1a28;
-    }
+    footer { border-top: 1px solid rgba(255,255,255,0.04); padding: 24px 0; text-align: center; }
+    footer span { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #181828; }
   </style>
 </head>
 <body>
 <div class="container">
 
   <header>
-    <div class="header-left">
-      <div class="eyebrow">Your collection</div>
-      <h1>ARCADE</h1>
-    </div>
-    <div class="header-right">
-      2 available<br>5 in development
-    </div>
+    <div class="eyebrow">Your collection</div>
+    <h1>ARCADE</h1>
   </header>
 
   <div class="games-grid">
 
-    <!-- Block Drop — available -->
     <a class="game-card available" href="games/blockdrop/">
       <div class="card-thumb thumb-blockdrop">
-        <div class="watermark">BLOCKS</div>
-        <div class="thumb-art">
-          <div class="blocks-art">
-            <div class="b b-n"></div><div class="b b-c"></div><div class="b b-c"></div><div class="b b-c"></div><div class="b b-c"></div>
-            <div class="b b-p"></div><div class="b b-p"></div><div class="b b-p"></div><div class="b b-n"></div><div class="b b-y"></div>
-            <div class="b b-r"></div><div class="b b-r"></div><div class="b b-g"></div><div class="b b-g"></div><div class="b b-y"></div>
-            <div class="b b-r"></div><div class="b b-o"></div><div class="b b-o"></div><div class="b b-g"></div><div class="b b-y"></div>
-          </div>
+        <div class="blocks-art">
+          <div class="b b-n"></div><div class="b b-c"></div><div class="b b-c"></div><div class="b b-c"></div><div class="b b-c"></div>
+          <div class="b b-p"></div><div class="b b-p"></div><div class="b b-p"></div><div class="b b-n"></div><div class="b b-y"></div>
+          <div class="b b-r"></div><div class="b b-r"></div><div class="b b-g"></div><div class="b b-g"></div><div class="b b-y"></div>
+          <div class="b b-r"></div><div class="b b-o"></div><div class="b b-o"></div><div class="b b-g"></div><div class="b b-y"></div>
         </div>
       </div>
       <div class="card-body">
         <div class="card-tag">Available now</div>
         <div class="card-title">Block Drop</div>
         <div class="card-desc">Classic falling-block puzzle. Clear lines, level up, beat your high score.</div>
-        <div class="card-footer">
-          <span class="play-btn">Play</span>
-        </div>
+        <div class="card-footer"><span class="play-btn">Play</span></div>
       </div>
     </a>
 
-    <!-- SchulUhr — available -->
     <a class="game-card available" href="games/schuluhr/">
       <div class="card-thumb thumb-schuluhr">
-        <div class="watermark">ZEIT</div>
-        <div class="thumb-art">
-          <div class="clock-art">
-            <div class="clock-face"></div>
-            <div class="clock-hand clock-hand-h"></div>
-            <div class="clock-hand clock-hand-m"></div>
-            <div class="clock-hand clock-hand-s"></div>
-            <div class="clock-center"></div>
-          </div>
+        <div class="clock-art">
+          <div class="clock-face"></div>
+          <div class="clock-hand clock-hand-h"></div>
+          <div class="clock-hand clock-hand-m"></div>
+          <div class="clock-hand clock-hand-s"></div>
+          <div class="clock-center"></div>
         </div>
       </div>
       <div class="card-body">
         <div class="card-tag">Available now</div>
         <div class="card-title">SchulUhr</div>
         <div class="card-desc">Countdown bis Pausenende, Stundenende oder endlich Frei. Dein Schulplan auf einen Blick.</div>
-        <div class="card-footer">
-          <span class="play-btn">Öffnen</span>
-        </div>
+        <div class="card-footer"><span class="play-btn">Öffnen</span></div>
       </div>
     </a>
 
-    <!-- Snake — coming soon -->
     <div class="game-card unavailable">
       <div class="card-thumb thumb-snake">
-        <div class="watermark">SNAKE</div>
-        <div class="thumb-art">
-          <div class="snake-art"></div>
-        </div>
+        <div class="snake-art"></div>
       </div>
       <div class="card-body">
         <div class="card-tag">In development</div>
         <div class="card-title">Snake</div>
         <div class="card-desc">Grow your snake, eat the food, don't hit the walls.</div>
-        <div class="card-footer">
-          <span class="soon-badge">Coming Soon</span>
-        </div>
+        <div class="card-footer"><span class="soon-badge">Coming Soon</span></div>
       </div>
     </div>
 
-    <!-- Pong — coming soon -->
     <div class="game-card unavailable">
       <div class="card-thumb thumb-pong">
-        <div class="watermark">PONG</div>
-        <div class="thumb-art">
-          <div class="pong-art">
-            <div class="pong-paddle"></div>
-            <div>
-              <div class="pong-net">
-                <div class="pong-net-seg"></div><div class="pong-net-seg"></div>
-                <div class="pong-net-seg"></div><div class="pong-net-seg"></div>
-                <div class="pong-net-seg"></div>
-              </div>
-            </div>
-            <div class="pong-ball"></div>
-            <div class="pong-paddle"></div>
+        <div class="pong-art">
+          <div class="pong-paddle"></div>
+          <div class="pong-net">
+            <div class="pong-net-seg"></div><div class="pong-net-seg"></div>
+            <div class="pong-net-seg"></div><div class="pong-net-seg"></div>
+            <div class="pong-net-seg"></div>
           </div>
+          <div class="pong-ball"></div>
+          <div class="pong-paddle"></div>
         </div>
       </div>
       <div class="card-body">
         <div class="card-tag">In development</div>
         <div class="card-title">Pong</div>
         <div class="card-desc">Two paddles, one ball, zero mercy. The original arcade classic.</div>
-        <div class="card-footer">
-          <span class="soon-badge">Coming Soon</span>
-        </div>
+        <div class="card-footer"><span class="soon-badge">Coming Soon</span></div>
       </div>
     </div>
 
-    <!-- Space Blaster — coming soon -->
     <div class="game-card unavailable">
       <div class="card-thumb thumb-space">
-        <div class="watermark">SPACE</div>
-        <div class="thumb-art">
-          <div class="space-art">
-            <div class="space-ship"></div>
-          </div>
+        <div class="space-art">
+          <div class="space-ship"></div>
         </div>
       </div>
       <div class="card-body">
         <div class="card-tag">In development</div>
         <div class="card-title">Space Blaster</div>
         <div class="card-desc">Defend the galaxy. Waves of enemies, power-ups, endless chaos.</div>
-        <div class="card-footer">
-          <span class="soon-badge">Coming Soon</span>
-        </div>
+        <div class="card-footer"><span class="soon-badge">Coming Soon</span></div>
       </div>
     </div>
 
-    <!-- Memory Match — coming soon -->
     <div class="game-card unavailable">
       <div class="card-thumb thumb-memory">
-        <div class="watermark">MEMORY</div>
-        <div class="thumb-art">
-          <div class="memory-art">
-            <div class="mem-card flipped"></div>
-            <div class="mem-card"></div>
-            <div class="mem-card flipped"></div>
-            <div class="mem-card"></div>
-            <div class="mem-card flipped"></div>
-            <div class="mem-card"></div>
-            <div class="mem-card"></div>
-            <div class="mem-card"></div>
-            <div class="mem-card flipped"></div>
-          </div>
+        <div class="memory-art">
+          <div class="mem-card flipped"></div><div class="mem-card"></div><div class="mem-card flipped"></div>
+          <div class="mem-card"></div><div class="mem-card flipped"></div><div class="mem-card"></div>
+          <div class="mem-card"></div><div class="mem-card"></div><div class="mem-card flipped"></div>
         </div>
       </div>
       <div class="card-body">
         <div class="card-tag">In development</div>
         <div class="card-title">Memory Match</div>
         <div class="card-desc">Flip cards, find the pairs. Test your memory against the clock.</div>
-        <div class="card-footer">
-          <span class="soon-badge">Coming Soon</span>
-        </div>
+        <div class="card-footer"><span class="soon-badge">Coming Soon</span></div>
       </div>
     </div>
 
-    <!-- Minesweeper — coming soon -->
     <div class="game-card unavailable">
       <div class="card-thumb thumb-mines">
-        <div class="watermark">MINES</div>
-        <div class="thumb-art">
-          <div class="mines-art">
-            <div class="mine-cell">1</div><div class="mine-cell">2</div><div class="mine-cell boom"></div><div class="mine-cell">1</div><div class="mine-cell"></div>
-            <div class="mine-cell">1</div><div class="mine-cell boom"></div><div class="mine-cell">3</div><div class="mine-cell">1</div><div class="mine-cell"></div>
-            <div class="mine-cell"></div><div class="mine-cell">2</div><div class="mine-cell">2</div><div class="mine-cell boom"></div><div class="mine-cell">1</div>
-            <div class="mine-cell"></div><div class="mine-cell">1</div><div class="mine-cell boom"></div><div class="mine-cell">2</div><div class="mine-cell">1</div>
-            <div class="mine-cell"></div><div class="mine-cell">1</div><div class="mine-cell">1</div><div class="mine-cell">1</div><div class="mine-cell"></div>
-          </div>
+        <div class="mines-art">
+          <div class="mine-cell">1</div><div class="mine-cell">2</div><div class="mine-cell boom"></div><div class="mine-cell">1</div><div class="mine-cell"></div>
+          <div class="mine-cell">1</div><div class="mine-cell boom"></div><div class="mine-cell">3</div><div class="mine-cell">1</div><div class="mine-cell"></div>
+          <div class="mine-cell"></div><div class="mine-cell">2</div><div class="mine-cell">2</div><div class="mine-cell boom"></div><div class="mine-cell">1</div>
+          <div class="mine-cell"></div><div class="mine-cell">1</div><div class="mine-cell boom"></div><div class="mine-cell">2</div><div class="mine-cell">1</div>
+          <div class="mine-cell"></div><div class="mine-cell">1</div><div class="mine-cell">1</div><div class="mine-cell">1</div><div class="mine-cell"></div>
         </div>
       </div>
       <div class="card-body">
         <div class="card-tag">In development</div>
         <div class="card-title">Minesweeper</div>
         <div class="card-desc">Clear the minefield without triggering a single explosion.</div>
-        <div class="card-footer">
-          <span class="soon-badge">Coming Soon</span>
-        </div>
+        <div class="card-footer"><span class="soon-badge">Coming Soon</span></div>
       </div>
     </div>
 

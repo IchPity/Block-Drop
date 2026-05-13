@@ -91,6 +91,23 @@
         .pip-btn.active { background:rgba(124,111,255,0.12);color:var(--purple);border-color:rgba(124,111,255,0.3); }
         .pip-btn svg { width:13px;height:13px;fill:currentColor;flex-shrink:0; }
 
+        .back-wrap {
+            text-align: center; padding: 24px 0 8px;
+        }
+        .back-link {
+            display: inline-block;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.72rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 7px 20px;
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 8px;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .back-link:hover { color: var(--text); border-color: rgba(255,255,255,0.18); }
+
         /* ── Main Card ───────────────────────────── */
         .main-card {
             background: var(--card); border-radius: 28px;
@@ -242,6 +259,9 @@
     <div class="schedule-card">
         <div class="schedule-title" id="scheduleTitle">Heutiger Stundenplan</div>
         <div class="schedule-grid"  id="scheduleGrid"></div>
+    </div>
+    <div class="back-wrap">
+        <a class="back-link" href="../../">&#8592; Zurück zum Menü</a>
     </div>
 </div>
 
