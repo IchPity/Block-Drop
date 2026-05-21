@@ -333,6 +333,13 @@
         0 32px 72px rgba(0,0,0,0.8),
         0 0 60px rgba(240,192,0,0.08) !important;
     }
+    .game-card.schach-card:hover {
+      border-color: rgba(34,197,94,0.45) !important;
+      box-shadow:
+        0 0 0 1px rgba(34,197,94,0.07),
+        0 32px 72px rgba(0,0,0,0.8),
+        0 0 60px rgba(34,197,94,0.08) !important;
+    }
 
     .game-card.unavailable {
       cursor: default;
@@ -358,6 +365,7 @@
     .thumb-schuluhr     { background: linear-gradient(145deg, #00060d 0%, #001428 55%, #00060d 100%); }
     .thumb-achievements { background: linear-gradient(145deg, #0d0900 0%, #1c1200 55%, #0d0900 100%); }
     .thumb-admin        { background: linear-gradient(145deg, #090900 0%, #1a1600 55%, #090900 100%); }
+    .thumb-schach       { background: linear-gradient(145deg, #000a03 0%, #002208 55%, #000a03 100%); }
     .thumb-snake        { background: linear-gradient(145deg, #00090a 0%, #001f10 55%, #00090a 100%); }
     .thumb-pong         { background: linear-gradient(145deg, #00040d 0%, #000e30 55%, #00040d 100%); }
     .thumb-space        { background: linear-gradient(145deg, #04000d 0%, #120030 55%, #04000d 100%); }
@@ -535,7 +543,7 @@
       </div>
       <div class="hero-stats">
         <div class="stat">
-          <div class="stat-val">2<span>+</span></div>
+          <div class="stat-val">3<span>+</span></div>
           <div class="stat-lbl">Spiele</div>
         </div>
         <div class="stat">
@@ -587,7 +595,7 @@
   <div class="section-header">
     <div class="section-title">Spielen</div>
     <div class="section-divider"></div>
-    <div class="section-count">3 verfügbar</div>
+    <div class="section-count">4 verfügbar</div>
   </div>
 
   <div class="games-grid">
@@ -627,6 +635,20 @@
         <div class="card-desc">Countdown bis Pausenende, Stundenende oder endlich Frei. Dein Schulplan auf einen Blick.</div>
         <div class="card-footer">
           <div class="play-btn">Öffnen <span class="btn-arrow">→</span></div>
+        </div>
+      </div>
+    </a>
+
+    <a class="game-card available schach-card" href="games/schach/" style="--accent:#22c55e">
+      <div class="card-thumb thumb-schach">
+        <div style="font-size:56px;opacity:0.75;line-height:1">♟</div>
+      </div>
+      <div class="card-body">
+        <div class="card-tag" style="color:#22c55e">Desktop App</div>
+        <div class="card-title">Schach</div>
+        <div class="card-desc">Klassisches Schach mit lokalem und Netzwerk-Multiplayer. Als JAR herunterladen und loslegen.</div>
+        <div class="card-footer">
+          <div class="play-btn" style="background:#22c55e;box-shadow:0 0 18px rgba(34,197,94,0.28)">Herunterladen <span class="btn-arrow">→</span></div>
         </div>
       </div>
     </a>
