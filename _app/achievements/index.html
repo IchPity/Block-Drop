@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Achievements</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red:  #e94560;
+      --gold: #f0c000;
+      --bg:   #060818;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      min-height: 100vh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #eee;
+      overflow-x: hidden;
+    }
+
+    /* ── Background ─────────────────────────────────────── */
+    .orb {
+      position: fixed; border-radius: 50%;
+      filter: blur(130px); pointer-events: none; z-index: 0;
+    }
+    .orb-1 {
+      width: 700px; height: 700px; background: #f0c000; opacity: 0.032;
+      top: -240px; right: -220px;
+      animation: orbFloat1 26s ease-in-out infinite alternate;
+    }
+    .orb-2 {
+      width: 580px; height: 580px; background: #e94560; opacity: 0.038;
+      bottom: -200px; left: -180px;
+      animation: orbFloat2 32s ease-in-out infinite alternate;
+    }
+    @keyframes orbFloat1 {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(-80px,80px) scale(1.15); }
+    }
+    @keyframes orbFloat2 {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(80px,-80px) scale(1.18); }
+    }
+
+    .dot-grid {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image: radial-gradient(rgba(255,255,255,0.011) 1px, transparent 1px);
+      background-size: 30px 30px;
+    }
+
+    .vignette {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 35%, rgba(5,5,14,0.75) 100%);
+    }
+
+    /* ── User Bar ────────────────────────────────────────── */
+    .user-bar {
+      position: fixed; top: 16px; right: 24px; z-index: 100;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .user-chip {
+      display: flex; align-items: center; gap: 7px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 999px; padding: 5px 13px 5px 8px;
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    }
+    .user-avatar {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--red);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 900; color: #fff;
+    }
+    .user-label { font-size: 11px; font-weight: 600; letter-spacing: 0.2px; color: rgba(255,255,255,0.45); }
+    .bar-btn {
+      background: transparent; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px; padding: 5px 13px; color: rgba(255,255,255,0.35);
+      font-family: inherit; font-size: 9px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .bar-btn:hover { color: rgba(255,255,255,0.65); border-color: rgba(255,255,255,0.18); }
+
+    /* ── Layout ─────────────────────────────────────────── */
+    .container {
+      position: relative; z-index: 1;
+      max-width: 960px; margin: 0 auto; padding: 0 36px;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    header {
+      padding: 80px 0 48px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      margin-bottom: 48px;
+    }
+
+    .eyebrow {
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 5px; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 12px;
+      opacity: 0; transform: translateY(14px);
+      animation: fadeUp 0.7s 0.05s both;
+    }
+
+    header h1 {
+      font-size: 48px; font-weight: 900;
+      letter-spacing: -2.5px; color: #fff; line-height: 1;
+      opacity: 0; transform: translateY(20px);
+      animation: fadeUp 0.75s 0.15s both;
+    }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Progress ───────────────────────────────────────── */
+    .progress-row {
+      display: flex; align-items: center; gap: 14px; margin-top: 20px;
+      opacity: 0; transform: translateY(12px);
+      animation: fadeUp 0.7s 0.25s both;
+    }
+
+    .progress-track {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      border-radius: 100px;
+      height: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold), var(--red));
+      border-radius: 100px;
+      transition: width 0.9s cubic-bezier(0.22,1,0.36,1);
+      width: 0%;
+    }
+
+    .progress-label {
+      font-size: 11px; color: rgba(255,255,255,0.25);
+      white-space: nowrap; font-weight: 500; letter-spacing: 0.3px;
+    }
+
+    /* ── Section Label ──────────────────────────────────── */
+    .section-label {
+      font-size: 9px; letter-spacing: 4px; text-transform: uppercase;
+      color: rgba(255,255,255,0.17); margin-bottom: 14px; margin-top: 4px;
+    }
+
+    /* ── Achievement Grid ───────────────────────────────── */
+    .ach-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 40px;
+    }
+
+    .ach-card {
+      background: rgba(22,22,48,0.6);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 18px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.22,1,0.36,1),
+                  border-color 0.25s, background 0.25s;
+    }
+
+    .ach-card.unlocked {
+      border-color: rgba(240,192,0,0.28);
+      background: rgba(240,192,0,0.04);
+    }
+
+    .ach-icon   { font-size: 20px; margin-bottom: 4px; }
+    .ach-name   { font-size: 12px; font-weight: 700; color: #fff; letter-spacing: -0.1px; }
+    .ach-desc   { font-size: 10px; color: rgba(255,255,255,0.22); line-height: 1.55; }
+
+    .ach-status {
+      font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
+      margin-top: 6px; font-weight: 600;
+    }
+    .ach-status.done { color: var(--gold); }
+    .ach-status.todo { color: rgba(255,255,255,0.1); }
+
+    /* ── Back Link ──────────────────────────────────────── */
+    .back-wrap { text-align: center; padding: 8px 0 64px; }
+
+    .back-link {
+      display: inline-block; color: rgba(255,255,255,0.18); text-decoration: none;
+      font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+      padding: 8px 22px; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px; transition: color 0.25s, border-color 0.25s;
+      font-weight: 500;
+    }
+    .back-link:hover {
+      color: rgba(255,255,255,0.55);
+      border-color: rgba(255,255,255,0.16);
+    }
+
+    /* ── Scrollbar ──────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+  </style>
+</head>
+<body>
+
+<!-- User bar -->
+<div class="user-bar">
+  <div id="bar-out" style="display:flex;align-items:center;gap:8px">
+    <a href="/login.html" class="bar-btn" style="text-decoration:none">Anmelden</a>
+  </div>
+  <div id="bar-in" style="display:none;align-items:center;gap:8px">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span class="user-label" id="user-label"></span>
+    </div>
+    <button class="bar-btn" onclick="doLogout()">Abmelden</button>
+  </div>
+</div>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="dot-grid"></div>
+<div class="vignette"></div>
+
+<div class="container">
+
+  <header>
+    <div class="eyebrow">Deine Fortschritte</div>
+    <h1>ACHIEVEMENTS</h1>
+    <div class="progress-row">
+      <div class="progress-track">
+        <div class="progress-fill" id="prog-fill"></div>
+      </div>
+      <div class="progress-label" id="prog-label">—</div>
+    </div>
+  </header>
+
+  <div id="ach-content"></div>
+
+  <div class="back-wrap">
+    <a class="back-link" href="/">&#8592; Zurück zum Menü</a>
+  </div>
+
+</div>
+
+<script>
+// User bar — login ist optional
+const _tok  = localStorage.getItem('arcade_token');
+const _user = localStorage.getItem('arcade_username');
+
+if (_tok && _user) {
+  document.getElementById('bar-out').style.display = 'none';
+  document.getElementById('bar-in').style.display  = 'flex';
+  document.getElementById('user-avatar').textContent = _user[0].toUpperCase();
+  document.getElementById('user-label').textContent  = _user;
+}
+
+async function doLogout() {
+  try { await fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + _tok } }); } catch(e) {}
+  ['arcade_token','arcade_username','arcade_role'].forEach(k => localStorage.removeItem(k));
+  location.reload();
+}
+
+const ACHIEVEMENTS = [
+  { id: 'bd_first',    game: 'Block Drop', name: 'Anfänger',                        desc: 'Starte dein erstes Spiel',                    icon: '🎮' },
+  { id: 'bd_tetris',   game: 'Block Drop', name: 'TETRIS!',                         desc: 'Lösch 4 Zeilen auf einmal',                   icon: '✨' },
+  { id: 'bd_combo5',   game: 'Block Drop', name: 'Combo Maniac',                    desc: 'Erreiche eine 5× Kombo',                      icon: '🔥' },
+  { id: 'bd_level10',  game: 'Block Drop', name: 'Speed Junkie',                    desc: 'Erreiche Level 10 im Classic Modus',          icon: '⚡' },
+  { id: 'bd_score50k', game: 'Block Drop', name: 'Großverdiener',                   desc: 'Erziele 50.000 Punkte in einem Spiel',        icon: '💰' },
+  { id: 'bd_lines100', game: 'Block Drop', name: 'Linienkiller',                    desc: 'Lösch 100 Zeilen in einem Spiel',             icon: '💥' },
+  { id: 'bd_harddrop', game: 'Block Drop', name: 'Kein Zeit für Langsam',          desc: 'Mach 25 Hard Drops in einem Spiel',           icon: '⬇️' },
+  { id: 'bd_no_hold',  game: 'Block Drop', name: 'Ich brauch kein Hold',           desc: 'Beende ein Spiel ohne Hold zu benutzen',      icon: '🙅' },
+  { id: 'bd_score250k',game: 'Block Drop', name: 'Legende',                         desc: 'Erziele 250.000 Punkte in einem Spiel',       icon: '🏆' },
+  { id: 'su_15min',    game: 'SchulUhr',   name: 'du hast wirklich keine Lust oder',desc: '15 Minuten auf der SchulUhr verbracht',       icon: '😴' },
+];
+
+async function render() {
+  let unlocked = [];
+  try {
+    const res  = await fetch('/api/achievements');
+    const data = await res.json();
+    unlocked   = data.unlocked || [];
+  } catch(e) {}
+
+  const unlockedIds   = new Set(unlocked.map(a => a.id));
+  const unlockedCount = ACHIEVEMENTS.filter(a => unlockedIds.has(a.id)).length;
+  const pct = Math.round(unlockedCount / ACHIEVEMENTS.length * 100);
+
+  document.getElementById('prog-fill').style.width  = pct + '%';
+  document.getElementById('prog-label').textContent = `${unlockedCount} / ${ACHIEVEMENTS.length}`;
+
+  const games = [...new Set(ACHIEVEMENTS.map(a => a.game))];
+  let html = '';
+
+  for (const game of games) {
+    const achs = ACHIEVEMENTS.filter(a => a.game === game);
+    html += `<div class="section-label">${game}</div><div class="ach-grid">`;
+
+    for (const a of achs) {
+      const isUnlocked = unlockedIds.has(a.id);
+      const entry = unlocked.find(u => u.id === a.id);
+      const dateStr = entry
+        ? new Date(entry.unlockedAt).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        : '';
+
+      html += `
+        <div class="ach-card ${isUnlocked ? 'unlocked' : 'locked'}">
+          <div class="ach-icon">${a.icon}</div>
+          <div class="ach-name">${a.name}</div>
+          <div class="ach-desc">${a.desc}</div>
+          <div class="ach-status ${isUnlocked ? 'done' : 'todo'}">
+            ${isUnlocked ? `✓ ${dateStr}` : 'Gesperrt'}
+          </div>
+        </div>`;
+    }
+
+    html += '</div>';
+  }
+
+  document.getElementById('ach-content').innerHTML = html;
+
+  document.querySelectorAll('.ach-card').forEach((card, i) => {
+    const locked = card.classList.contains('locked');
+    setTimeout(() => {
+      card.style.opacity   = locked ? '0.22' : '1';
+      card.style.transform = 'translateY(0)';
+    }, 80 + i * 45);
+  });
+}
+
+render();
+</script>
+</body>
+</html>

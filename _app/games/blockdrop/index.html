@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Block Drop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red:  #e94560;
+      --gold: #f0c000;
+      --bg:   #05050e;
+    }
+
+    body {
+      background: var(--bg);
+      min-height: 100vh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      gap: 20px;
+      overflow-x: hidden;
+    }
+
+    /* ── Background ─────────────────────────────────────── */
+    .orb {
+      position: fixed; border-radius: 50%;
+      filter: blur(120px); pointer-events: none; z-index: 0;
+    }
+    .orb-1 {
+      width: 640px; height: 640px; background: #e94560; opacity: 0.045;
+      top: -240px; left: -200px;
+      animation: orbFloat1 24s ease-in-out infinite alternate;
+    }
+    .orb-2 {
+      width: 520px; height: 520px; background: #3050e0; opacity: 0.04;
+      bottom: -200px; right: -200px;
+      animation: orbFloat2 30s ease-in-out infinite alternate;
+    }
+    @keyframes orbFloat1 {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(80px,70px) scale(1.15); }
+    }
+    @keyframes orbFloat2 {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(-70px,-90px) scale(1.2); }
+    }
+
+    .dot-grid {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image: radial-gradient(rgba(255,255,255,0.01) 1px, transparent 1px);
+      background-size: 30px 30px;
+    }
+
+    .vignette {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 30%, rgba(5,5,14,0.8) 100%);
+    }
+
+    /* ── Layout ─────────────────────────────────────────── */
+    #wrapper {
+      position: relative; z-index: 1;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    #left-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 116px;
+    }
+
+    #right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 136px;
+    }
+
+    /* ── Panels ─────────────────────────────────────────── */
+    .panel-box {
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    .panel-box h3 {
+      font-size: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: rgba(255,255,255,0.22);
+      margin-bottom: 8px;
+    }
+
+    .panel-box .value {
+      font-size: 28px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -1.5px;
+      line-height: 1;
+    }
+
+    /* ── Board ──────────────────────────────────────────── */
+    #game-area {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.07),
+        0 32px 80px rgba(0,0,0,0.85);
+    }
+
+    canvas#board {
+      display: block;
+      background: rgba(0,0,0,0.6);
+    }
+
+    canvas#next-canvas,
+    canvas#hold-canvas {
+      display: block;
+    }
+
+    /* ── Overlay ────────────────────────────────────────── */
+    #overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(5,5,14,0.9);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+    }
+
+    #overlay h1 {
+      font-size: 30px;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -1.5px;
+      text-shadow: 0 0 48px rgba(233,69,96,0.4);
+    }
+
+    #overlay p {
+      font-size: 12px;
+      color: rgba(255,255,255,0.32);
+    }
+
+    #overlay p strong { color: rgba(255,255,255,0.7); }
+
+    /* ── Mode Buttons ───────────────────────────────────── */
+    .mode-btns { display: flex; gap: 8px; }
+
+    .mode-btn {
+      background: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.45);
+      border: 1px solid rgba(255,255,255,0.09);
+      padding: 9px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: inherit;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    .mode-btn:hover {
+      border-color: rgba(233,69,96,0.35);
+      color: #fff;
+      background: rgba(233,69,96,0.05);
+    }
+
+    .mode-btn.selected {
+      background: rgba(233,69,96,0.12);
+      border-color: rgba(233,69,96,0.4);
+      color: #fff;
+    }
+
+    .mode-btn small {
+      display: block;
+      font-size: 9px;
+      font-weight: 400;
+      opacity: 0.55;
+      margin-top: 2px;
+    }
+
+    /* ── Start / Action Button ──────────────────────────── */
+    .btn {
+      background: var(--red);
+      color: #fff;
+      border: none;
+      padding: 10px 32px;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: inherit;
+      border-radius: 6px;
+      cursor: pointer;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transition: filter 0.2s, transform 0.15s;
+    }
+
+    .btn:hover {
+      filter: brightness(1.12);
+      transform: translateY(-1px);
+    }
+
+    /* ── Level Bar ──────────────────────────────────────── */
+    #level-bar-wrap {
+      background: rgba(255,255,255,0.06);
+      border-radius: 100px;
+      height: 3px;
+      width: 100%;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    #level-bar {
+      height: 100%;
+      background: var(--red);
+      border-radius: 100px;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    /* ── Mode Badge ─────────────────────────────────────── */
+    #mode-badge {
+      font-size: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-top: 8px;
+      display: inline-block;
+    }
+
+    #mode-badge.classic  { background: rgba(233,69,96,0.15);  color: var(--red);  }
+    #mode-badge.standard { background: rgba(56,189,248,0.12); color: #38bdf8; }
+
+    /* ── Controls ───────────────────────────────────────── */
+    #controls-hint {
+      font-size: 9px;
+      color: rgba(255,255,255,0.18);
+      line-height: 2;
+    }
+
+    /* ── High Scores ────────────────────────────────────── */
+    #hs-mode-label {
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: rgba(255,255,255,0.2);
+      margin-bottom: 10px;
+    }
+
+    .highscore-list {
+      font-size: 11px;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.95;
+      min-height: 100px;
+    }
+
+    .highscore-list span {
+      color: var(--red);
+      font-weight: 700;
+    }
+
+    /* ── Back Link ──────────────────────────────────────── */
+    #back-container {
+      position: relative; z-index: 1;
+      text-align: center;
+    }
+
+    .menu-back {
+      display: inline-block;
+      color: rgba(255,255,255,0.16);
+      text-decoration: none;
+      font-size: 9px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 8px 22px;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 6px;
+      transition: color 0.25s, border-color 0.25s;
+      font-weight: 500;
+    }
+
+    .menu-back:hover {
+      color: rgba(255,255,255,0.55);
+      border-color: rgba(255,255,255,0.15);
+    }
+
+    /* ── Achievement Overlay ────────────────────────────── */
+    #ach-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10000; pointer-events: none;
+      transition: background 0.35s;
+    }
+    #ach-overlay.show {
+      background: rgba(0,0,0,0.88);
+      pointer-events: all;
+    }
+
+    #ach-modal {
+      background: rgba(10,10,26,0.98);
+      border: 1px solid rgba(240,192,0,0.2);
+      border-radius: 20px;
+      padding: 44px 64px;
+      text-align: center;
+      position: relative; overflow: hidden;
+      box-shadow: 0 0 80px rgba(240,192,0,0.07), 0 40px 80px rgba(0,0,0,0.95);
+      transform: scale(0.55) translateY(48px);
+      opacity: 0;
+      transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s;
+    }
+    #ach-overlay.show #ach-modal {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+
+    #ach-modal::before {
+      content: '';
+      position: absolute; top: 0; left: -100%;
+      width: 100%; height: 2px;
+      background: linear-gradient(90deg, transparent, #f0c000, transparent);
+    }
+    #ach-overlay.show #ach-modal::before {
+      animation: achShimmer 2s 0.5s ease-in-out infinite;
+    }
+    @keyframes achShimmer { 0% { left:-100%; } 100% { left:200%; } }
+
+    .ach-label {
+      font-size: 9px; letter-spacing: 4px; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 18px;
+    }
+    #ach-icon-big {
+      font-size: 68px; display: block; margin-bottom: 14px;
+      transform: scale(0);
+    }
+    #ach-overlay.show #ach-icon-big {
+      animation: achIconPop 0.55s 0.2s both cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes achIconPop {
+      from { transform: scale(0) rotate(-15deg); }
+      to   { transform: scale(1) rotate(0deg); }
+    }
+    #ach-name-big {
+      font-size: 22px; font-weight: 900; color: #fff;
+      margin-bottom: 8px; letter-spacing: -0.5px;
+    }
+    #ach-desc-big {
+      font-size: 12px; color: rgba(255,255,255,0.3); line-height: 1.5;
+    }
+    .ach-hint {
+      font-size: 9px; color: rgba(255,255,255,0.12); text-transform: uppercase;
+      letter-spacing: 2px; margin-top: 28px; opacity: 0;
+    }
+    #ach-overlay.show .ach-hint {
+      animation: achHintFade 0.6s 1.8s both;
+    }
+    @keyframes achHintFade { from { opacity:0; } to { opacity:1; } }
+
+    /* ── Scrollbar ──────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="dot-grid"></div>
+<div class="vignette"></div>
+
+<div id="wrapper">
+  <div id="left-panel">
+    <div class="panel-box">
+      <h3>Score</h3>
+      <div class="value" id="score-display">0</div>
+    </div>
+    <div class="panel-box">
+      <h3>Level</h3>
+      <div class="value" id="level-display">1</div>
+      <div id="level-bar-wrap"><div id="level-bar"></div></div>
+      <div id="mode-badge" class="classic">Classic</div>
+    </div>
+    <div class="panel-box">
+      <h3>Lines</h3>
+      <div class="value" id="lines-display">0</div>
+    </div>
+    <div class="panel-box">
+      <h3>Hold</h3>
+      <canvas id="hold-canvas" width="100" height="80"></canvas>
+    </div>
+    <div class="panel-box">
+      <h3>Controls</h3>
+      <div id="controls-hint">
+        ← → &nbsp;Move<br>
+        ↑ / Z &nbsp;Rotate CW<br>
+        X &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rotate CCW<br>
+        ↓ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Soft drop<br>
+        Space Hard drop<br>
+        C &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hold<br>
+        P &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Pause
+      </div>
+    </div>
+  </div>
+
+  <div id="game-area">
+    <canvas id="board" width="300" height="600"></canvas>
+    <div id="overlay">
+      <h1>BLOCK DROP</h1>
+      <p>Choose your mode</p>
+      <div class="mode-btns">
+        <button class="mode-btn" id="mode-classic">Classic<small>Speed increases</small></button>
+        <button class="mode-btn selected" id="mode-standard">Standard<small>Fixed speed</small></button>
+      </div>
+      <button class="btn" id="start-btn">Start Game</button>
+    </div>
+  </div>
+
+  <div id="right-panel">
+    <div class="panel-box">
+      <h3>Next</h3>
+      <canvas id="next-canvas" width="100" height="260"></canvas>
+    </div>
+    <div class="panel-box">
+      <h3>High Scores</h3>
+      <div id="hs-mode-label">Standard</div>
+      <div class="highscore-list" id="hs-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="ach-overlay">
+  <div id="ach-modal">
+    <div class="ach-label">Achievement freigeschaltet!</div>
+    <span id="ach-icon-big"></span>
+    <div id="ach-name-big"></div>
+    <div id="ach-desc-big"></div>
+    <div class="ach-hint">Klicken zum Schließen</div>
+  </div>
+</div>
+
+<div id="back-container">
+  <a class="menu-back" href="../../">&#8592; Zurück zum Menü</a>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>

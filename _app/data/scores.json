@@ -37,6 +37,27 @@
                          "level":  10,
                          "lines":  93,
                          "date":  "2026-05-13T08:26:42.638Z"
+                     },
+                     {
+                         "mode":  "standard",
+                         "score":  59510,
+                         "level":  9,
+                         "lines":  83,
+                         "date":  "2026-05-18T09:26:09.845Z"
+                     },
+                     {
+                         "mode":  "standard",
+                         "score":  2110,
+                         "level":  1,
+                         "lines":  9,
+                         "date":  "2026-05-19T06:56:48.837Z"
+                     },
+                     {
+                         "mode":  "standard",
+                         "score":  9228,
+                         "level":  4,
+                         "lines":  30,
+                         "date":  "2026-05-19T06:59:53.820Z"
                      }
                  ]
 }

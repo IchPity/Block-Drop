@@ -13,7 +13,7 @@
     :root {
       --red:  #e94560;
       --gold: #f0c000;
-      --bg:   #05050e;
+      --bg:   #060818;
     }
 
     html { scroll-behavior: smooth; }
@@ -70,6 +70,41 @@
       background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 35%, rgba(5,5,14,0.75) 100%);
     }
 
+    /* ── User Bar ────────────────────────────────────────────────── */
+    .user-bar {
+      position: fixed; top: 16px; right: 24px; z-index: 100;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .user-chip {
+      display: flex; align-items: center; gap: 7px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 999px; padding: 5px 13px 5px 8px;
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    }
+    .user-avatar {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--red);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 900; color: #fff;
+    }
+    .user-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.2px;
+      color: rgba(255,255,255,0.45);
+    }
+    .bar-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+      padding: 5px 13px; color: rgba(255,255,255,0.35);
+      font-family: inherit; font-size: 9px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      cursor: pointer; text-decoration: none;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .bar-btn:hover { color: rgba(255,255,255,0.65); border-color: rgba(255,255,255,0.18); }
+    .bar-btn.gold { color: var(--gold); border-color: rgba(240,192,0,0.22); }
+    .bar-btn.gold:hover { border-color: rgba(240,192,0,0.5); color: var(--gold); filter: brightness(1.15); }
+
     /* ── Layout ─────────────────────────────────────────────────── */
     .container {
       position: relative; z-index: 1;
@@ -93,7 +128,7 @@
 
     header h1 {
       font-size: 56px; font-weight: 900;
-      letter-spacing: -2.5px; color: #fff; line-height: 1;
+      letter-spacing: -3px; color: #fff; line-height: 1;
       opacity: 0; transform: translateY(20px);
       animation: fadeUp 0.75s 0.15s both;
     }
@@ -120,24 +155,21 @@
 
     /* ── Cards ──────────────────────────────────────────────────── */
     .game-card {
-      background: rgba(10, 10, 22, 0.75);
-      border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 14px;
+      background: rgba(22, 22, 48, 0.68);
+      border: 1px solid rgba(255,255,255,0.11);
+      border-radius: 22px;
       overflow: hidden;
       text-decoration: none;
       color: inherit;
       display: flex; flex-direction: column;
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      /* entrance animation — each card gets delay from JS */
       opacity: 0; transform: translateY(32px) scale(0.98);
       animation: cardIn 0.7s both cubic-bezier(0.22, 1, 0.36, 1);
-      /* hover transitions handled by JS; keep smooth return */
       transition: border-color 0.35s ease, box-shadow 0.35s ease;
       will-change: transform;
     }
 
-    /* Available cards */
     .game-card.available { cursor: pointer; }
 
     .game-card.available:hover {
@@ -148,8 +180,8 @@
         0 0 55px rgba(233,69,96,0.07);
     }
 
-    /* Achievement card — gold glow */
-    .game-card.ach-card:hover {
+    .game-card.ach-card:hover,
+    .game-card.admin-card:hover {
       border-color: rgba(240,192,0,0.4) !important;
       box-shadow:
         0 0 0 1px rgba(240,192,0,0.08),
@@ -157,7 +189,6 @@
         0 0 55px rgba(240,192,0,0.06) !important;
     }
 
-    /* Unavailable cards: dim after entrance */
     .game-card.unavailable { cursor: default; }
     @keyframes cardIn {
       to { opacity: 1; transform: translateY(0) scale(1); }
@@ -176,22 +207,20 @@
     .thumb-blockdrop    { background: linear-gradient(145deg, #0d0005 0%, #280010 55%, #0d0005 100%); }
     .thumb-schuluhr     { background: linear-gradient(145deg, #00060d 0%, #001428 55%, #00060d 100%); }
     .thumb-achievements { background: linear-gradient(145deg, #0d0900 0%, #1c1200 55%, #0d0900 100%); }
+    .thumb-admin        { background: linear-gradient(145deg, #090900 0%, #1a1600 55%, #090900 100%); }
     .thumb-snake        { background: linear-gradient(145deg, #00090a 0%, #001f10 55%, #00090a 100%); }
     .thumb-pong         { background: linear-gradient(145deg, #00040d 0%, #000e30 55%, #00040d 100%); }
     .thumb-space        { background: linear-gradient(145deg, #04000d 0%, #120030 55%, #04000d 100%); }
     .thumb-memory       { background: linear-gradient(145deg, #0d0700 0%, #2a1800 55%, #0d0700 100%); }
     .thumb-mines        { background: linear-gradient(145deg, #00070d 0%, #001820 55%, #00070d 100%); }
 
-    /* Subtle inner shine on hover */
     .game-card.available:hover .card-thumb::after {
       content: ''; position: absolute; inset: 0;
       background: rgba(255,255,255,0.025);
     }
 
-    /* Trophy */
     .trophy-art { font-size: 52px; opacity: 0.6; }
 
-    /* Clock */
     .clock-art { position: relative; width: 72px; height: 72px; opacity: 0.75; }
     .clock-face { width: 72px; height: 72px; border-radius: 50%; border: 3px solid #38bdf8; position: absolute; top: 0; left: 0; box-shadow: 0 0 18px rgba(56,189,248,0.25); }
     .clock-center { position: absolute; width: 6px; height: 6px; background: #38bdf8; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
@@ -200,14 +229,12 @@
     .clock-hand-m { width: 2px; height: 28px; background: #7dd3fc; margin-left: -1px;  transform: rotate(80deg); }
     .clock-hand-s { width: 1px; height: 30px; background: #e94560; margin-left: -0.5px; transform: rotate(200deg); }
 
-    /* Blocks */
     .blocks-art { display: grid; grid-template-columns: repeat(5,14px); grid-template-rows: repeat(4,14px); gap: 3px; opacity: 0.7; }
     .b { border-radius: 2px; }
     .b-r{background:#e94560}.b-y{background:#f0c000}.b-c{background:#00cfcf}
     .b-p{background:#a000f0}.b-g{background:#00b800}.b-o{background:#e07000}
     .b-n{background:transparent}
 
-    /* Snake */
     .snake-art { width:72px;height:72px;position:relative;opacity:.6 }
     .snake-art::before { content:'';position:absolute;inset:0;background:
       radial-gradient(circle 6px at 12px 12px,#00c060 100%,transparent 100%),
@@ -220,14 +247,12 @@
       radial-gradient(circle 6px at 12px 60px,#00c060 100%,transparent 100%),
       radial-gradient(circle 5px at 55px 55px,#e94560 100%,transparent 100%); }
 
-    /* Pong */
     .pong-art{display:flex;align-items:center;gap:28px;opacity:.55}
     .pong-paddle{width:6px;height:36px;background:#4080ff;border-radius:3px}
     .pong-ball{width:10px;height:10px;background:#fff;border-radius:50%}
     .pong-net{display:flex;flex-direction:column;gap:6px}
     .pong-net-seg{width:3px;height:8px;background:rgba(255,255,255,.2);border-radius:1px}
 
-    /* Space */
     .space-art{position:relative;width:60px;height:60px;opacity:.5}
     .space-art::before{content:'';position:absolute;inset:0;background:
       radial-gradient(circle 2px at 10px 8px,#fff 100%,transparent 100%),
@@ -238,12 +263,10 @@
       radial-gradient(circle 1px at 55px 50px,#fff 100%,transparent 100%)}
     .space-ship{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:20px solid #a060ff}
 
-    /* Memory */
     .memory-art{display:grid;grid-template-columns:repeat(3,18px);gap:5px;opacity:.5}
     .mem-card{width:18px;height:22px;border-radius:2px;border:1px solid rgba(255,255,255,.2)}
     .mem-card.flipped{background:#c87800;border-color:#c87800}
 
-    /* Mines */
     .mines-art{display:grid;grid-template-columns:repeat(5,12px);gap:2px;opacity:.5}
     .mine-cell{width:12px;height:12px;background:#0a3040;border-radius:1px;display:flex;align-items:center;justify-content:center;font-size:6px;color:rgba(255,255,255,.5)}
     .mine-cell.boom{background:#e94560}
@@ -259,19 +282,19 @@
       letter-spacing: 3px; text-transform: uppercase; color: var(--red);
     }
     .ach-card   .card-tag { color: var(--gold); }
-    .unavailable .card-tag { color: #1e1e30; }
+    .unavailable .card-tag { color: rgba(255,255,255,0.08); }
 
     .card-title { font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -0.2px; }
-    .unavailable .card-title { color: #272738; }
+    .unavailable .card-title { color: rgba(255,255,255,0.12); }
 
-    .card-desc { font-size: 11px; color: #30304a; line-height: 1.6; margin-top: 2px; }
+    .card-desc { font-size: 11px; color: rgba(255,255,255,0.24); line-height: 1.6; margin-top: 2px; }
 
     .card-footer { margin-top: 12px; }
 
     .play-btn {
       display: inline-block; color: #fff; border: none;
       padding: 5px 18px; font-size: 9px; font-weight: 700;
-      border-radius: 5px; letter-spacing: 2px; text-transform: uppercase;
+      border-radius: 10px; letter-spacing: 2px; text-transform: uppercase;
       pointer-events: none; background: var(--red);
       transition: background 0.2s;
     }
@@ -280,8 +303,8 @@
 
     .soon-badge {
       display: inline-block; font-size: 9px; letter-spacing: 2px;
-      text-transform: uppercase; color: #1a1a2a;
-      padding: 4px 12px; border: 1px solid #141424; border-radius: 4px;
+      text-transform: uppercase; color: rgba(255,255,255,0.18);
+      padding: 4px 12px; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
     }
 
     /* ── Footer ─────────────────────────────────────────────────── */
@@ -292,7 +315,7 @@
     }
     footer span {
       font-size: 10px; letter-spacing: 3px;
-      text-transform: uppercase; color: #141424;
+      text-transform: uppercase; color: rgba(255,255,255,0.12);
     }
 
     /* ── Scrollbar ───────────────────────────────────────────────── */
@@ -310,6 +333,21 @@
 <div class="orb orb-3"></div>
 <div class="dot-grid"></div>
 <div class="vignette"></div>
+
+<!-- User bar (top right) -->
+<div class="user-bar">
+  <div id="bar-out" style="display:flex;align-items:center;gap:8px">
+    <a href="/login.html" class="bar-btn">Anmelden</a>
+  </div>
+  <div id="bar-in" style="display:none;align-items:center;gap:8px">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span class="user-label" id="user-label"></span>
+    </div>
+    <a href="/admin/" class="bar-btn gold" id="btn-admin" style="display:none">Admin</a>
+    <button class="bar-btn" onclick="doLogout()">Abmelden</button>
+  </div>
+</div>
 
 <div class="container">
 
@@ -365,6 +403,18 @@
         <div class="card-title">Achievements</div>
         <div class="card-desc">Alle freigeschalteten Erfolge auf einen Blick. Wie viele hast du schon?</div>
         <div class="card-footer"><span class="play-btn">Anzeigen</span></div>
+      </div>
+    </a>
+
+    <a class="game-card available admin-card" href="/admin/" id="admin-card">
+      <div class="card-thumb thumb-admin">
+        <div style="font-size:48px;opacity:0.55">⚙️</div>
+      </div>
+      <div class="card-body">
+        <div class="card-tag" style="color:var(--gold)">Admin only</div>
+        <div class="card-title">Admin Panel</div>
+        <div class="card-desc">Alle Accounts, Scores und Achievements auf einen Blick.</div>
+        <div class="card-footer"><span class="play-btn" style="background:var(--gold);color:#000">Öffnen</span></div>
       </div>
     </a>
 
@@ -453,6 +503,28 @@
 </footer>
 
 <script>
+  // User bar — login ist optional
+  const _tok  = localStorage.getItem('arcade_token');
+  const _user = localStorage.getItem('arcade_username');
+  const _role = localStorage.getItem('arcade_role');
+
+  if (_tok && _user) {
+    document.getElementById('bar-out').style.display = 'none';
+    const _bin = document.getElementById('bar-in');
+    _bin.style.display = 'flex';
+    document.getElementById('user-avatar').textContent = _user[0].toUpperCase();
+    document.getElementById('user-label').textContent  = _user;
+    if (_role === 'admin') {
+      document.getElementById('btn-admin').style.display = 'inline-block';
+    }
+  }
+
+  async function doLogout() {
+    try { await fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + _tok } }); } catch(e) {}
+    ['arcade_token','arcade_username','arcade_role'].forEach(k => localStorage.removeItem(k));
+    location.reload();
+  }
+
   // Staggered entrance — available cards pop in first, then coming-soon
   const cards = document.querySelectorAll('.game-card');
   cards.forEach((card, i) => {

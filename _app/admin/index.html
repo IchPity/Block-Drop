@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --red: #e94560; --gold: #f0c000; --bg: #060818; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); min-height: 100vh; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #eee; overflow-x: hidden; }
+
+    .orb { position: fixed; border-radius: 50%; filter: blur(130px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 640px; height: 640px; background: #f0c000; opacity: 0.03; top: -220px; right: -180px; animation: o1 28s ease-in-out infinite alternate; }
+    .orb-2 { width: 520px; height: 520px; background: #e94560; opacity: 0.028; bottom: -160px; left: -140px; animation: o2 32s ease-in-out infinite alternate; }
+    @keyframes o1 { from { transform: translate(0,0) scale(1); } to { transform: translate(-70px,80px) scale(1.14); } }
+    @keyframes o2 { from { transform: translate(0,0) scale(1); } to { transform: translate(75px,-75px) scale(1.12); } }
+    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,0.011) 1px, transparent 1px); background-size: 30px 30px; }
+
+    .container { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 0 36px; }
+
+    header {
+      padding: 72px 0 36px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      margin-bottom: 32px;
+      display: flex; align-items: flex-end; justify-content: space-between;
+    }
+    .hd-left .eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 5px; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
+    .hd-left h1 { font-size: 42px; font-weight: 900; letter-spacing: -2px; color: #fff; line-height: 1; }
+    .hd-right { display: flex; gap: 8px; padding-bottom: 4px; }
+
+    .hbtn {
+      display: inline-block; text-decoration: none; border-radius: 12px;
+      padding: 8px 16px; font-family: inherit; font-size: 10px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase; cursor: pointer; border: none;
+      transition: all 0.2s;
+    }
+    .hbtn-back { background: transparent; border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.38); }
+    .hbtn-back:hover { color: rgba(255,255,255,0.65); border-color: rgba(255,255,255,0.2); }
+    .hbtn-out { background: transparent; border: 1px solid rgba(233,69,96,0.22); color: rgba(233,69,96,0.65); }
+    .hbtn-out:hover { color: var(--red); border-color: rgba(233,69,96,0.4); }
+
+    /* Stats */
+    .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 28px; }
+    .stat { background: rgba(22,22,48,0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; padding: 18px 20px; }
+    .stat.gold { border-color: rgba(240,192,0,0.12); background: rgba(240,192,0,0.02); }
+    .stat.red  { border-color: rgba(233,69,96,0.12); background: rgba(233,69,96,0.02); }
+    .stat-lbl { font-size: 8px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.22); margin-bottom: 7px; }
+    .stat-val { font-size: 30px; font-weight: 900; letter-spacing: -1.5px; color: #fff; }
+    .stat.gold .stat-val { color: var(--gold); }
+    .stat.red  .stat-val { color: var(--red); }
+
+    /* Tabs */
+    .tabs-nav { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0; }
+    .tab-btn {
+      padding: 10px 20px; font-family: inherit; font-size: 10px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase; background: transparent; border: none;
+      color: rgba(255,255,255,0.28); cursor: pointer; border-bottom: 2px solid transparent;
+      margin-bottom: -1px; transition: color 0.2s, border-color 0.2s;
+    }
+    .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+    .tab-btn:hover:not(.active) { color: rgba(255,255,255,0.55); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Table */
+    .tbl-wrap { background: rgba(18,18,42,0.65); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; overflow: hidden; margin-bottom: 56px; }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { border-bottom: 1px solid rgba(255,255,255,0.07); }
+    th { padding: 13px 18px; text-align: left; font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,0.2); }
+    td { padding: 12px 18px; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: rgba(255,255,255,0.015); }
+
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 8px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+    .badge-admin { background: rgba(240,192,0,0.12); color: var(--gold); border: 1px solid rgba(240,192,0,0.22); }
+    .badge-user  { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.28); border: 1px solid rgba(255,255,255,0.08); }
+    .badge-classic  { background: rgba(233,69,96,0.1); color: var(--red); border: 1px solid rgba(233,69,96,0.2); }
+    .badge-standard { background: rgba(48,80,224,0.1); color: #6090ff; border: 1px solid rgba(48,80,224,0.2); }
+
+    .pw  { font-family: 'Courier New', monospace; color: rgba(255,255,255,0.42); font-size: 12px; }
+    .num { color: rgba(255,255,255,0.18); font-size: 11px; }
+    .dt  { color: rgba(255,255,255,0.22); font-size: 11px; }
+    .score-val { font-size: 13px; font-weight: 700; color: var(--gold); }
+    .user-name { font-weight: 700; }
+    .user-name.admin { color: var(--gold); }
+    .ach-icon { font-size: 16px; }
+    .empty { padding: 52px; text-align: center; color: rgba(255,255,255,0.18); font-size: 13px; }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="dot-grid"></div>
+
+  <div class="container">
+    <header>
+      <div class="hd-left">
+        <div class="eyebrow">Administration</div>
+        <h1>ADMIN PANEL</h1>
+      </div>
+      <div class="hd-right">
+        <a href="/" class="hbtn hbtn-back">&#8592; Arcade</a>
+        <button class="hbtn hbtn-out" onclick="doLogout()">Abmelden</button>
+      </div>
+    </header>
+
+    <div class="stats">
+      <div class="stat gold">
+        <div class="stat-lbl">Benutzer</div>
+        <div class="stat-val" id="s-total">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-lbl">Admins</div>
+        <div class="stat-val" id="s-admins">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-lbl">Scores</div>
+        <div class="stat-val" id="s-scores">—</div>
+      </div>
+      <div class="stat red">
+        <div class="stat-lbl">Achievements</div>
+        <div class="stat-val" id="s-ach">—</div>
+      </div>
+    </div>
+
+    <div class="tabs-nav">
+      <button class="tab-btn active" onclick="switchTab('users')">Benutzer</button>
+      <button class="tab-btn" onclick="switchTab('scores')">Scores</button>
+      <button class="tab-btn" onclick="switchTab('achievements')">Achievements</button>
+    </div>
+
+    <!-- Tab: Benutzer -->
+    <div class="tab-panel active" id="tab-users">
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Benutzername</th>
+              <th>Passwort</th>
+              <th>Rolle</th>
+              <th>Scores</th>
+              <th>Achievements</th>
+              <th>Erstellt am</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-users">
+            <tr><td colspan="7" class="empty">Wird geladen…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Scores -->
+    <div class="tab-panel" id="tab-scores">
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Spieler</th>
+              <th>Modus</th>
+              <th>Score</th>
+              <th>Level</th>
+              <th>Zeilen</th>
+              <th>Datum</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-scores">
+            <tr><td colspan="7" class="empty">Wird geladen…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Achievements -->
+    <div class="tab-panel" id="tab-achievements">
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Spieler</th>
+              <th>Achievement</th>
+              <th>Spiel</th>
+              <th>Datum</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-ach">
+            <tr><td colspan="5" class="empty">Wird geladen…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('arcade_token');
+    const role  = localStorage.getItem('arcade_role');
+    if (!token || role !== 'admin') window.location.href = '/login.html';
+
+    const ACH_META = {
+      bd_first:    { name: 'Anfänger',              icon: '🎮', game: 'Block Drop' },
+      bd_tetris:   { name: 'TETRIS!',               icon: '✨', game: 'Block Drop' },
+      bd_combo5:   { name: 'Combo Maniac',           icon: '🔥', game: 'Block Drop' },
+      bd_level10:  { name: 'Speed Junkie',           icon: '⚡', game: 'Block Drop' },
+      bd_score50k: { name: 'Großverdiener',          icon: '💰', game: 'Block Drop' },
+      bd_lines100: { name: 'Linienkiller',           icon: '💥', game: 'Block Drop' },
+      bd_harddrop: { name: 'Kein Zeit für Langsam', icon: '⬇️', game: 'Block Drop' },
+      bd_no_hold:  { name: 'Ich brauch kein Hold',  icon: '🙅', game: 'Block Drop' },
+      bd_score250k:{ name: 'Legende',               icon: '🏆', game: 'Block Drop' },
+      su_15min:    { name: 'Keine Lust oder',        icon: '😴', game: 'SchulUhr'  },
+    };
+
+    function esc(s) {
+      return String(s ?? '—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function fmtDate(iso) {
+      if (!iso || iso === '—') return '—';
+      try { return new Date(iso).toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' }); }
+      catch { return iso; }
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach((b, i) => {
+        const names = ['users','scores','achievements'];
+        b.classList.toggle('active', names[i] === tab);
+      });
+      ['users','scores','achievements'].forEach(t => {
+        document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+      });
+    }
+
+    async function loadAll() {
+      const [rUsers, rStats] = await Promise.all([
+        fetch('/api/users',       { headers: { Authorization: 'Bearer ' + token } }),
+        fetch('/api/admin/stats', { headers: { Authorization: 'Bearer ' + token } }),
+      ]);
+
+      const dUsers = await rUsers.json();
+      const dStats = await rStats.json();
+
+      if (!dUsers.ok) { window.location.href = '/'; return; }
+
+      const users  = dUsers.users  || [];
+      const scores = dStats.ok ? (dStats.scores || []) : [];
+      const achs   = dStats.ok ? (dStats.achievements || []) : [];
+
+      // ── Stats bar ────────────────────────────────────────────────
+      document.getElementById('s-total').textContent  = users.length;
+      document.getElementById('s-admins').textContent = users.filter(u => u.role === 'admin').length;
+      document.getElementById('s-scores').textContent = scores.length;
+      document.getElementById('s-ach').textContent    = achs.length;
+
+      // ── Per-user counts for the users tab ────────────────────────
+      const scoresByUser = {};
+      scores.forEach(s => {
+        const u = s.username || 'anonymous';
+        scoresByUser[u] = (scoresByUser[u] || 0) + 1;
+      });
+      const achsByUser = {};
+      achs.forEach(a => {
+        const u = a.username || 'anonymous';
+        achsByUser[u] = (achsByUser[u] || 0) + 1;
+      });
+
+      // ── Users table ───────────────────────────────────────────────
+      if (!users.length) {
+        document.getElementById('tbody-users').innerHTML = '<tr><td colspan="7" class="empty">Keine Benutzer.</td></tr>';
+      } else {
+        document.getElementById('tbody-users').innerHTML = users.map((u, i) => {
+          const adm = u.role === 'admin';
+          return `<tr>
+            <td class="num">${i + 1}</td>
+            <td class="user-name ${adm ? 'admin' : ''}">${esc(u.username)}</td>
+            <td class="pw">${esc(u.password)}</td>
+            <td><span class="badge ${adm ? 'badge-admin' : 'badge-user'}">${esc(u.role)}</span></td>
+            <td class="num">${scoresByUser[u.username] || 0}</td>
+            <td class="num">${achsByUser[u.username]   || 0}</td>
+            <td class="dt">${esc(u.createdAt || '—')}</td>
+          </tr>`;
+        }).join('');
+      }
+
+      // ── Scores table ──────────────────────────────────────────────
+      if (!scores.length) {
+        document.getElementById('tbody-scores').innerHTML = '<tr><td colspan="7" class="empty">Noch keine Scores.</td></tr>';
+      } else {
+        document.getElementById('tbody-scores').innerHTML = scores.map((s, i) => {
+          const cls = s.mode === 'standard' ? 'badge-standard' : 'badge-classic';
+          return `<tr>
+            <td class="num">${i + 1}</td>
+            <td class="user-name">${esc(s.username || 'anonymous')}</td>
+            <td><span class="badge ${cls}">${esc(s.mode || 'classic')}</span></td>
+            <td class="score-val">${Number(s.score || 0).toLocaleString('de-AT')}</td>
+            <td class="num">${esc(s.level)}</td>
+            <td class="num">${esc(s.lines)}</td>
+            <td class="dt">${fmtDate(s.date)}</td>
+          </tr>`;
+        }).join('');
+      }
+
+      // ── Achievements table ────────────────────────────────────────
+      if (!achs.length) {
+        document.getElementById('tbody-ach').innerHTML = '<tr><td colspan="5" class="empty">Noch keine Achievements.</td></tr>';
+      } else {
+        const sorted = [...achs].sort((a, b) => (b.unlockedAt || '').localeCompare(a.unlockedAt || ''));
+        document.getElementById('tbody-ach').innerHTML = sorted.map((a, i) => {
+          const meta = ACH_META[a.id] || { name: a.id, icon: '?', game: '—' };
+          return `<tr>
+            <td class="num">${i + 1}</td>
+            <td class="user-name">${esc(a.username || 'anonymous')}</td>
+            <td><span class="ach-icon">${meta.icon}</span> ${esc(meta.name)}</td>
+            <td class="dt">${esc(meta.game)}</td>
+            <td class="dt">${fmtDate(a.unlockedAt)}</td>
+          </tr>`;
+        }).join('');
+      }
+    }
+
+    async function doLogout() {
+      try { await fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + token } }); } catch(e) {}
+      ['arcade_token','arcade_username','arcade_role'].forEach(k => localStorage.removeItem(k));
+      location.href = '/login.html';
+    }
+
+    loadAll().catch(() => window.location.href = '/login.html');
+  </script>
+</body>
+</html>

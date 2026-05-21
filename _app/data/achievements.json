@@ -1,0 +1,24 @@
+﻿{
+    "unlocked":  [
+                     {
+                         "id":  "bd_first",
+                         "unlockedAt":  "2026-05-13T10:17:24.845Z"
+                     },
+                     {
+                         "id":  "bd_tetris",
+                         "unlockedAt":  "2026-05-13T10:18:10.813Z"
+                     },
+                     {
+                         "id":  "bd_harddrop",
+                         "unlockedAt":  "2026-05-18T09:14:36.358Z"
+                     },
+                     {
+                         "id":  "bd_score50k",
+                         "unlockedAt":  "2026-05-18T09:25:15.478Z"
+                     },
+                     {
+                         "id":  "bd_no_hold",
+                         "unlockedAt":  "2026-05-19T06:56:48.837Z"
+                     }
+                 ]
+}

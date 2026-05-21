@@ -53,9 +53,12 @@ function showAchOverlay(id) {
 
 async function tryUnlock(id) {
   try {
+    const tok = localStorage.getItem('arcade_token');
+    const hdrs = { 'Content-Type': 'application/json' };
+    if (tok) hdrs['Authorization'] = 'Bearer ' + tok;
     const res  = await fetch('/api/achievements', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: hdrs,
       body:    JSON.stringify({ id, unlockedAt: new Date().toISOString() }),
     });
     const data = await res.json();
@@ -160,9 +163,12 @@ class Bag {
 
 // ── Database (scores.json via server.ps1) ─────────────────────────────────
 async function dbSaveScore(score, mode, level, lines) {
+  const tok = localStorage.getItem('arcade_token');
+  const hdrs = { 'Content-Type': 'application/json' };
+  if (tok) hdrs['Authorization'] = 'Bearer ' + tok;
   await fetch('/api/scores', {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: hdrs,
     body:    JSON.stringify({ mode, score, level, lines, date: new Date().toISOString() }),
   });
 }
