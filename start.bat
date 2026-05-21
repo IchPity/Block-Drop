@@ -10,9 +10,6 @@ if %errorlevel% neq 0 (
 
 cd /d "%~dp0"
 
-:: _app Ordner verstecken
-attrib +h +s "%~dp0_app" >nul 2>&1
-
 :: Firewall-Regel fuer Port 3000 einrichten (einmalig)
 netsh advfirewall firewall show rule name="Block Drop Arcade" >nul 2>&1
 if %errorlevel% neq 0 (
@@ -20,7 +17,7 @@ if %errorlevel% neq 0 (
 )
 
 :: Server starten
-start "" powershell.exe -ExecutionPolicy Bypass -NoProfile -File "%~dp0_app\server.ps1"
+start "" powershell.exe -ExecutionPolicy Bypass -NoProfile -File "%~dp0app\server.ps1"
 
 :: Kurz warten, dann Browser oeffnen
 timeout /t 2 /nobreak > nul
