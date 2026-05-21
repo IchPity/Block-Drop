@@ -14,85 +14,126 @@
     body {
       background: var(--bg);
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color: #eee;
+      color: #eee; min-height: 100vh; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
-      min-height: 100vh; overflow: hidden;
     }
 
     .orb { position: fixed; border-radius: 50%; filter: blur(130px); pointer-events: none; z-index: 0; }
-    .orb-1 { width: 720px; height: 720px; background: #e94560; opacity: 0.055; top: -280px; left: -240px; animation: orbFloat1 24s ease-in-out infinite alternate; }
-    .orb-2 { width: 600px; height: 600px; background: #3050e0; opacity: 0.05; bottom: -220px; right: -220px; animation: orbFloat2 30s ease-in-out infinite alternate; }
-    .orb-3 { width: 480px; height: 480px; background: #8030c8; opacity: 0.035; top: 45%; left: 50%; transform: translate(-50%,-50%); animation: orbFloat3 20s ease-in-out infinite alternate; }
+    .orb-1 { width: 720px; height: 720px; background: #e94560; opacity: 0.065; top: -280px; left: -240px; animation: orbFloat1 24s ease-in-out infinite alternate; }
+    .orb-2 { width: 600px; height: 600px; background: #3050e0; opacity: 0.055; bottom: -220px; right: -220px; animation: orbFloat2 30s ease-in-out infinite alternate; }
+    .orb-3 { width: 480px; height: 480px; background: #8030c8; opacity: 0.04; top: 45%; left: 50%; transform: translate(-50%,-50%); animation: orbFloat3 20s ease-in-out infinite alternate; }
     @keyframes orbFloat1 { from { transform: translate(0,0) scale(1); } to { transform: translate(100px,90px) scale(1.18); } }
     @keyframes orbFloat2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-90px,-110px) scale(1.22); } }
     @keyframes orbFloat3 { from { transform: translate(-50%,-50%) scale(1); } to { transform: translate(-55%,-44%) scale(1.14); } }
-    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,0.011) 1px, transparent 1px); background-size: 30px 30px; }
+    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px); background-size: 30px 30px; }
 
-    .card {
-      position: relative; z-index: 1; width: 380px;
-      background: rgba(18,18,40,0.85);
-      border: 1px solid rgba(255,255,255,0.11);
-      border-radius: 26px; padding: 38px 34px 34px;
-      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-      box-shadow: 0 32px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.04);
-      opacity: 0; transform: translateY(28px) scale(0.97);
-      animation: cardIn 0.65s 0.08s cubic-bezier(0.22,1,0.36,1) both;
-    }
-    @keyframes cardIn { to { opacity: 1; transform: translateY(0) scale(1); } }
-
+    /* ── Back ───────────────────────────────────────────── */
     .back-link {
       display: inline-flex; align-items: center; gap: 6px;
       position: fixed; top: 20px; left: 24px; z-index: 10;
-      text-decoration: none; color: rgba(255,255,255,0.28);
-      font-size: 10px; font-weight: 700; letter-spacing: 2px;
-      text-transform: uppercase;
-      border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
-      padding: 8px 14px; transition: color 0.2s, border-color 0.2s;
+      text-decoration: none; color: rgba(255,255,255,0.3);
+      font-size: 11px; font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+      padding: 8px 14px; transition: all 0.2s;
     }
-    .back-link:hover { color: rgba(255,255,255,0.65); border-color: rgba(255,255,255,0.2); }
+    .back-link:hover { color: rgba(255,255,255,0.7); border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.04); }
 
-    .logo { text-align: center; margin-bottom: 28px; }
-    .logo-eye { font-size: 9px; font-weight: 700; letter-spacing: 5px; text-transform: uppercase; color: var(--red); margin-bottom: 8px; }
-    .logo h1 { font-size: 30px; font-weight: 900; letter-spacing: -1.5px; color: #fff; }
+    /* ── Wrapper ────────────────────────────────────────── */
+    .page-wrap {
+      position: relative; z-index: 1;
+      display: flex; gap: 40px; align-items: stretch;
+      opacity: 0; transform: translateY(24px) scale(0.98);
+      animation: pageIn 0.65s 0.08s cubic-bezier(0.22,1,0.36,1) both;
+    }
+    @keyframes pageIn { to { opacity: 1; transform: translateY(0) scale(1); } }
 
+    /* ── Left pitch panel ───────────────────────────────── */
+    .pitch {
+      width: 280px; padding: 40px 32px;
+      display: flex; flex-direction: column; justify-content: center; gap: 28px;
+    }
+    .pitch-logo { display: flex; flex-direction: column; gap: 6px; }
+    .pitch-eye { font-size: 10px; font-weight: 700; letter-spacing: 5px; text-transform: uppercase; color: var(--red); }
+    .pitch-logo h1 { font-size: 40px; font-weight: 900; letter-spacing: -2px; color: #fff; line-height: 1; }
+
+    .pitch-tagline { font-size: 14px; color: rgba(255,255,255,0.35); line-height: 1.65; }
+
+    .pitch-perks { display: flex; flex-direction: column; gap: 12px; }
+    .perk { display: flex; align-items: center; gap: 12px; }
+    .perk-icon {
+      width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .perk-icon.red   { background: rgba(233,69,96,0.12); }
+    .perk-icon.gold  { background: rgba(240,192,0,0.1); }
+    .perk-icon.blue  { background: rgba(56,189,248,0.1); }
+    .perk-text { display: flex; flex-direction: column; gap: 1px; }
+    .perk-title { font-size: 13px; font-weight: 700; color: #fff; }
+    .perk-sub { font-size: 11px; color: rgba(255,255,255,0.28); }
+
+    /* ── Divider ────────────────────────────────────────── */
+    .divider { width: 1px; background: rgba(255,255,255,0.07); align-self: stretch; }
+
+    /* ── Card ───────────────────────────────────────────── */
+    .card {
+      width: 360px; padding: 36px 32px 32px;
+      background: rgba(18,18,40,0.85);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 28px;
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      box-shadow: 0 32px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.04);
+      display: flex; flex-direction: column;
+    }
+
+    .card-title { font-size: 20px; font-weight: 900; color: #fff; letter-spacing: -0.5px; margin-bottom: 4px; }
+    .card-sub { font-size: 12px; color: rgba(255,255,255,0.3); margin-bottom: 24px; }
+
+    /* ── Tabs ───────────────────────────────────────────── */
     .tabs {
-      display: flex; border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 14px; overflow: hidden; margin-bottom: 24px;
+      display: flex; border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 12px; overflow: hidden; margin-bottom: 22px;
     }
     .tab {
-      flex: 1; padding: 9px; background: transparent; border: none;
+      flex: 1; padding: 10px; background: transparent; border: none;
       color: rgba(255,255,255,0.3); font-family: inherit;
-      font-size: 10px; font-weight: 700; letter-spacing: 2px;
+      font-size: 11px; font-weight: 700; letter-spacing: 1px;
       text-transform: uppercase; cursor: pointer; transition: all 0.2s;
     }
-    .tab.active { background: rgba(233,69,96,0.13); color: var(--red); }
-    .tab:hover:not(.active) { color: rgba(255,255,255,0.55); }
+    .tab.active { background: rgba(233,69,96,0.14); color: var(--red); }
+    .tab:hover:not(.active) { color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.03); }
 
-    .field { margin-bottom: 13px; }
-    .field label { display: block; font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 6px; }
+    /* ── Fields ─────────────────────────────────────────── */
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.28); margin-bottom: 7px; }
     .field input {
-      width: 100%;
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.11);
-      border-radius: 12px; padding: 10px 13px; color: #fff;
-      font-family: inherit; font-size: 13px; outline: none;
+      width: 100%; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+      padding: 11px 14px; color: #fff; font-family: inherit; font-size: 14px; outline: none;
       transition: border-color 0.2s, background 0.2s;
     }
     .field input:focus { border-color: rgba(233,69,96,0.5); background: rgba(233,69,96,0.04); }
     .field input::placeholder { color: rgba(255,255,255,0.18); }
 
+    /* ── Submit Button ──────────────────────────────────── */
     .btn {
-      width: 100%; margin-top: 20px;
+      width: 100%; margin-top: 18px;
       background: var(--red); border: none; border-radius: 14px;
-      padding: 12px; color: #fff; font-family: inherit;
-      font-size: 10px; font-weight: 800; letter-spacing: 3px;
-      text-transform: uppercase; cursor: pointer;
-      transition: filter 0.2s, transform 0.15s;
+      padding: 14px; color: #fff; font-family: inherit;
+      font-size: 14px; font-weight: 800; letter-spacing: 0.3px;
+      cursor: pointer;
+      box-shadow: 0 0 28px rgba(233,69,96,0.4), 0 8px 20px rgba(0,0,0,0.3);
+      transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
     }
-    .btn:hover { filter: brightness(0.82); }
-    .btn:active { transform: scale(0.98); }
-    .btn:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
+    .btn:hover { background: #f05672; box-shadow: 0 0 40px rgba(233,69,96,0.55), 0 10px 24px rgba(0,0,0,0.4); transform: translateY(-1px); }
+    .btn:active { transform: scale(0.99); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-arrow { font-size: 16px; transition: transform 0.2s; }
+    .btn:not(:disabled):hover .btn-arrow { transform: translateX(3px); }
 
-    .msg { margin-top: 11px; font-size: 11px; text-align: center; border-radius: 7px; padding: 9px 13px; display: none; line-height: 1.5; }
+    /* ── Messages ───────────────────────────────────────── */
+    .msg { margin-top: 12px; font-size: 12px; text-align: center; border-radius: 10px; padding: 10px 14px; display: none; line-height: 1.5; }
     .msg.error   { background: rgba(233,69,96,0.1); color: #e94560; border: 1px solid rgba(233,69,96,0.2); display: block; }
     .msg.success { background: rgba(0,200,80,0.08); color: #00cc66; border: 1px solid rgba(0,200,80,0.18); display: block; }
   </style>
@@ -105,46 +146,89 @@
 
   <a href="/" class="back-link">&#8592; Hauptmenü</a>
 
-  <div class="card">
-    <div class="logo">
-      <div class="logo-eye">Willkommen</div>
-      <h1>ARCADE</h1>
+  <div class="page-wrap">
+
+    <!-- Left: pitch -->
+    <div class="pitch">
+      <div class="pitch-logo">
+        <div class="pitch-eye">Willkommen bei</div>
+        <h1>ARC<span style="color:var(--red)">A</span>DE</h1>
+      </div>
+
+      <div class="pitch-tagline">Spiel, score und sammle Achievements — alles kostenlos, kein Download.</div>
+
+      <div class="pitch-perks">
+        <div class="perk">
+          <div class="perk-icon red">🎮</div>
+          <div class="perk-text">
+            <div class="perk-title">Spiele spielen</div>
+            <div class="perk-sub">Block Drop & mehr</div>
+          </div>
+        </div>
+        <div class="perk">
+          <div class="perk-icon gold">🏆</div>
+          <div class="perk-text">
+            <div class="perk-title">Scores speichern</div>
+            <div class="perk-sub">High Scores & Rangliste</div>
+          </div>
+        </div>
+        <div class="perk">
+          <div class="perk-icon blue">✨</div>
+          <div class="perk-text">
+            <div class="perk-title">Achievements freischalten</div>
+            <div class="perk-sub">10+ Trophäen zu sammeln</div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="tabs">
-      <button class="tab active" id="tab-login" onclick="switchTab('login')">Anmelden</button>
-      <button class="tab" id="tab-reg" onclick="switchTab('register')">Registrieren</button>
+    <div class="divider"></div>
+
+    <!-- Right: form -->
+    <div class="card">
+      <div class="card-title" id="form-title">Anmelden</div>
+      <div class="card-sub" id="form-sub">Willkommen zurück!</div>
+
+      <div class="tabs">
+        <button class="tab active" id="tab-login" onclick="switchTab('login')">Anmelden</button>
+        <button class="tab" id="tab-reg" onclick="switchTab('register')">Registrieren</button>
+      </div>
+
+      <div id="form-login">
+        <div class="field">
+          <label>Benutzername</label>
+          <input type="text" id="l-user" placeholder="Dein Benutzername" autocomplete="username">
+        </div>
+        <div class="field">
+          <label>Passwort</label>
+          <input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <button class="btn" id="btn-login" onclick="doLogin()">
+          Anmelden <span class="btn-arrow">→</span>
+        </button>
+        <div class="msg" id="msg-login"></div>
+      </div>
+
+      <div id="form-reg" style="display:none">
+        <div class="field">
+          <label>Benutzername</label>
+          <input type="text" id="r-user" placeholder="Benutzername wählen" autocomplete="username">
+        </div>
+        <div class="field">
+          <label>Passwort</label>
+          <input type="password" id="r-pass" placeholder="Passwort wählen" autocomplete="new-password">
+        </div>
+        <div class="field">
+          <label>Passwort bestätigen</label>
+          <input type="password" id="r-pass2" placeholder="Passwort wiederholen" autocomplete="new-password">
+        </div>
+        <button class="btn" id="btn-reg" onclick="doRegister()">
+          Account erstellen <span class="btn-arrow">→</span>
+        </button>
+        <div class="msg" id="msg-reg"></div>
+      </div>
     </div>
 
-    <div id="form-login">
-      <div class="field">
-        <label>Benutzername</label>
-        <input type="text" id="l-user" placeholder="Dein Benutzername" autocomplete="username">
-      </div>
-      <div class="field">
-        <label>Passwort</label>
-        <input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password">
-      </div>
-      <button class="btn" id="btn-login" onclick="doLogin()">Anmelden</button>
-      <div class="msg" id="msg-login"></div>
-    </div>
-
-    <div id="form-reg" style="display:none">
-      <div class="field">
-        <label>Benutzername</label>
-        <input type="text" id="r-user" placeholder="Benutzername wählen" autocomplete="username">
-      </div>
-      <div class="field">
-        <label>Passwort</label>
-        <input type="password" id="r-pass" placeholder="Passwort wählen" autocomplete="new-password">
-      </div>
-      <div class="field">
-        <label>Passwort bestätigen</label>
-        <input type="password" id="r-pass2" placeholder="Passwort wiederholen" autocomplete="new-password">
-      </div>
-      <button class="btn" id="btn-reg" onclick="doRegister()">Account erstellen</button>
-      <div class="msg" id="msg-reg"></div>
-    </div>
   </div>
 
   <script>
@@ -155,6 +239,8 @@
       document.getElementById('form-reg').style.display   = tab === 'register' ? '' : 'none';
       document.getElementById('tab-login').classList.toggle('active', tab === 'login');
       document.getElementById('tab-reg').classList.toggle('active',   tab === 'register');
+      document.getElementById('form-title').textContent = tab === 'login' ? 'Anmelden' : 'Registrieren';
+      document.getElementById('form-sub').textContent   = tab === 'login' ? 'Willkommen zurück!' : 'Kostenlos & sofort loslegen.';
     }
 
     async function doLogin() {

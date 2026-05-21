@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SchulUhr</title>
+    <title>SchulUhr — Arcade</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
 
@@ -32,19 +32,47 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 80px 20px 20px;
             overflow-x: hidden;
         }
 
+        /* ── Navbar ─────────────────────────────────────── */
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 32px;
+            background: rgba(8,8,18,0.75);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        }
+        .nav-left { display: flex; align-items: center; gap: 14px; }
+        .nav-back {
+            display: inline-flex; align-items: center; gap: 6px;
+            text-decoration: none; color: rgba(255,255,255,0.35);
+            font-size: 11px; font-weight: 600;
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+            padding: 7px 14px; transition: all 0.2s;
+        }
+        .nav-back:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.04); }
+        .nav-title { font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.5); }
+        .nav-cta {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: #e94560; border: none; border-radius: 10px;
+            padding: 8px 18px; color: #fff; font-family: 'Inter', sans-serif;
+            font-size: 12px; font-weight: 700; cursor: pointer; text-decoration: none;
+            box-shadow: 0 0 20px rgba(233,69,96,0.3); transition: all 0.2s;
+        }
+        .nav-cta:hover { background: #f05672; box-shadow: 0 0 28px rgba(233,69,96,0.5); transform: translateY(-1px); }
+
         .blob {
             position: fixed; border-radius: 50%;
-            filter: blur(100px); opacity: 0.08;
+            filter: blur(120px); opacity: 0.055;
             pointer-events: none;
             animation: floatBlob 8s ease-in-out infinite alternate;
         }
-        .blob-1 { width:500px;height:500px;background:var(--purple);top:-150px;left:-150px; }
-        .blob-2 { width:400px;height:400px;background:var(--blue);bottom:-100px;right:-100px;animation-delay:3s; }
-        .blob-3 { width:300px;height:300px;background:var(--green);top:40%;left:40%;animation-delay:1.5s; }
+        .blob-1 { width:600px;height:600px;background:#e94560;top:-200px;left:-180px; }
+        .blob-2 { width:500px;height:500px;background:#3050e0;bottom:-150px;right:-150px;animation-delay:3s; }
+        .blob-3 { width:380px;height:380px;background:#8030c8;top:40%;left:40%;animation-delay:1.5s; }
 
         @keyframes floatBlob {
             from { transform: translate(0,0) scale(1); }
@@ -57,62 +85,56 @@
         .header {
             display: flex; align-items: center;
             justify-content: space-between;
-            margin-bottom: 20px; padding: 0 4px;
+            margin-bottom: 16px; padding: 0 4px;
         }
         .app-name {
             font-family: 'Orbitron', monospace;
             font-size: 0.75rem; font-weight: 700;
-            color: var(--muted2); letter-spacing: 3px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3); letter-spacing: 3px; text-transform: uppercase;
         }
         .live-clock {
             font-family: 'Orbitron', monospace;
-            font-size: 0.85rem; color: var(--text); letter-spacing: 2px;
+            font-size: 0.9rem; color: var(--text); letter-spacing: 2px;
+            text-shadow: 0 0 16px rgba(255,255,255,0.15);
         }
         .header-right { display: flex; align-items: center; gap: 8px; }
         .day-badge {
-            font-size: 0.7rem; font-weight: 600; color: var(--muted2);
+            font-size: 0.7rem; font-weight: 700; color: rgba(255,255,255,0.4);
             letter-spacing: 2px; text-transform: uppercase;
-            padding: 4px 10px; background: rgba(255,255,255,0.04);
-            border-radius: 100px; border: 1px solid var(--border);
+            padding: 5px 12px; background: rgba(255,255,255,0.04);
+            border-radius: 100px; border: 1px solid rgba(255,255,255,0.08);
         }
 
         /* PiP / Floating toggle button */
         .pip-btn {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--border);
-            border-radius: 8px; color: var(--muted2);
-            cursor: pointer; font-size: 0.78rem; font-weight: 600;
-            padding: 5px 11px; line-height: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; color: rgba(255,255,255,0.4);
+            cursor: pointer; font-size: 0.78rem; font-weight: 700;
+            padding: 7px 13px; line-height: 1;
             display: flex; align-items: center; gap: 5px;
             transition: background 0.2s, color 0.2s, border-color 0.2s;
             font-family: 'Inter', sans-serif;
         }
-        .pip-btn:hover { background:rgba(255,255,255,0.08);color:var(--text);border-color:rgba(255,255,255,0.15); }
-        .pip-btn.active { background:rgba(124,111,255,0.12);color:var(--purple);border-color:rgba(124,111,255,0.3); }
+        .pip-btn:hover { background:rgba(255,255,255,0.09);color:var(--text);border-color:rgba(255,255,255,0.2); }
+        .pip-btn.active { background:rgba(124,111,255,0.14);color:var(--purple);border-color:rgba(124,111,255,0.35); }
         .pip-btn svg { width:13px;height:13px;fill:currentColor;flex-shrink:0; }
 
-        .back-wrap {
-            text-align: center; padding: 24px 0 8px;
-        }
+        .back-wrap { text-align: center; padding: 20px 0 8px; }
         .back-link {
-            display: inline-block;
-            color: var(--muted);
-            text-decoration: none;
-            font-size: 0.72rem;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            padding: 7px 20px;
-            border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 8px;
-            transition: color 0.2s, border-color 0.2s;
+            display: inline-flex; align-items: center; gap: 6px;
+            color: rgba(255,255,255,0.28); text-decoration: none;
+            font-size: 0.72rem; letter-spacing: 1.5px; text-transform: uppercase;
+            padding: 8px 20px; border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px; transition: color 0.2s, border-color 0.2s;
         }
-        .back-link:hover { color: var(--text); border-color: rgba(255,255,255,0.18); }
+        .back-link:hover { color: rgba(255,255,255,0.65); border-color: rgba(255,255,255,0.18); }
 
         /* ── Main Card ───────────────────────────── */
         .main-card {
-            background: var(--card); border-radius: 28px;
-            border: 1px solid var(--border); overflow: hidden;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.5); margin-bottom: 16px;
+            background: rgba(12,12,24,0.9); border-radius: 28px;
+            border: 1px solid rgba(255,255,255,0.09); overflow: hidden;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.03), 0 40px 80px rgba(0,0,0,0.7); margin-bottom: 14px;
         }
         .card-top-bar { height:3px; transition:background 0.5s ease; background:linear-gradient(90deg,var(--purple),var(--blue),var(--green)); }
         .card-top-bar.bar-class { background:linear-gradient(90deg,var(--purple),#a78bfa); }
@@ -169,18 +191,18 @@
         .free-countdown { font-family:'Orbitron',monospace;font-size:1.5rem;font-weight:700;color:var(--muted2); }
 
         /* ── Schedule ─────────────────────────────── */
-        .schedule-card { background:var(--card);border-radius:20px;border:1px solid var(--border);padding:20px; }
-        .schedule-title { font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:14px; }
+        .schedule-card { background:rgba(12,12,24,0.85);border-radius:22px;border:1px solid rgba(255,255,255,0.08);padding:20px;box-shadow:0 20px 50px rgba(0,0,0,0.4); }
+        .schedule-title { font-size:0.7rem;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:3px;margin-bottom:14px; }
         .schedule-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px; }
-        .sched-item { background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:8px 10px;font-size:0.73rem;transition:all 0.3s; }
-        .sched-item.active  { background:rgba(124,111,255,0.1);border-color:rgba(124,111,255,0.3); }
-        .sched-item.done    { opacity:0.35; }
-        .sched-item.break-type { background:rgba(251,191,36,0.05);border-color:rgba(251,191,36,0.08); }
+        .sched-item { background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:9px 11px;font-size:0.73rem;transition:all 0.3s; }
+        .sched-item.active  { background:rgba(124,111,255,0.12);border-color:rgba(124,111,255,0.32);box-shadow:0 0 14px rgba(124,111,255,0.1); }
+        .sched-item.done    { opacity:0.3; }
+        .sched-item.break-type { background:rgba(251,191,36,0.04);border-color:rgba(251,191,36,0.08); }
         .sched-item.break-type.active { background:rgba(251,191,36,0.12);border-color:rgba(251,191,36,0.3); }
-        .sched-item.lunch-type { background:rgba(249,115,22,0.05);border-color:rgba(249,115,22,0.08); }
+        .sched-item.lunch-type { background:rgba(249,115,22,0.04);border-color:rgba(249,115,22,0.08); }
         .sched-item.lunch-type.active { background:rgba(249,115,22,0.12);border-color:rgba(249,115,22,0.3); }
-        .si-time { font-family:'Orbitron',monospace;font-size:0.62rem;color:var(--muted);letter-spacing:.5px;margin-bottom:3px; }
-        .si-name { font-weight:600;color:var(--muted2); }
+        .si-time { font-family:'Orbitron',monospace;font-size:0.62rem;color:rgba(255,255,255,0.25);letter-spacing:.5px;margin-bottom:3px; }
+        .si-name { font-weight:600;color:rgba(255,255,255,0.45); }
         .sched-item.active .si-name { color:var(--text); }
 
         /* ── Toast ───────────────────────────────── */
@@ -296,6 +318,14 @@
 <div class="blob blob-2"></div>
 <div class="blob blob-3"></div>
 
+<nav class="navbar">
+    <div class="nav-left">
+        <a href="../../" class="nav-back">&#8592; Arcade</a>
+        <div class="nav-title">SchulUhr</div>
+    </div>
+    <a href="/games/blockdrop/" class="nav-cta">Block Drop spielen &rarr;</a>
+</nav>
+
 <div class="wrapper">
     <div class="header">
         <div class="app-name">SchulUhr</div>
@@ -321,6 +351,7 @@
     <div class="back-wrap">
         <a class="back-link" href="../../">&#8592; Zurück zum Menü</a>
     </div>
+
 </div>
 
 <!-- Toast notification -->

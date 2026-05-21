@@ -3,212 +3,182 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Achievements</title>
+  <title>Achievements — Arcade</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --red:  #e94560;
-      --gold: #f0c000;
-      --bg:   #060818;
-    }
-
+    :root { --red: #e94560; --gold: #f0c000; --bg: #060818; }
     html { scroll-behavior: smooth; }
-
     body {
-      background: var(--bg);
-      min-height: 100vh;
+      background: var(--bg); min-height: 100vh;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color: #eee;
-      overflow-x: hidden;
+      color: #eee; overflow-x: hidden;
     }
 
     /* ── Background ─────────────────────────────────────── */
-    .orb {
-      position: fixed; border-radius: 50%;
-      filter: blur(130px); pointer-events: none; z-index: 0;
-    }
-    .orb-1 {
-      width: 700px; height: 700px; background: #f0c000; opacity: 0.032;
-      top: -240px; right: -220px;
-      animation: orbFloat1 26s ease-in-out infinite alternate;
-    }
-    .orb-2 {
-      width: 580px; height: 580px; background: #e94560; opacity: 0.038;
-      bottom: -200px; left: -180px;
-      animation: orbFloat2 32s ease-in-out infinite alternate;
-    }
-    @keyframes orbFloat1 {
-      from { transform: translate(0,0) scale(1); }
-      to   { transform: translate(-80px,80px) scale(1.15); }
-    }
-    @keyframes orbFloat2 {
-      from { transform: translate(0,0) scale(1); }
-      to   { transform: translate(80px,-80px) scale(1.18); }
-    }
+    .orb { position: fixed; border-radius: 50%; filter: blur(130px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 700px; height: 700px; background: #f0c000; opacity: 0.045; top: -240px; right: -220px; animation: orbFloat1 26s ease-in-out infinite alternate; }
+    .orb-2 { width: 580px; height: 580px; background: #e94560; opacity: 0.04; bottom: -200px; left: -180px; animation: orbFloat2 32s ease-in-out infinite alternate; }
+    @keyframes orbFloat1 { from { transform: translate(0,0) scale(1); } to { transform: translate(-80px,80px) scale(1.15); } }
+    @keyframes orbFloat2 { from { transform: translate(0,0) scale(1); } to { transform: translate(80px,-80px) scale(1.18); } }
+    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px); background-size: 30px 30px; }
+    .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 35%, rgba(5,5,14,0.75) 100%); }
 
-    .dot-grid {
-      position: fixed; inset: 0; pointer-events: none; z-index: 0;
-      background-image: radial-gradient(rgba(255,255,255,0.011) 1px, transparent 1px);
-      background-size: 30px 30px;
+    /* ── Navbar ─────────────────────────────────────────── */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 32px;
+      background: rgba(6,8,24,0.7);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     }
-
-    .vignette {
-      position: fixed; inset: 0; pointer-events: none; z-index: 0;
-      background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 35%, rgba(5,5,14,0.75) 100%);
+    .nav-left { display: flex; align-items: center; gap: 16px; }
+    .nav-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none; color: rgba(255,255,255,0.35);
+      font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+      padding: 7px 14px; transition: all 0.2s;
     }
-
-    /* ── User Bar ────────────────────────────────────────── */
-    .user-bar {
-      position: fixed; top: 16px; right: 24px; z-index: 100;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .user-chip {
-      display: flex; align-items: center; gap: 7px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 999px; padding: 5px 13px 5px 8px;
-      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    }
-    .user-avatar {
-      width: 22px; height: 22px; border-radius: 50%;
-      background: var(--red);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 9px; font-weight: 900; color: #fff;
-    }
-    .user-label { font-size: 11px; font-weight: 600; letter-spacing: 0.2px; color: rgba(255,255,255,0.45); }
-    .bar-btn {
-      background: transparent; border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 12px; padding: 5px 13px; color: rgba(255,255,255,0.35);
-      font-family: inherit; font-size: 9px; font-weight: 700;
-      letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer;
-      transition: color 0.2s, border-color 0.2s;
-    }
-    .bar-btn:hover { color: rgba(255,255,255,0.65); border-color: rgba(255,255,255,0.18); }
+    .nav-back:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.04); }
+    .nav-title { font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.5); letter-spacing: 0.3px; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .user-chip { display: flex; align-items: center; gap: 7px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); border-radius: 999px; padding: 6px 14px 6px 8px; }
+    .user-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--red); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; color: #fff; }
+    .user-label { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); }
+    .nav-btn { background: transparent; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 7px 14px; color: rgba(255,255,255,0.4); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+    .nav-btn:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); }
+    .nav-cta { display: inline-flex; align-items: center; gap: 6px; background: var(--red); border: none; border-radius: 10px; padding: 8px 18px; color: #fff; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; text-decoration: none; box-shadow: 0 0 20px rgba(233,69,96,0.3); transition: all 0.2s; }
+    .nav-cta:hover { background: #f05672; box-shadow: 0 0 30px rgba(233,69,96,0.5); transform: translateY(-1px); }
 
     /* ── Layout ─────────────────────────────────────────── */
-    .container {
-      position: relative; z-index: 1;
-      max-width: 960px; margin: 0 auto; padding: 0 36px;
-    }
+    .container { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 0 36px; }
 
-    /* ── Header ─────────────────────────────────────────── */
-    header {
-      padding: 80px 0 48px;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      margin-bottom: 48px;
+    /* ── Hero ───────────────────────────────────────────── */
+    .hero { padding: 108px 0 48px; }
+    .hero-top {
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 32px;
+      margin-bottom: 36px;
     }
-
-    .eyebrow {
-      font-size: 10px; font-weight: 600;
-      letter-spacing: 5px; text-transform: uppercase;
-      color: var(--gold); margin-bottom: 12px;
-      opacity: 0; transform: translateY(14px);
-      animation: fadeUp 0.7s 0.05s both;
+    .hero-text {
+      opacity: 0; transform: translateY(18px);
+      animation: fadeUp 0.7s 0.1s both;
     }
-
-    header h1 {
-      font-size: 48px; font-weight: 900;
-      letter-spacing: -2.5px; color: #fff; line-height: 1;
-      opacity: 0; transform: translateY(20px);
-      animation: fadeUp 0.75s 0.15s both;
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 14px;
     }
+    .hero-eyebrow::before { content: ''; display: block; width: 18px; height: 2px; background: var(--gold); border-radius: 1px; }
+    .hero h1 { font-size: 56px; font-weight: 900; letter-spacing: -3px; color: #fff; line-height: 1; }
+    .hero h1 em { font-style: normal; color: var(--gold); }
 
-    @keyframes fadeUp {
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ── Progress ───────────────────────────────────────── */
-    .progress-row {
-      display: flex; align-items: center; gap: 14px; margin-top: 20px;
+    .hero-cta {
       opacity: 0; transform: translateY(12px);
+      animation: fadeUp 0.7s 0.2s both;
+      flex-shrink: 0;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: var(--red); border: none; border-radius: 14px;
+      padding: 14px 28px; color: #fff; font-family: inherit; font-size: 14px; font-weight: 800;
+      cursor: pointer; text-decoration: none;
+      box-shadow: 0 0 32px rgba(233,69,96,0.4), 0 8px 24px rgba(0,0,0,0.4);
+      transition: all 0.22s;
+    }
+    .btn-primary:hover { background: #f05672; box-shadow: 0 0 48px rgba(233,69,96,0.6), 0 12px 32px rgba(0,0,0,0.5); transform: translateY(-2px); }
+    .btn-primary .arrow { font-size: 16px; transition: transform 0.2s; }
+    .btn-primary:hover .arrow { transform: translateX(4px); }
+
+    /* ── Stats Row ──────────────────────────────────────── */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+      margin-bottom: 48px;
+      opacity: 0; transform: translateY(14px);
       animation: fadeUp 0.7s 0.25s both;
     }
-
-    .progress-track {
-      flex: 1;
-      background: rgba(255,255,255,0.05);
-      border-radius: 100px;
-      height: 3px;
-      overflow: hidden;
+    .stat-card {
+      background: rgba(240,192,0,0.06);
+      border: 1px solid rgba(240,192,0,0.18);
+      border-radius: 18px; padding: 20px 24px;
     }
+    .stat-card.red { background: rgba(233,69,96,0.06); border-color: rgba(233,69,96,0.18); }
+    .stat-card.neutral { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.07); }
+    .stat-val { font-size: 36px; font-weight: 900; color: #fff; letter-spacing: -2px; line-height: 1; margin-bottom: 4px; }
+    .stat-val .accent { color: var(--gold); }
+    .stat-card.red .accent { color: var(--red); }
+    .stat-lbl { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.3); }
 
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--gold), var(--red));
-      border-radius: 100px;
-      transition: width 0.9s cubic-bezier(0.22,1,0.36,1);
-      width: 0%;
+    /* ── Progress ───────────────────────────────────────── */
+    .progress-section {
+      margin-bottom: 48px;
+      opacity: 0; transform: translateY(12px);
+      animation: fadeUp 0.7s 0.3s both;
     }
+    .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .progress-title { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+    .progress-label { font-size: 12px; font-weight: 700; color: var(--gold); }
+    .progress-track { background: rgba(255,255,255,0.05); border-radius: 100px; height: 8px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--red)); border-radius: 100px; transition: width 1s cubic-bezier(0.22,1,0.36,1); width: 0%; box-shadow: 0 0 12px rgba(240,192,0,0.3); }
 
-    .progress-label {
-      font-size: 11px; color: rgba(255,255,255,0.25);
-      white-space: nowrap; font-weight: 500; letter-spacing: 0.3px;
-    }
-
-    /* ── Section Label ──────────────────────────────────── */
-    .section-label {
-      font-size: 9px; letter-spacing: 4px; text-transform: uppercase;
-      color: rgba(255,255,255,0.17); margin-bottom: 14px; margin-top: 4px;
-    }
+    /* ── Section Header ─────────────────────────────────── */
+    .section-header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px; margin-top: 8px; }
+    .section-label { font-size: 11px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+    .section-divider { flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+    .section-count { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.2); }
 
     /* ── Achievement Grid ───────────────────────────────── */
-    .ach-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 40px;
-    }
+    .ach-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 40px; }
 
     .ach-card {
-      background: rgba(22,22,48,0.6);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 18px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      opacity: 0;
-      transform: translateY(16px);
+      background: rgba(18,18,42,0.7);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px; padding: 20px;
+      display: flex; flex-direction: column; gap: 6px;
+      opacity: 0; transform: translateY(16px);
       transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.22,1,0.36,1),
-                  border-color 0.25s, background 0.25s;
+                  border-color 0.25s, background 0.25s, box-shadow 0.25s;
     }
-
     .ach-card.unlocked {
-      border-color: rgba(240,192,0,0.28);
-      background: rgba(240,192,0,0.04);
+      border-color: rgba(240,192,0,0.32);
+      background: rgba(240,192,0,0.05);
+      box-shadow: 0 0 30px rgba(240,192,0,0.06);
     }
 
-    .ach-icon   { font-size: 20px; margin-bottom: 4px; }
-    .ach-name   { font-size: 12px; font-weight: 700; color: #fff; letter-spacing: -0.1px; }
-    .ach-desc   { font-size: 10px; color: rgba(255,255,255,0.22); line-height: 1.55; }
+    .ach-icon { font-size: 28px; margin-bottom: 4px; }
+    .ach-name { font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
+    .ach-card.locked .ach-name { color: rgba(255,255,255,0.25); }
+    .ach-desc { font-size: 11px; color: rgba(255,255,255,0.28); line-height: 1.55; }
+    .ach-card.locked .ach-desc { color: rgba(255,255,255,0.13); }
 
-    .ach-status {
-      font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase;
-      margin-top: 6px; font-weight: 600;
-    }
+    .ach-status { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 8px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
     .ach-status.done { color: var(--gold); }
-    .ach-status.todo { color: rgba(255,255,255,0.1); }
+    .ach-status.done::before { content: '✓'; }
+    .ach-status.todo { color: rgba(255,255,255,0.12); }
 
-    /* ── Back Link ──────────────────────────────────────── */
-    .back-wrap { text-align: center; padding: 8px 0 64px; }
-
-    .back-link {
-      display: inline-block; color: rgba(255,255,255,0.18); text-decoration: none;
-      font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
-      padding: 8px 22px; border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 12px; transition: color 0.25s, border-color 0.25s;
-      font-weight: 500;
+    /* ── Bottom CTA ─────────────────────────────────────── */
+    .bottom-cta {
+      text-align: center; padding: 48px 0 72px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      margin-top: 32px;
     }
-    .back-link:hover {
-      color: rgba(255,255,255,0.55);
-      border-color: rgba(255,255,255,0.16);
-    }
+    .bottom-cta h3 { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: -0.5px; margin-bottom: 8px; }
+    .bottom-cta p { font-size: 13px; color: rgba(255,255,255,0.3); margin-bottom: 24px; }
+    .cta-buttons { display: flex; justify-content: center; gap: 12px; }
 
-    /* ── Scrollbar ──────────────────────────────────────── */
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px;
+      padding: 13px 24px; color: rgba(255,255,255,0.55); font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer; text-decoration: none; transition: all 0.22s;
+    }
+    .btn-secondary:hover { color: #fff; border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.08); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 3px; }
@@ -217,48 +187,85 @@
 </head>
 <body>
 
-<!-- User bar -->
-<div class="user-bar">
-  <div id="bar-out" style="display:flex;align-items:center;gap:8px">
-    <a href="/login.html" class="bar-btn" style="text-decoration:none">Anmelden</a>
-  </div>
-  <div id="bar-in" style="display:none;align-items:center;gap:8px">
-    <div class="user-chip">
-      <div class="user-avatar" id="user-avatar">?</div>
-      <span class="user-label" id="user-label"></span>
-    </div>
-    <button class="bar-btn" onclick="doLogout()">Abmelden</button>
-  </div>
-</div>
-
 <div class="orb orb-1"></div>
 <div class="orb orb-2"></div>
 <div class="dot-grid"></div>
 <div class="vignette"></div>
 
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="/" class="nav-back">&#8592; Arcade</a>
+    <div class="nav-title">Achievements</div>
+  </div>
+  <div class="nav-right">
+    <div id="bar-out" style="display:flex;align-items:center;gap:10px">
+      <a href="/login.html" class="nav-cta">Anmelden &rarr;</a>
+    </div>
+    <div id="bar-in" style="display:none;align-items:center;gap:10px">
+      <div class="user-chip">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <span class="user-label" id="user-label"></span>
+      </div>
+      <button class="nav-btn" onclick="doLogout()">Abmelden</button>
+    </div>
+  </div>
+</nav>
+
 <div class="container">
 
-  <header>
-    <div class="eyebrow">Deine Fortschritte</div>
-    <h1>ACHIEVEMENTS</h1>
-    <div class="progress-row">
+  <div class="hero">
+    <div class="hero-top">
+      <div class="hero-text">
+        <div class="hero-eyebrow">Deine Fortschritte</div>
+        <h1>ACHIEVE<br><em>MENTS</em></h1>
+      </div>
+      <div class="hero-cta">
+        <a href="/games/blockdrop/" class="btn-primary">
+          Jetzt spielen <span class="arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-val"><span class="accent" id="unlocked-count">—</span></div>
+        <div class="stat-lbl">Freigeschaltet</div>
+      </div>
+      <div class="stat-card neutral">
+        <div class="stat-val"><span class="accent" id="total-count" style="color:rgba(255,255,255,0.5)">—</span></div>
+        <div class="stat-lbl">Gesamt</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-val"><span class="accent" style="color:var(--red)" id="pct-count">—</span><span style="font-size:20px;color:rgba(255,255,255,0.3)">%</span></div>
+        <div class="stat-lbl">Abgeschlossen</div>
+      </div>
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-header">
+        <div class="progress-title">Gesamtfortschritt</div>
+        <div class="progress-label" id="prog-label">—</div>
+      </div>
       <div class="progress-track">
         <div class="progress-fill" id="prog-fill"></div>
       </div>
-      <div class="progress-label" id="prog-label">—</div>
     </div>
-  </header>
+  </div>
 
   <div id="ach-content"></div>
 
-  <div class="back-wrap">
-    <a class="back-link" href="/">&#8592; Zurück zum Menü</a>
+  <div class="bottom-cta">
+    <h3>Noch mehr freischalten?</h3>
+    <p>Spiel Block Drop und sammle alle Achievements — manche sind echter schwer.</p>
+    <div class="cta-buttons">
+      <a href="/games/blockdrop/" class="btn-primary">Block Drop spielen <span class="arrow">→</span></a>
+      <a href="/games/schuluhr/" class="btn-secondary">SchulUhr öffnen</a>
+    </div>
   </div>
 
 </div>
 
 <script>
-// User bar — login ist optional
 const _tok  = localStorage.getItem('arcade_token');
 const _user = localStorage.getItem('arcade_username');
 
@@ -302,13 +309,23 @@ async function render() {
 
   document.getElementById('prog-fill').style.width  = pct + '%';
   document.getElementById('prog-label').textContent = `${unlockedCount} / ${ACHIEVEMENTS.length}`;
+  document.getElementById('unlocked-count').textContent = unlockedCount;
+  document.getElementById('total-count').textContent = ACHIEVEMENTS.length;
+  document.getElementById('pct-count').textContent = pct;
 
   const games = [...new Set(ACHIEVEMENTS.map(a => a.game))];
   let html = '';
 
   for (const game of games) {
     const achs = ACHIEVEMENTS.filter(a => a.game === game);
-    html += `<div class="section-label">${game}</div><div class="ach-grid">`;
+    const unlockedInGame = achs.filter(a => unlockedIds.has(a.id)).length;
+    html += `
+      <div class="section-header">
+        <div class="section-label">${game}</div>
+        <div class="section-divider"></div>
+        <div class="section-count">${unlockedInGame}/${achs.length}</div>
+      </div>
+      <div class="ach-grid">`;
 
     for (const a of achs) {
       const isUnlocked = unlockedIds.has(a.id);
@@ -319,15 +336,14 @@ async function render() {
 
       html += `
         <div class="ach-card ${isUnlocked ? 'unlocked' : 'locked'}">
-          <div class="ach-icon">${a.icon}</div>
+          <div class="ach-icon">${isUnlocked ? a.icon : '🔒'}</div>
           <div class="ach-name">${a.name}</div>
           <div class="ach-desc">${a.desc}</div>
           <div class="ach-status ${isUnlocked ? 'done' : 'todo'}">
-            ${isUnlocked ? `✓ ${dateStr}` : 'Gesperrt'}
+            ${isUnlocked ? dateStr : 'Noch gesperrt'}
           </div>
         </div>`;
     }
-
     html += '</div>';
   }
 
@@ -336,7 +352,7 @@ async function render() {
   document.querySelectorAll('.ach-card').forEach((card, i) => {
     const locked = card.classList.contains('locked');
     setTimeout(() => {
-      card.style.opacity   = locked ? '0.22' : '1';
+      card.style.opacity   = locked ? '0.3' : '1';
       card.style.transform = 'translateY(0)';
     }, 80 + i * 45);
   });
