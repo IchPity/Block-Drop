@@ -19,6 +19,16 @@
                      {
                          "id":  "bd_no_hold",
                          "unlockedAt":  "2026-05-19T06:56:48.837Z"
+                     },
+                     {
+                         "id":  "bd_first",
+                         "unlockedAt":  "2026-05-22T05:28:53.923Z",
+                         "username":  "anonymous"
+                     },
+                     {
+                         "id":  "bd_harddrop",
+                         "unlockedAt":  "2026-05-22T05:29:34.997Z",
+                         "username":  "anonymous"
                      }
                  ]
 }
