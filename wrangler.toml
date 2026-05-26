@@ -1,0 +1,15 @@
+# Cloudflare Pages Konfiguration für Block Drop Arcade.
+# Die statische Seite liegt in app/, das Backend in functions/.
+
+name = "block-drop"
+compatibility_date = "2025-05-01"
+pages_build_output_dir = "app"
+
+# D1-Datenbank (Users, Scores, Achievements, Sessions, Schach-Räume).
+# WICHTIG: database_id einmalig durch deine echte ID ersetzen
+# (siehe Setup-Schritte) – ODER das Binding stattdessen im Cloudflare-
+# Dashboard unter Settings → Functions → D1 database bindings setzen.
+[[d1_databases]]
+binding = "DB"
+database_name = "block-drop-db"
+database_id = "HIER_DEINE_DATABASE_ID_EINSETZEN"
