@@ -19,8 +19,4 @@ if %errorlevel% neq 0 (
 :: Server starten
 start "" powershell.exe -ExecutionPolicy Bypass -NoProfile -File "%~dp0app\server.ps1"
 
-:: Kurz warten, dann Browser oeffnen
-timeout /t 2 /nobreak > nul
-start "" "http://localhost:3000"
-
 endlocal
