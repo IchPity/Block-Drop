@@ -4,7 +4,15 @@ $dbFile  = Join-Path $dir 'data\scores.json'
 $achFile = Join-Path $dir 'data\achievements.json'
 $usrFile = Join-Path $dir 'data\users.json'
 
-$script:sessions = @{}
+$script:sessions   = @{}
+$script:chessRooms = @{}
+
+function New-RoomCode {
+    $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+    $code  = ''
+    for ($i = 0; $i -lt 6; $i++) { $code += $chars[(Get-Random -Maximum $chars.Length)] }
+    return $code
+}
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -274,6 +282,74 @@ try {
                     $scJson  = if ($allScores.Count -gt 0) { ConvertTo-Json @($allScores) -Depth 5 -Compress } else { '[]' }
                     $achJson = if ($achList.Count -gt 0)   { ConvertTo-Json @($achList)   -Depth 5 -Compress } else { '[]' }
                     Send-Json $res ('{"ok":true,"scores":' + $scJson + ',"achievements":' + $achJson + '}')
+                }
+
+            # ── Chess Rooms ───────────────────────────────────────────────────────
+            } elseif ($p -eq '/api/chess/create' -and $m -eq 'POST') {
+                $body  = ConvertFrom-Json (Read-Body $req)
+                $s     = Get-Session $req
+                $name  = if ($s) { $s.username } elseif ($body.name) { [string]$body.name } else { 'Anonym' }
+                $cpref = if ($body.color) { [string]$body.color } else { 'random' }
+                $isW   = if ($cpref -eq 'random') { (Get-Random -Maximum 2) -eq 0 } else { $cpref -eq 'white' }
+                do { $code = New-RoomCode } while ($script:chessRooms.ContainsKey($code))
+                $script:chessRooms[$code] = [ordered]@{
+                    white    = if ($isW)  { $name } else { $null }
+                    black    = if (-not $isW) { $name } else { $null }
+                    moves    = [System.Collections.ArrayList]@()
+                    gameOver = $false
+                    winner   = $null
+                    created  = [datetime]::UtcNow.ToString('o')
+                }
+                Send-Json $res @{ ok = $true; code = $code; color = if ($isW) { 'white' } else { 'black' } }
+
+            } elseif ($p -match '^/api/chess/join/([A-Z0-9]{6})$' -and $m -eq 'POST') {
+                $code = $Matches[1]
+                if (-not $script:chessRooms.ContainsKey($code)) {
+                    Send-Json $res @{ ok = $false; error = 'Raum nicht gefunden' } 404
+                } else {
+                    $room  = $script:chessRooms[$code]
+                    $body  = ConvertFrom-Json (Read-Body $req)
+                    $s     = Get-Session $req
+                    $name  = if ($s) { $s.username } elseif ($body.name) { [string]$body.name } else { 'Anonym' }
+                    if ($null -eq $room.white) {
+                        $room.white = $name; $jcolor = 'white'
+                    } elseif ($null -eq $room.black) {
+                        $room.black = $name; $jcolor = 'black'
+                    } else {
+                        Send-Json $res @{ ok = $false; error = 'Raum voll' } 409
+                        continue
+                    }
+                    $mArr = if ($room.moves.Count -gt 0) { ConvertTo-Json @($room.moves) -Compress } else { '[]' }
+                    Send-Json $res ('{"ok":true,"color":"' + $jcolor + '","white":' + (if ($room.white) { '"' + $room.white + '"' } else { 'null' }) + ',"black":' + (if ($room.black) { '"' + $room.black + '"' } else { 'null' }) + ',"moves":' + $mArr + '}')
+                }
+
+            } elseif ($p -match '^/api/chess/room/([A-Z0-9]{6})$' -and $m -eq 'GET') {
+                $code = $Matches[1]
+                if (-not $script:chessRooms.ContainsKey($code)) {
+                    Send-Json $res @{ ok = $false; error = 'Raum nicht gefunden' } 404
+                } else {
+                    $room  = $script:chessRooms[$code]
+                    $both  = ($null -ne $room.white -and $null -ne $room.black)
+                    $mArr  = if ($room.moves.Count -gt 0) { ConvertTo-Json @($room.moves) -Compress } else { '[]' }
+                    $wJson = if ($room.white) { '"' + $room.white + '"' } else { 'null' }
+                    $bJson = if ($room.black) { '"' + $room.black + '"' } else { 'null' }
+                    $wJson2 = if ($room.winner) { '"' + $room.winner + '"' } else { 'null' }
+                    Send-Json $res ('{"ok":true,"white":' + $wJson + ',"black":' + $bJson + ',"moves":' + $mArr + ',"gameOver":' + ($room.gameOver -as [string]).ToLower() + ',"winner":' + $wJson2 + ',"bothJoined":' + ($both -as [string]).ToLower() + ',"code":"' + $code + '"}')
+                }
+
+            } elseif ($p -match '^/api/chess/move/([A-Z0-9]{6})$' -and $m -eq 'POST') {
+                $code = $Matches[1]
+                if (-not $script:chessRooms.ContainsKey($code)) {
+                    Send-Json $res @{ ok = $false; error = 'Raum nicht gefunden' } 404
+                } else {
+                    $room = $script:chessRooms[$code]
+                    $body = ConvertFrom-Json (Read-Body $req)
+                    [void]$room.moves.Add([string]$body.move)
+                    if ($body.gameOver -eq $true -and $body.winner) {
+                        $room.gameOver = $true
+                        $room.winner   = [string]$body.winner
+                    }
+                    Send-Json $res @{ ok = $true }
                 }
 
             } else {
