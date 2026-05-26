@@ -68,7 +68,8 @@ function Load-Users {
 }
 
 function Save-Users($users) {
-    [PSCustomObject]@{ users = @($users) } | ConvertTo-Json -Depth 5 | Set-Content $usrFile -Encoding utf8
+    $json = [PSCustomObject]@{ users = @($users) } | ConvertTo-Json -Depth 5
+    [System.IO.File]::WriteAllText($usrFile, $json, [System.Text.Encoding]::UTF8)
 }
 
 # ── Scores ────────────────────────────────────────────────────────────────────
@@ -195,7 +196,7 @@ try {
                 if (-not $uname -or -not $upass) {
                     Send-Json $res @{ ok = $false; error = 'Benutzername und Passwort erforderlich' } 400
                 } else {
-                    $users = Load-Users
+                    $users = @(Load-Users)
                     if ($users | Where-Object { $_.username -eq $uname }) {
                         Send-Json $res @{ ok = $false; error = 'Benutzername bereits vergeben' } 409
                     } else {
@@ -374,7 +375,15 @@ try {
                     $res.OutputStream.Write($b, 0, $b.Length)
                 }
             }
-        } catch { $res.StatusCode = 500 }
-        finally  { $res.Close() }
+        } catch {
+            try {
+                $errBytes = [System.Text.Encoding]::UTF8.GetBytes('{"ok":false,"error":"Interner Serverfehler"}')
+                $res.StatusCode      = 500
+                $res.ContentType     = 'application/json; charset=utf-8'
+                $res.ContentLength64 = $errBytes.Length
+                $res.OutputStream.Write($errBytes, 0, $errBytes.Length)
+            } catch {}
+        }
+        finally  { try { $res.Close() } catch {} }
     }
 } finally { $listener.Stop() }
