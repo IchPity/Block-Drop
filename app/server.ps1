@@ -158,6 +158,8 @@ Write-Host ''
 Write-Host '  Zum Beenden: Strg+C' -ForegroundColor DarkGray
 Write-Host ''
 
+Start-Process "http://localhost:3000"
+
 # ── Request-Loop ──────────────────────────────────────────────────────────────
 
 try {
