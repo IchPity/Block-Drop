@@ -6,18 +6,9 @@ const SYM = {
   black: { K:'♚', Q:'♛', R:'♜', B:'♝', N:'♞', P:'♟' }
 };
 
-// ── Session / Players ─────────────────────────────────────────────
-let sessionUser  = null;
+// ── Players ────────────────────────────────────────────────────────
 let playerWhite  = 'Weiß';
 let playerBlack  = 'Schwarz';
-
-// ── Online state ──────────────────────────────────────────────────
-let onlineMode     = false;
-let roomCode       = null;
-let myColor        = 'white';
-let pollTimer      = null;
-let lastMoveCount  = 0;
-let onlinePromotion = null; // pending promotion move string (sent after picker)
 
 // ── Board state ───────────────────────────────────────────────────
 let board          = [];
@@ -41,7 +32,6 @@ function initBoard() {
   turnWhite = true; gameOver = false; winner = null;
   selCol = -1; selRow = -1; lastFrom = null; lastTo = null;
   promotionPending = null; capturedByWhite = []; capturedByBlack = [];
-  lastMoveCount = 0; onlinePromotion = null;
 
   for (let c = 0; c < 8; c++) board[c][6] = newPiece(PIECE.PAWN, true);
   board[0][7] = newPiece(PIECE.ROOK,   true);
@@ -178,8 +168,6 @@ function movePiece(fc, fr, tc, tr, promoPiece) {
 // ── Click Handler ─────────────────────────────────────────────────
 function handleCellClick(col, row) {
   if (gameOver || promotionPending) return;
-  // In online mode only move when it's my turn
-  if (onlineMode && (turnWhite ? 'white' : 'black') !== myColor) return;
 
   if (selCol !== -1) {
     const sel = board[selCol][selRow];
@@ -189,15 +177,9 @@ function handleCellClick(col, row) {
       movePiece(fc, fr, col, row);
       renderBoard(); updateTurnUI();
       if (promotionPending) {
-        if (onlineMode) {
-          onlinePromotion = `${fc},${fr}>${col},${row}`;
-          showPromotion();
-        } else {
-          showPromotion();
-        }
-      } else {
-        if (onlineMode) sendOnlineMove(`${fc},${fr}>${col},${row}`);
-        if (gameOver) showGameOver();
+        showPromotion();
+      } else if (gameOver) {
+        showGameOver();
       }
       return;
     }
@@ -218,10 +200,6 @@ function promoteTo(type) {
   refreshAllMoves(); refreshAllMoves();
   document.getElementById('promotion-overlay').style.display = 'none';
   renderBoard(); updateTurnUI();
-  if (onlineMode && onlinePromotion) {
-    sendOnlineMove(onlinePromotion + ':' + type);
-    onlinePromotion = null;
-  }
   if (gameOver) showGameOver();
 }
 
@@ -305,108 +283,10 @@ function showGameOver() {
   const wName = winner === 'white' ? playerWhite : playerBlack;
   document.getElementById('gameover-winner').textContent = wName + ' gewinnt!';
   document.getElementById('gameover-overlay').style.display = 'flex';
-  if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
-}
-
-// ── Online Multiplayer ────────────────────────────────────────────
-async function sendOnlineMove(moveStr) {
-  try {
-    await fetch(`/api/chess/move/${roomCode}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        move: moveStr,
-        gameOver: gameOver,
-        winner: winner
-      })
-    });
-    lastMoveCount++;
-    if (!gameOver) schedulePoll();
-  } catch(e) { schedulePoll(); }
-}
-
-function schedulePoll() {
-  if (pollTimer) clearTimeout(pollTimer);
-  pollTimer = setTimeout(pollRoom, 1500);
-}
-
-async function pollRoom() {
-  if (gameOver) return;
-  try {
-    const res  = await fetch(`/api/chess/room/${roomCode}`);
-    const data = await res.json();
-    if (!data.ok) { schedulePoll(); return; }
-
-    // Waiting for opponent to join
-    if (!data.bothJoined) {
-      updateWaitingUI(data);
-      schedulePoll();
-      return;
-    }
-
-    // Opponent joined - hide waiting, show game
-    const waitEl = document.getElementById('online-waiting');
-    if (waitEl && waitEl.style.display !== 'none') {
-      waitEl.style.display = 'none';
-      document.getElementById('start-overlay').style.display = 'none';
-      playerWhite = data.white || 'Weiß';
-      playerBlack = data.black || 'Schwarz';
-      updateTurnUI();
-    }
-
-    // Apply new moves from opponent
-    if (data.moves.length > lastMoveCount) {
-      const newMoves = data.moves.slice(lastMoveCount);
-      for (const moveStr of newMoves) {
-        applyMoveString(moveStr);
-        lastMoveCount++;
-      }
-      renderBoard(); updateTurnUI();
-      if (gameOver) { showGameOver(); return; }
-    }
-
-    // Keep polling if it's opponent's turn
-    const myTurn = (turnWhite && myColor === 'white') || (!turnWhite && myColor === 'black');
-    if (!myTurn) schedulePoll();
-  } catch(e) { schedulePoll(); }
-}
-
-function applyMoveString(str) {
-  // Format: "fc,fr>tc,tr" or "fc,fr>tc,tr:PIECE"
-  const [fromTo, promo] = str.split(':');
-  const [from, to] = fromTo.split('>');
-  const [fc, fr] = from.split(',').map(Number);
-  const [tc, tr] = to.split(',').map(Number);
-  if (board[fc][fr]) movePiece(fc, fr, tc, tr, promo || null);
-}
-
-function updateWaitingUI(data) {
-  const codeEl = document.getElementById('waiting-code');
-  if (codeEl) codeEl.textContent = data.code || roomCode;
 }
 
 // ── Start Screen Logic ────────────────────────────────────────────
-let startMode   = 'local';   // 'local' | 'online'
 let startColor  = 'random';  // 'white' | 'black' | 'random'
-let onlineAction = 'create'; // 'create' | 'join'
-
-async function checkAuth() {
-  const tok = localStorage.getItem('arcade_token');
-  if (!tok) return;
-  try {
-    const r = await fetch('/api/auth/verify', { headers: { 'Authorization': 'Bearer ' + tok } });
-    const d = await r.json();
-    if (d.ok) sessionUser = d.username;
-  } catch(e) {}
-}
-
-function setStartMode(mode) {
-  startMode = mode;
-  document.getElementById('mode-local').classList.toggle('selected', mode === 'local');
-  document.getElementById('mode-online').classList.toggle('selected', mode === 'online');
-  document.getElementById('local-fields').style.display  = mode === 'local'  ? ''      : 'none';
-  document.getElementById('online-fields').style.display = mode === 'online' ? 'flex'  : 'none';
-}
 
 function setStartColor(color) {
   startColor = color;
@@ -415,142 +295,30 @@ function setStartColor(color) {
   );
 }
 
-function setOnlineAction(action) {
-  onlineAction = action;
-  document.getElementById('action-create').classList.toggle('selected', action === 'create');
-  document.getElementById('action-join').classList.toggle('selected', action === 'join');
-  document.getElementById('join-code-row').style.display = action === 'join' ? '' : 'none';
-  document.getElementById('color-row').style.display     = action === 'create' ? '' : 'none';
-}
-
-async function handleStart() {
-  const p1Input = document.getElementById('p1-name').value.trim();
-  const myName  = p1Input || sessionUser || 'Spieler 1';
-
-  if (startMode === 'local') {
-    const p2Input = document.getElementById('p2-name').value.trim() || 'Spieler 2';
-    let assignedColor = startColor;
-    if (assignedColor === 'random') assignedColor = Math.random() < 0.5 ? 'white' : 'black';
-    playerWhite = assignedColor === 'white' ? myName : p2Input;
-    playerBlack = assignedColor === 'white' ? p2Input : myName;
-    onlineMode  = false;
-    document.getElementById('start-overlay').style.display = 'none';
-    document.getElementById('gameover-overlay').style.display = 'none';
-    initBoard();
-    renderBoard(); updateTurnUI();
-
-  } else {
-    // Online
-    if (onlineAction === 'create') {
-      await createOnlineRoom(myName, startColor);
-    } else {
-      const code = document.getElementById('join-code').value.trim().toUpperCase();
-      if (!code) { shakeInput('join-code'); return; }
-      await joinOnlineRoom(myName, code);
-    }
-  }
-}
-
-async function createOnlineRoom(name, colorPref) {
-  try {
-    const res  = await fetch('/api/chess/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, color: colorPref })
-    });
-    const data = await res.json();
-    if (!data.ok) { alert('Fehler beim Erstellen des Raums'); return; }
-
-    roomCode  = data.code;
-    myColor   = data.color;
-    onlineMode = true;
-    playerWhite = myColor === 'white' ? name : '?';
-    playerBlack = myColor === 'black' ? name : '?';
-    initBoard();
-    renderBoard(); updateTurnUI();
-
-    showWaitingRoom(data.code, myColor);
-    schedulePoll();
-  } catch(e) { alert('Server nicht erreichbar. Ist der Server gestartet?'); }
-}
-
-async function joinOnlineRoom(name, code) {
-  try {
-    const res  = await fetch(`/api/chess/join/${code}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name })
-    });
-    const data = await res.json();
-    if (!data.ok) { alert(data.error || 'Raum nicht gefunden'); return; }
-
-    roomCode   = code;
-    myColor    = data.color;
-    onlineMode = true;
-    playerWhite = data.white || 'Weiß';
-    playerBlack = data.black || 'Schwarz';
-    initBoard();
-    // Replay existing moves
-    if (data.moves && data.moves.length > 0) {
-      for (const m of data.moves) { applyMoveString(m); lastMoveCount++; }
-    }
-    renderBoard(); updateTurnUI();
-    document.getElementById('start-overlay').style.display = 'none';
-    if (!gameOver) {
-      const myTurn = (turnWhite && myColor === 'white') || (!turnWhite && myColor === 'black');
-      if (!myTurn) schedulePoll();
-    }
-  } catch(e) { alert('Server nicht erreichbar. Ist der Server gestartet?'); }
-}
-
-function showWaitingRoom(code, color) {
-  document.getElementById('start-form').style.display    = 'none';
-  document.getElementById('online-waiting').style.display = 'flex';
-  document.getElementById('waiting-code').textContent     = code;
-  document.getElementById('waiting-color').textContent    =
-    color === 'white' ? '♙ Du spielst Weiß' : '♟ Du spielst Schwarz';
-}
-
-function shakeInput(id) {
-  const el = document.getElementById(id);
-  el.classList.add('shake');
-  setTimeout(() => el.classList.remove('shake'), 500);
+function handleStart() {
+  const myName  = document.getElementById('p1-name').value.trim() || 'Spieler 1';
+  const p2Input = document.getElementById('p2-name').value.trim() || 'Spieler 2';
+  let assignedColor = startColor;
+  if (assignedColor === 'random') assignedColor = Math.random() < 0.5 ? 'white' : 'black';
+  playerWhite = assignedColor === 'white' ? myName : p2Input;
+  playerBlack = assignedColor === 'white' ? p2Input : myName;
+  document.getElementById('start-overlay').style.display = 'none';
+  document.getElementById('gameover-overlay').style.display = 'none';
+  initBoard();
+  renderBoard(); updateTurnUI();
 }
 
 function handleNewGame() {
-  if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
-  onlineMode = false; roomCode = null;
   document.getElementById('gameover-overlay').style.display = 'none';
-  document.getElementById('start-form').style.display       = '';
-  document.getElementById('online-waiting').style.display   = 'none';
   document.getElementById('start-overlay').style.display    = 'flex';
-  setStartMode('local');
 }
 
 // ── Boot ──────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', async () => {
-  await checkAuth();
-
-  // Pre-fill name if logged in
-  if (sessionUser) {
-    const inp = document.getElementById('p1-name');
-    if (inp) inp.value = sessionUser;
-    const lbl = document.getElementById('logged-in-label');
-    if (lbl) { lbl.textContent = 'Angemeldet als ' + sessionUser; lbl.style.display = ''; }
-  }
-
-  // Mode buttons
-  document.getElementById('mode-local').addEventListener('click',  () => setStartMode('local'));
-  document.getElementById('mode-online').addEventListener('click', () => setStartMode('online'));
-
+window.addEventListener('DOMContentLoaded', () => {
   // Color buttons
   ['white','black','random'].forEach(c =>
     document.getElementById('color-' + c).addEventListener('click', () => setStartColor(c))
   );
-
-  // Online action
-  document.getElementById('action-create').addEventListener('click', () => setOnlineAction('create'));
-  document.getElementById('action-join').addEventListener('click',   () => setOnlineAction('join'));
 
   // Start / New game
   document.getElementById('start-btn').addEventListener('click',      handleStart);
@@ -558,9 +326,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('gameover-new-btn').addEventListener('click', handleNewGame);
 
   // Init UI state
-  setStartMode('local');
   setStartColor('random');
-  setOnlineAction('create');
   initBoard();
   renderBoard();
 });

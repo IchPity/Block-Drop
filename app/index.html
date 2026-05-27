@@ -508,21 +508,6 @@
 <!-- Nav Bar -->
 <nav class="navbar">
   <div class="nav-logo">ARC<span>A</span>DE</div>
-  <div class="nav-right">
-    <!-- Logged out state -->
-    <div id="bar-out" style="display:flex;align-items:center;gap:10px">
-      <a href="/login.html" class="nav-cta">Jetzt anmelden &rarr;</a>
-    </div>
-    <!-- Logged in state -->
-    <div id="bar-in" style="display:none;align-items:center;gap:10px">
-      <div class="user-chip">
-        <div class="user-avatar" id="user-avatar">?</div>
-        <span class="user-label" id="user-label"></span>
-      </div>
-      <a href="/admin/" class="nav-btn gold" id="btn-admin" style="display:none">Admin</a>
-      <button class="nav-btn" onclick="doLogout()">Abmelden</button>
-    </div>
-  </div>
 </nav>
 
 <div class="container">
@@ -578,19 +563,6 @@
     </div>
   </section>
 
-  <!-- Login CTA Banner (only for logged-out users) -->
-  <div class="login-cta-banner hidden" id="login-banner">
-    <div class="banner-text">
-      <h3>Scores & Achievements speichern</h3>
-      <p>Melde dich an, um deinen Fortschritt zu sichern und mit anderen zu vergleichen.</p>
-    </div>
-    <div class="banner-actions">
-      <a href="/login.html" class="btn-primary" style="font-size:12px;padding:10px 22px">
-        Kostenlos anmelden <span class="arrow">→</span>
-      </a>
-    </div>
-  </div>
-
   <!-- Available Games -->
   <div class="section-header">
     <div class="section-title">Spielen</div>
@@ -644,9 +616,9 @@
         <div style="font-size:56px;opacity:0.75;line-height:1">♟</div>
       </div>
       <div class="card-body">
-        <div class="card-tag" style="color:#22c55e">Online</div>
+        <div class="card-tag" style="color:#22c55e">Lokal</div>
         <div class="card-title">Schach</div>
-        <div class="card-desc">Klassisches Schach direkt im Browser. Lokal oder online gegen Freunde spielen.</div>
+        <div class="card-desc">Klassisches Schach direkt im Browser. Zu zweit am selben Gerät spielen.</div>
         <div class="card-footer">
           <div class="play-btn" style="background:#22c55e;box-shadow:0 0 18px rgba(34,197,94,0.28)">Spielen <span class="btn-arrow">→</span></div>
         </div>
@@ -663,20 +635,6 @@
         <div class="card-desc">Alle freigeschalteten Erfolge auf einen Blick. Wie viele hast du schon?</div>
         <div class="card-footer">
           <div class="play-btn">Anzeigen <span class="btn-arrow">→</span></div>
-        </div>
-      </div>
-    </a>
-
-    <a class="game-card available admin-card" href="/admin/" id="admin-card">
-      <div class="card-thumb thumb-admin">
-        <div style="font-size:48px;opacity:0.6">⚙️</div>
-      </div>
-      <div class="card-body">
-        <div class="card-tag" style="color:var(--gold)">Admin only</div>
-        <div class="card-title">Admin Panel</div>
-        <div class="card-desc">Alle Accounts, Scores und Achievements auf einen Blick.</div>
-        <div class="card-footer">
-          <div class="play-btn" style="background:var(--gold);color:#000;box-shadow:0 0 18px rgba(240,192,0,0.25)">Öffnen <span class="btn-arrow">→</span></div>
         </div>
       </div>
     </a>
@@ -777,39 +735,6 @@
 </footer>
 
 <script>
-  const _tok  = localStorage.getItem('arcade_token');
-  const _user = localStorage.getItem('arcade_username');
-  const _role = localStorage.getItem('arcade_role');
-
-  if (_tok && _user) {
-    document.getElementById('bar-out').style.display = 'none';
-    const _bin = document.getElementById('bar-in');
-    _bin.style.display = 'flex';
-    document.getElementById('user-avatar').textContent = _user[0].toUpperCase();
-    document.getElementById('user-label').textContent  = _user;
-    if (_role === 'admin') {
-      document.getElementById('btn-admin').style.display = 'inline-flex';
-    }
-  } else {
-    // Show login banner for logged-out users
-    document.getElementById('login-banner').classList.remove('hidden');
-    // Hide admin card if not logged in as admin
-    const adminCard = document.getElementById('admin-card');
-    if (adminCard) adminCard.style.display = 'none';
-  }
-
-  // Hide admin card from non-admins
-  if (_role !== 'admin') {
-    const adminCard = document.getElementById('admin-card');
-    if (adminCard) adminCard.style.display = 'none';
-  }
-
-  async function doLogout() {
-    try { await fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + _tok } }); } catch(e) {}
-    ['arcade_token','arcade_username','arcade_role'].forEach(k => localStorage.removeItem(k));
-    location.reload();
-  }
-
   // Staggered card animations
   const availCards = document.querySelectorAll('.game-card.available');
   const unavailCards = document.querySelectorAll('.game-card.unavailable');
