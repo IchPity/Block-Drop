@@ -51,19 +51,14 @@ function showAchOverlay(id) {
   overlay.addEventListener('click', dismiss);
 }
 
-async function tryUnlock(id) {
-  try {
-    const tok = localStorage.getItem('arcade_token');
-    const hdrs = { 'Content-Type': 'application/json' };
-    if (tok) hdrs['Authorization'] = 'Bearer ' + tok;
-    const res  = await fetch('/api/achievements', {
-      method:  'POST',
-      headers: hdrs,
-      body:    JSON.stringify({ id, unlockedAt: new Date().toISOString() }),
-    });
-    const data = await res.json();
-    if (data.new) showAchOverlay(id);
-  } catch(e) {}
+function tryUnlock(id) {
+  let list;
+  try { list = JSON.parse(localStorage.getItem('arcade_achievements')) || []; }
+  catch(e) { list = []; }
+  if (list.some(a => a.id === id)) return;
+  list.push({ id, unlockedAt: new Date().toISOString() });
+  localStorage.setItem('arcade_achievements', JSON.stringify(list));
+  showAchOverlay(id);
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -161,21 +156,23 @@ class Bag {
   }
 }
 
-// ── Database (scores.json via server.ps1) ─────────────────────────────────
-async function dbSaveScore(score, mode, level, lines) {
-  const tok = localStorage.getItem('arcade_token');
-  const hdrs = { 'Content-Type': 'application/json' };
-  if (tok) hdrs['Authorization'] = 'Bearer ' + tok;
-  await fetch('/api/scores', {
-    method:  'POST',
-    headers: hdrs,
-    body:    JSON.stringify({ mode, score, level, lines, date: new Date().toISOString() }),
-  });
+// ── High scores (localStorage) ─────────────────────────────────────────────
+function dbSaveScore(score, mode, level, lines) {
+  let all;
+  try { all = JSON.parse(localStorage.getItem('arcade_scores')) || {}; }
+  catch(e) { all = {}; }
+  if (!all[mode]) all[mode] = [];
+  all[mode].push({ score, level, lines, date: new Date().toISOString() });
+  all[mode].sort((a, b) => b.score - a.score);
+  all[mode] = all[mode].slice(0, 10);
+  localStorage.setItem('arcade_scores', JSON.stringify(all));
 }
 
-async function dbLoadScores(mode) {
-  const res = await fetch(`/api/scores?mode=${mode}`);
-  return res.json();
+function dbLoadScores(mode) {
+  let all;
+  try { all = JSON.parse(localStorage.getItem('arcade_scores')) || {}; }
+  catch(e) { all = {}; }
+  return (all[mode] || []).slice().sort((a, b) => b.score - a.score);
 }
 
 // ── Game ───────────────────────────────────────────────────────────────────

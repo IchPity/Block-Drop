@@ -197,18 +197,6 @@
     <a href="/" class="nav-back">&#8592; Arcade</a>
     <div class="nav-title">Achievements</div>
   </div>
-  <div class="nav-right">
-    <div id="bar-out" style="display:flex;align-items:center;gap:10px">
-      <a href="/login.html" class="nav-cta">Anmelden &rarr;</a>
-    </div>
-    <div id="bar-in" style="display:none;align-items:center;gap:10px">
-      <div class="user-chip">
-        <div class="user-avatar" id="user-avatar">?</div>
-        <span class="user-label" id="user-label"></span>
-      </div>
-      <button class="nav-btn" onclick="doLogout()">Abmelden</button>
-    </div>
-  </div>
 </nav>
 
 <div class="container">
@@ -266,22 +254,6 @@
 </div>
 
 <script>
-const _tok  = localStorage.getItem('arcade_token');
-const _user = localStorage.getItem('arcade_username');
-
-if (_tok && _user) {
-  document.getElementById('bar-out').style.display = 'none';
-  document.getElementById('bar-in').style.display  = 'flex';
-  document.getElementById('user-avatar').textContent = _user[0].toUpperCase();
-  document.getElementById('user-label').textContent  = _user;
-}
-
-async function doLogout() {
-  try { await fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + _tok } }); } catch(e) {}
-  ['arcade_token','arcade_username','arcade_role'].forEach(k => localStorage.removeItem(k));
-  location.reload();
-}
-
 const ACHIEVEMENTS = [
   { id: 'bd_first',    game: 'Block Drop', name: 'Anfänger',                        desc: 'Starte dein erstes Spiel',                    icon: '🎮' },
   { id: 'bd_tetris',   game: 'Block Drop', name: 'TETRIS!',                         desc: 'Lösch 4 Zeilen auf einmal',                   icon: '✨' },
@@ -295,13 +267,10 @@ const ACHIEVEMENTS = [
   { id: 'su_15min',    game: 'SchulUhr',   name: 'du hast wirklich keine Lust oder',desc: '15 Minuten auf der SchulUhr verbracht',       icon: '😴' },
 ];
 
-async function render() {
+function render() {
   let unlocked = [];
-  try {
-    const res  = await fetch('/api/achievements');
-    const data = await res.json();
-    unlocked   = data.unlocked || [];
-  } catch(e) {}
+  try { unlocked = JSON.parse(localStorage.getItem('arcade_achievements')) || []; }
+  catch(e) {}
 
   const unlockedIds   = new Set(unlocked.map(a => a.id));
   const unlockedCount = ACHIEVEMENTS.filter(a => unlockedIds.has(a.id)).length;
