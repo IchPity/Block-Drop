@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Wörtle — Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #4ade80;
+      --green-bg: #15803d;
+      --yellow: #facc15;
+      --yellow-bg: #a16207;
+      --gray: #4b5563;
+      --gray-bg: #1f2937;
+      --red: #e94560;
+      --bg: #050510;
+      --card: rgba(20,20,32,0.72);
+      --border: rgba(255,255,255,0.1);
+    }
+    body {
+      background: var(--bg); min-height: 100vh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #eee; overflow-x: hidden;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 72px 12px 24px;
+      gap: 18px;
+    }
+
+    /* Background */
+    .orb { position: fixed; border-radius: 50%; filter: blur(140px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 640px; height: 640px; background: #4ade80; opacity: 0.05; top: -240px; left: -200px; animation: f1 24s ease-in-out infinite alternate; }
+    .orb-2 { width: 520px; height: 520px; background: #facc15; opacity: 0.04; bottom: -200px; right: -200px; animation: f2 30s ease-in-out infinite alternate; }
+    @keyframes f1 { to { transform: translate(80px,70px) scale(1.15); } }
+    @keyframes f2 { to { transform: translate(-70px,-90px) scale(1.2); } }
+    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px); background-size: 30px 30px; }
+    .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 35%, rgba(5,5,14,0.78) 100%); }
+
+    /* Navbar */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px;
+      background: rgba(5,5,16,0.8);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-left { display: flex; align-items: center; gap: 14px; }
+    .nav-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none; color: rgba(255,255,255,0.4);
+      font-size: 11px; font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+      padding: 6px 12px; transition: all 0.2s;
+    }
+    .nav-back:hover { color: #fff; border-color: rgba(255,255,255,0.25); }
+    .nav-title {
+      font-size: 13px; font-weight: 900; color: #fff; letter-spacing: 1px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .nav-title .pill { background: var(--green); color: #0a0a14; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 900; letter-spacing: 1.5px; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .nav-new {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.3);
+      border-radius: 8px; padding: 6px 12px;
+      color: var(--green);
+      font-family: inherit; font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .nav-new:hover { background: rgba(74,222,128,0.18); border-color: rgba(74,222,128,0.5); }
+
+    /* Game container */
+    .game {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 16px; width: 100%; max-width: 460px;
+    }
+
+    /* Score Pills */
+    .score-row {
+      display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+      margin-bottom: 4px;
+    }
+    .pill-box {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 7px 14px;
+      display: flex; align-items: center; gap: 8px;
+      backdrop-filter: blur(20px);
+    }
+    .pill-lbl { font-size: 9px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+    .pill-val { font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
+
+    /* Grid (6 x 5) */
+    .board {
+      display: grid;
+      grid-template-rows: repeat(6, 1fr);
+      gap: 6px;
+      width: 100%; max-width: 340px;
+      aspect-ratio: 5 / 6;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+    .tile {
+      background: rgba(255,255,255,0.025);
+      border: 2px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: clamp(20px, 7vw, 28px);
+      font-weight: 800; color: #fff;
+      text-transform: uppercase;
+      user-select: none;
+      transition: transform 0.12s ease;
+    }
+    .tile.filled {
+      border-color: rgba(255,255,255,0.35);
+      animation: pop 0.12s ease;
+    }
+    @keyframes pop {
+      from { transform: scale(0.85); }
+      to   { transform: scale(1); }
+    }
+    .tile.flip {
+      animation: flipIn 0.55s cubic-bezier(0.4,0,0.2,1) forwards;
+    }
+    @keyframes flipIn {
+      0%   { transform: rotateX(0deg); }
+      45%  { transform: rotateX(90deg); }
+      100% { transform: rotateX(0deg); }
+    }
+    .tile.correct { background: var(--green-bg); border-color: var(--green-bg); color: #fff; }
+    .tile.present { background: var(--yellow-bg); border-color: var(--yellow-bg); color: #fff; }
+    .tile.absent  { background: var(--gray-bg);   border-color: var(--gray-bg);   color: #fff; }
+    .row.shake { animation: shake 0.42s cubic-bezier(.36,.07,.19,.97); }
+    @keyframes shake {
+      10%,90% { transform: translateX(-2px); }
+      20%,80% { transform: translateX(4px); }
+      30%,50%,70% { transform: translateX(-6px); }
+      40%,60% { transform: translateX(6px); }
+    }
+    .tile.win { animation: bounce 0.55s ease; }
+    @keyframes bounce {
+      0%, 20% { transform: translateY(0); }
+      40%     { transform: translateY(-22px); }
+      50%     { transform: translateY(4px); }
+      60%     { transform: translateY(-8px); }
+      80%, 100% { transform: translateY(0); }
+    }
+
+    /* Keyboard */
+    .keyboard {
+      display: flex; flex-direction: column; gap: 6px;
+      width: 100%; user-select: none;
+    }
+    .kb-row { display: flex; gap: 5px; justify-content: center; }
+    .key {
+      flex: 1;
+      max-width: 38px;
+      min-width: 0;
+      height: 50px;
+      background: rgba(255,255,255,0.08);
+      border: none; border-radius: 6px;
+      color: #fff; font-family: inherit;
+      font-size: 14px; font-weight: 700;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.12s, transform 0.05s;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .key:active { transform: scale(0.94); background: rgba(255,255,255,0.16); }
+    .key.wide {
+      flex: 1.6; font-size: 11px; letter-spacing: 0.5px;
+      max-width: 60px;
+    }
+    .key.correct { background: var(--green-bg); color: #fff; }
+    .key.present { background: var(--yellow-bg); color: #fff; }
+    .key.absent  { background: var(--gray-bg);   color: rgba(255,255,255,0.5); }
+
+    /* Game over overlay */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(5,5,16,0.85);
+      backdrop-filter: blur(8px);
+      display: none; align-items: center; justify-content: center;
+      z-index: 500;
+      padding: 24px;
+    }
+    .overlay.show { display: flex; }
+    .modal {
+      background: rgba(12,12,28,0.98);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 36px 32px 28px;
+      width: 100%; max-width: 360px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 60px rgba(74,222,128,0.06);
+      transform: scale(0.9) translateY(20px); opacity: 0;
+      transition: transform 0.32s cubic-bezier(0.34,1.56,0.64,1), opacity 0.22s;
+      text-align: center;
+    }
+    .overlay.show .modal { transform: scale(1) translateY(0); opacity: 1; }
+    .modal-eyebrow {
+      font-size: 10px; font-weight: 800; letter-spacing: 4px;
+      text-transform: uppercase; color: var(--green); margin-bottom: 10px;
+    }
+    .modal.lost .modal-eyebrow { color: var(--red); }
+    .modal h2 {
+      font-size: 28px; font-weight: 900; color: #fff;
+      letter-spacing: -1px; margin-bottom: 6px;
+    }
+    .modal .word-reveal {
+      display: inline-block;
+      font-size: 24px; font-weight: 900; color: var(--green);
+      letter-spacing: 4px; margin: 14px 0 8px;
+      padding: 8px 16px;
+      background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.3);
+      border-radius: 10px;
+    }
+    .modal.lost .word-reveal { color: var(--red); background: rgba(233,69,96,0.08); border-color: rgba(233,69,96,0.3); }
+    .modal-stats {
+      display: flex; justify-content: center; gap: 18px;
+      margin: 18px 0 24px;
+    }
+    .modal-stat { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .modal-stat-val { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
+    .modal-stat-lbl { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+    .modal-btn {
+      background: var(--green); color: #0a0a14;
+      border: none; border-radius: 12px;
+      padding: 14px 28px; font-family: inherit;
+      font-size: 14px; font-weight: 800;
+      cursor: pointer; width: 100%;
+      box-shadow: 0 0 28px rgba(74,222,128,0.35);
+      transition: all 0.2s;
+    }
+    .modal-btn:hover { background: #6ee291; transform: translateY(-1px); }
+    .modal-btn:active { transform: scale(0.98); }
+    .modal-countdown {
+      background: rgba(74,222,128,0.08);
+      border: 1px solid rgba(74,222,128,0.3);
+      border-radius: 12px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .modal.lost .modal-countdown { background: rgba(233,69,96,0.06); border-color: rgba(233,69,96,0.25); }
+    .modal-countdown-lbl {
+      font-size: 9px; font-weight: 800; letter-spacing: 2px;
+      text-transform: uppercase; color: rgba(255,255,255,0.5);
+      margin-bottom: 6px;
+    }
+    .modal-countdown-val {
+      font-size: 24px; font-weight: 900; color: var(--green);
+      letter-spacing: 3px; font-variant-numeric: tabular-nums;
+    }
+    .modal.lost .modal-countdown-val { color: var(--red); }
+    .modal-sub-btn {
+      display: inline-block; margin-top: 12px;
+      color: rgba(255,255,255,0.5);
+      background: transparent; border: none;
+      font-family: inherit; font-size: 12px; font-weight: 600;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .modal-sub-btn:hover { color: #fff; }
+
+    /* Toast */
+    .toast {
+      position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-10px);
+      background: rgba(12,12,28,0.98); border: 1px solid var(--border);
+      color: #fff; padding: 12px 20px; border-radius: 10px;
+      font-size: 13px; font-weight: 700;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      z-index: 1000;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Mobile */
+    @media (max-width: 480px) {
+      body { padding: 64px 8px 16px; gap: 12px; }
+      .navbar { padding: 10px 14px; }
+      .game { max-width: 380px; gap: 12px; }
+      .board { max-width: 300px; }
+      .tile { font-size: clamp(18px, 7vw, 24px); border-radius: 6px; border-width: 2px; }
+      .key { height: 48px; font-size: 13px; max-width: none; }
+      .key.wide { font-size: 10px; max-width: none; }
+      .kb-row { gap: 4px; }
+      .keyboard { gap: 5px; }
+      .modal { padding: 28px 22px 24px; border-radius: 18px; }
+      .modal h2 { font-size: 24px; }
+      .modal .word-reveal { font-size: 20px; letter-spacing: 3px; }
+    }
+    @media (max-width: 360px) {
+      .board { max-width: 270px; }
+      .key { height: 42px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="dot-grid"></div>
+<div class="vignette"></div>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="../../" class="nav-back">&larr; Arcade</a>
+    <div class="nav-title"><span class="pill">WT</span> Wörtle</div>
+  </div>
+  <div class="nav-right">
+    <div data-auth-slot></div>
+  </div>
+</nav>
+
+<div class="game">
+
+  <div class="score-row">
+    <div class="pill-box">
+      <span class="pill-lbl">Score</span>
+      <span class="pill-val" id="score">0</span>
+    </div>
+    <div class="pill-box">
+      <span class="pill-lbl">Best</span>
+      <span class="pill-val" id="best">0</span>
+    </div>
+    <div class="pill-box">
+      <span class="pill-lbl">Streak</span>
+      <span class="pill-val" id="streak">0</span>
+    </div>
+    <div class="pill-box">
+      <span class="pill-lbl">Tag</span>
+      <span class="pill-val" id="day-num">—</span>
+    </div>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <div class="keyboard" id="keyboard"></div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal">
+    <div class="modal-eyebrow" id="modal-eyebrow">Gewonnen</div>
+    <h2 id="modal-title">Super!</h2>
+    <div class="word-reveal" id="modal-word">—</div>
+    <div class="modal-stats">
+      <div class="modal-stat">
+        <div class="modal-stat-val" id="modal-score">0</div>
+        <div class="modal-stat-lbl">Punkte</div>
+      </div>
+      <div class="modal-stat">
+        <div class="modal-stat-val" id="modal-streak">0</div>
+        <div class="modal-stat-lbl">Streak</div>
+      </div>
+      <div class="modal-stat">
+        <div class="modal-stat-val" id="modal-best">0</div>
+        <div class="modal-stat-lbl">Best</div>
+      </div>
+    </div>
+    <div class="modal-countdown">
+      <div class="modal-countdown-lbl">Nächstes Wort in</div>
+      <div class="modal-countdown-val" id="modal-countdown">—</div>
+    </div>
+  </div>
+</div>
+
+<script src="words.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script>
+(function() {
+  const ROWS = 6;
+  const COLS = 5;
+  const VALID_LETTERS = /^[A-ZÄÖÜ]$/;
+
+  // ─── Word list (filter to exactly 5 letters, uppercase, A-Z + ÄÖÜ) ────────
+  const rawWords = (window.WOERTLE_WORDS || []).map(w => String(w).toUpperCase().trim());
+  const wordSet = new Set();
+  for (const w of rawWords) {
+    if (w.length !== 5) continue;
+    if (!/^[A-ZÄÖÜ]{5}$/.test(w)) continue;
+    wordSet.add(w);
+  }
+  const WORDS = Array.from(wordSet).sort();
+
+  if (WORDS.length === 0) {
+    document.getElementById('board').innerHTML =
+      '<div style="grid-column:1/-1;text-align:center;color:#999;padding:20px;font-size:13px">Wortliste fehlt — words.js prüfen.</div>';
+    return;
+  }
+
+  // Deterministischer Shuffle, damit die Tagesreihenfolge nicht alphabetisch ist
+  const SHUFFLED = (() => {
+    const a = WORDS.slice();
+    let s = 1337;
+    const rng = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  })();
+
+  // ─── Datum (Europe/Vienna) ────────────────────────────────────────────────
+  const TZ = 'Europe/Vienna';
+  const EPOCH = '2026-01-01'; // Tag #1
+
+  function viennaDateKey(d = new Date()) {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(d);
+  }
+  function dayIndexFor(dateKey) {
+    const [y1, m1, d1] = EPOCH.split('-').map(Number);
+    const [y2, m2, d2] = dateKey.split('-').map(Number);
+    return Math.floor((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86400000);
+  }
+  function prevDateKey(dateKey) {
+    const [y, m, d] = dateKey.split('-').map(Number);
+    const t = new Date(Date.UTC(y, m - 1, d) - 86400000);
+    const yy = t.getUTCFullYear();
+    const mm = String(t.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(t.getUTCDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+  }
+  function msUntilMidnightVienna() {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: TZ, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+    }).formatToParts(new Date());
+    const h = +parts.find(p => p.type === 'hour').value;
+    const m = +parts.find(p => p.type === 'minute').value;
+    const s = +parts.find(p => p.type === 'second').value;
+    return (24 * 3600 - (h * 3600 + m * 60 + s)) * 1000;
+  }
+  function fmtCountdown(ms) {
+    const total = Math.max(0, Math.floor(ms / 1000));
+    const h = String(Math.floor(total / 3600)).padStart(2, '0');
+    const m = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
+    const s = String(total % 60).padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  }
+
+  // ─── Tageswort ────────────────────────────────────────────────────────────
+  const todayKey = viennaDateKey();
+  const dayIdx = dayIndexFor(todayKey);
+  const dayNum = dayIdx + 1;
+  const answer = SHUFFLED[((dayIdx % SHUFFLED.length) + SHUFFLED.length) % SHUFFLED.length];
+  document.getElementById('day-num').textContent = '#' + dayNum.toLocaleString('de-AT');
+
+  // ─── State ────────────────────────────────────────────────────────────────
+  let currentRow = 0;
+  let currentCol = 0;
+  let grid = Array.from({length: ROWS}, () => Array(COLS).fill(''));
+  let states = Array.from({length: ROWS}, () => Array(COLS).fill(null));
+  let keyStates = {};
+  let gameOver = false;
+  let won = false;
+  let score = 0;
+  let best = parseInt(localStorage.getItem('woertle_best') || '0', 10);
+  let streak = parseInt(localStorage.getItem('woertle_streak') || '0', 10);
+  let streakLast = localStorage.getItem('woertle_streak_last') || '';
+  let total = parseInt(localStorage.getItem('woertle_total') || '0', 10);
+
+  // Streak zurücksetzen, falls letzter Eintrag weder heute noch gestern war
+  if (streakLast && streakLast !== todayKey && streakLast !== prevDateKey(todayKey)) {
+    streak = 0;
+    localStorage.setItem('woertle_streak', '0');
+  }
+
+  document.getElementById('best').textContent = best.toLocaleString('de-AT');
+  document.getElementById('streak').textContent = streak;
+
+  // ─── Persistenz ───────────────────────────────────────────────────────────
+  const STATE_KEY = 'woertle_daily_state';
+
+  function saveState() {
+    const data = {
+      date: todayKey, grid, states, currentRow, currentCol,
+      keyStates, gameOver, won, score
+    };
+    try { localStorage.setItem(STATE_KEY, JSON.stringify(data)); } catch {}
+  }
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STATE_KEY);
+      if (!raw) return null;
+      const s = JSON.parse(raw);
+      if (!s || s.date !== todayKey) return null;
+      return s;
+    } catch { return null; }
+  }
+
+  // ─── Board ────────────────────────────────────────────────────────────────
+  function buildBoard() {
+    const board = document.getElementById('board');
+    board.innerHTML = '';
+    for (let r = 0; r < ROWS; r++) {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.dataset.r = r;
+      for (let c = 0; c < COLS; c++) {
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        tile.dataset.r = r;
+        tile.dataset.c = c;
+        row.appendChild(tile);
+      }
+      board.appendChild(row);
+    }
+  }
+
+  function tileEl(r, c) {
+    return document.querySelector(`.tile[data-r="${r}"][data-c="${c}"]`);
+  }
+  function rowEl(r) {
+    return document.querySelector(`.row[data-r="${r}"]`);
+  }
+
+  function renderTile(r, c) {
+    const el = tileEl(r, c);
+    if (!el) return;
+    el.textContent = grid[r][c] || '';
+    el.classList.toggle('filled', !!grid[r][c]);
+  }
+
+  // Komplettes Board aus aktuellem State rendern (für Restore nach Reload)
+  function renderAll() {
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const el = tileEl(r, c);
+        if (!el) continue;
+        el.textContent = grid[r][c] || '';
+        el.classList.remove('filled','correct','present','absent','flip','win');
+        if (grid[r][c]) el.classList.add('filled');
+        if (states[r][c]) el.classList.add(states[r][c]);
+      }
+    }
+  }
+
+  // ─── Keyboard ─────────────────────────────────────────────────────────────
+  const KB_ROWS = [
+    ['Q','W','E','R','T','Z','U','I','O','P','Ü'],
+    ['A','S','D','F','G','H','J','K','L','Ö','Ä'],
+    ['ENTER','Y','X','C','V','B','N','M','DEL']
+  ];
+
+  function buildKeyboard() {
+    const kb = document.getElementById('keyboard');
+    kb.innerHTML = '';
+    for (const r of KB_ROWS) {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'kb-row';
+      for (const k of r) {
+        const btn = document.createElement('button');
+        btn.className = 'key';
+        btn.type = 'button';
+        btn.dataset.key = k;
+        if (k === 'ENTER') { btn.classList.add('wide'); btn.textContent = 'ENTER'; }
+        else if (k === 'DEL') { btn.classList.add('wide'); btn.textContent = '⌫'; }
+        else btn.textContent = k;
+        btn.addEventListener('click', () => handleKey(k));
+        rowEl.appendChild(btn);
+      }
+      kb.appendChild(rowEl);
+    }
+  }
+
+  function updateKeyboardColors() {
+    document.querySelectorAll('.key').forEach(btn => {
+      const k = btn.dataset.key;
+      btn.classList.remove('correct','present','absent');
+      const s = keyStates[k];
+      if (s) btn.classList.add(s);
+    });
+  }
+
+  // ─── Input ────────────────────────────────────────────────────────────────
+  function handleKey(k) {
+    if (gameOver) return;
+    if (k === 'ENTER') return submit();
+    if (k === 'DEL' || k === 'BACKSPACE') return backspace();
+    if (currentCol >= COLS) return;
+    if (!VALID_LETTERS.test(k)) return;
+    grid[currentRow][currentCol] = k;
+    renderTile(currentRow, currentCol);
+    currentCol++;
+    saveState();
+  }
+  function backspace() {
+    if (currentCol === 0) return;
+    currentCol--;
+    grid[currentRow][currentCol] = '';
+    renderTile(currentRow, currentCol);
+    saveState();
+  }
+
+  document.addEventListener('keydown', e => {
+    if (gameOver) return;
+    if (e.key === 'Enter') { e.preventDefault(); handleKey('ENTER'); }
+    else if (e.key === 'Backspace') { e.preventDefault(); handleKey('DEL'); }
+    else if (e.key.length === 1) {
+      let k = e.key.toUpperCase();
+      if (VALID_LETTERS.test(k)) handleKey(k);
+    }
+  });
+
+  // ─── Submit guess ─────────────────────────────────────────────────────────
+  function submit() {
+    if (currentCol < COLS) {
+      shakeRow(currentRow, 'Zu wenige Buchstaben');
+      return;
+    }
+    const guess = grid[currentRow].join('');
+    if (!wordSet.has(guess)) {
+      shakeRow(currentRow, 'Kein gültiges Wort');
+      return;
+    }
+    evaluate(guess, currentRow);
+  }
+
+  function evaluate(guess, r) {
+    // Two-pass Wordle eval: first pass marks 'correct', then 'present'.
+    const result = Array(COLS).fill('absent');
+    const answerChars = answer.split('');
+    const guessChars = guess.split('');
+    const used = Array(COLS).fill(false);
+
+    for (let i = 0; i < COLS; i++) {
+      if (guessChars[i] === answerChars[i]) {
+        result[i] = 'correct';
+        used[i] = true;
+      }
+    }
+    for (let i = 0; i < COLS; i++) {
+      if (result[i] === 'correct') continue;
+      for (let j = 0; j < COLS; j++) {
+        if (!used[j] && guessChars[i] === answerChars[j]) {
+          result[i] = 'present';
+          used[j] = true;
+          break;
+        }
+      }
+    }
+
+    // Flip animation with stagger
+    for (let c = 0; c < COLS; c++) {
+      const el = tileEl(r, c);
+      setTimeout(() => {
+        el.classList.add('flip');
+        setTimeout(() => {
+          el.classList.add(result[c]);
+        }, 275);
+      }, c * 230);
+    }
+
+    // Update key states (best wins: correct > present > absent)
+    setTimeout(() => {
+      for (let c = 0; c < COLS; c++) {
+        const k = guessChars[c];
+        const s = result[c];
+        const prev = keyStates[k];
+        if (s === 'correct' || (s === 'present' && prev !== 'correct') || (!prev)) {
+          keyStates[k] = s;
+        }
+      }
+      updateKeyboardColors();
+    }, COLS * 230 + 280);
+
+    states[r] = result;
+    const justWon = result.every(x => x === 'correct');
+    currentRow++;
+    currentCol = 0;
+    saveState();
+
+    const totalDelay = COLS * 230 + 500;
+    setTimeout(() => {
+      if (justWon) {
+        endGame(true, r);
+      } else if (currentRow >= ROWS) {
+        endGame(false, r);
+      }
+    }, totalDelay);
+  }
+
+  // ─── Score / End ──────────────────────────────────────────────────────────
+  const SCORE_TABLE = [1000, 500, 300, 200, 100, 50]; // guesses 1..6
+
+  function endGame(didWin, lastRow) {
+    gameOver = true;
+    won = didWin;
+    total++;
+    localStorage.setItem('woertle_total', String(total));
+
+    if (didWin) {
+      const guesses = lastRow + 1;
+      score = SCORE_TABLE[guesses - 1] || 50;
+      // Streak: gestern → +1, sonst → 1
+      if (streakLast === prevDateKey(todayKey)) streak += 1;
+      else streak = 1;
+      const r = rowEl(lastRow);
+      for (let c = 0; c < COLS; c++) {
+        setTimeout(() => tileEl(lastRow, c).classList.add('win'), c * 90);
+      }
+    } else {
+      score = 0;
+      streak = 0;
+    }
+    streakLast = todayKey;
+    localStorage.setItem('woertle_streak', String(streak));
+    localStorage.setItem('woertle_streak_last', streakLast);
+    if (score > best) {
+      best = score;
+      localStorage.setItem('woertle_best', String(best));
+    }
+    document.getElementById('best').textContent = best.toLocaleString('de-AT');
+    document.getElementById('streak').textContent = streak;
+    document.getElementById('score').textContent = score.toLocaleString('de-AT');
+    saveState();
+
+    // Cloud-Sync (fire-and-forget)
+    if (window.Auth && window.Auth.user && score > 0) {
+      window.Auth.saveScore({
+        game: 'woertle',
+        mode: 'daily',
+        score: score,
+        level: lastRow + 1,
+        lines: streak
+      }).catch(e => console.warn('[Wörtle] saveScore:', e));
+    }
+
+    // Achievements
+    if (didWin && window.showAchToast) {
+      const got = JSON.parse(localStorage.getItem('arcade_achievements') || '[]');
+      const grant = (def) => {
+        if (got.find(a => a.id === def.id)) return;
+        got.push({ id: def.id, unlockedAt: Date.now() });
+        localStorage.setItem('arcade_achievements', JSON.stringify(got));
+        window.showAchToast(def);
+        if (window.Auth?.saveAchievements) window.Auth.saveAchievements(got).catch(()=>{});
+      };
+      grant({ id: 'wt_first', name: 'Erstes Wörtle', desc: 'Errate dein erstes Wort', icon: '📝' });
+      if (lastRow === 0) grant({ id: 'wt_ace', name: 'Hole-in-One', desc: 'Errate ein Wort beim ersten Versuch', icon: '🎯' });
+      if (streak >= 5) grant({ id: 'wt_streak5', name: 'Wörtle-Streak', desc: '5 Tage in Folge gelöst', icon: '🔥' });
+    }
+
+    setTimeout(() => openModal(didWin, false), didWin ? 1200 : 600);
+  }
+
+  // ─── Modal & Countdown ────────────────────────────────────────────────────
+  let countdownInterval = null;
+  function openModal(didWin, alreadyPlayed) {
+    const overlay = document.getElementById('overlay');
+    const modal = document.getElementById('modal');
+    modal.classList.toggle('lost', !didWin);
+    document.getElementById('modal-eyebrow').textContent =
+      alreadyPlayed ? 'Heute bereits gespielt' : (didWin ? 'Gewonnen' : 'Verloren');
+    document.getElementById('modal-title').textContent =
+      didWin
+        ? (currentRow === 1 ? 'Bombe!' : currentRow <= 3 ? 'Stark!' : 'Geschafft!')
+        : (alreadyPlayed ? 'Schon erledigt' : 'Schade!');
+    document.getElementById('modal-word').textContent = answer;
+    document.getElementById('modal-score').textContent = score.toLocaleString('de-AT');
+    document.getElementById('modal-streak').textContent = streak;
+    document.getElementById('modal-best').textContent = best.toLocaleString('de-AT');
+    overlay.classList.add('show');
+    startCountdown();
+  }
+  function startCountdown() {
+    const el = document.getElementById('modal-countdown');
+    if (!el) return;
+    const tick = () => {
+      const ms = msUntilMidnightVienna();
+      el.textContent = fmtCountdown(ms);
+      if (ms <= 1000) {
+        clearInterval(countdownInterval);
+        setTimeout(() => location.reload(), 1200);
+      }
+    };
+    tick();
+    if (countdownInterval) clearInterval(countdownInterval);
+    countdownInterval = setInterval(tick, 1000);
+  }
+
+  // ─── Toast / Shake ────────────────────────────────────────────────────────
+  let toastT = null;
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(() => t.classList.remove('show'), 1500);
+  }
+  function shakeRow(r, msg) {
+    const el = rowEl(r);
+    el.classList.add('shake');
+    setTimeout(() => el.classList.remove('shake'), 450);
+    if (msg) toast(msg);
+  }
+
+  // ─── Start ────────────────────────────────────────────────────────────────
+  buildBoard();
+  buildKeyboard();
+
+  const saved = loadState();
+  if (saved) {
+    grid = saved.grid;
+    states = saved.states;
+    currentRow = saved.currentRow || 0;
+    currentCol = saved.currentCol || 0;
+    keyStates = saved.keyStates || {};
+    gameOver = !!saved.gameOver;
+    won = !!saved.won;
+    score = saved.score || 0;
+    renderAll();
+    updateKeyboardColors();
+    document.getElementById('score').textContent = score.toLocaleString('de-AT');
+    if (gameOver) {
+      setTimeout(() => openModal(won, true), 200);
+    }
+  }
+})();
+</script>
+</body>
+</html>
