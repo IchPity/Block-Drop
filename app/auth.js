@@ -551,6 +551,20 @@
       return data || [];
     },
 
+    // Holt rohe scores im Zeitfenster für Verteilungen (z. B. Wörtle "Versuche heute").
+    // Caller dedupliziert/aggregiert clientseitig. Liest auch ohne Login (RLS: scores select = public).
+    async getScoresInRange(game, mode, startIso, endIso) {
+      let q = client.from('scores')
+        .select('user_id, level, score, created_at')
+        .eq('game', game)
+        .gte('created_at', startIso)
+        .lt('created_at', endIso);
+      if (mode) q = q.eq('mode', mode);
+      const { data, error } = await q;
+      if (error) { console.warn('[Auth] ScoresInRange:', error.message); return []; }
+      return data || [];
+    },
+
     async getLeaderboard(game, mode, limit = 20) {
       let q = client.from('leaderboard').select('*')
         .eq('game', game)
