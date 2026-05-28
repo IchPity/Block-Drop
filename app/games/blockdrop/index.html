@@ -209,6 +209,7 @@
     <div class="nav-game-title">Block Drop</div>
   </div>
   <div class="nav-right">
+    <div data-auth-slot></div>
     <div class="nav-score-display">
       <div class="nav-stat">
         <div class="nav-stat-val" id="nav-score">0</div>
@@ -315,6 +316,8 @@
   levelObs.observe(document.getElementById('level-display'), { childList: true, subtree: true, characterData: true });
   linesObs.observe(document.getElementById('lines-display'), { childList: true, subtree: true, characterData: true });
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

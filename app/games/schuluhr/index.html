@@ -323,7 +323,10 @@
         <a href="../../" class="nav-back">&#8592; Arcade</a>
         <div class="nav-title">SchulUhr</div>
     </div>
-    <a href="/games/blockdrop/" class="nav-cta">Block Drop spielen &rarr;</a>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div data-auth-slot></div>
+      <a href="/games/blockdrop/" class="nav-cta">Block Drop spielen &rarr;</a>
+    </div>
 </nav>
 
 <div class="wrapper">
@@ -820,5 +823,7 @@ function checkAchievements() {
 update();
 setInterval(() => { update(); checkAchievements(); }, 1000);
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
 </body>
 </html>
