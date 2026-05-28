@@ -258,6 +258,14 @@
       if (error) return { error };
       if (!data.user) return { error: { message: 'Registrierung fehlgeschlagen' } };
 
+      // Sicherstellen dass wir wirklich eingeloggt sind — sonst RLS blockiert Profile-Insert
+      if (!data.session) {
+        const { error: signInErr } = await client.auth.signInWithPassword({ email, password });
+        if (signInErr) {
+          return { error: { message: 'Account erstellt, aber Email muss erst bestätigt werden. Bestätigungs-Mail prüfen.' } };
+        }
+      }
+
       // Profile erstellen (RLS erlaubt nur insert für auth.uid() === id)
       const { error: pErr } = await client.from('profiles').insert({
         id: data.user.id,
@@ -421,21 +429,9 @@
         if (!/^[a-zA-Z0-9_-]+$/.test(username)) { showErr('Username darf nur Buchstaben, Zahlen, _ und - enthalten.'); return; }
 
         const { error } = await Auth.signUp(email, password, username);
-        if (error) {
-          if (error.message && error.message.toLowerCase().includes('confirm')) {
-            showOk('Account erstellt. Bitte Email bestätigen, dann anmelden.');
-          } else {
-            showErr(translateError(error));
-          }
-          return;
-        }
-        // signUp logged automatisch ein (wenn confirm aus) — sonst Hinweis
-        const { data: { session } } = await client.auth.getSession();
-        if (session) {
-          hideModal();
-        } else {
-          showOk('Account erstellt. Bitte Email bestätigen.');
-        }
+        if (error) { showErr(translateError(error)); return; }
+        // Bei Erfolg ist die Session bereits gesetzt — Modal zu, fertig
+        hideModal();
       }
     } finally {
       submitBtn.disabled = false;
