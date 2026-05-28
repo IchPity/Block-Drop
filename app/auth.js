@@ -232,18 +232,18 @@
         <h2 id="auth-title">Willkommen zurück</h2>
         <div class="auth-modal-sub" id="auth-sub">Melde dich an, um deine Highscores geräteübergreifend zu speichern.</div>
         <div id="auth-msg"></div>
-        <form id="auth-form" autocomplete="on">
+        <form id="auth-form" method="post" action="#" autocomplete="on">
           <div class="auth-field" id="auth-username-field" style="display:none">
             <label for="auth-username">Username</label>
-            <input id="auth-username" type="text" minlength="3" maxlength="20" autocomplete="username" />
+            <input id="auth-username" name="username" type="text" minlength="3" maxlength="20" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" />
           </div>
           <div class="auth-field">
             <label for="auth-email">Email</label>
-            <input id="auth-email" type="email" required autocomplete="email" />
+            <input id="auth-email" name="email" type="email" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email" />
           </div>
           <div class="auth-field">
             <label for="auth-password">Passwort</label>
-            <input id="auth-password" type="password" required minlength="6" autocomplete="current-password" />
+            <input id="auth-password" name="password" type="password" required minlength="6" autocomplete="current-password" />
           </div>
           <button type="submit" class="auth-submit" id="auth-submit">Anmelden</button>
         </form>
@@ -413,7 +413,10 @@
       submitBtn.textContent = 'Anmelden';
       userField.style.display = 'none';
       userEl.required = false;
+      userEl.disabled = true;
+      emailEl.autocomplete = 'username';
       passEl.autocomplete = 'current-password';
+      form.setAttribute('aria-label', 'Anmelden');
       switchText.textContent = 'Noch kein Account?';
       switchLink.textContent = 'Registrieren';
     } else {
@@ -423,7 +426,10 @@
       submitBtn.textContent = 'Account erstellen';
       userField.style.display = 'block';
       userEl.required = true;
+      userEl.disabled = false;
+      emailEl.autocomplete = 'email';
       passEl.autocomplete = 'new-password';
+      form.setAttribute('aria-label', 'Registrieren');
       switchText.textContent = 'Schon angemeldet?';
       switchLink.textContent = 'Anmelden';
     }

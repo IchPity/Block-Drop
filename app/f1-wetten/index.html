@@ -484,6 +484,38 @@ let state = {
   leaderboard: [],
 };
 
+/* ── Achievements ────────────────────────────────────────── */
+const ACH_DEFS = {
+  f1_first_win: { name: 'Lucky Punt', desc: 'Gewinne deine erste F1 Podium-Wette', icon: '🎰' },
+};
+function tryUnlock(id) {
+  const def = ACH_DEFS[id];
+  if (!def) return;
+  let list;
+  try { list = JSON.parse(localStorage.getItem('arcade_achievements')) || []; }
+  catch (e) { list = []; }
+  if (list.some(a => a.id === id)) return;
+  list.push({ id, unlockedAt: new Date().toISOString() });
+  localStorage.setItem('arcade_achievements', JSON.stringify(list));
+  if (window.showAchToast) window.showAchToast(def);
+  if (window.Auth && window.Auth.user) {
+    window.Auth.saveAchievements(list).catch(() => {});
+  }
+}
+function syncAchievementsFromCloud() {
+  if (!window.Auth || !window.Auth.user) return;
+  window.Auth.loadAchievements().then(cloud => {
+    if (!cloud) return;
+    let local = [];
+    try { local = JSON.parse(localStorage.getItem('arcade_achievements')) || []; } catch (e) {}
+    const byId = new Map();
+    [...local, ...cloud].forEach(a => { if (!byId.has(a.id)) byId.set(a.id, a); });
+    const merged = [...byId.values()];
+    localStorage.setItem('arcade_achievements', JSON.stringify(merged));
+    if (merged.length !== cloud.length) window.Auth.saveAchievements(merged).catch(() => {});
+  }).catch(() => {});
+}
+
 /* ── Toasts ──────────────────────────────────────────────── */
 function toast(msg, kind = 'ok') {
   const c = document.getElementById('toast-container');
@@ -524,6 +556,7 @@ async function init() {
   window.Auth.onChange(async (user) => {
     state.user = user;
     if (!user) { showLoginGate(); return; }
+    syncAchievementsFromCloud();
     await runApp();
   });
 }
@@ -689,6 +722,8 @@ async function settleOpenBets() {
       if (kind === 'exact') toast(`🏆 ${racePretty}: Exakt! +${payout} Punkte`, 'ok');
       else if (kind === 'drivers') toast(`✓ ${racePretty}: Top 3 richtig! +${payout} Punkte`, 'ok');
       else toast(`✗ ${racePretty}: Daneben — ${bet.stake} Punkte verloren`, 'err');
+
+      if (payout > 0) tryUnlock('f1_first_win');
     }
   }
 
