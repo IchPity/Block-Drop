@@ -250,6 +250,17 @@
     }
     .bet-row:last-child { border-bottom: none; }
     .bet-race { font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .public-bettor {
+      display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
+      text-transform: uppercase; color: rgba(255,255,255,0.7);
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      padding: 2px 8px; border-radius: 99px; margin-right: 8px;
+    }
+    .public-bettor.me {
+      color: var(--gold); border-color: rgba(240,192,0,0.35);
+      background: rgba(240,192,0,0.08);
+    }
+    .public-race { color: rgba(255,255,255,0.85); }
     .bet-picks {
       display: flex; gap: 6px; flex-wrap: wrap; font-size: 11px; color: rgba(255,255,255,0.6);
     }
@@ -481,6 +492,7 @@ let state = {
   nextRace: null,
   drivers: [],     // [{driverId, full}]
   myBets: [],
+  allOpenBets: [], // alle offenen Wetten der Saison (mit username)
   leaderboard: [],
 };
 
@@ -588,7 +600,10 @@ async function runApp() {
     // 5. Offene Bets settlen, deren Rennen vorbei sind
     await settleOpenBets();
 
-    // 6. Leaderboard
+    // 6. Alle offenen Wetten der Saison (für Public-Section)
+    await loadAllOpenBets();
+
+    // 7. Leaderboard
     await loadLeaderboard();
 
     render();
@@ -632,6 +647,27 @@ async function loadMyBets() {
     .order('created_at', { ascending: false });
   if (error) throw new Error('Bets laden: ' + error.message);
   state.myBets = data || [];
+}
+
+async function loadAllOpenBets() {
+  const sb = window.Auth.client;
+  const { data, error } = await sb
+    .from('f1_bets')
+    .select('*')
+    .eq('season', state.season)
+    .eq('status', 'open')
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (error) { console.warn('All bets:', error.message); state.allOpenBets = []; return; }
+  if (!data || !data.length) { state.allOpenBets = []; return; }
+
+  const ids = [...new Set(data.map(b => b.user_id))];
+  const { data: profs } = await sb
+    .from('profiles')
+    .select('id, username')
+    .in('id', ids);
+  const nameMap = new Map((profs || []).map(p => [p.id, p.username]));
+  state.allOpenBets = data.map(b => ({ ...b, username: nameMap.get(b.user_id) || '—' }));
 }
 
 async function loadLeaderboard() {
@@ -975,7 +1011,22 @@ function render() {
     </div>
   `;
 
-  appBody.innerHTML = balanceHtml + bankruptHtml + placeHtml + openHtml + historyHtml + lbHtml;
+  // Alle offenen Wetten (Public-Feed)
+  const publicOpenHtml = state.allOpenBets.length ? `
+    <div class="section">
+      <div class="section-title">Alle offenen Wetten · Saison ${state.season}</div>
+      <div class="card">
+        ${state.allOpenBets.map(b => renderPublicBetRow(b)).join('')}
+      </div>
+    </div>
+  ` : `
+    <div class="section">
+      <div class="section-title">Alle offenen Wetten · Saison ${state.season}</div>
+      <div class="card"><div class="empty">Noch keine offenen Wetten in dieser Saison.</div></div>
+    </div>
+  `;
+
+  appBody.innerHTML = balanceHtml + bankruptHtml + placeHtml + openHtml + historyHtml + publicOpenHtml + lbHtml;
 
   // Wire up form
   const placeBtn = document.getElementById('place-btn');
@@ -999,6 +1050,29 @@ function render() {
       await placeBet({ p1, p2, p3, stake });
     });
   }
+}
+
+function renderPublicBetRow(b) {
+  const isMe = b.user_id === state.user.id;
+  return `
+    <div class="bet-row">
+      <div>
+        <div class="bet-race">
+          <span class="public-bettor ${isMe?'me':''}">${esc(b.username)}${isMe?' · DU':''}</span>
+          <span class="public-race">${esc(b.race_name || ('Runde ' + b.round))}</span>
+        </div>
+        <div class="bet-picks">
+          <div class="pick-chip"><strong>P1</strong> ${esc(driverNameById(b.p1_id))}</div>
+          <div class="pick-chip p2"><strong>P2</strong> ${esc(driverNameById(b.p2_id))}</div>
+          <div class="pick-chip p3"><strong>P3</strong> ${esc(driverNameById(b.p3_id))}</div>
+        </div>
+      </div>
+      <div class="bet-side">
+        <div class="bet-stake">${b.stake.toLocaleString('de-DE')}<span>pts</span></div>
+        <div class="bet-status open">Offen</div>
+      </div>
+    </div>
+  `;
 }
 
 function renderBetRow(b) {
