@@ -375,6 +375,20 @@
     .thumb-f1bet        { background: linear-gradient(145deg, #1a1500 0%, #3a2a00 55%, #1a1500 100%); }
     .thumb-metar        { background: linear-gradient(145deg, #00080d 0%, #001828 55%, #00080d 100%); }
     .thumb-weather      { background: linear-gradient(145deg, #050818 0%, #1a2854 55%, #050818 100%); }
+    .thumb-woertle      { background: linear-gradient(145deg, #001f0a 0%, #003d18 55%, #001f0a 100%); }
+
+    .woertle-art { display: flex; gap: 6px; }
+    .woertle-art .wt-tile {
+      width: 30px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 6px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 900; font-size: 18px; color: #fff;
+      border: 2px solid rgba(255,255,255,0.18);
+    }
+    .woertle-art .wt-correct { background: #15803d; border-color: #15803d; }
+    .woertle-art .wt-present { background: #a16207; border-color: #a16207; }
+    .woertle-art .wt-absent  { background: #1f2937; border-color: #1f2937; color: rgba(255,255,255,0.6); }
 
     .weather-card:hover {
       border-color: rgba(56,189,248,0.55) !important;
@@ -755,6 +769,26 @@
         <div class="card-desc">Countdown bis Pausenende, Stundenende oder endlich Frei. Dein Schulplan auf einen Blick.</div>
         <div class="card-footer">
           <div class="play-btn">Öffnen <span class="btn-arrow">→</span></div>
+        </div>
+      </div>
+    </a>
+
+    <a class="game-card available woertle-card" href="games/woertle/" style="--accent:#4ade80">
+      <div class="card-thumb thumb-woertle">
+        <div class="woertle-art">
+          <span class="wt-tile wt-correct">W</span>
+          <span class="wt-tile wt-present">Ö</span>
+          <span class="wt-tile wt-correct">R</span>
+          <span class="wt-tile wt-absent">T</span>
+          <span class="wt-tile wt-correct">L</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-tag" style="color:#4ade80">Täglich · Neu</div>
+        <div class="card-title">Wörtle</div>
+        <div class="card-desc">Errate das 5-Buchstaben-Wort des Tages in 6 Versuchen. Jeden Tag ein neues Wort.</div>
+        <div class="card-footer">
+          <div class="play-btn" style="background:#4ade80;box-shadow:0 0 18px rgba(74,222,128,0.28);color:#0a0a14">Spielen <span class="btn-arrow">→</span></div>
         </div>
       </div>
     </a>
