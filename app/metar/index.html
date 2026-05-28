@@ -368,7 +368,9 @@
  *  - kein Key, CORS aktiv für public-facing endpoints
  * =================================================================== */
 
-const API = 'https://aviationweather.gov/api/data/metar';
+const NOAA = 'https://aviationweather.gov/api/data/metar';
+// NOAA blockt CORS bei Browser-Requests inkonsistent — daher Proxy.
+const CORS = 'https://corsproxy.io/?url=';
 
 const QUICK_AIRPORTS = [
   { code: 'LOWW', city: 'Wien' },
@@ -453,10 +455,19 @@ async function fetchAndRender(query) {
   $('results').innerHTML = `<div class="loading"><div class="spinner"></div><div>METAR von NOAA ziehen…</div></div>`;
 
   try {
-    const url = `${API}?ids=${codes.join(',')}&format=json`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
+    const noaaUrl = `${NOAA}?ids=${codes.join(',')}&format=json`;
+    let data;
+    // 1. Direkter Versuch — falls NOAA gerade CORS sendet, sparen wir uns den Proxy
+    try {
+      const res = await fetch(noaaUrl);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      data = await res.json();
+    } catch (directErr) {
+      // 2. Fallback über CORS-Proxy
+      const res = await fetch(CORS + encodeURIComponent(noaaUrl));
+      if (!res.ok) throw new Error('Proxy HTTP ' + res.status);
+      data = await res.json();
+    }
     addRecent(codes);
     render(codes, Array.isArray(data) ? data : []);
   } catch (e) {
