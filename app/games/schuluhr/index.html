@@ -361,15 +361,6 @@
 <div class="toast" id="toast"></div>
 
 <!-- Achievement overlay -->
-<div id="ach-overlay">
-  <div id="ach-modal">
-    <div class="ach-label">Achievement freigeschaltet!</div>
-    <span id="ach-icon-big"></span>
-    <div id="ach-name-big"></div>
-    <div id="ach-desc-big"></div>
-    <div class="ach-hint">Klicken zum Schließen</div>
-  </div>
-</div>
 
 <!-- Floating widget (fallback when PiP not available) -->
 <div class="float-widget" id="floatWidget">
@@ -778,25 +769,6 @@ function showToast(msg) {
 // ─── Achievements ─────────────────────────────────────────────
 const SU_OPEN_TIME = Date.now();
 let su15Checked = false;
-let _achDismiss = null;
-
-function showAchOverlay(def) {
-    const overlay = document.getElementById('ach-overlay');
-    if (!overlay) return;
-    document.getElementById('ach-icon-big').textContent = def.icon;
-    document.getElementById('ach-name-big').textContent = def.name;
-    document.getElementById('ach-desc-big').textContent = def.desc;
-    overlay.classList.add('show');
-
-    const dismiss = () => {
-        overlay.classList.remove('show');
-        overlay.removeEventListener('click', dismiss);
-        clearTimeout(_achDismiss);
-    };
-    clearTimeout(_achDismiss);
-    _achDismiss = setTimeout(dismiss, 5000);
-    overlay.addEventListener('click', dismiss);
-}
 
 function tryUnlock(id, def) {
     let list;
@@ -805,7 +777,10 @@ function tryUnlock(id, def) {
     if (list.some(a => a.id === id)) return;
     list.push({ id, unlockedAt: new Date().toISOString() });
     localStorage.setItem('arcade_achievements', JSON.stringify(list));
-    showAchOverlay(def);
+    if (window.showAchToast) window.showAchToast(def);
+    if (window.Auth && window.Auth.user) {
+        window.Auth.saveAchievements(list).catch(() => {});
+    }
 }
 
 function checkAchievements() {
