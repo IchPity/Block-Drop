@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>F1 Wetten — Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --red:  #e10600;
+      --red-bright: #ff1e1e;
+      --gold: #f0c000;
+      --green: #22c55e;
+      --bg:   #07070d;
+      --card: rgba(20, 20, 32, 0.72);
+      --border: rgba(255,255,255,0.08);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg); min-height: 100vh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #eee; overflow-x: hidden;
+      padding: 72px 0 64px;
+    }
+
+    /* Background */
+    .orb { position: fixed; border-radius: 50%; filter: blur(140px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 680px; height: 680px; background: #e10600; opacity: 0.07; top: -260px; left: -220px; animation: f1 24s ease-in-out infinite alternate; }
+    .orb-2 { width: 560px; height: 560px; background: #f0c000; opacity: 0.04; bottom: -200px; right: -200px; animation: f2 30s ease-in-out infinite alternate; }
+    @keyframes f1 { to { transform: translate(80px,70px) scale(1.15); } }
+    @keyframes f2 { to { transform: translate(-90px,-110px) scale(1.2); } }
+    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px); background-size: 30px 30px; }
+    .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 35%, rgba(5,5,14,0.75) 100%); }
+
+    /* Navbar */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px;
+      background: rgba(5,5,14,0.8);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-left { display: flex; align-items: center; gap: 14px; }
+    .nav-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none; color: rgba(255,255,255,0.4);
+      font-size: 11px; font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+      padding: 6px 12px; transition: all 0.2s;
+    }
+    .nav-back:hover { color: #fff; border-color: rgba(255,255,255,0.25); }
+    .nav-game-title {
+      font-size: 13px; font-weight: 900; color: #fff; letter-spacing: 1px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .nav-game-title .pill { background: var(--red); color: #fff; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 900; letter-spacing: 1.5px; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+
+    /* Container */
+    .container { position: relative; z-index: 1; max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+    /* Hero */
+    .hero { margin-top: 28px; margin-bottom: 28px; }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 10px; font-weight: 800; letter-spacing: 4px;
+      text-transform: uppercase; color: var(--gold); margin-bottom: 12px;
+    }
+    .hero-eyebrow::before { content:''; width: 18px; height: 2px; background: var(--gold); border-radius: 1px; }
+    .hero h1 {
+      font-size: 50px; font-weight: 900; letter-spacing: -2.5px; line-height: 0.98;
+      color: #fff;
+    }
+    .hero h1 em { font-style: normal; color: var(--gold); }
+    .hero-sub {
+      margin-top: 14px; font-size: 13px; max-width: 560px;
+      color: rgba(255,255,255,0.45); line-height: 1.6;
+    }
+
+    /* Balance bar */
+    .balance-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      background: linear-gradient(135deg, rgba(240,192,0,0.1), rgba(225,6,0,0.08));
+      border: 1px solid rgba(240,192,0,0.2);
+      border-radius: 18px; padding: 20px 24px;
+      margin-bottom: 22px;
+    }
+    .balance-left { display: flex; flex-direction: column; gap: 4px; }
+    .balance-lbl {
+      font-size: 10px; font-weight: 800; letter-spacing: 2.5px;
+      text-transform: uppercase; color: rgba(255,255,255,0.5);
+    }
+    .balance-val { font-size: 34px; font-weight: 900; letter-spacing: -1.5px; color: #fff; font-variant-numeric: tabular-nums; }
+    .balance-val .pts { font-size: 13px; color: var(--gold); margin-left: 6px; letter-spacing: 0; font-weight: 700; }
+    .balance-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+    .balance-meta {
+      font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+    }
+    .balance-meta strong { color: #fff; margin-left: 4px; }
+    .balance-locked {
+      font-size: 11px; color: rgba(255,255,255,0.55); font-weight: 600;
+    }
+    .balance-locked strong { color: var(--red-bright); }
+
+    /* Sections */
+    .section { margin-bottom: 26px; }
+    .section-title {
+      font-size: 12px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase;
+      color: rgba(255,255,255,0.5); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+
+    /* Card */
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 18px; padding: 22px;
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .card + .card { margin-top: 12px; }
+
+    /* Race header inside card */
+    .race-head {
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 14px;
+      margin-bottom: 18px;
+    }
+    .race-info { flex: 1; }
+    .race-name { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: -0.6px; margin-bottom: 4px; }
+    .race-circuit { font-size: 12px; color: rgba(255,255,255,0.5); }
+    .race-when {
+      text-align: right; font-size: 11px; color: rgba(255,255,255,0.55);
+    }
+    .race-when strong { display: block; color: #fff; font-size: 13px; margin-bottom: 2px; }
+
+    /* Podium selectors */
+    .podium-row {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+      margin-bottom: 16px;
+    }
+    .podium-slot {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px;
+      display: flex; flex-direction: column; gap: 8px;
+      position: relative; overflow: hidden;
+    }
+    .podium-slot::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .podium-slot.p1::before { background: var(--gold); }
+    .podium-slot.p2::before { background: #c0c0c0; }
+    .podium-slot.p3::before { background: #cd7f32; }
+    .podium-pos {
+      font-size: 9px; font-weight: 800; letter-spacing: 2.5px; text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+    }
+    .podium-pos strong {
+      font-size: 13px; color: #fff; margin-right: 6px;
+    }
+    .podium-slot.p1 .podium-pos strong { color: var(--gold); }
+    .podium-slot.p2 .podium-pos strong { color: #c0c0c0; }
+    .podium-slot.p3 .podium-pos strong { color: #cd7f32; }
+    .podium-select {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+      padding: 11px 12px;
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      color: #fff; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23ffffff80' stroke-width='1.5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 30px;
+    }
+    .podium-select:focus { outline: none; border-color: rgba(240,192,0,0.5); }
+    .podium-select option { background: #15151f; color: #fff; }
+
+    /* Stake row */
+    .stake-row {
+      display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .stake-field { flex: 1; min-width: 160px; }
+    .stake-field label {
+      display: block; font-size: 10px; font-weight: 800; letter-spacing: 2px;
+      text-transform: uppercase; color: rgba(255,255,255,0.45); margin-bottom: 6px;
+    }
+    .stake-input-wrap { position: relative; }
+    .stake-input {
+      width: 100%; background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+      padding: 11px 14px 11px 14px; padding-right: 56px;
+      font-family: inherit; font-size: 16px; font-weight: 700;
+      color: #fff; outline: none;
+      font-variant-numeric: tabular-nums;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .stake-input:focus { border-color: rgba(240,192,0,0.5); }
+    .stake-suffix {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      font-size: 10px; font-weight: 800; letter-spacing: 2px;
+      color: rgba(255,255,255,0.4);
+    }
+    .stake-quick {
+      display: flex; gap: 6px;
+    }
+    .quick-btn {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 11px;
+      color: rgba(255,255,255,0.65);
+      font-family: inherit; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.5px; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .quick-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+    .place-btn {
+      width: 100%; margin-top: 14px;
+      background: linear-gradient(135deg, var(--gold), #d6a800);
+      color: #000; border: none; border-radius: 14px;
+      padding: 14px;
+      font-family: inherit; font-size: 14px; font-weight: 900;
+      letter-spacing: 1px; text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 0 28px rgba(240,192,0,0.3);
+      transition: all 0.2s;
+    }
+    .place-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 0 40px rgba(240,192,0,0.45);
+    }
+    .place-btn:disabled {
+      opacity: 0.4; cursor: not-allowed; box-shadow: none;
+    }
+
+    /* Bet rows in lists */
+    .bet-row {
+      display: grid; grid-template-columns: 1fr auto;
+      gap: 14px; align-items: center;
+      padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .bet-row:last-child { border-bottom: none; }
+    .bet-race { font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .bet-picks {
+      display: flex; gap: 6px; flex-wrap: wrap; font-size: 11px; color: rgba(255,255,255,0.6);
+    }
+    .pick-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 3px 9px; border-radius: 99px;
+      font-weight: 600; letter-spacing: 0.2px;
+    }
+    .pick-chip strong { color: var(--gold); margin-right: 1px; font-size: 10px; }
+    .pick-chip.p2 strong { color: #c0c0c0; }
+    .pick-chip.p3 strong { color: #cd7f32; }
+    .bet-side {
+      text-align: right; min-width: 110px;
+    }
+    .bet-stake {
+      font-size: 14px; font-weight: 800; color: #fff;
+      font-variant-numeric: tabular-nums;
+    }
+    .bet-stake span { font-size: 10px; color: rgba(255,255,255,0.4); margin-left: 3px; letter-spacing: 1px; }
+    .bet-status {
+      font-size: 9px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+      padding: 3px 8px; border-radius: 99px;
+      display: inline-block; margin-top: 6px;
+    }
+    .bet-status.open    { background: rgba(48,80,224,0.15); color: #6da0ff; border: 1px solid rgba(48,80,224,0.3); }
+    .bet-status.exact   { background: rgba(240,192,0,0.18); color: var(--gold); border: 1px solid rgba(240,192,0,0.35); }
+    .bet-status.drivers { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+    .bet-status.miss    { background: rgba(225,6,0,0.13); color: #ff7a7a; border: 1px solid rgba(225,6,0,0.3); }
+    .bet-payout {
+      font-size: 13px; font-weight: 800; margin-top: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .bet-payout.win  { color: var(--green); }
+    .bet-payout.lose { color: #ff7a7a; }
+
+    /* Leaderboard */
+    .lb-row {
+      display: grid; grid-template-columns: 40px 1fr 100px;
+      gap: 12px; align-items: center;
+      padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-row.me { background: rgba(240,192,0,0.05); margin: 0 -22px; padding-left: 22px; padding-right: 22px; }
+    .lb-pos { font-size: 15px; font-weight: 900; color: #fff; }
+    .lb-pos.gold { color: var(--gold); }
+    .lb-pos.silver { color: #c0c0c0; }
+    .lb-pos.bronze { color: #cd7f32; }
+    .lb-name { font-size: 13px; font-weight: 700; color: #fff; }
+    .lb-name.me::after { content: ' · DU'; font-size: 9px; color: var(--gold); letter-spacing: 2px; font-weight: 800; }
+    .lb-pts { text-align: right; font-size: 14px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+    .lb-pts span { font-size: 10px; color: rgba(255,255,255,0.4); margin-left: 4px; letter-spacing: 1px; }
+
+    /* Login gate */
+    .login-gate {
+      background: linear-gradient(135deg, rgba(225,6,0,0.1), rgba(48,80,224,0.05));
+      border: 1px solid rgba(225,6,0,0.25);
+      border-radius: 22px; padding: 56px 32px; text-align: center;
+    }
+    .login-gate-icon { font-size: 50px; margin-bottom: 12px; opacity: 0.85; }
+    .login-gate h2 { font-size: 24px; font-weight: 900; color: #fff; letter-spacing: -0.8px; margin-bottom: 8px; }
+    .login-gate p { font-size: 13px; color: rgba(255,255,255,0.45); max-width: 380px; margin: 0 auto 22px; line-height: 1.6; }
+    .login-gate-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--red); color: #fff; border: none; border-radius: 12px;
+      padding: 13px 26px; font-family: inherit; font-size: 13px; font-weight: 800;
+      letter-spacing: 0.5px; cursor: pointer;
+      box-shadow: 0 0 28px rgba(225,6,0,0.4);
+      transition: all 0.2s;
+    }
+    .login-gate-btn:hover { transform: translateY(-1px); box-shadow: 0 0 40px rgba(225,6,0,0.6); }
+
+    /* Bankrupt banner */
+    .bankrupt-banner {
+      background: linear-gradient(135deg, rgba(225,6,0,0.18), rgba(225,6,0,0.05));
+      border: 1px solid rgba(225,6,0,0.4);
+      border-radius: 16px; padding: 18px 22px;
+      margin-bottom: 22px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .bankrupt-icon { font-size: 28px; }
+    .bankrupt-text { flex: 1; }
+    .bankrupt-text strong { display: block; color: var(--red-bright); font-size: 14px; font-weight: 800; letter-spacing: 0.3px; }
+    .bankrupt-text span { font-size: 12px; color: rgba(255,255,255,0.55); }
+
+    /* Rules card */
+    .rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 6px; }
+    .rule {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 14px;
+    }
+    .rule-tag { font-size: 9px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
+    .rule-val { font-size: 16px; font-weight: 900; color: #fff; letter-spacing: -0.3px; margin-bottom: 4px; }
+    .rule-val.gold { color: var(--gold); }
+    .rule-val.green { color: var(--green); }
+    .rule-val.red { color: #ff7a7a; }
+    .rule-desc { font-size: 11px; color: rgba(255,255,255,0.45); line-height: 1.45; }
+
+    /* Loading */
+    .loading, .empty {
+      padding: 36px 24px; text-align: center;
+      color: rgba(255,255,255,0.4); font-size: 13px;
+    }
+    .loading .spinner {
+      display: inline-block; width: 26px; height: 26px;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: var(--gold);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+      margin-bottom: 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty-icon { font-size: 32px; opacity: 0.4; margin-bottom: 6px; }
+
+    /* Toast for bet feedback */
+    .bet-toast-container {
+      position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+      z-index: 5000; display: flex; flex-direction: column; gap: 10px;
+      pointer-events: none;
+    }
+    .bet-toast {
+      pointer-events: all;
+      background: rgba(12,12,28,0.98);
+      border: 1px solid var(--border); border-radius: 14px;
+      padding: 14px 22px;
+      font-size: 13px; font-weight: 700; color: #fff;
+      box-shadow: 0 14px 36px rgba(0,0,0,0.6);
+      backdrop-filter: blur(20px);
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.25s, transform 0.25s;
+    }
+    .bet-toast.show { opacity: 1; transform: translateY(0); }
+    .bet-toast.ok { border-color: rgba(34,197,94,0.4); }
+    .bet-toast.err { border-color: rgba(225,6,0,0.4); }
+
+    @media (max-width: 720px) {
+      .hero h1 { font-size: 36px; }
+      .balance-bar { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .balance-right { align-items: flex-start; }
+      .podium-row { grid-template-columns: 1fr; }
+      .rules { grid-template-columns: 1fr; }
+    }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="dot-grid"></div>
+<div class="vignette"></div>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="/" class="nav-back">&larr; Arcade</a>
+    <div class="nav-game-title"><span class="pill">F1</span> Podium Wetten</div>
+  </div>
+  <div class="nav-right">
+    <div data-auth-slot></div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <section class="hero">
+    <div class="hero-eyebrow">Saison-Wetten</div>
+    <h1>BET. <em>PREDICT.</em><br>WIN.</h1>
+    <p class="hero-sub">Tipp das Podium für das nächste Rennen. Genaue Reihenfolge = Einsatz × 2, alle drei richtig (Reihenfolge egal) = Einsatz × 1.5, daneben = Einsatz weg. Jede Saison startest du wieder bei 1.000 Punkten.</p>
+  </section>
+
+  <!-- Rules summary -->
+  <div class="section">
+    <div class="rules">
+      <div class="rule">
+        <div class="rule-tag">Exakt 1-2-3</div>
+        <div class="rule-val gold">×2.0</div>
+        <div class="rule-desc">Du tippst die exakte Podium-Reihenfolge → Einsatz verdoppelt sich.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-tag">Alle 3 richtig</div>
+        <div class="rule-val green">×1.5</div>
+        <div class="rule-desc">Du hast alle drei Podiumsfahrer getippt, aber in falscher Reihenfolge.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-tag">Daneben</div>
+        <div class="rule-val red">×0</div>
+        <div class="rule-desc">Mindestens ein Tipp daneben — Einsatz ist weg. Bei 0 Punkten ist die Saison aus.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main app body — gets replaced based on auth state -->
+  <div id="app-body">
+    <div class="loading"><div class="spinner"></div><div>Lade…</div></div>
+  </div>
+
+</div>
+
+<div class="bet-toast-container" id="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script>
+/* ===================================================================
+ * F1 Wetten
+ *  - Daten: Jolpi (Ergast-Mirror) für Kalender, Driver-Liste, Results
+ *  - Persistenz: Supabase (Tabellen f1_points, f1_bets)
+ *  - Auszahlung:
+ *      exakt 1-2-3  -> payout = stake * 2 (Profit = +stake)
+ *      3 Fahrer ok  -> payout = floor(stake * 1.5) (Profit = +0.5*stake)
+ *      sonst        -> payout = 0 (Profit = -stake)
+ *  - Stake wird beim Platzieren sofort vom Guthaben abgezogen,
+ *    payout wird beim Settlement gutgeschrieben.
+ * =================================================================== */
+
+const JOLPI = 'https://api.jolpi.ca/ergast/f1';
+const STARTING_POINTS = 1000;
+
+const appBody = document.getElementById('app-body');
+
+let state = {
+  user: null,
+  season: null,
+  points: null,    // current f1_points row
+  nextRace: null,
+  drivers: [],     // [{driverId, full}]
+  myBets: [],
+  leaderboard: [],
+};
+
+/* ── Toasts ──────────────────────────────────────────────── */
+function toast(msg, kind = 'ok') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `bet-toast ${kind}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => t.remove(), 300);
+  }, 3500);
+}
+
+function fmtDate(d) {
+  return d.toLocaleString('de-DE', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ── Main entry ──────────────────────────────────────────── */
+function showLoginGate() {
+  appBody.innerHTML = `
+    <div class="login-gate">
+      <div class="login-gate-icon">🔒</div>
+      <h2>Login erforderlich</h2>
+      <p>F1 Podium Wetten sind nur für angemeldete Nutzer. Logg dich ein oder erstell einen Account — du startest mit <strong>1.000 Punkten</strong>.</p>
+      <button class="login-gate-btn" id="open-login">Anmelden</button>
+    </div>
+  `;
+  document.getElementById('open-login').addEventListener('click', () => window.Auth?.openLogin());
+}
+
+async function init() {
+  if (!window.Auth) {
+    appBody.innerHTML = `<div class="empty"><div class="empty-icon">⚠</div>Auth nicht geladen.</div>`;
+    return;
+  }
+  window.Auth.onChange(async (user) => {
+    state.user = user;
+    if (!user) { showLoginGate(); return; }
+    await runApp();
+  });
+}
+
+async function runApp() {
+  appBody.innerHTML = `<div class="loading"><div class="spinner"></div><div>Lade Daten…</div></div>`;
+  try {
+    // 1. Saison + nächstes Rennen
+    const sched = await fetch(`${JOLPI}/current.json`).then(r => r.json());
+    state.season = parseInt(sched.MRData.RaceTable.season, 10);
+    const races = sched.MRData.RaceTable.Races;
+    const now = new Date();
+    state.nextRace = races.find(r => new Date(r.date + 'T' + (r.time || '14:00:00Z')) > now) || null;
+
+    // 2. Drivers für die Saison
+    const dRes = await fetch(`${JOLPI}/${state.season}/drivers.json?limit=100`).then(r => r.json());
+    state.drivers = (dRes.MRData.DriverTable.Drivers || []).map(d => ({
+      id: d.driverId,
+      full: `${d.givenName} ${d.familyName}`,
+      code: d.code || '',
+    })).sort((a, b) => a.full.localeCompare(b.full));
+
+    // 3. Points-Row laden/erzeugen
+    await loadOrCreatePoints();
+
+    // 4. User-Bets laden
+    await loadMyBets();
+
+    // 5. Offene Bets settlen, deren Rennen vorbei sind
+    await settleOpenBets();
+
+    // 6. Leaderboard
+    await loadLeaderboard();
+
+    render();
+  } catch (e) {
+    console.error(e);
+    appBody.innerHTML = `<div class="empty"><div class="empty-icon">⚠</div>Fehler beim Laden: ${esc(e.message)}</div>`;
+  }
+}
+
+/* ── DB helpers ──────────────────────────────────────────── */
+async function loadOrCreatePoints() {
+  const sb = window.Auth.client;
+  const uid = state.user.id;
+  const { data, error } = await sb
+    .from('f1_points')
+    .select('*')
+    .eq('user_id', uid)
+    .eq('season', state.season)
+    .maybeSingle();
+  if (error) throw new Error('Points laden: ' + error.message);
+
+  if (!data) {
+    const { data: ins, error: insErr } = await sb
+      .from('f1_points')
+      .insert({ user_id: uid, season: state.season, points: STARTING_POINTS })
+      .select().single();
+    if (insErr) throw new Error('Points init: ' + insErr.message);
+    state.points = ins;
+  } else {
+    state.points = data;
+  }
+}
+
+async function loadMyBets() {
+  const sb = window.Auth.client;
+  const { data, error } = await sb
+    .from('f1_bets')
+    .select('*')
+    .eq('user_id', state.user.id)
+    .eq('season', state.season)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error('Bets laden: ' + error.message);
+  state.myBets = data || [];
+}
+
+async function loadLeaderboard() {
+  const sb = window.Auth.client;
+  // Top points current season
+  const { data: pts, error } = await sb
+    .from('f1_points')
+    .select('user_id, points')
+    .eq('season', state.season)
+    .order('points', { ascending: false })
+    .limit(15);
+  if (error) { console.warn('LB:', error.message); state.leaderboard = []; return; }
+  if (!pts || !pts.length) { state.leaderboard = []; return; }
+
+  const ids = pts.map(p => p.user_id);
+  const { data: profs } = await sb
+    .from('profiles')
+    .select('id, username')
+    .in('id', ids);
+  const nameMap = new Map((profs || []).map(p => [p.id, p.username]));
+  state.leaderboard = pts.map(p => ({
+    user_id: p.user_id,
+    name: nameMap.get(p.user_id) || '—',
+    points: p.points,
+  }));
+}
+
+/* ── Settlement ──────────────────────────────────────────── */
+async function settleOpenBets() {
+  const sb = window.Auth.client;
+  const now = new Date();
+  const open = state.myBets.filter(b => b.status === 'open');
+  if (!open.length) return;
+
+  // Group by round to minimise result fetches
+  const rounds = [...new Set(open.map(b => b.round))];
+  for (const rnd of rounds) {
+    const bets = open.filter(b => b.round === rnd);
+    // race start - take from first bet's stored race name; we need race date though
+    // We re-fetch race meta to know if race is done
+    let race;
+    try {
+      const r = await fetch(`${JOLPI}/${state.season}/${rnd}/results.json`).then(r => r.json());
+      race = r.MRData.RaceTable.Races[0];
+    } catch (e) { continue; }
+    if (!race || !race.Results || race.Results.length < 3) continue;
+
+    // Race date passed?
+    const raceDt = new Date(race.date + 'T' + (race.time || '14:00:00Z'));
+    if (raceDt > now) continue;
+
+    const podium = race.Results.slice(0, 3).map(r => r.Driver.driverId);
+    const podiumSet = new Set(podium);
+
+    for (const bet of bets) {
+      const picks = [bet.p1_id, bet.p2_id, bet.p3_id];
+      const exact = picks[0] === podium[0] && picks[1] === podium[1] && picks[2] === podium[2];
+      const allThree = picks.every(p => podiumSet.has(p)) && new Set(picks).size === 3;
+      let payout, kind;
+      if (exact)         { payout = bet.stake * 2;                kind = 'exact'; }
+      else if (allThree) { payout = Math.floor(bet.stake * 1.5);  kind = 'drivers'; }
+      else               { payout = 0;                            kind = 'miss'; }
+
+      // 1. Bet aktualisieren
+      const { error: bErr } = await sb.from('f1_bets').update({
+        status: 'settled',
+        payout, result_kind: kind,
+        settled_at: new Date().toISOString(),
+      }).eq('id', bet.id);
+      if (bErr) { console.warn('Bet settle:', bErr.message); continue; }
+
+      // 2. Punkte gutschreiben (Stake war schon beim Platzieren abgezogen)
+      if (payout > 0) {
+        const { data: cur } = await sb.from('f1_points').select('points').eq('user_id', state.user.id).eq('season', state.season).single();
+        if (cur) {
+          await sb.from('f1_points').update({
+            points: cur.points + payout,
+            updated_at: new Date().toISOString(),
+          }).eq('user_id', state.user.id).eq('season', state.season);
+        }
+      }
+
+      // Update local state
+      bet.status = 'settled'; bet.payout = payout; bet.result_kind = kind;
+      if (payout > 0) state.points.points += payout;
+
+      const racePretty = bet.race_name || race.raceName;
+      if (kind === 'exact') toast(`🏆 ${racePretty}: Exakt! +${payout} Punkte`, 'ok');
+      else if (kind === 'drivers') toast(`✓ ${racePretty}: Top 3 richtig! +${payout} Punkte`, 'ok');
+      else toast(`✗ ${racePretty}: Daneben — ${bet.stake} Punkte verloren`, 'err');
+    }
+  }
+
+  // Reload bets to get fresh settled records
+  await loadMyBets();
+}
+
+/* ── Bet placen ──────────────────────────────────────────── */
+async function placeBet({ p1, p2, p3, stake }) {
+  const sb = window.Auth.client;
+  const race = state.nextRace;
+  if (!race) { toast('Kein nächstes Rennen verfügbar', 'err'); return; }
+
+  const raceStart = new Date(race.date + 'T' + (race.time || '14:00:00Z'));
+  if (raceStart <= new Date()) { toast('Rennen läuft oder ist vorbei — keine Wetten mehr.', 'err'); return; }
+  if (new Set([p1, p2, p3]).size !== 3) { toast('Drei verschiedene Fahrer wählen', 'err'); return; }
+  if (!Number.isFinite(stake) || stake <= 0) { toast('Ungültiger Einsatz', 'err'); return; }
+  if (stake > state.points.points) { toast('Nicht genug Punkte', 'err'); return; }
+
+  // Doppelten Bet vermeiden (1 pro Rennen)
+  if (state.myBets.some(b => b.round === parseInt(race.round, 10) && b.status === 'open')) {
+    toast('Du hast bereits eine offene Wette für dieses Rennen', 'err');
+    return;
+  }
+
+  // 1. Bet einfügen
+  const { data: ins, error } = await sb.from('f1_bets').insert({
+    user_id: state.user.id,
+    season: state.season,
+    round: parseInt(race.round, 10),
+    race_name: race.raceName,
+    p1_id: p1, p2_id: p2, p3_id: p3,
+    stake,
+    status: 'open',
+  }).select().single();
+  if (error) {
+    if (error.code === '23505') toast('Du hast für dieses Rennen schon getippt', 'err');
+    else toast('Wette fehlgeschlagen: ' + error.message, 'err');
+    return;
+  }
+
+  // 2. Stake vom Konto abziehen
+  const newPts = state.points.points - stake;
+  const { error: pErr } = await sb.from('f1_points').update({
+    points: newPts,
+    updated_at: new Date().toISOString(),
+  }).eq('user_id', state.user.id).eq('season', state.season);
+  if (pErr) { toast('Konto-Update fehlgeschlagen: ' + pErr.message, 'err'); return; }
+
+  state.points.points = newPts;
+  state.myBets.unshift(ins);
+  toast(`Wette platziert: ${stake} Punkte auf ${race.raceName}`, 'ok');
+  render();
+}
+
+/* ── Render ──────────────────────────────────────────────── */
+function driverNameById(id) {
+  const d = state.drivers.find(x => x.id === id);
+  return d ? d.full : id;
+}
+
+function render() {
+  const pts = state.points.points;
+  const bankrupt = pts <= 0 && !state.myBets.some(b => b.status === 'open');
+  const lockedStake = state.myBets.filter(b => b.status === 'open').reduce((s, b) => s + b.stake, 0);
+
+  // Balance bar
+  const balanceHtml = `
+    <div class="balance-bar">
+      <div class="balance-left">
+        <div class="balance-lbl">Dein Konto</div>
+        <div class="balance-val">${pts.toLocaleString('de-DE')}<span class="pts">PTS</span></div>
+      </div>
+      <div class="balance-right">
+        <div class="balance-meta">Saison <strong>${state.season}</strong></div>
+        ${lockedStake > 0
+          ? `<div class="balance-locked">Offen: <strong>${lockedStake.toLocaleString('de-DE')} pts</strong></div>`
+          : ''}
+      </div>
+    </div>
+  `;
+
+  // Bankrupt banner
+  const bankruptHtml = bankrupt ? `
+    <div class="bankrupt-banner">
+      <div class="bankrupt-icon">💀</div>
+      <div class="bankrupt-text">
+        <strong>Game Over für diese Saison</strong>
+        <span>Du hast keine Punkte mehr und keine offenen Wetten. Saison ${state.season} ist für dich gelaufen — die nächste Saison startet bei 1.000 Punkten.</span>
+      </div>
+    </div>
+  ` : '';
+
+  // Place-bet card
+  const race = state.nextRace;
+  let placeHtml = '';
+  if (!race) {
+    placeHtml = `
+      <div class="section">
+        <div class="section-title">Nächstes Rennen</div>
+        <div class="card">
+          <div class="empty"><div class="empty-icon">🏁</div>Saisonende — keine neuen Rennen.</div>
+        </div>
+      </div>
+    `;
+  } else {
+    const start = new Date(race.date + 'T' + (race.time || '14:00:00Z'));
+    const alreadyBet = state.myBets.find(b => b.round === parseInt(race.round, 10) && b.status === 'open');
+    const closedTimeWise = start <= new Date();
+
+    const driverOptions = state.drivers.map(d =>
+      `<option value="${esc(d.id)}">${esc(d.full)}${d.code ? ' ('+d.code+')' : ''}</option>`
+    ).join('');
+
+    if (alreadyBet) {
+      placeHtml = `
+        <div class="section">
+          <div class="section-title">Nächstes Rennen — Wette platziert</div>
+          <div class="card">
+            <div class="race-head">
+              <div class="race-info">
+                <div class="race-name">${esc(race.raceName)}</div>
+                <div class="race-circuit">${esc(race.Circuit.circuitName)} — ${esc(race.Circuit.Location.locality)}</div>
+              </div>
+              <div class="race-when">
+                <strong>${fmtDate(start)}</strong>
+                Rennstart
+              </div>
+            </div>
+            <div class="bet-picks" style="margin-bottom:10px;">
+              <div class="pick-chip"><strong>P1</strong> ${esc(driverNameById(alreadyBet.p1_id))}</div>
+              <div class="pick-chip p2"><strong>P2</strong> ${esc(driverNameById(alreadyBet.p2_id))}</div>
+              <div class="pick-chip p3"><strong>P3</strong> ${esc(driverNameById(alreadyBet.p3_id))}</div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:rgba(255,255,255,0.6);border-top:1px solid var(--border);padding-top:14px;">
+              <span>Einsatz</span>
+              <strong style="color:#fff;font-size:15px;">${alreadyBet.stake.toLocaleString('de-DE')} pts</strong>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      const disabled = bankrupt || pts <= 0 || closedTimeWise;
+      placeHtml = `
+        <div class="section">
+          <div class="section-title">Nächstes Rennen — Tipp abgeben</div>
+          <div class="card">
+            <div class="race-head">
+              <div class="race-info">
+                <div class="race-name">${esc(race.raceName)}</div>
+                <div class="race-circuit">${esc(race.Circuit.circuitName)} — ${esc(race.Circuit.Location.locality)}, ${esc(race.Circuit.Location.country)}</div>
+              </div>
+              <div class="race-when">
+                <strong>${fmtDate(start)}</strong>
+                Wetten schließen mit Rennstart
+              </div>
+            </div>
+
+            <div class="podium-row">
+              <div class="podium-slot p1">
+                <div class="podium-pos"><strong>P1</strong>1. Platz · GOLD</div>
+                <select class="podium-select" id="pick-p1" ${disabled?'disabled':''}>
+                  <option value="">— Fahrer wählen —</option>
+                  ${driverOptions}
+                </select>
+              </div>
+              <div class="podium-slot p2">
+                <div class="podium-pos"><strong>P2</strong>2. Platz · SILBER</div>
+                <select class="podium-select" id="pick-p2" ${disabled?'disabled':''}>
+                  <option value="">— Fahrer wählen —</option>
+                  ${driverOptions}
+                </select>
+              </div>
+              <div class="podium-slot p3">
+                <div class="podium-pos"><strong>P3</strong>3. Platz · BRONZE</div>
+                <select class="podium-select" id="pick-p3" ${disabled?'disabled':''}>
+                  <option value="">— Fahrer wählen —</option>
+                  ${driverOptions}
+                </select>
+              </div>
+            </div>
+
+            <div class="stake-row">
+              <div class="stake-field">
+                <label for="stake-input">Einsatz</label>
+                <div class="stake-input-wrap">
+                  <input type="number" id="stake-input" class="stake-input" min="1" max="${pts}" step="1" value="${Math.min(100, pts) || 0}" ${disabled?'disabled':''} />
+                  <span class="stake-suffix">PTS</span>
+                </div>
+              </div>
+              <div class="stake-quick">
+                <button class="quick-btn" data-stake="25" ${disabled?'disabled':''}>25</button>
+                <button class="quick-btn" data-stake="100" ${disabled?'disabled':''}>100</button>
+                <button class="quick-btn" data-stake="250" ${disabled?'disabled':''}>250</button>
+                <button class="quick-btn" data-stake="max" ${disabled?'disabled':''}>MAX</button>
+              </div>
+            </div>
+
+            <button class="place-btn" id="place-btn" ${disabled?'disabled':''}>
+              ${closedTimeWise ? 'Wetten geschlossen' : (bankrupt || pts <= 0 ? 'Keine Punkte mehr' : 'Wette platzieren')}
+            </button>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  // History
+  const settled = state.myBets.filter(b => b.status === 'settled').slice(0, 20);
+  const open = state.myBets.filter(b => b.status === 'open');
+  const openHtml = open.length ? `
+    <div class="section">
+      <div class="section-title">Offene Wetten</div>
+      <div class="card">
+        ${open.map(b => renderBetRow(b)).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  const historyHtml = settled.length ? `
+    <div class="section">
+      <div class="section-title">Verlauf</div>
+      <div class="card">
+        ${settled.map(b => renderBetRow(b)).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  // Leaderboard
+  const lbHtml = `
+    <div class="section">
+      <div class="section-title">Saison ${state.season} — Top Tipper</div>
+      <div class="card">
+        ${state.leaderboard.length === 0
+          ? '<div class="empty">Noch keine Daten.</div>'
+          : state.leaderboard.map((row, i) => {
+              const pos = i + 1;
+              const me = row.user_id === state.user.id;
+              const cls = pos === 1 ? 'gold' : pos === 2 ? 'silver' : pos === 3 ? 'bronze' : '';
+              return `
+                <div class="lb-row ${me?'me':''}">
+                  <div class="lb-pos ${cls}">${pos}</div>
+                  <div class="lb-name ${me?'me':''}">${esc(row.name)}</div>
+                  <div class="lb-pts">${row.points.toLocaleString('de-DE')}<span>pts</span></div>
+                </div>`;
+            }).join('')
+        }
+      </div>
+    </div>
+  `;
+
+  appBody.innerHTML = balanceHtml + bankruptHtml + placeHtml + openHtml + historyHtml + lbHtml;
+
+  // Wire up form
+  const placeBtn = document.getElementById('place-btn');
+  if (placeBtn && !placeBtn.disabled) {
+    const stakeInput = document.getElementById('stake-input');
+    document.querySelectorAll('.quick-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const v = btn.dataset.stake;
+        if (v === 'max') stakeInput.value = pts;
+        else stakeInput.value = Math.min(parseInt(v, 10), pts);
+      });
+    });
+    placeBtn.addEventListener('click', async () => {
+      const p1 = document.getElementById('pick-p1').value;
+      const p2 = document.getElementById('pick-p2').value;
+      const p3 = document.getElementById('pick-p3').value;
+      const stake = parseInt(stakeInput.value, 10);
+      if (!p1 || !p2 || !p3) { toast('Bitte alle drei Plätze auswählen', 'err'); return; }
+      placeBtn.disabled = true;
+      placeBtn.textContent = '...';
+      await placeBet({ p1, p2, p3, stake });
+    });
+  }
+}
+
+function renderBetRow(b) {
+  const statusLabel = {
+    open:    'Offen',
+    exact:   'Exakt 1-2-3',
+    drivers: '3 richtig',
+    miss:    'Daneben',
+  };
+  const status = b.status === 'open' ? 'open' : b.result_kind;
+  const payoutLine = b.status === 'open'
+    ? ''
+    : (b.payout > 0
+        ? `<div class="bet-payout win">+${(b.payout - b.stake).toLocaleString('de-DE')} pts</div>`
+        : `<div class="bet-payout lose">−${b.stake.toLocaleString('de-DE')} pts</div>`);
+  return `
+    <div class="bet-row">
+      <div>
+        <div class="bet-race">${esc(b.race_name || ('Runde ' + b.round))}</div>
+        <div class="bet-picks">
+          <div class="pick-chip"><strong>P1</strong> ${esc(driverNameById(b.p1_id))}</div>
+          <div class="pick-chip p2"><strong>P2</strong> ${esc(driverNameById(b.p2_id))}</div>
+          <div class="pick-chip p3"><strong>P3</strong> ${esc(driverNameById(b.p3_id))}</div>
+        </div>
+      </div>
+      <div class="bet-side">
+        <div class="bet-stake">${b.stake.toLocaleString('de-DE')}<span>pts</span></div>
+        <div class="bet-status ${status}">${statusLabel[status]}</div>
+        ${payoutLine}
+      </div>
+    </div>
+  `;
+}
+
+init();
+</script>
+</body>
+</html>
