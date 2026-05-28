@@ -622,8 +622,8 @@
       return;
     }
     const guess = grid[currentRow].join('');
-    if (!wordSet.has(guess)) {
-      shakeRow(currentRow, 'Kein gültiges Wort');
+    if (!/^[A-ZÄÖÜ]{5}$/.test(guess)) {
+      shakeRow(currentRow, 'Nur Buchstaben erlaubt');
       return;
     }
     evaluate(guess, currentRow);
