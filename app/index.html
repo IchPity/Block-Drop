@@ -373,6 +373,28 @@
     .thumb-mines        { background: linear-gradient(145deg, #00070d 0%, #001820 55%, #00070d 100%); }
     .thumb-f1           { background: linear-gradient(145deg, #15000a 0%, #4a0010 55%, #15000a 100%); }
     .thumb-f1bet        { background: linear-gradient(145deg, #1a1500 0%, #3a2a00 55%, #1a1500 100%); }
+    .thumb-metar        { background: linear-gradient(145deg, #00080d 0%, #001828 55%, #00080d 100%); }
+
+    .metar-card:hover {
+      border-color: rgba(56,189,248,0.55) !important;
+      box-shadow:
+        0 0 0 1px rgba(56,189,248,0.08),
+        0 32px 72px rgba(0,0,0,0.8),
+        0 0 60px rgba(56,189,248,0.12) !important;
+    }
+    .metar-card .card-tag { color: #38bdf8 !important; }
+    .metar-card .play-btn { background: #38bdf8; color: #000; box-shadow: 0 0 18px rgba(56,189,248,0.32); }
+
+    /* METAR-style mono art */
+    .metar-art {
+      font-family: 'Courier New', monospace;
+      font-size: 11px; font-weight: 700;
+      color: #7dd3fc; opacity: 0.85;
+      line-height: 1.5; letter-spacing: 0.5px;
+      text-align: center;
+    }
+    .metar-art .row-1 { color: #fff; font-size: 13px; letter-spacing: 1.5px; margin-bottom: 4px; }
+    .metar-art .row-2 { color: rgba(125,211,252,0.85); }
 
     .f1bet-card:hover {
       border-color: rgba(240,192,0,0.55) !important;
@@ -621,7 +643,7 @@
   <div class="section-header">
     <div class="section-title">Spielen</div>
     <div class="section-divider"></div>
-    <div class="section-count">6 verfügbar</div>
+    <div class="section-count">7 verfügbar</div>
   </div>
 
   <div class="games-grid">
@@ -675,6 +697,23 @@
         <div class="card-desc">Klassisches Schach direkt im Browser. Zu zweit am selben Gerät spielen.</div>
         <div class="card-footer">
           <div class="play-btn" style="background:#22c55e;box-shadow:0 0 18px rgba(34,197,94,0.28)">Spielen <span class="btn-arrow">→</span></div>
+        </div>
+      </div>
+    </a>
+
+    <a class="game-card available metar-card" href="metar/">
+      <div class="card-thumb thumb-metar">
+        <div class="metar-art">
+          <div class="row-1">METAR LOWW</div>
+          <div class="row-2">27015KT 9999<br>FEW040 18/12</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">Live Wetter</div>
+        <div class="card-title">METAR Browser</div>
+        <div class="card-desc">Aktuelle Flughafen-Wetterdaten weltweit. ICAO-Code rein, Roh-METAR + Decode raus.</div>
+        <div class="card-footer">
+          <div class="play-btn">Öffnen <span class="btn-arrow">→</span></div>
         </div>
       </div>
     </a>
