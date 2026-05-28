@@ -159,6 +159,50 @@
     .ach-status.done::before { content: '✓'; }
     .ach-status.todo { color: rgba(255,255,255,0.12); }
 
+    /* ── Leaderboard ────────────────────────────────────── */
+    .lb-section { margin-bottom: 48px; }
+    .lb-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+    .lb-tab {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.45);
+      padding: 7px 14px; border-radius: 10px;
+      font-family: inherit; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.5px; cursor: pointer; transition: all 0.2s;
+    }
+    .lb-tab:hover { color: #fff; border-color: rgba(255,255,255,0.2); }
+    .lb-tab.active { background: rgba(233,69,96,0.15); border-color: rgba(233,69,96,0.45); color: #fff; }
+    .lb-list {
+      background: rgba(18,18,42,0.5);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 18px; overflow: hidden;
+      min-height: 200px;
+    }
+    .lb-row {
+      display: grid; grid-template-columns: 48px 1fr 100px 80px;
+      align-items: center; gap: 12px;
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 13px;
+    }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-row.head {
+      background: rgba(255,255,255,0.02);
+      font-size: 10px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: rgba(255,255,255,0.3);
+    }
+    .lb-row.me { background: rgba(233,69,96,0.08); }
+    .lb-rank { font-weight: 900; color: rgba(255,255,255,0.5); }
+    .lb-rank.gold { color: #f0c000; }
+    .lb-rank.silver { color: #c8c8d0; }
+    .lb-rank.bronze { color: #cd7f32; }
+    .lb-name { font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-score { color: var(--red); font-weight: 800; text-align: right; }
+    .lb-plays { color: rgba(255,255,255,0.35); font-weight: 600; text-align: right; }
+    .lb-empty {
+      padding: 36px 20px; text-align: center;
+      color: rgba(255,255,255,0.3); font-size: 12px;
+    }
+
     /* ── Bottom CTA ─────────────────────────────────────── */
     .bottom-cta {
       text-align: center; padding: 48px 0 72px;
@@ -196,6 +240,9 @@
   <div class="nav-left">
     <a href="/" class="nav-back">&#8592; Arcade</a>
     <div class="nav-title">Achievements</div>
+  </div>
+  <div class="nav-right">
+    <div data-auth-slot></div>
   </div>
 </nav>
 
@@ -242,6 +289,21 @@
 
   <div id="ach-content"></div>
 
+  <div class="lb-section">
+    <div class="section-header">
+      <div class="section-label">Leaderboard</div>
+      <div class="section-divider"></div>
+      <div class="section-count" id="lb-count">—</div>
+    </div>
+    <div class="lb-tabs">
+      <button class="lb-tab active" data-mode="standard">Block Drop · Standard</button>
+      <button class="lb-tab" data-mode="classic">Block Drop · Classic</button>
+    </div>
+    <div class="lb-list" id="lb-list">
+      <div class="lb-empty">Lade…</div>
+    </div>
+  </div>
+
   <div class="bottom-cta">
     <h3>Noch mehr freischalten?</h3>
     <p>Spiel Block Drop und sammle alle Achievements — manche sind echter schwer.</p>
@@ -253,6 +315,8 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
 <script>
 const ACHIEVEMENTS = [
   { id: 'bd_first',    game: 'Block Drop', name: 'Anfänger',                        desc: 'Starte dein erstes Spiel',                    icon: '🎮' },
@@ -267,10 +331,17 @@ const ACHIEVEMENTS = [
   { id: 'su_15min',    game: 'SchulUhr',   name: 'du hast wirklich keine Lust oder',desc: '15 Minuten auf der SchulUhr verbracht',       icon: '😴' },
 ];
 
+let cloudAchievements = null;
+
+function getUnlocked() {
+  // Cloud hat Vorrang, sonst localStorage
+  if (cloudAchievements && Array.isArray(cloudAchievements)) return cloudAchievements;
+  try { return JSON.parse(localStorage.getItem('arcade_achievements')) || []; }
+  catch(e) { return []; }
+}
+
 function render() {
-  let unlocked = [];
-  try { unlocked = JSON.parse(localStorage.getItem('arcade_achievements')) || []; }
-  catch(e) {}
+  const unlocked = getUnlocked();
 
   const unlockedIds   = new Set(unlocked.map(a => a.id));
   const unlockedCount = ACHIEVEMENTS.filter(a => unlockedIds.has(a.id)).length;
@@ -328,6 +399,85 @@ function render() {
 }
 
 render();
+
+// ─── Cloud-Sync ────────────────────────────────────────────────────────
+async function syncFromCloud() {
+  if (!window.Auth || !window.Auth.user) return;
+  try {
+    const list = await window.Auth.loadAchievements();
+    if (list && list.length) {
+      cloudAchievements = list;
+      // Auch lokal speichern (Backup für offline)
+      localStorage.setItem('arcade_achievements', JSON.stringify(list));
+      render();
+    } else {
+      // Cloud leer, aber lokal vielleicht etwas — hochladen
+      const local = JSON.parse(localStorage.getItem('arcade_achievements') || '[]');
+      if (local.length) await window.Auth.saveAchievements(local);
+    }
+  } catch (e) { console.warn('Sync fail:', e); }
+}
+
+window.Auth?.onChange?.(user => {
+  if (user) syncFromCloud();
+  else { cloudAchievements = null; render(); }
+});
+
+// ─── Leaderboard ───────────────────────────────────────────────────────
+let lbMode = 'standard';
+
+async function renderLeaderboard() {
+  const listEl = document.getElementById('lb-list');
+  const countEl = document.getElementById('lb-count');
+  if (!listEl) return;
+  listEl.innerHTML = '<div class="lb-empty">Lade…</div>';
+
+  if (!window.Auth) {
+    listEl.innerHTML = '<div class="lb-empty">Leaderboard nicht verfügbar.</div>';
+    return;
+  }
+
+  const rows = await window.Auth.getLeaderboard('blockdrop', lbMode, 50);
+  countEl.textContent = rows.length ? `${rows.length} Spieler` : '';
+
+  if (!rows.length) {
+    listEl.innerHTML = '<div class="lb-empty">Noch keine Scores. Sei der erste!</div>';
+    return;
+  }
+
+  const myUsername = window.Auth.profile?.username;
+  let html = `
+    <div class="lb-row head">
+      <div>Rang</div><div>Name</div>
+      <div style="text-align:right">Score</div>
+      <div style="text-align:right">Spiele</div>
+    </div>`;
+  rows.forEach((r, i) => {
+    const rank = i + 1;
+    const rankCls = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+    const meCls = (r.username === myUsername) ? 'me' : '';
+    const escape = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    html += `
+      <div class="lb-row ${meCls}">
+        <div class="lb-rank ${rankCls}">#${rank}</div>
+        <div class="lb-name">${escape(r.username)}</div>
+        <div class="lb-score">${Number(r.best_score).toLocaleString()}</div>
+        <div class="lb-plays">${r.plays}×</div>
+      </div>`;
+  });
+  listEl.innerHTML = html;
+}
+
+document.querySelectorAll('.lb-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    lbMode = tab.dataset.mode;
+    renderLeaderboard();
+  });
+});
+
+renderLeaderboard();
 </script>
 </body>
 </html>

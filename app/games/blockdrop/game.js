@@ -59,7 +59,31 @@ function tryUnlock(id) {
   list.push({ id, unlockedAt: new Date().toISOString() });
   localStorage.setItem('arcade_achievements', JSON.stringify(list));
   showAchOverlay(id);
+  // Cloud-Sync (fire-and-forget)
+  if (window.Auth && window.Auth.user) {
+    window.Auth.saveAchievements(list).catch(() => {});
+  }
 }
+
+// Beim Login: Cloud-Achievements mit lokalen mergen
+function syncAchievementsFromCloud() {
+  if (!window.Auth || !window.Auth.user) return;
+  window.Auth.loadAchievements().then(cloud => {
+    if (!cloud) return;
+    let local = [];
+    try { local = JSON.parse(localStorage.getItem('arcade_achievements')) || []; } catch(e) {}
+    const byId = new Map();
+    [...local, ...cloud].forEach(a => {
+      if (!byId.has(a.id)) byId.set(a.id, a);
+    });
+    const merged = [...byId.values()];
+    localStorage.setItem('arcade_achievements', JSON.stringify(merged));
+    if (merged.length !== cloud.length) {
+      window.Auth.saveAchievements(merged).catch(() => {});
+    }
+  }).catch(() => {});
+}
+if (window.Auth) window.Auth.onChange(u => { if (u) syncAchievementsFromCloud(); });
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const COLS = 10;
@@ -156,7 +180,7 @@ class Bag {
   }
 }
 
-// ── High scores (localStorage) ─────────────────────────────────────────────
+// ── High scores (localStorage + Cloud) ─────────────────────────────────────
 function dbSaveScore(score, mode, level, lines) {
   let all;
   try { all = JSON.parse(localStorage.getItem('arcade_scores')) || {}; }
@@ -166,6 +190,13 @@ function dbSaveScore(score, mode, level, lines) {
   all[mode].sort((a, b) => b.score - a.score);
   all[mode] = all[mode].slice(0, 10);
   localStorage.setItem('arcade_scores', JSON.stringify(all));
+
+  // Cloud-Save wenn eingeloggt (fire-and-forget)
+  if (window.Auth && window.Auth.user && score > 0) {
+    window.Auth.saveScore({
+      game: 'blockdrop', mode, score, level, lines
+    }).catch(() => {});
+  }
 }
 
 function dbLoadScores(mode) {
