@@ -259,6 +259,20 @@
       letter-spacing: 3px; font-variant-numeric: tabular-nums;
     }
     .modal.lost .modal-countdown-val { color: var(--red); }
+    .modal-back-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      margin-top: 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      padding: 11px 18px; width: 100%;
+      color: #fff; font-family: inherit;
+      font-size: 13px; font-weight: 700;
+      text-decoration: none; cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, transform 0.05s;
+    }
+    .modal-back-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.22); }
+    .modal-back-btn:active { transform: scale(0.98); }
     .modal-dist {
       margin: 4px 0 18px;
       padding: 14px;
@@ -425,6 +439,7 @@
       <div class="modal-countdown-lbl">Nächstes Wort in</div>
       <div class="modal-countdown-val" id="modal-countdown">—</div>
     </div>
+    <a class="modal-back-btn" href="../../">← Zurück zum Arcade</a>
   </div>
 </div>
 
