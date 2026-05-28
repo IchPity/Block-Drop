@@ -374,6 +374,38 @@
     .thumb-f1           { background: linear-gradient(145deg, #15000a 0%, #4a0010 55%, #15000a 100%); }
     .thumb-f1bet        { background: linear-gradient(145deg, #1a1500 0%, #3a2a00 55%, #1a1500 100%); }
     .thumb-metar        { background: linear-gradient(145deg, #00080d 0%, #001828 55%, #00080d 100%); }
+    .thumb-weather      { background: linear-gradient(145deg, #050818 0%, #1a2854 55%, #050818 100%); }
+
+    .weather-card:hover {
+      border-color: rgba(56,189,248,0.55) !important;
+      box-shadow:
+        0 0 0 1px rgba(56,189,248,0.08),
+        0 32px 72px rgba(0,0,0,0.8),
+        0 0 60px rgba(56,189,248,0.14) !important;
+    }
+    .weather-card .card-tag { color: #38bdf8 !important; }
+    .weather-card .play-btn { background: linear-gradient(135deg, #38bdf8, #6366f1); color: #fff; box-shadow: 0 0 18px rgba(56,189,248,0.32); }
+
+    /* Weather card art: sun + cloud */
+    .weather-art {
+      position: relative; width: 90px; height: 70px; opacity: 0.95;
+    }
+    .weather-art .sun {
+      position: absolute; top: 8px; left: 14px;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fde047, #f0c000 60%, #d97706);
+      box-shadow: 0 0 24px rgba(240,192,0,0.5);
+    }
+    .weather-art .cloud {
+      position: absolute; bottom: 10px; right: 8px;
+      width: 60px; height: 30px;
+      background: #cbd5e1; border-radius: 30px;
+    }
+    .weather-art .cloud::before, .weather-art .cloud::after {
+      content: ''; position: absolute; background: #cbd5e1; border-radius: 50%;
+    }
+    .weather-art .cloud::before { width: 22px; height: 22px; top: -10px; left: 8px; }
+    .weather-art .cloud::after { width: 28px; height: 28px; top: -16px; left: 24px; }
 
     .metar-card:hover {
       border-color: rgba(56,189,248,0.55) !important;
@@ -643,7 +675,7 @@
   <div class="section-header">
     <div class="section-title">Spielen</div>
     <div class="section-divider"></div>
-    <div class="section-count">7 verfügbar</div>
+    <div class="section-count">8 verfügbar</div>
   </div>
 
   <div class="games-grid">
@@ -697,6 +729,23 @@
         <div class="card-desc">Klassisches Schach direkt im Browser. Zu zweit am selben Gerät spielen.</div>
         <div class="card-footer">
           <div class="play-btn" style="background:#22c55e;box-shadow:0 0 18px rgba(34,197,94,0.28)">Spielen <span class="btn-arrow">→</span></div>
+        </div>
+      </div>
+    </a>
+
+    <a class="game-card available weather-card" href="weather/">
+      <div class="card-thumb thumb-weather">
+        <div class="weather-art">
+          <div class="sun"></div>
+          <div class="cloud"></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">Live · Karte</div>
+        <div class="card-title">Weather Dashboard</div>
+        <div class="card-desc">Aktuell + 24h + 7 Tage, mit Radar-Karte, UV und Luftqualität. Favoriten cloud-synct.</div>
+        <div class="card-footer">
+          <div class="play-btn">Öffnen <span class="btn-arrow">→</span></div>
         </div>
       </div>
     </a>
