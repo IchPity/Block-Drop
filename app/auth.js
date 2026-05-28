@@ -232,7 +232,7 @@
         <h2 id="auth-title">Willkommen zurück</h2>
         <div class="auth-modal-sub" id="auth-sub">Melde dich an, um deine Highscores geräteübergreifend zu speichern.</div>
         <div id="auth-msg"></div>
-        <form id="auth-form" method="post" action="#" autocomplete="on">
+        <form id="auth-form" method="post" action="#login" autocomplete="on" data-form-type="login">
           <div class="auth-field" id="auth-username-field" style="display:none">
             <label for="auth-username">Username</label>
             <input id="auth-username" name="username" type="text" minlength="3" maxlength="20" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" />
@@ -244,6 +244,10 @@
           <div class="auth-field">
             <label for="auth-password">Passwort</label>
             <input id="auth-password" name="password" type="password" required minlength="6" autocomplete="current-password" />
+          </div>
+          <div class="auth-field" id="auth-password2-field" style="display:none">
+            <label for="auth-password2">Passwort bestätigen</label>
+            <input id="auth-password2" name="password_confirm" type="password" minlength="6" autocomplete="new-password" />
           </div>
           <button type="submit" class="auth-submit" id="auth-submit">Anmelden</button>
         </form>
@@ -392,6 +396,8 @@
   const passEl = document.getElementById('auth-password');
   const userEl = document.getElementById('auth-username');
   const userField = document.getElementById('auth-username-field');
+  const pass2El = document.getElementById('auth-password2');
+  const pass2Field = document.getElementById('auth-password2-field');
   const submitBtn = document.getElementById('auth-submit');
   const titleEl = document.getElementById('auth-title');
   const subEl = document.getElementById('auth-sub');
@@ -414,8 +420,13 @@
       userField.style.display = 'none';
       userEl.required = false;
       userEl.disabled = true;
+      pass2Field.style.display = 'none';
+      pass2El.required = false;
+      pass2El.disabled = true;
       emailEl.autocomplete = 'username';
       passEl.autocomplete = 'current-password';
+      form.setAttribute('action', '#login');
+      form.setAttribute('data-form-type', 'login');
       form.setAttribute('aria-label', 'Anmelden');
       switchText.textContent = 'Noch kein Account?';
       switchLink.textContent = 'Registrieren';
@@ -427,8 +438,13 @@
       userField.style.display = 'block';
       userEl.required = true;
       userEl.disabled = false;
+      pass2Field.style.display = 'block';
+      pass2El.required = true;
+      pass2El.disabled = false;
       emailEl.autocomplete = 'email';
       passEl.autocomplete = 'new-password';
+      form.setAttribute('action', '#register');
+      form.setAttribute('data-form-type', 'register');
       form.setAttribute('aria-label', 'Registrieren');
       switchText.textContent = 'Schon angemeldet?';
       switchLink.textContent = 'Anmelden';
@@ -478,6 +494,7 @@
         const username = userEl.value.trim();
         if (username.length < 3) { showErr('Username muss mindestens 3 Zeichen haben.'); return; }
         if (!/^[a-zA-Z0-9_-]+$/.test(username)) { showErr('Username darf nur Buchstaben, Zahlen, _ und - enthalten.'); return; }
+        if (pass2El.value !== password) { showErr('Passwörter stimmen nicht überein.'); return; }
 
         const { error } = await Auth.signUp(email, password, username);
         if (error) { showErr(translateError(error)); return; }
