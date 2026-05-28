@@ -13,42 +13,10 @@ const ACH_DEFS = {
   bd_score250k:{ name: 'Legende',               desc: '250.000 Punkte in einem Spiel',        icon: '🏆' },
 };
 
-let _achDismiss = null;
-
 function showAchOverlay(id) {
   const def = ACH_DEFS[id];
-  if (!def) return;
-  const overlay = document.getElementById('ach-overlay');
-  if (!overlay) return;
-
-  document.getElementById('ach-icon-big').textContent = def.icon;
-  document.getElementById('ach-name-big').textContent = def.name;
-  document.getElementById('ach-desc-big').textContent = def.desc;
-
-  const game = window._game;
-  const wasPaused = game && game.state === 'playing';
-  if (wasPaused) {
-    game.state = 'achievement';
-    cancelAnimationFrame(game.animFrame);
-    game.clearLockDelay();
-  }
-
-  overlay.classList.add('show');
-
-  const dismiss = () => {
-    overlay.classList.remove('show');
-    overlay.removeEventListener('click', dismiss);
-    clearTimeout(_achDismiss);
-    if (wasPaused && game.state === 'achievement') {
-      game.state = 'playing';
-      game.lastDrop = performance.now();
-      game.loop(performance.now());
-    }
-  };
-
-  clearTimeout(_achDismiss);
-  _achDismiss = setTimeout(dismiss, 4000);
-  overlay.addEventListener('click', dismiss);
+  if (!def || !window.showAchToast) return;
+  window.showAchToast(def);
 }
 
 function tryUnlock(id) {
@@ -829,7 +797,6 @@ class BlockDrop {
 
   // ── Input ─────────────────────────────────────────────────────────────────
   onKey(e) {
-    if (this.state === 'achievement') return;
     if (this.state === 'paused') {
       if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') this.resume();
       return;

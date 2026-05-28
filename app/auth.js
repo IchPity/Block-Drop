@@ -173,6 +173,51 @@
     transition: all 0.2s;
   }
   .auth-close:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+  /* ─── Achievement Toasts ─────────────────────────────────────────────── */
+  #ach-toast-container {
+    position: fixed; bottom: 20px; right: 20px;
+    z-index: 9999;
+    display: flex; flex-direction: column; gap: 10px;
+    pointer-events: none;
+    max-width: 360px;
+  }
+  .ach-toast {
+    pointer-events: all;
+    background: rgba(10,10,24,0.96);
+    border: 1px solid rgba(240,192,0,0.35);
+    border-radius: 14px;
+    padding: 14px 18px;
+    display: flex; align-items: center; gap: 14px;
+    min-width: 280px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.55), 0 0 30px rgba(240,192,0,0.08);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    transform: translateX(120%); opacity: 0;
+    transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+    cursor: pointer;
+    position: relative; overflow: hidden;
+  }
+  .ach-toast.show { transform: translateX(0); opacity: 1; }
+  .ach-toast.exit { transform: translateX(120%); opacity: 0; }
+  .ach-toast::after {
+    content: ''; position: absolute; left: 0; bottom: 0;
+    height: 2px; width: 100%;
+    background: linear-gradient(90deg, #f0c000, #e94560);
+    transform-origin: left;
+    animation: achToastProgress 4.5s linear forwards;
+  }
+  @keyframes achToastProgress {
+    from { transform: scaleX(1); } to { transform: scaleX(0); }
+  }
+  .ach-toast-icon { font-size: 30px; flex-shrink: 0; line-height: 1; }
+  .ach-toast-body { flex: 1; min-width: 0; }
+  .ach-toast-label {
+    font-size: 9px; font-weight: 800;
+    letter-spacing: 2.5px; text-transform: uppercase;
+    color: #f0c000; margin-bottom: 3px;
+  }
+  .ach-toast-name { font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -0.2px; }
+  .ach-toast-desc { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; line-height: 1.4; }
   `;
   const styleEl = document.createElement('style');
   styleEl.textContent = css;
@@ -502,6 +547,38 @@
   }
 
   Auth.onChange(() => mountSlots());
+
+  // ─── Achievement-Toast (global) ───────────────────────────────────────────
+  function showAchToast(def) {
+    if (!def) return;
+    let container = document.getElementById('ach-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'ach-toast-container';
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = 'ach-toast';
+    toast.innerHTML = `
+      <div class="ach-toast-icon">${def.icon || '🏆'}</div>
+      <div class="ach-toast-body">
+        <div class="ach-toast-label">Freigeschaltet</div>
+        <div class="ach-toast-name">${escapeHtml(def.name || '')}</div>
+        <div class="ach-toast-desc">${escapeHtml(def.desc || '')}</div>
+      </div>
+    `;
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+
+    const dismiss = () => {
+      toast.classList.remove('show');
+      toast.classList.add('exit');
+      setTimeout(() => toast.remove(), 450);
+    };
+    const auto = setTimeout(dismiss, 4500);
+    toast.addEventListener('click', () => { clearTimeout(auto); dismiss(); });
+  }
+  window.showAchToast = showAchToast;
 
   // Expose
   window.Auth = Auth;
