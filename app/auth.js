@@ -224,6 +224,9 @@
   document.head.appendChild(styleEl);
 
   // ─── Modal-HTML ────────────────────────────────────────────────────────────
+  // Zwei separate Forms (login + register), damit Passwort-Manager wie Proton Pass
+  // sie korrekt klassifizieren — sie scannen einmal beim Anzeigen und merken sich
+  // den Typ. Dynamisches Toggeln eines einzigen Forms verwirrt die Heuristiken.
   const modalHtml = `
     <div class="auth-modal-backdrop" id="auth-modal-backdrop">
       <div class="auth-modal" style="position:relative">
@@ -232,25 +235,39 @@
         <h2 id="auth-title">Willkommen zurück</h2>
         <div class="auth-modal-sub" id="auth-sub">Melde dich an, um deine Highscores geräteübergreifend zu speichern.</div>
         <div id="auth-msg"></div>
-        <form id="auth-form" method="post" action="#login" autocomplete="on" data-form-type="login">
-          <div class="auth-field" id="auth-username-field" style="display:none">
-            <label for="auth-username">Username</label>
-            <input id="auth-username" name="username" type="text" minlength="3" maxlength="20" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" />
+
+        <form id="auth-form-login" method="post" action="#login" autocomplete="on" data-form-type="login" aria-label="Anmelden">
+          <div class="auth-field">
+            <label for="login-email">Email</label>
+            <input id="login-email" name="email" type="email" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email" />
           </div>
           <div class="auth-field">
-            <label for="auth-email">Email</label>
-            <input id="auth-email" name="email" type="email" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email" />
+            <label for="login-password">Passwort</label>
+            <input id="login-password" name="password" type="password" required minlength="6" autocomplete="current-password" />
           </div>
-          <div class="auth-field">
-            <label for="auth-password">Passwort</label>
-            <input id="auth-password" name="password" type="password" required minlength="6" autocomplete="current-password" />
-          </div>
-          <div class="auth-field" id="auth-password2-field" style="display:none">
-            <label for="auth-password2">Passwort bestätigen</label>
-            <input id="auth-password2" name="password_confirm" type="password" minlength="6" autocomplete="new-password" />
-          </div>
-          <button type="submit" class="auth-submit" id="auth-submit">Anmelden</button>
+          <button type="submit" class="auth-submit" id="login-submit">Anmelden</button>
         </form>
+
+        <form id="auth-form-register" method="post" action="#register" autocomplete="on" data-form-type="register" aria-label="Registrieren" style="display:none">
+          <div class="auth-field">
+            <label for="register-username">Username</label>
+            <input id="register-username" name="username" type="text" required minlength="3" maxlength="20" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" />
+          </div>
+          <div class="auth-field">
+            <label for="register-email">Email</label>
+            <input id="register-email" name="email" type="email" required autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email" />
+          </div>
+          <div class="auth-field">
+            <label for="register-password">Passwort</label>
+            <input id="register-password" name="new-password" type="password" required minlength="6" autocomplete="new-password" />
+          </div>
+          <div class="auth-field">
+            <label for="register-password2">Passwort bestätigen</label>
+            <input id="register-password2" name="new-password-confirm" type="password" required minlength="6" autocomplete="new-password" />
+          </div>
+          <button type="submit" class="auth-submit" id="register-submit">Account erstellen</button>
+        </form>
+
         <div class="auth-switch">
           <span id="auth-switch-text">Noch kein Account?</span>
           <a id="auth-switch-link">Registrieren</a>
@@ -391,14 +408,16 @@
 
   // ─── Modal-Logik ───────────────────────────────────────────────────────────
   const backdrop = document.getElementById('auth-modal-backdrop');
-  const form = document.getElementById('auth-form');
-  const emailEl = document.getElementById('auth-email');
-  const passEl = document.getElementById('auth-password');
-  const userEl = document.getElementById('auth-username');
-  const userField = document.getElementById('auth-username-field');
-  const pass2El = document.getElementById('auth-password2');
-  const pass2Field = document.getElementById('auth-password2-field');
-  const submitBtn = document.getElementById('auth-submit');
+  const loginForm = document.getElementById('auth-form-login');
+  const registerForm = document.getElementById('auth-form-register');
+  const loginEmail = document.getElementById('login-email');
+  const loginPass  = document.getElementById('login-password');
+  const loginSubmit = document.getElementById('login-submit');
+  const regUser  = document.getElementById('register-username');
+  const regEmail = document.getElementById('register-email');
+  const regPass  = document.getElementById('register-password');
+  const regPass2 = document.getElementById('register-password2');
+  const regSubmit = document.getElementById('register-submit');
   const titleEl = document.getElementById('auth-title');
   const subEl = document.getElementById('auth-sub');
   const eyebrowEl = document.getElementById('auth-eyebrow');
@@ -416,36 +435,16 @@
       eyebrowEl.textContent = 'Anmelden';
       titleEl.textContent = 'Willkommen zurück';
       subEl.textContent = 'Melde dich an, um deine Highscores geräteübergreifend zu speichern.';
-      submitBtn.textContent = 'Anmelden';
-      userField.style.display = 'none';
-      userEl.required = false;
-      userEl.disabled = true;
-      pass2Field.style.display = 'none';
-      pass2El.required = false;
-      pass2El.disabled = true;
-      emailEl.autocomplete = 'username';
-      passEl.autocomplete = 'current-password';
-      form.setAttribute('action', '#login');
-      form.setAttribute('data-form-type', 'login');
-      form.setAttribute('aria-label', 'Anmelden');
+      loginForm.style.display = '';
+      registerForm.style.display = 'none';
       switchText.textContent = 'Noch kein Account?';
       switchLink.textContent = 'Registrieren';
     } else {
       eyebrowEl.textContent = 'Registrieren';
       titleEl.textContent = 'Account erstellen';
       subEl.textContent = 'Wähl einen Username und ein Passwort — Highscores + Achievements sind danach auf allen Geräten verfügbar.';
-      submitBtn.textContent = 'Account erstellen';
-      userField.style.display = 'block';
-      userEl.required = true;
-      userEl.disabled = false;
-      pass2Field.style.display = 'block';
-      pass2El.required = true;
-      pass2El.disabled = false;
-      emailEl.autocomplete = 'email';
-      passEl.autocomplete = 'new-password';
-      form.setAttribute('action', '#register');
-      form.setAttribute('data-form-type', 'register');
-      form.setAttribute('aria-label', 'Registrieren');
+      loginForm.style.display = 'none';
+      registerForm.style.display = '';
       switchText.textContent = 'Schon angemeldet?';
       switchLink.textContent = 'Anmelden';
     }
@@ -454,11 +453,12 @@
   function showModal(m) {
     setMode(m || 'login');
     backdrop.classList.add('open');
-    setTimeout(() => (mode === 'register' ? userEl : emailEl).focus(), 250);
+    setTimeout(() => (mode === 'register' ? regUser : loginEmail).focus(), 250);
   }
   function hideModal() {
     backdrop.classList.remove('open');
-    form.reset();
+    loginForm.reset();
+    registerForm.reset();
     msgEl.innerHTML = '';
   }
   function showErr(text) {
@@ -475,35 +475,41 @@
   });
   switchLink.addEventListener('click', () => setMode(mode === 'login' ? 'register' : 'login'));
 
-  form.addEventListener('submit', async e => {
+  loginForm.addEventListener('submit', async e => {
     e.preventDefault();
-    submitBtn.disabled = true;
-    const origLabel = submitBtn.textContent;
-    submitBtn.textContent = '...';
+    loginSubmit.disabled = true;
+    const origLabel = loginSubmit.textContent;
+    loginSubmit.textContent = '...';
     msgEl.innerHTML = '';
-
-    const email = emailEl.value.trim();
-    const password = passEl.value;
-
     try {
-      if (mode === 'login') {
-        const { error } = await Auth.signIn(email, password);
-        if (error) { showErr(translateError(error)); return; }
-        hideModal();
-      } else {
-        const username = userEl.value.trim();
-        if (username.length < 3) { showErr('Username muss mindestens 3 Zeichen haben.'); return; }
-        if (!/^[a-zA-Z0-9_-]+$/.test(username)) { showErr('Username darf nur Buchstaben, Zahlen, _ und - enthalten.'); return; }
-        if (pass2El.value !== password) { showErr('Passwörter stimmen nicht überein.'); return; }
-
-        const { error } = await Auth.signUp(email, password, username);
-        if (error) { showErr(translateError(error)); return; }
-        // Bei Erfolg ist die Session bereits gesetzt — Modal zu, fertig
-        hideModal();
-      }
+      const { error } = await Auth.signIn(loginEmail.value.trim(), loginPass.value);
+      if (error) { showErr(translateError(error)); return; }
+      hideModal();
     } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = origLabel;
+      loginSubmit.disabled = false;
+      loginSubmit.textContent = origLabel;
+    }
+  });
+
+  registerForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    regSubmit.disabled = true;
+    const origLabel = regSubmit.textContent;
+    regSubmit.textContent = '...';
+    msgEl.innerHTML = '';
+    try {
+      const username = regUser.value.trim();
+      const email = regEmail.value.trim();
+      const password = regPass.value;
+      if (username.length < 3) { showErr('Username muss mindestens 3 Zeichen haben.'); return; }
+      if (!/^[a-zA-Z0-9_-]+$/.test(username)) { showErr('Username darf nur Buchstaben, Zahlen, _ und - enthalten.'); return; }
+      if (regPass2.value !== password) { showErr('Passwörter stimmen nicht überein.'); return; }
+      const { error } = await Auth.signUp(email, password, username);
+      if (error) { showErr(translateError(error)); return; }
+      hideModal();
+    } finally {
+      regSubmit.disabled = false;
+      regSubmit.textContent = origLabel;
     }
   });
 
