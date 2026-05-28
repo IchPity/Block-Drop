@@ -838,15 +838,16 @@ class BlockDrop {
     if (this.state !== 'playing') return;
 
     switch (e.key) {
-      case 'ArrowLeft':  e.preventDefault(); this.moveLeft();   break;
-      case 'ArrowRight': e.preventDefault(); this.moveRight();  break;
+      // Bewegung: nur beim ersten Druck reagieren — DAS übernimmt das Auto-Repeat
+      case 'ArrowLeft':  e.preventDefault(); if (!e.repeat) this.moveLeft();  break;
+      case 'ArrowRight': e.preventDefault(); if (!e.repeat) this.moveRight(); break;
       case 'ArrowDown':  e.preventDefault(); this.softDrop();   break;
       case 'ArrowUp':
-      case 'z': case 'Z': e.preventDefault(); this.rotate(1);  break;
-      case 'x': case 'X': e.preventDefault(); this.rotate(-1); break;
-      case ' ':           e.preventDefault(); this.hardDrop();  break;
-      case 'c': case 'C': e.preventDefault(); this.holdPiece(); break;
-      case 'p': case 'P': case 'Escape': this.togglePause();   break;
+      case 'z': case 'Z': e.preventDefault(); if (!e.repeat) this.rotate(1);  break;
+      case 'x': case 'X': e.preventDefault(); if (!e.repeat) this.rotate(-1); break;
+      case ' ':           e.preventDefault(); if (!e.repeat) this.hardDrop(); break;
+      case 'Shift':       e.preventDefault(); if (!e.repeat) this.holdPiece(); break;
+      case 'p': case 'P': case 'Escape': if (!e.repeat) this.togglePause();   break;
     }
   }
 }
@@ -857,23 +858,24 @@ class BlockDrop {
   let dasTimer = null, dasDir = 0;
 
   document.addEventListener('keydown', e => {
+    if (e.repeat) return; // Native Browser-Repeat ignorieren — DAS macht das
     if (!window._game || window._game.state !== 'playing') return;
     if (e.key === 'ArrowLeft' && dasDir !== -1) {
-      clearInterval(dasTimer); dasDir = -1;
+      clearTimeout(dasTimer); clearInterval(dasTimer); dasDir = -1;
       dasTimer = setTimeout(() => {
         dasTimer = setInterval(() => window._game.moveLeft(), DAS_REPEAT);
       }, DAS_DELAY);
     } else if (e.key === 'ArrowRight' && dasDir !== 1) {
-      clearInterval(dasTimer); dasDir = 1;
+      clearTimeout(dasTimer); clearInterval(dasTimer); dasDir = 1;
       dasTimer = setTimeout(() => {
         dasTimer = setInterval(() => window._game.moveRight(), DAS_REPEAT);
-      }, DAS_REPEAT);
+      }, DAS_DELAY);
     }
   });
 
   document.addEventListener('keyup', e => {
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      clearInterval(dasTimer); dasTimer = null; dasDir = 0;
+      clearTimeout(dasTimer); clearInterval(dasTimer); dasTimer = null; dasDir = 0;
     }
   });
 })();
