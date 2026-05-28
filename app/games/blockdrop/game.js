@@ -808,7 +808,7 @@ class BlockDrop {
       // Bewegung: nur beim ersten Druck reagieren — DAS übernimmt das Auto-Repeat
       case 'ArrowLeft':  e.preventDefault(); if (!e.repeat) this.moveLeft();  break;
       case 'ArrowRight': e.preventDefault(); if (!e.repeat) this.moveRight(); break;
-      case 'ArrowDown':  e.preventDefault(); this.softDrop();   break;
+      case 'ArrowDown':  e.preventDefault(); if (!e.repeat) this.softDrop(); break;
       case 'ArrowUp':
       case 'z': case 'Z': e.preventDefault(); if (!e.repeat) this.rotate(1);  break;
       case 'x': case 'X': e.preventDefault(); if (!e.repeat) this.rotate(-1); break;
@@ -822,7 +822,9 @@ class BlockDrop {
 // ── DAS (Delayed Auto Shift) ───────────────────────────────────────────────
 (function addDAS() {
   const DAS_DELAY = 150, DAS_REPEAT = 50;
+  const SOFT_DROP_REPEAT = 25; // Soft-Drop: instant + sehr schnelle Wiederholung
   let dasTimer = null, dasDir = 0;
+  let downTimer = null;
 
   document.addEventListener('keydown', e => {
     if (e.repeat) return; // Native Browser-Repeat ignorieren — DAS macht das
@@ -837,12 +839,19 @@ class BlockDrop {
       dasTimer = setTimeout(() => {
         dasTimer = setInterval(() => window._game.moveRight(), DAS_REPEAT);
       }, DAS_DELAY);
+    } else if (e.key === 'ArrowDown' && !downTimer) {
+      // Soft Drop: ohne Initial-Delay direkt durchgängig dropen
+      downTimer = setInterval(() => {
+        if (window._game && window._game.state === 'playing') window._game.softDrop();
+      }, SOFT_DROP_REPEAT);
     }
   });
 
   document.addEventListener('keyup', e => {
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       clearTimeout(dasTimer); clearInterval(dasTimer); dasTimer = null; dasDir = 0;
+    } else if (e.key === 'ArrowDown') {
+      clearInterval(downTimer); downTimer = null;
     }
   });
 })();
