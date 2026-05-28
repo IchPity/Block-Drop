@@ -372,6 +372,31 @@
     .thumb-memory       { background: linear-gradient(145deg, #0d0700 0%, #2a1800 55%, #0d0700 100%); }
     .thumb-mines        { background: linear-gradient(145deg, #00070d 0%, #001820 55%, #00070d 100%); }
     .thumb-f1           { background: linear-gradient(145deg, #15000a 0%, #4a0010 55%, #15000a 100%); }
+    .thumb-f1bet        { background: linear-gradient(145deg, #1a1500 0%, #3a2a00 55%, #1a1500 100%); }
+
+    .f1bet-card:hover {
+      border-color: rgba(240,192,0,0.55) !important;
+      box-shadow:
+        0 0 0 1px rgba(240,192,0,0.08),
+        0 32px 72px rgba(0,0,0,0.8),
+        0 0 60px rgba(240,192,0,0.12) !important;
+    }
+    .f1bet-card .card-tag { color: var(--gold) !important; }
+    .f1bet-card .play-btn { background: var(--gold); color: #000; box-shadow: 0 0 18px rgba(240,192,0,0.32); }
+
+    /* Podium art for the bet card */
+    .podium-art {
+      display: flex; align-items: flex-end; gap: 8px; opacity: 0.88;
+    }
+    .podium-bar {
+      width: 22px; border-radius: 4px 4px 0 0;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding-top: 4px;
+      font-size: 9px; font-weight: 900; color: #000; letter-spacing: 0.5px;
+    }
+    .podium-bar.p1 { height: 56px; background: linear-gradient(180deg, #ffe27a, #f0c000); }
+    .podium-bar.p2 { height: 42px; background: linear-gradient(180deg, #e8e8e8, #b8b8b8); }
+    .podium-bar.p3 { height: 32px; background: linear-gradient(180deg, #e29a5a, #cd7f32); color: #fff; }
 
     .f1-card:hover {
       border-color: rgba(225,6,0,0.55) !important;
@@ -596,7 +621,7 @@
   <div class="section-header">
     <div class="section-title">Spielen</div>
     <div class="section-divider"></div>
-    <div class="section-count">5 verfügbar</div>
+    <div class="section-count">6 verfügbar</div>
   </div>
 
   <div class="games-grid">
@@ -650,6 +675,24 @@
         <div class="card-desc">Klassisches Schach direkt im Browser. Zu zweit am selben Gerät spielen.</div>
         <div class="card-footer">
           <div class="play-btn" style="background:#22c55e;box-shadow:0 0 18px rgba(34,197,94,0.28)">Spielen <span class="btn-arrow">→</span></div>
+        </div>
+      </div>
+    </a>
+
+    <a class="game-card available f1bet-card" href="f1-wetten/">
+      <div class="card-thumb thumb-f1bet">
+        <div class="podium-art">
+          <div class="podium-bar p2">2</div>
+          <div class="podium-bar p1">1</div>
+          <div class="podium-bar p3">3</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">Login · Wetten</div>
+        <div class="card-title">F1 Podium Wetten</div>
+        <div class="card-desc">Tipp das Podium, gewinne Punkte. 1.000 Startpunkte pro Saison — verlieren möglich.</div>
+        <div class="card-footer">
+          <div class="play-btn">Wetten <span class="btn-arrow">→</span></div>
         </div>
       </div>
     </a>
