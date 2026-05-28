@@ -371,6 +371,32 @@
     .thumb-space        { background: linear-gradient(145deg, #04000d 0%, #120030 55%, #04000d 100%); }
     .thumb-memory       { background: linear-gradient(145deg, #0d0700 0%, #2a1800 55%, #0d0700 100%); }
     .thumb-mines        { background: linear-gradient(145deg, #00070d 0%, #001820 55%, #00070d 100%); }
+    .thumb-f1           { background: linear-gradient(145deg, #15000a 0%, #4a0010 55%, #15000a 100%); }
+
+    .f1-card:hover {
+      border-color: rgba(225,6,0,0.55) !important;
+      box-shadow:
+        0 0 0 1px rgba(225,6,0,0.08),
+        0 32px 72px rgba(0,0,0,0.8),
+        0 0 60px rgba(225,6,0,0.12) !important;
+    }
+    .f1-card .card-tag { color: #ff1e1e !important; }
+    .f1-card .play-btn { background: #e10600; box-shadow: 0 0 18px rgba(225,6,0,0.32); }
+
+    /* F1 wordmark art */
+    .f1-art {
+      font-family: 'Inter', sans-serif; font-weight: 900;
+      font-size: 56px; letter-spacing: -4px; line-height: 1;
+      color: #fff; position: relative; opacity: 0.92;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .f1-art .f1-1 { color: #e10600; font-style: italic; }
+    .f1-art::before {
+      content: ''; position: absolute; right: -14px; top: 6px;
+      width: 3px; height: 36px; background: #e10600; transform: skewX(-22deg);
+      box-shadow: 6px 0 0 #e10600, 12px 0 0 #e10600;
+      opacity: 0.85;
+    }
 
     .game-card.available:hover .card-thumb::after {
       content: ''; position: absolute; inset: 0;
@@ -570,7 +596,7 @@
   <div class="section-header">
     <div class="section-title">Spielen</div>
     <div class="section-divider"></div>
-    <div class="section-count">4 verfügbar</div>
+    <div class="section-count">5 verfügbar</div>
   </div>
 
   <div class="games-grid">
@@ -624,6 +650,20 @@
         <div class="card-desc">Klassisches Schach direkt im Browser. Zu zweit am selben Gerät spielen.</div>
         <div class="card-footer">
           <div class="play-btn" style="background:#22c55e;box-shadow:0 0 18px rgba(34,197,94,0.28)">Spielen <span class="btn-arrow">→</span></div>
+        </div>
+      </div>
+    </a>
+
+    <a class="game-card available f1-card" href="f1/">
+      <div class="card-thumb thumb-f1">
+        <div class="f1-art"><span>F</span><span class="f1-1">1</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">Live Daten</div>
+        <div class="card-title">Formel 1 Hub</div>
+        <div class="card-desc">Fahrer-WM, Konstrukteure und Live-Race-Tracker. Echtzeit von der Strecke.</div>
+        <div class="card-footer">
+          <div class="play-btn">Öffnen <span class="btn-arrow">→</span></div>
         </div>
       </div>
     </a>
