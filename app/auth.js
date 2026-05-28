@@ -5,6 +5,104 @@
 // In der Navbar irgendwo: <div data-auth-slot></div>
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─── Globale Mobile-Fixes ───────────────────────────────────────────────────
+// Wird ans Ende des <head> appended, damit die Regeln Seiten-CSS überschreiben.
+(function injectMobileFixes() {
+  const css = `
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body {
+    /* dvh: kompensiert iOS Safari Adresszeile-Sprünge (fallback 100vh) */
+    min-height: 100vh;
+    min-height: 100dvh;
+    overscroll-behavior-y: contain;
+  }
+  /* Kein blauer Tap-Flash, keine Doppel-Tap-Zoom-Verzögerung */
+  button, a, [role="button"], .auth-chip, .game-card,
+  .nav-back, .nav-btn, .nav-cta, .tab, .lb-tab,
+  .mode-btn, .play-btn, .btn, .btn-primary, .btn-secondary,
+  .fav-chip, .quick-btn, .recent-tag, .quick-tag,
+  .tc-btn, .map-btn, .pip-btn, .promo-btn, .color-btn {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  @media (max-width: 760px) {
+    /* iOS Safe-Area (Notch / Home-Bar) — nur auf Mobile, damit Desktop-
+       Padding wie 32px nicht versehentlich runtergestutzt wird. */
+    @supports (padding: max(0px, env(safe-area-inset-left))) {
+      .navbar {
+        padding-left: max(14px, env(safe-area-inset-left));
+        padding-right: max(14px, env(safe-area-inset-right));
+        padding-top: max(10px, env(safe-area-inset-top));
+      }
+      .site-footer {
+        padding-bottom: max(22px, env(safe-area-inset-bottom));
+        padding-left: max(14px, env(safe-area-inset-left));
+        padding-right: max(14px, env(safe-area-inset-right));
+      }
+    }
+
+    /* iOS verhindert Auto-Zoom beim Input-Fokus nur wenn font-size >= 16px */
+    input[type="text"], input[type="email"], input[type="password"],
+    input[type="search"], input[type="number"], input[type="tel"],
+    input[type="url"], textarea, select {
+      font-size: 16px !important;
+    }
+
+    /* Größere Tap-Targets in der Navbar — Apple HIG empfiehlt 44px,
+       wir gehen pragmatisch auf min 34px */
+    .nav-back {
+      min-height: 34px;
+      padding: 8px 12px;
+      font-size: 11px;
+      display: inline-flex; align-items: center;
+    }
+    .nav-btn, .nav-cta { min-height: 34px; padding: 8px 14px; }
+    .auth-chip { min-height: 34px; }
+    .auth-login-btn { min-height: 34px; }
+
+    /* Suggestion-/Dropdown-Listen scrollbar mit Trägheit */
+    .suggestions, .auth-menu { -webkit-overflow-scrolling: touch; }
+  }
+
+  /* Hover-Effekte auf Touch nicht "kleben lassen" */
+  @media (hover: none) {
+    .game-card.available:hover { transform: none !important; }
+    .ach-card:hover, .daily-card:hover, .tracker-card:hover { transform: none !important; }
+  }
+  `;
+
+  function inject() {
+    if (document.getElementById('arcade-mobile-fixes')) return;
+    const style = document.createElement('style');
+    style.id = 'arcade-mobile-fixes';
+    style.textContent = css;
+    // Ans Ende des <head> hängen, damit unsere Regeln Seiten-CSS überschreiben.
+    document.head.appendChild(style);
+  }
+
+  // Viewport-Meta absichern: manche alten Pages haben evtl. kein viewport-fit
+  function ensureViewport() {
+    let vp = document.querySelector('meta[name="viewport"]');
+    if (!vp) {
+      vp = document.createElement('meta');
+      vp.name = 'viewport';
+      document.head.appendChild(vp);
+    }
+    const current = vp.getAttribute('content') || '';
+    if (!/viewport-fit/.test(current)) {
+      vp.setAttribute('content',
+        (current ? current + ', ' : 'width=device-width, initial-scale=1.0, ') + 'viewport-fit=cover');
+    }
+  }
+
+  inject();
+  ensureViewport();
+})();
+
 // ─── Site Footer (Impressum / Datenschutz) ──────────────────────────────────
 // Wird auf jeder Seite injiziert, läuft unabhängig von Supabase.
 (function injectSiteFooter() {
@@ -31,6 +129,10 @@
   }
   .site-footer-inner a:hover { color: #fff; }
   .site-footer-inner .sep { color: rgba(255,255,255,0.15); }
+  @media (max-width: 480px) {
+    .site-footer { padding: 18px 14px 22px; }
+    .site-footer-inner { gap: 6px 12px; font-size: 10px; }
+  }
   `;
 
   function build() {
@@ -96,6 +198,12 @@
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .auth-chip-caret { font-size: 9px; color: rgba(255,255,255,0.4); margin-left: 2px; }
+  @media (max-width: 560px) {
+    .auth-chip { padding: 4px 10px 4px 4px; }
+    .auth-chip-name { max-width: 90px; font-size: 11px; }
+    .auth-chip-avatar { width: 22px; height: 22px; font-size: 10px; }
+    .auth-login-btn { padding: 7px 12px; font-size: 11px; }
+  }
 
   .auth-menu {
     position: absolute; top: calc(100% + 8px); right: 0;
@@ -155,9 +263,15 @@
     background: rgba(12,12,28,0.98);
     border: 1px solid rgba(255,255,255,0.1); border-radius: 24px;
     padding: 36px; width: 100%; max-width: 380px;
+    max-height: calc(100vh - 32px); overflow-y: auto;
     box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 80px rgba(233,69,96,0.08);
     transform: scale(0.9) translateY(20px); opacity: 0;
     transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.22s;
+  }
+  @media (max-width: 480px) {
+    .auth-modal { padding: 28px 22px; border-radius: 20px; }
+    .auth-modal h2 { font-size: 22px; }
+    .auth-field input { font-size: 16px; padding: 12px 12px; }
   }
   .auth-modal-backdrop.open .auth-modal { transform: scale(1) translateY(0); opacity: 1; }
   .auth-modal-eyebrow {
@@ -236,6 +350,13 @@
     display: flex; flex-direction: column; gap: 10px;
     pointer-events: none;
     max-width: 360px;
+  }
+  @media (max-width: 560px) {
+    #ach-toast-container { right: 12px; left: 12px; bottom: 12px; max-width: none; }
+    .ach-toast { min-width: 0; width: 100%; padding: 12px 14px; }
+    .ach-toast-icon { font-size: 26px; }
+    .ach-toast-name { font-size: 13px; }
+    .ach-toast-desc { font-size: 11px; }
   }
   .ach-toast {
     pointer-events: all;
