@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Datenschutz — Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --purple: #8b7eff;
+      --bg:     #060818;
+      --card:   rgba(18, 22, 34, 0.72);
+      --border: rgba(255,255,255,0.08);
+    }
+    body {
+      background: var(--bg); min-height: 100vh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #eee; overflow-x: hidden;
+      padding: 72px 0 24px;
+    }
+
+    /* Background */
+    .orb { position: fixed; border-radius: 50%; filter: blur(140px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 660px; height: 660px; background: #8b7eff; opacity: 0.06; top: -250px; left: -220px; animation: f1 24s ease-in-out infinite alternate; }
+    .orb-2 { width: 540px; height: 540px; background: #3050e0; opacity: 0.05; bottom: -200px; right: -200px; animation: f2 30s ease-in-out infinite alternate; }
+    @keyframes f1 { to { transform: translate(80px,70px) scale(1.15); } }
+    @keyframes f2 { to { transform: translate(-90px,-110px) scale(1.2); } }
+    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px); background-size: 30px 30px; }
+    .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 35%, rgba(5,5,14,0.78) 100%); }
+
+    /* Navbar */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px;
+      background: rgba(6,8,24,0.8);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-left { display: flex; align-items: center; gap: 14px; }
+    .nav-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none; color: rgba(255,255,255,0.4);
+      font-size: 11px; font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+      padding: 6px 12px; transition: all 0.2s;
+    }
+    .nav-back:hover { color: #fff; border-color: rgba(255,255,255,0.25); }
+    .nav-game-title {
+      font-size: 13px; font-weight: 900; color: #fff; letter-spacing: 1px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .nav-game-title .pill {
+      background: var(--purple); color: #0a0a14; padding: 2px 7px;
+      border-radius: 4px; font-size: 10px; font-weight: 900; letter-spacing: 1.5px;
+    }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+
+    /* Container */
+    .container { position: relative; z-index: 1; max-width: 820px; margin: 0 auto; padding: 0 24px; }
+
+    /* Hero */
+    .hero { margin-top: 28px; margin-bottom: 22px; }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 10px; font-weight: 800; letter-spacing: 4px;
+      text-transform: uppercase; color: var(--purple); margin-bottom: 12px;
+    }
+    .hero-eyebrow::before { content:''; width: 18px; height: 2px; background: var(--purple); border-radius: 1px; }
+    .hero h1 {
+      font-size: 50px; font-weight: 900; letter-spacing: -2.5px; line-height: 0.98;
+      color: #fff;
+    }
+    .hero h1 em { font-style: normal; color: var(--purple); }
+    .hero-sub {
+      margin-top: 14px; font-size: 13px; max-width: 560px;
+      color: rgba(255,255,255,0.5); line-height: 1.6;
+    }
+
+    /* Content card */
+    .doc-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 22px; padding: 32px 36px;
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .doc-card h2 {
+      font-size: 11px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+      margin-top: 26px; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .doc-card h2:first-child { margin-top: 0; }
+    .doc-card h2::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+    .doc-card p {
+      font-size: 14px; line-height: 1.7;
+      color: rgba(255,255,255,0.72);
+      margin-bottom: 12px;
+    }
+    .doc-card p:last-child { margin-bottom: 0; }
+    .doc-card a {
+      color: var(--purple); text-decoration: none;
+      border-bottom: 1px solid rgba(139,126,255,0.3);
+      transition: border-color 0.2s;
+    }
+    .doc-card a:hover { border-bottom-color: var(--purple); }
+    .doc-card strong { color: #fff; font-weight: 700; }
+    .doc-card ul { margin: 6px 0 12px 22px; }
+    .doc-card li {
+      font-size: 14px; line-height: 1.7;
+      color: rgba(255,255,255,0.72);
+      margin-bottom: 4px;
+    }
+    .doc-card li strong { color: #fff; }
+
+    @media (max-width: 720px) {
+      .hero h1 { font-size: 36px; letter-spacing: -1.5px; }
+      .doc-card { padding: 24px 22px; }
+    }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="dot-grid"></div>
+<div class="vignette"></div>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="/" class="nav-back">&larr; Arcade</a>
+    <div class="nav-game-title"><span class="pill">DSGVO</span> Datenschutz</div>
+  </div>
+  <div class="nav-right">
+    <div data-auth-slot></div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <section class="hero">
+    <div class="hero-eyebrow">Privatsphäre</div>
+    <h1>DATEN<em>SCHUTZ</em></h1>
+    <p class="hero-sub">Welche Daten werden auf dieser Seite verarbeitet, von wem und wozu &mdash; transparent und verständlich.</p>
+  </section>
+
+  <div class="doc-card">
+
+    <h2>1. Verantwortlicher</h2>
+    <p>
+      Verantwortlicher im Sinne der DSGVO sowie des österreichischen Datenschutzgesetzes (DSG):
+    </p>
+    <p>
+      <strong>Peter Scheikl</strong><br>
+      Wohnort: Wien, Österreich<br>
+      E-Mail: <a href="mailto:peterscheikl10@gmail.com">peterscheikl10@gmail.com</a>
+    </p>
+    <p>
+      Vollständige Kontaktangaben siehe <a href="/impressum/">Impressum</a>.
+    </p>
+
+    <h2>2. Allgemeines</h2>
+    <p>
+      Diese Seite ist ein <strong>privates Hobby-Projekt</strong>. Es wird so wenig wie möglich an
+      personenbezogenen Daten verarbeitet. Rechtsgrundlagen sind die Datenschutz-Grundverordnung
+      (DSGVO) sowie das österreichische Datenschutzgesetz (DSG). Du kannst die meisten Funktionen
+      ohne Account nutzen; ein Account ist nur nötig, um Bestenlisten und Achievements
+      geräteübergreifend zu speichern.
+    </p>
+
+    <h2>3. Hosting (Cloudflare Pages)</h2>
+    <p>
+      Die Seite wird über <strong>Cloudflare Pages</strong> (Cloudflare, Inc., USA) ausgeliefert.
+      Cloudflare verarbeitet beim Aufruf der Seite technische Daten wie IP-Adresse, Zeitstempel,
+      User-Agent und HTTP-Header, um die Auslieferung zu ermöglichen und die Seite vor Angriffen
+      zu schützen. Rechtsgrundlage: berechtigtes Interesse (Art. 6 Abs. 1 lit. f DSGVO).
+    </p>
+    <p>
+      Cloudflare-Datenschutzerklärung:
+      <a href="https://www.cloudflare.com/de-de/privacypolicy/" target="_blank" rel="noopener">cloudflare.com/de-de/privacypolicy</a>
+    </p>
+
+    <h2>4. Konto &amp; Authentifizierung (Supabase)</h2>
+    <p>
+      Für Login, Bestenlisten und Achievements wird <strong>Supabase</strong> (Supabase Inc., USA)
+      als Backend verwendet. Wenn du dich registrierst, werden gespeichert:
+    </p>
+    <ul>
+      <li>E-Mail-Adresse und ein gehashtes Passwort</li>
+      <li>Selbst gewählter Anzeigename</li>
+      <li>Spielstände, High-Scores und freigeschaltete Achievements</li>
+      <li>Zeitstempel deiner Aktivität</li>
+    </ul>
+    <p>
+      Du kannst dein Konto jederzeit löschen lassen, indem du eine kurze Mail an
+      <a href="mailto:peterscheikl10@gmail.com">peterscheikl10@gmail.com</a> schickst.
+      Rechtsgrundlage: Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO).
+    </p>
+    <p>
+      Supabase-Datenschutzerklärung:
+      <a href="https://supabase.com/privacy" target="_blank" rel="noopener">supabase.com/privacy</a>
+    </p>
+
+    <h2>5. Lokale Speicherung (localStorage)</h2>
+    <p>
+      Diese Seite verwendet keine Tracking-Cookies. Im <strong>localStorage</strong> deines
+      Browsers werden ausschließlich technisch notwendige Daten abgelegt, z.&nbsp;B. lokale
+      High-Scores, freigeschaltete Achievements und gespeicherte Favoriten-Orte für die
+      Wetter-Seite. Diese Daten verlassen deinen Browser nicht (außer du bist eingeloggt &mdash;
+      dann werden Scores/Achievements zusätzlich mit Supabase synchronisiert).
+    </p>
+
+    <h2>6. Externe APIs</h2>
+    <p>
+      Beim Laden bestimmter Unterseiten werden Daten von externen APIs abgerufen. Dabei wird deine
+      IP-Adresse technisch an den jeweiligen Anbieter übertragen:
+    </p>
+    <ul>
+      <li><strong>Open-Meteo</strong> (Wetter, Geocoding, Luftqualität) &mdash; <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">open-meteo.com/en/terms</a></li>
+      <li><strong>RainViewer</strong> (Regenradar-Tiles) &mdash; <a href="https://www.rainviewer.com/api.html" target="_blank" rel="noopener">rainviewer.com/api.html</a></li>
+      <li><strong>OpenStreetMap</strong> (Kartenmaterial via Leaflet) &mdash; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">openstreetmap.org/copyright</a></li>
+      <li><strong>aviationweather.gov</strong> (METAR, US-Behörde NOAA) &mdash; <a href="https://www.weather.gov/privacy" target="_blank" rel="noopener">weather.gov/privacy</a></li>
+      <li><strong>OpenF1</strong> (Formel-1-Live-Daten) &mdash; <a href="https://openf1.org/" target="_blank" rel="noopener">openf1.org</a></li>
+      <li><strong>corsproxy.io</strong> (Fallback-Proxy für METAR) &mdash; <a href="https://corsproxy.io/" target="_blank" rel="noopener">corsproxy.io</a></li>
+    </ul>
+    <p>
+      Diese Aufrufe finden direkt aus deinem Browser statt. Rechtsgrundlage: berechtigtes Interesse
+      an der Bereitstellung der gewählten Funktion (Art. 6 Abs. 1 lit. f DSGVO).
+    </p>
+
+    <h2>7. Schriftarten &amp; CDN-Bibliotheken</h2>
+    <p>
+      Schriftarten werden von <strong>Google Fonts</strong> (Google LLC, USA) geladen. JavaScript-Bibliotheken
+      (Supabase SDK, Leaflet) werden über die CDNs <strong>jsdelivr</strong> bzw. <strong>unpkg</strong>
+      ausgeliefert. Auch hier wird beim Laden der Ressourcen deine IP-Adresse technisch übertragen.
+    </p>
+    <ul>
+      <li>Google: <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">policies.google.com/privacy</a></li>
+      <li>jsDelivr: <a href="https://www.jsdelivr.com/terms/privacy-policy" target="_blank" rel="noopener">jsdelivr.com/terms/privacy-policy</a></li>
+      <li>unpkg: <a href="https://unpkg.com/" target="_blank" rel="noopener">unpkg.com</a></li>
+    </ul>
+
+    <h2>8. Deine Rechte</h2>
+    <p>
+      Nach DSGVO und DSG hast du jederzeit das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16),
+      Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20)
+      und Widerspruch (Art. 21). Wende dich dazu einfach formlos per Mail an
+      <a href="mailto:peterscheikl10@gmail.com">peterscheikl10@gmail.com</a>.
+    </p>
+    <p>
+      Du hast außerdem das Recht, dich bei der zuständigen Aufsichtsbehörde zu beschweren. In
+      Österreich ist das die <strong>Österreichische Datenschutzbehörde (DSB)</strong>:
+      <a href="https://www.dsb.gv.at/" target="_blank" rel="noopener">dsb.gv.at</a>.
+    </p>
+
+    <h2>9. Änderungen dieser Erklärung</h2>
+    <p>
+      Diese Datenschutzerklärung kann angepasst werden, wenn sich an der Seite oder den verwendeten
+      Diensten etwas ändert. Die jeweils aktuelle Version ist immer hier abrufbar.
+    </p>
+
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+</body>
+</html>

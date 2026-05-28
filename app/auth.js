@@ -5,6 +5,61 @@
 // In der Navbar irgendwo: <div data-auth-slot></div>
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─── Site Footer (Impressum / Datenschutz) ──────────────────────────────────
+// Wird auf jeder Seite injiziert, läuft unabhängig von Supabase.
+(function injectSiteFooter() {
+  const css = `
+  .site-footer {
+    position: relative; z-index: 1;
+    margin-top: 48px;
+    padding: 22px 24px 28px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    text-align: center;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  .site-footer-inner {
+    display: flex; justify-content: center; align-items: center;
+    gap: 8px 18px; flex-wrap: wrap;
+    font-size: 11px; color: rgba(255,255,255,0.28);
+    letter-spacing: 0.3px;
+  }
+  .site-footer-inner a {
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+  .site-footer-inner a:hover { color: #fff; }
+  .site-footer-inner .sep { color: rgba(255,255,255,0.15); }
+  `;
+
+  function build() {
+    if (document.querySelector('footer.site-footer')) return;
+    const style = document.createElement('style');
+    style.textContent = css;
+    document.head.appendChild(style);
+
+    const footer = document.createElement('footer');
+    footer.className = 'site-footer';
+    footer.innerHTML = `
+      <div class="site-footer-inner">
+        <span>&copy; Peter Scheikl</span>
+        <span class="sep">&middot;</span>
+        <a href="/impressum/">Impressum</a>
+        <span class="sep">&middot;</span>
+        <a href="/datenschutz/">Datenschutz</a>
+      </div>
+    `;
+    document.body.appendChild(footer);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', build);
+  } else {
+    build();
+  }
+})();
+
 (function () {
   const SUPABASE_URL = 'https://yjyvqidjqksvagyxrwyf.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_9J1vJchMV6Ym-1btnintAw_zih4pdea';
