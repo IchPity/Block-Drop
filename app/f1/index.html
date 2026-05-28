@@ -265,13 +265,51 @@
     .refresh-info { font-size: 10px; color: rgba(255,255,255,0.25); letter-spacing: 1px; }
 
     @media (max-width: 720px) {
-      .hero h1 { font-size: 40px; letter-spacing: -2px; }
-      .tracker-grid { grid-template-columns: 1fr; }
-      .standings-head, .standings-row { grid-template-columns: 48px 1fr 100px 70px; padding: 12px 14px; gap: 8px; }
+      body { padding: 64px 0 48px; }
+      .navbar { padding: 10px 14px; }
+      .nav-back { padding: 5px 10px; font-size: 10px; }
+      .nav-game-title { font-size: 12px; }
+      .container { padding: 0 14px; }
+      .hero { margin-top: 18px; margin-bottom: 18px; }
+      .hero h1 { font-size: 36px; letter-spacing: -1.5px; }
+      .hero-eyebrow { font-size: 9px; letter-spacing: 3px; margin-bottom: 8px; }
+      .hero-sub { font-size: 12px; margin-top: 10px; }
+
+      .tabs { gap: 2px; margin: 18px 0 12px; overflow-x: auto; flex-wrap: nowrap; }
+      .tab { padding: 11px 10px; font-size: 10px; letter-spacing: 1px; white-space: nowrap; flex-shrink: 0; }
+
+      .standings-head, .standings-row { grid-template-columns: 36px 1fr 70px 50px; padding: 11px 12px; gap: 8px; }
       .standings-head .col-team, .standings-row .team { display: none; }
-      .standings.constructors .standings-head, .standings.constructors .standings-row { grid-template-columns: 48px 1fr 90px 70px; }
-      .live-head, .live-row { grid-template-columns: 40px 1fr 80px; gap: 8px; padding: 10px 14px; }
+      .standings.constructors .standings-head, .standings.constructors .standings-row { grid-template-columns: 36px 1fr 70px 50px; }
+      .pos { font-size: 15px; }
+      .name { font-size: 12px; }
+      .name .code { font-size: 9px; margin-left: 4px; }
+      .pts { font-size: 13px; }
+      .pts span { font-size: 8px; }
+      .wins { font-size: 12px; }
+
+      .tracker-grid { grid-template-columns: 1fr; gap: 12px; }
+      .tracker-card { padding: 16px; border-radius: 14px; }
+      .race-name { font-size: 18px; }
+      .race-circuit { font-size: 11px; }
+      .race-meta { gap: 12px; flex-wrap: wrap; }
+      .race-meta-val { font-size: 12px; }
+      .cd-cell { padding: 10px 4px; }
+      .cd-num { font-size: 20px; }
+      .cd-lbl { font-size: 8px; letter-spacing: 1.5px; }
+
+      .live-head, .live-row { grid-template-columns: 32px 1fr 70px; gap: 8px; padding: 10px 12px; }
       .live-head .col-team, .live-row .live-team { display: none; }
+      .live-name { font-size: 12px; }
+      .live-name .code { font-size: 9px; }
+      .live-gap { font-size: 11px; }
+
+      .season-row { flex-wrap: wrap; gap: 4px; }
+      .season-label { font-size: 10px; }
+      .refresh-info { font-size: 9px; }
+    }
+    @media (max-width: 420px) {
+      .hero h1 { font-size: 30px; }
     }
 
     /* Scrollbar */

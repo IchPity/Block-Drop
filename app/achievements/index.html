@@ -223,6 +223,46 @@
 
     @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 
+    @media (max-width: 760px) {
+      .navbar { padding: 12px 16px; }
+      .nav-back { padding: 6px 12px; font-size: 10px; }
+      .nav-title { font-size: 12px; }
+      .container { padding: 0 18px; }
+      .hero { padding: 92px 0 32px; }
+      .hero-top { flex-direction: column; align-items: flex-start; gap: 16px; margin-bottom: 24px; }
+      .hero h1 { font-size: 40px; letter-spacing: -2px; }
+      .hero-eyebrow { font-size: 10px; letter-spacing: 3px; margin-bottom: 10px; }
+      .btn-primary { padding: 12px 22px; font-size: 13px; }
+      .stats-row { grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 32px; }
+      .stat-card { padding: 14px 14px; }
+      .stat-val { font-size: 26px; }
+      .stat-lbl { font-size: 9px; letter-spacing: 1.5px; }
+      .progress-section { margin-bottom: 32px; }
+      .ach-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .ach-card { padding: 14px; border-radius: 16px; }
+      .ach-icon { font-size: 24px; }
+      .ach-name { font-size: 13px; }
+      .ach-desc { font-size: 10px; }
+
+      .lb-tabs { flex-wrap: wrap; }
+      .lb-tab { font-size: 10px; padding: 6px 10px; }
+      .lb-row { grid-template-columns: 36px 1fr 80px 50px; padding: 10px 12px; gap: 8px; font-size: 12px; }
+      .lb-row.head { font-size: 9px; letter-spacing: 1.5px; }
+      .lb-name { font-size: 12px; }
+      .bottom-cta { padding: 36px 0 56px; }
+      .bottom-cta h3 { font-size: 18px; }
+      .cta-buttons { flex-direction: column; align-items: stretch; }
+      .btn-secondary { justify-content: center; padding: 12px 20px; font-size: 13px; }
+    }
+    @media (max-width: 420px) {
+      .hero h1 { font-size: 32px; }
+      .ach-grid { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .stats-row .stat-card:nth-child(3) { grid-column: span 2; }
+      .lb-row { grid-template-columns: 32px 1fr 70px; gap: 6px; }
+      .lb-row .lb-plays { display: none; }
+    }
+
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 3px; }

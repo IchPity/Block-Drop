@@ -290,12 +290,38 @@
     .recent-tag:hover { background: rgba(56,189,248,0.18); color: #fff; }
 
     @media (max-width: 720px) {
-      .hero h1 { font-size: 36px; }
-      .decoded { grid-template-columns: repeat(2, 1fr); }
-      .search-row { flex-direction: column; }
+      body { padding: 64px 0 48px; }
+      .navbar { padding: 10px 14px; }
+      .nav-back { padding: 5px 10px; font-size: 10px; }
+      .nav-game-title { font-size: 12px; }
+      .container { padding: 0 14px; }
+      .hero { margin-top: 18px; margin-bottom: 20px; }
+      .hero h1 { font-size: 32px; letter-spacing: -1.5px; }
+      .hero-eyebrow { font-size: 9px; letter-spacing: 3px; margin-bottom: 8px; }
+      .hero-sub { font-size: 12px; margin-top: 10px; }
+
+      .search-card { padding: 16px; }
+      .search-row { flex-direction: column; gap: 8px; }
+      .search-input { font-size: 16px; }
       .search-btn { padding: 12px; }
-      .station-head { flex-direction: column; gap: 6px; }
+
+      .station-head { flex-direction: column; gap: 6px; padding: 14px 16px; }
       .station-meta { text-align: left; }
+      .station-id { font-size: 20px; }
+      .raw-metar { padding: 14px 16px; font-size: 12px; }
+      .decoded { grid-template-columns: repeat(2, 1fr); padding: 14px 12px; gap: 8px; }
+      .field { padding: 10px 12px; }
+      .field-val { font-size: 14px; }
+
+      .quick-row { gap: 5px; }
+      .quick-tag { padding: 5px 10px; font-size: 10px; }
+      .quick-tag .city { font-size: 9px; }
+      .recent-tag { font-size: 10px; }
+    }
+    @media (max-width: 420px) {
+      .hero h1 { font-size: 28px; }
+      .decoded { grid-template-columns: 1fr 1fr; }
+      .station-id { font-size: 18px; letter-spacing: 1.5px; }
     }
 
     ::-webkit-scrollbar { width: 5px; }

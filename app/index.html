@@ -599,6 +599,46 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+
+    /* ── Mobile ──────────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .container { padding: 0 22px; }
+      .games-grid, .coming-grid { grid-template-columns: repeat(2, 1fr); }
+      .hero { padding: 100px 0 40px; flex-direction: column; align-items: stretch; gap: 28px; }
+      .hero-visual { width: 100%; max-width: 380px; margin: 0 auto; }
+      .hero h1 { font-size: 56px; letter-spacing: -3px; }
+      .hero-sub { max-width: none; }
+    }
+    @media (max-width: 600px) {
+      .navbar { padding: 12px 16px; }
+      .nav-logo { font-size: 13px; }
+      .container { padding: 0 16px; }
+      .hero { padding: 92px 0 32px; gap: 24px; }
+      .hero h1 { font-size: 44px; letter-spacing: -2px; }
+      .hero-sub { font-size: 14px; margin-bottom: 24px; }
+      .hero-eyebrow { font-size: 10px; letter-spacing: 3px; margin-bottom: 14px; }
+      .hero-actions { flex-direction: column; align-items: stretch; gap: 10px; }
+      .btn-primary, .btn-secondary { justify-content: center; padding: 13px 22px; font-size: 13px; }
+      .hero-stats { gap: 18px; }
+      .stat-val { font-size: 19px; }
+      .stat-lbl { font-size: 9px; letter-spacing: 1.5px; }
+      .games-grid { grid-template-columns: 1fr; gap: 14px; }
+      .coming-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding-bottom: 56px; }
+      .card-thumb { height: 120px; }
+      .hero-card-thumb { height: 150px; }
+      .section-header { margin-bottom: 18px; }
+      .section-title { font-size: 12px; letter-spacing: 2.5px; }
+      .section-count { font-size: 10px; }
+    }
+    @media (max-width: 380px) {
+      .hero h1 { font-size: 38px; }
+      .coming-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Disable hover-tilt on touch devices */
+    @media (hover: none) {
+      .game-card.available:hover { transform: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -919,8 +959,9 @@
     card.style.animationName = 'cardInDim';
   });
 
-  // 3D magnetic tilt on available cards
-  document.querySelectorAll('.game-card.available').forEach(card => {
+  // 3D magnetic tilt on available cards (desktop only — touch devices skip it)
+  const supportsHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  if (supportsHover) document.querySelectorAll('.game-card.available').forEach(card => {
     let raf = null;
     let targetX = 0, targetY = 0, currentX = 0, currentY = 0;
     let lifted = false;
