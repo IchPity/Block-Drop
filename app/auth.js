@@ -657,6 +657,146 @@
       return {};
     },
 
+    // ─── Freunde ─────────────────────────────────────────────────────────────
+    // Beziehungs-Tabelle `friends`: requester_id, addressee_id, status
+    // ('pending' | 'accepted'). Anfrage + Bestätigen. Egal welche Richtung —
+    // wir fragen beide Richtungen ab.
+    async _friendRow(otherId) {
+      if (!this.user || !otherId) return null;
+      const uid = this.user.id;
+      const { data, error } = await client.from('friends')
+        .select('*')
+        .or(`and(requester_id.eq.${uid},addressee_id.eq.${otherId}),and(requester_id.eq.${otherId},addressee_id.eq.${uid})`);
+      if (error) { console.warn('[Auth] friendRow:', error.message); return null; }
+      const rows = data || [];
+      if (!rows.length) return null;
+      // Bei (theoretisch) doppelten Richtungen: accepted gewinnt.
+      return rows.find(r => r.status === 'accepted') || rows[0];
+    },
+
+    // Status zu einem anderen User:
+    // 'self' | 'none' | 'friends' | 'outgoing' (ich hab angefragt) | 'incoming' (er hat angefragt)
+    async friendStatus(otherId) {
+      if (!this.user) return 'none';
+      if (otherId === this.user.id) return 'self';
+      const row = await this._friendRow(otherId);
+      if (!row) return 'none';
+      if (row.status === 'accepted') return 'friends';
+      return row.requester_id === this.user.id ? 'outgoing' : 'incoming';
+    },
+
+    async sendFriendRequest(otherId) {
+      if (!this.user) return { error: { message: 'Nicht angemeldet' } };
+      if (otherId === this.user.id) return { error: { message: 'Du kannst dich nicht selbst hinzufügen.' } };
+      const existing = await this._friendRow(otherId);
+      if (existing) {
+        if (existing.status === 'accepted') return { error: { message: 'Ihr seid schon Freunde.' } };
+        if (existing.requester_id === this.user.id) return { error: { message: 'Anfrage läuft bereits.' } };
+        // Die andere Person hat uns schon angefragt → direkt annehmen.
+        return await this.acceptFriendRequest(otherId);
+      }
+      const { error } = await client.from('friends').insert({
+        requester_id: this.user.id, addressee_id: otherId, status: 'pending'
+      });
+      if (error) {
+        if (error.code === '23505') return { error: { message: 'Anfrage existiert bereits.' } };
+        return { error };
+      }
+      return {};
+    },
+
+    async acceptFriendRequest(otherId) {
+      if (!this.user) return { error: { message: 'Nicht angemeldet' } };
+      const { error } = await client.from('friends')
+        .update({ status: 'accepted', responded_at: new Date().toISOString() })
+        .eq('requester_id', otherId).eq('addressee_id', this.user.id).eq('status', 'pending');
+      if (error) return { error };
+      return {};
+    },
+
+    // Entfernt jede Beziehung: Freund entfernen / Anfrage zurückziehen / ablehnen.
+    async removeFriend(otherId) {
+      if (!this.user) return { error: { message: 'Nicht angemeldet' } };
+      const uid = this.user.id;
+      const { error } = await client.from('friends')
+        .delete()
+        .or(`and(requester_id.eq.${uid},addressee_id.eq.${otherId}),and(requester_id.eq.${otherId},addressee_id.eq.${uid})`);
+      if (error) return { error };
+      return {};
+    },
+
+    // Alle Beziehungen + Profile, gruppiert in { friends, incoming, outgoing }.
+    async getFriendOverview() {
+      const empty = { friends: [], incoming: [], outgoing: [] };
+      if (!this.user) return empty;
+      const uid = this.user.id;
+      const { data, error } = await client.from('friends')
+        .select('*')
+        .or(`requester_id.eq.${uid},addressee_id.eq.${uid}`)
+        .order('created_at', { ascending: false });
+      if (error) { console.warn('[Auth] friends:', error.message); return empty; }
+      const rows = data || [];
+      const otherIds = rows.map(r => r.requester_id === uid ? r.addressee_id : r.requester_id);
+      let profMap = new Map();
+      if (otherIds.length) {
+        const { data: profs } = await client.from('profiles')
+          .select('id, username, avatar_url').in('id', [...new Set(otherIds)]);
+        profMap = new Map((profs || []).map(p => [p.id, p]));
+      }
+      const enrich = (row) => {
+        const otherId = row.requester_id === uid ? row.addressee_id : row.requester_id;
+        const p = profMap.get(otherId) || {};
+        return {
+          id: otherId,
+          username: p.username || '—',
+          avatar_url: p.avatar_url || null,
+          since: row.responded_at || row.created_at,
+        };
+      };
+      const res = { friends: [], incoming: [], outgoing: [] };
+      for (const r of rows) {
+        if (r.status === 'accepted') res.friends.push(enrich(r));
+        else if (r.requester_id === uid) res.outgoing.push(enrich(r));
+        else res.incoming.push(enrich(r));
+      }
+      return res;
+    },
+
+    // User per Username suchen (für "Freund hinzufügen"). Min. 2 Zeichen.
+    async searchUsers(query, limit = 12) {
+      const q = (query || '').trim();
+      if (q.length < 2) return [];
+      const { data, error } = await client.from('profiles')
+        .select('id, username, avatar_url')
+        .ilike('username', `%${q}%`)
+        .limit(limit);
+      if (error) { console.warn('[Auth] search:', error.message); return []; }
+      let rows = data || [];
+      if (this.user) rows = rows.filter(p => p.id !== this.user.id);
+      return rows;
+    },
+
+    // Öffentliches Profil eines beliebigen Users laden (RLS: profiles select = public).
+    async getPublicProfile(userId) {
+      if (!userId) return null;
+      const { data, error } = await client.from('profiles')
+        .select('id, username, avatar_url, created_at, achievements')
+        .eq('id', userId).maybeSingle();
+      if (error) { console.warn('[Auth] publicProfile:', error.message); return null; }
+      return data || null;
+    },
+
+    // F1-Saison-Punkte eines Users (für öffentliches Profil). Liefert null wenn keine.
+    async getF1Points(userId, season) {
+      if (!userId) return null;
+      let q = client.from('f1_points').select('season, points').eq('user_id', userId);
+      if (season) q = q.eq('season', season);
+      q = q.order('season', { ascending: false }).limit(1);
+      const { data, error } = await q;
+      if (error) { console.warn('[Auth] f1Points:', error.message); return null; }
+      return (data && data[0]) || null;
+    },
+
     // ─── UI ────────────────────────────────────────────────────────────────
     openLogin() { showModal('login'); },
     openRegister() { showModal('register'); }
@@ -802,6 +942,7 @@
               <div class="auth-menu-email">${escapeHtml(Auth.user.email)}</div>
             </div>
             <button class="auth-menu-item" data-act="profile" type="button">Profil</button>
+            <button class="auth-menu-item" data-act="friends" type="button">Freunde</button>
             <button class="auth-menu-item" data-act="achievements" type="button">Achievements</button>
             <button class="auth-menu-item danger" data-act="logout" type="button">Abmelden</button>
           </div>
@@ -818,6 +959,7 @@
             const act = btn.dataset.act;
             if (act === 'logout') Auth.signOut();
             if (act === 'profile') window.location.href = '/profile/';
+            if (act === 'friends') window.location.href = '/freunde/';
             if (act === 'achievements') {
               // Auf jeden Pfad funktionierender Link
               window.location.href = '/achievements/';
