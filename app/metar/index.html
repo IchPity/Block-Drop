@@ -392,12 +392,35 @@
  * METAR Browser
  *  - Datenquelle: NOAA Aviation Weather Center
  *    https://aviationweather.gov/api/data/metar?ids=...&format=json
- *  - kein Key, CORS aktiv für public-facing endpoints
+ *  - kein API-Key nötig, aber NOAA sendet keine CORS-Header → CORS-Proxy nötig
  * =================================================================== */
 
 const NOAA = 'https://aviationweather.gov/api/data/metar';
-// NOAA blockt CORS bei Browser-Requests inkonsistent — daher Proxy.
-const CORS = 'https://corsproxy.io/?url=';
+// NOAA sendet keine CORS-Header → Browser-Direktabruf scheitert immer.
+// Daher mehrere CORS-Proxies als Kette; der erste, der gültiges JSON liefert,
+// gewinnt. Reihenfolge nach Zuverlässigkeit.
+const PROXIES = [
+  noaaUrl => 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(noaaUrl),
+  noaaUrl => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(noaaUrl),
+  noaaUrl => 'https://corsproxy.io/?url=' + encodeURIComponent(noaaUrl),
+];
+
+// Holt die NOAA-Daten über die Proxy-Kette und gibt geparste JSON-Daten zurück.
+async function fetchMetarJson(noaaUrl) {
+  let lastErr;
+  for (const build of PROXIES) {
+    try {
+      const res = await fetch(build(noaaUrl), { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+      if (!text.trim()) throw new Error('Leere Antwort');
+      return JSON.parse(text); // wirft bei HTML/Fehlerseiten → nächster Proxy
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('Keine Datenquelle erreichbar');
+}
 
 const QUICK_AIRPORTS = [
   { code: 'LOWW', city: 'Wien' },
@@ -483,22 +506,11 @@ async function fetchAndRender(query) {
 
   try {
     const noaaUrl = `${NOAA}?ids=${codes.join(',')}&format=json`;
-    let data;
-    // 1. Direkter Versuch — falls NOAA gerade CORS sendet, sparen wir uns den Proxy
-    try {
-      const res = await fetch(noaaUrl);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      data = await res.json();
-    } catch (directErr) {
-      // 2. Fallback über CORS-Proxy
-      const res = await fetch(CORS + encodeURIComponent(noaaUrl));
-      if (!res.ok) throw new Error('Proxy HTTP ' + res.status);
-      data = await res.json();
-    }
+    const data = await fetchMetarJson(noaaUrl);
     addRecent(codes);
     render(codes, Array.isArray(data) ? data : []);
   } catch (e) {
-    showError('Abruf fehlgeschlagen', e.message || String(e));
+    showError('Abruf fehlgeschlagen', (e.message || String(e)) + ' — bitte erneut versuchen.');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Abrufen';
