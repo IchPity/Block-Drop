@@ -329,6 +329,11 @@
       text-decoration: underline;
     }
     .modal-sub-btn:hover { color: #fff; }
+    .modal-practice-note {
+      margin-top: 14px; font-size: 11px; font-weight: 600;
+      color: rgba(255,255,255,0.4); line-height: 1.4;
+    }
+    .modal-practice-btn { margin-top: 10px; }
 
     /* Toast */
     .toast {
@@ -440,7 +445,10 @@
       <div class="modal-countdown-lbl">Nächstes Wort in</div>
       <div class="modal-countdown-val" id="modal-countdown">—</div>
     </div>
-    <a class="modal-back-btn" href="../../">← Zurück zum Arcade</a>
+    <div class="modal-practice-note" id="modal-practice-note">🎲 Lust auf mehr? Übungswörter zählen nicht für Stats.</div>
+    <button class="modal-btn modal-practice-btn" id="modal-practice-btn" type="button">🎲 Noch eins zum Spaß</button>
+    <a class="modal-back-btn" id="modal-arcade-btn" href="../../">← Zurück zum Arcade</a>
+    <button class="modal-back-btn" id="modal-to-daily" type="button">← Zurück zum Ergebnis</button>
   </div>
 </div>
 
@@ -540,7 +548,8 @@
   const todayKey = viennaDateKey();
   const dayIdx = dayIndexFor(todayKey);
   const dayNum = dayIdx + 1;
-  const answer = SHUFFLED[((dayIdx % SHUFFLED.length) + SHUFFLED.length) % SHUFFLED.length];
+  const dailyAnswer = SHUFFLED[((dayIdx % SHUFFLED.length) + SHUFFLED.length) % SHUFFLED.length];
+  let answer = dailyAnswer; // wird im Übungsmodus durch ein Zufallswort ersetzt
   document.getElementById('day-num').textContent = '#' + dayNum.toLocaleString('de-AT');
 
   // ─── State ────────────────────────────────────────────────────────────────
@@ -551,6 +560,8 @@
   let keyStates = {};
   let gameOver = false;
   let won = false;
+  let practiceMode = false;        // Übungsrunde: keine Stats, kein Cloud-Sync
+  let dailyResult = null;          // { won, rows } — fürs Re-Display nach Übungsrunden
   let score = 0;
   let best = parseInt(localStorage.getItem('woertle_best') || '0', 10);
   let streak = parseInt(localStorage.getItem('woertle_streak') || '0', 10);
@@ -570,6 +581,7 @@
   const STATE_KEY = 'woertle_daily_state';
 
   function saveState() {
+    if (practiceMode) return; // Übungsrunden werden nicht persistiert
     const data = {
       date: todayKey, grid, states, currentRow, currentCol,
       keyStates, gameOver, won, score
@@ -784,6 +796,18 @@
   function endGame(didWin, lastRow) {
     gameOver = true;
     won = didWin;
+
+    // ── Übungsmodus: keinerlei Stats, kein Cloud-Sync, kein Achievement ──
+    if (practiceMode) {
+      if (didWin) {
+        for (let c = 0; c < COLS; c++) {
+          setTimeout(() => tileEl(lastRow, c).classList.add('win'), c * 90);
+        }
+      }
+      setTimeout(() => openPracticeModal(didWin), didWin ? 1200 : 600);
+      return;
+    }
+
     total++;
     localStorage.setItem('woertle_total', String(total));
 
@@ -839,28 +863,90 @@
       if (streak >= 5) grant({ id: 'wt_streak5', name: 'Wörtle-Streak', desc: '5 Tage in Folge gelöst', icon: '🔥' });
     }
 
-    setTimeout(() => openModal(didWin, false), didWin ? 1200 : 600);
+    dailyResult = { won: didWin, rows: currentRow };
+    setTimeout(() => openDailyModal(didWin, false), didWin ? 1200 : 600);
   }
 
   // ─── Modal & Countdown ────────────────────────────────────────────────────
   let countdownInterval = null;
-  function openModal(didWin, alreadyPlayed) {
+
+  function praiseFor(rows) {
+    return rows === 1 ? 'Bombe!' : rows <= 3 ? 'Stark!' : 'Geschafft!';
+  }
+  // Hilfsfunktion: zeigt/versteckt die Modal-Bausteine je nach Modus
+  function setModalParts({ stats, dist, countdown, note, practiceBtn, arcadeBtn, toDaily }) {
+    const set = (sel, show) => {
+      const el = typeof sel === 'string' ? document.querySelector(sel) : sel;
+      if (el) el.style.display = show ? '' : 'none';
+    };
+    set('.modal-stats', stats);
+    set('#modal-dist', dist);
+    set('.modal-countdown', countdown);
+    set('#modal-practice-note', note);
+    set('#modal-practice-btn', practiceBtn);
+    set('#modal-arcade-btn', arcadeBtn);
+    set('#modal-to-daily', toDaily);
+  }
+
+  function openDailyModal(didWin, alreadyPlayed) {
+    practiceMode = false;
+    const rows = dailyResult ? dailyResult.rows : currentRow;
     const overlay = document.getElementById('overlay');
     const modal = document.getElementById('modal');
     modal.classList.toggle('lost', !didWin);
     document.getElementById('modal-eyebrow').textContent =
       alreadyPlayed ? 'Heute bereits gespielt' : (didWin ? 'Gewonnen' : 'Verloren');
     document.getElementById('modal-title').textContent =
-      didWin
-        ? (currentRow === 1 ? 'Bombe!' : currentRow <= 3 ? 'Stark!' : 'Geschafft!')
-        : (alreadyPlayed ? 'Schon erledigt' : 'Schade!');
-    document.getElementById('modal-word').textContent = answer;
+      didWin ? praiseFor(rows) : (alreadyPlayed ? 'Schon erledigt' : 'Schade!');
+    document.getElementById('modal-word').textContent = dailyAnswer;
     document.getElementById('modal-score').textContent = score.toLocaleString('de-AT');
     document.getElementById('modal-streak').textContent = streak;
     document.getElementById('modal-best').textContent = best.toLocaleString('de-AT');
+    document.getElementById('modal-practice-btn').textContent = '🎲 Noch eins zum Spaß';
+    setModalParts({ stats: true, dist: true, countdown: true, note: true,
+                    practiceBtn: true, arcadeBtn: true, toDaily: false });
     overlay.classList.add('show');
     startCountdown();
-    renderDistribution(didWin ? currentRow : null);
+    renderDistribution(didWin ? rows : null);
+  }
+
+  function openPracticeModal(didWin) {
+    const overlay = document.getElementById('overlay');
+    const modal = document.getElementById('modal');
+    modal.classList.toggle('lost', !didWin);
+    document.getElementById('modal-eyebrow').textContent = didWin ? 'Übung gelöst' : 'Übung daneben';
+    document.getElementById('modal-title').textContent = didWin ? praiseFor(currentRow) : 'Knapp daneben!';
+    document.getElementById('modal-word').textContent = answer;
+    document.getElementById('modal-practice-btn').textContent = '🎲 Nächstes Wort';
+    setModalParts({ stats: false, dist: false, countdown: false, note: false,
+                    practiceBtn: true, arcadeBtn: false, toDaily: true });
+    if (countdownInterval) clearInterval(countdownInterval);
+    overlay.classList.add('show');
+  }
+
+  // ─── Übungsmodus ──────────────────────────────────────────────────────────
+  function pickPracticeWord(exclude) {
+    if (WORDS.length <= 1) return WORDS[0];
+    let w;
+    do { w = WORDS[Math.floor(Math.random() * WORDS.length)]; } while (w === exclude);
+    return w;
+  }
+
+  function startPractice() {
+    practiceMode = true;
+    answer = pickPracticeWord(answer);
+    grid = Array.from({length: ROWS}, () => Array(COLS).fill(''));
+    states = Array.from({length: ROWS}, () => Array(COLS).fill(null));
+    keyStates = {};
+    currentRow = 0;
+    currentCol = 0;
+    gameOver = false;
+    won = false;
+    renderAll();
+    updateKeyboardColors();
+    if (countdownInterval) clearInterval(countdownInterval);
+    document.getElementById('overlay').classList.remove('show');
+    toast('🎲 Übungsrunde – zählt nicht');
   }
 
   // Lädt heutige Wörtle-Ergebnisse aus Supabase und rendert die Histogramm-Balken
@@ -956,6 +1042,13 @@
   buildBoard();
   buildKeyboard();
 
+  // Übungs-Buttons verdrahten
+  document.getElementById('modal-practice-btn').addEventListener('click', startPractice);
+  document.getElementById('modal-to-daily').addEventListener('click', () => {
+    if (dailyResult) openDailyModal(dailyResult.won, true);
+    else document.getElementById('overlay').classList.remove('show');
+  });
+
   const saved = loadState();
   if (saved) {
     grid = saved.grid;
@@ -970,7 +1063,8 @@
     updateKeyboardColors();
     document.getElementById('score').textContent = score.toLocaleString('de-AT');
     if (gameOver) {
-      setTimeout(() => openModal(won, true), 200);
+      dailyResult = { won: won, rows: currentRow };
+      setTimeout(() => openDailyModal(won, true), 200);
     }
   }
 })();
