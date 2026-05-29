@@ -53,6 +53,57 @@ function syncAchievementsFromCloud() {
 }
 if (window.Auth) window.Auth.onChange(u => { if (u) syncAchievementsFromCloud(); });
 
+// ── Tetris-Spezialeffekt (4 Zeilen auf einmal) ──────────────────────────────
+// Vollflächiges Konfetti + "TETRIS!"-Banner + Screen-Shake aufs Spielfeld.
+function celebrateTetris() {
+  const reduceMotion = window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ── Konfetti ──
+  const COLORS_CONFETTI = [
+    '#00cfcf', '#f0c000', '#a000f0', '#00b800',
+    '#e00000', '#0000e0', '#e07000', '#ffffff', '#e94560',
+  ];
+  const container = document.createElement('div');
+  container.className = 'tetris-confetti';
+  const N = reduceMotion ? 40 : 120;
+  for (let i = 0; i < N; i++) {
+    const piece = document.createElement('i');
+    const color = COLORS_CONFETTI[Math.floor(Math.random() * COLORS_CONFETTI.length)];
+    const w = 6 + Math.random() * 8;
+    piece.style.left            = (Math.random() * 100) + 'vw';
+    piece.style.width           = w + 'px';
+    piece.style.height          = (w * (0.5 + Math.random())) + 'px';
+    piece.style.background       = color;
+    piece.style.borderRadius    = Math.random() < 0.3 ? '50%' : '2px';
+    piece.style.setProperty('--xd',  ((Math.random() * 2 - 1) * 160) + 'px');
+    piece.style.setProperty('--rot', ((Math.random() * 2 - 1) * 900) + 'deg');
+    piece.style.animationDuration = (1.6 + Math.random() * 1.6) + 's';
+    piece.style.animationDelay     = (Math.random() * 0.35) + 's';
+    container.appendChild(piece);
+  }
+  document.body.appendChild(container);
+  setTimeout(() => container.remove(), 4000);
+
+  // ── "TETRIS!"-Banner ──
+  const banner = document.createElement('div');
+  banner.className = 'tetris-banner';
+  banner.textContent = 'TETRIS!';
+  document.body.appendChild(banner);
+  setTimeout(() => banner.remove(), 1600);
+
+  // ── Screen-Shake aufs Spielfeld ──
+  if (!reduceMotion) {
+    const area = document.getElementById('game-area');
+    if (area) {
+      area.classList.remove('tetris-shake');
+      void area.offsetWidth; // Reflow erzwingen, damit die Animation neu startet
+      area.classList.add('tetris-shake');
+      setTimeout(() => area.classList.remove('tetris-shake'), 650);
+    }
+  }
+}
+
 // ── Constants ──────────────────────────────────────────────────────────────
 const COLS = 10;
 const ROWS = 20;
@@ -493,7 +544,7 @@ class BlockDrop {
       this.lines += lines;
       this.level = Math.floor(this.lines / 10) + 1;
 
-      if (lines === 4)                                 tryUnlock('bd_tetris');
+      if (lines === 4)                               { tryUnlock('bd_tetris'); celebrateTetris(); }
       if (this.combo >= 4)                             tryUnlock('bd_combo5');
       if (this.level >= 10 && this.mode === 'classic') tryUnlock('bd_level10');
       if (this.score >= 50000)                         tryUnlock('bd_score50k');
