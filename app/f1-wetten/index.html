@@ -256,11 +256,14 @@
       text-transform: uppercase; color: rgba(255,255,255,0.7);
       background: rgba(255,255,255,0.06); border: 1px solid var(--border);
       padding: 2px 8px; border-radius: 99px; margin-right: 8px;
+      text-decoration: none; cursor: pointer; transition: all 0.15s;
     }
+    a.public-bettor:hover { color: #fff; border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.12); }
     .public-bettor.me {
       color: var(--gold); border-color: rgba(240,192,0,0.35);
       background: rgba(240,192,0,0.08);
     }
+    a.public-bettor.me:hover { color: var(--gold); border-color: rgba(240,192,0,0.55); background: rgba(240,192,0,0.14); }
     .public-race { color: rgba(255,255,255,0.85); }
     .bet-picks {
       display: flex; gap: 6px; flex-wrap: wrap; font-size: 11px; color: rgba(255,255,255,0.6);
@@ -311,7 +314,8 @@
     .lb-pos.gold { color: var(--gold); }
     .lb-pos.silver { color: #c0c0c0; }
     .lb-pos.bronze { color: #cd7f32; }
-    .lb-name { font-size: 13px; font-weight: 700; color: #fff; }
+    .lb-name { font-size: 13px; font-weight: 700; color: #fff; text-decoration: none; transition: color 0.15s; }
+    a.lb-name:hover { color: var(--gold); }
     .lb-name.me::after { content: ' · DU'; font-size: 9px; color: var(--gold); letter-spacing: 2px; font-weight: 800; }
     .lb-pts { text-align: right; font-size: 14px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
     .lb-pts span { font-size: 10px; color: rgba(255,255,255,0.4); margin-left: 4px; letter-spacing: 1px; }
@@ -856,6 +860,11 @@ function driverNameById(id) {
   return d ? d.full : id;
 }
 
+// Link zum Profil eines Tippers — eigenes Profil bleibt bei /profile/.
+function profileHref(userId) {
+  return userId === state.user.id ? '/profile/' : `/u/?id=${encodeURIComponent(userId)}`;
+}
+
 function render() {
   const pts = state.points.points;
   const bankrupt = pts <= 0 && !state.myBets.some(b => b.status === 'open');
@@ -1037,7 +1046,7 @@ function render() {
               return `
                 <div class="lb-row ${me?'me':''}">
                   <div class="lb-pos ${cls}">${pos}</div>
-                  <div class="lb-name ${me?'me':''}">${esc(row.name)}</div>
+                  <a class="lb-name ${me?'me':''}" href="${profileHref(row.user_id)}">${esc(row.name)}</a>
                   <div class="lb-pts">${row.points.toLocaleString('de-DE')}<span>pts</span></div>
                 </div>`;
             }).join('')
@@ -1093,7 +1102,7 @@ function renderPublicBetRow(b) {
     <div class="bet-row">
       <div>
         <div class="bet-race">
-          <span class="public-bettor ${isMe?'me':''}">${esc(b.username)}${isMe?' · DU':''}</span>
+          <a class="public-bettor ${isMe?'me':''}" href="${profileHref(b.user_id)}">${esc(b.username)}${isMe?' · DU':''}</a>
           <span class="public-race">${esc(b.race_name || ('Runde ' + b.round))}</span>
         </div>
         <div class="bet-picks">
