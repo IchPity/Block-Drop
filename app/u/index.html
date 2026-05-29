@@ -220,6 +220,7 @@
 (function () {
   const params = new URLSearchParams(location.search);
   const targetId = params.get('id') || params.get('u');
+  const targetName = params.get('name');
 
   const stateBox    = document.getElementById('state-box');
   const view        = document.getElementById('profile-view');
@@ -353,7 +354,7 @@
 
   // ─── Boot ─────────────────────────────────────────────────────────────────
   async function load() {
-    if (!targetId) {
+    if (!targetId && !targetName) {
       showState('🤷', 'Kein Spieler gewählt', 'Diese Seite zeigt das Profil eines Spielers. Öffne sie über einen Link, z. B. aus den F1-Wetten.');
       return;
     }
@@ -361,7 +362,9 @@
       showState('⚠', 'Fehler', 'Auth konnte nicht geladen werden.');
       return;
     }
-    const profile = await window.Auth.getPublicProfile(targetId);
+    const profile = targetId
+      ? await window.Auth.getPublicProfile(targetId)
+      : await window.Auth.getPublicProfileByUsername(targetName);
     if (!profile) {
       showState('🔍', 'Spieler nicht gefunden', 'Zu dieser ID gibt es kein Profil.');
       return;

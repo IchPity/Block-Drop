@@ -786,6 +786,17 @@
       return data || null;
     },
 
+    // Öffentliches Profil per Username (für Leaderboards, die nur den Namen haben).
+    async getPublicProfileByUsername(username) {
+      const name = (username || '').trim();
+      if (!name) return null;
+      const { data, error } = await client.from('profiles')
+        .select('id, username, avatar_url, created_at, achievements')
+        .eq('username', name).maybeSingle();
+      if (error) { console.warn('[Auth] publicProfileByName:', error.message); return null; }
+      return data || null;
+    },
+
     // F1-Saison-Punkte eines Users (für öffentliches Profil). Liefert null wenn keine.
     async getF1Points(userId, season) {
       if (!userId) return null;
