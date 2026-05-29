@@ -192,6 +192,7 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 11px; font-weight: 900; color: #fff;
   }
+  .auth-chip-avatar-img { object-fit: cover; }
   .auth-chip-name {
     font-size: 12px; font-weight: 700; color: #fff;
     letter-spacing: 0.2px; max-width: 120px;
@@ -591,6 +592,71 @@
       return data?.achievements || [];
     },
 
+    // ─── Profil bearbeiten ───────────────────────────────────────────────────
+    // Username ändern. Gibt {error} zurück oder {} bei Erfolg.
+    async updateUsername(newUsername) {
+      if (!this.user) return { error: { message: 'Nicht angemeldet' } };
+      const name = (newUsername || '').trim();
+      if (name.length < 3) return { error: { message: 'Username muss mindestens 3 Zeichen haben.' } };
+      if (!/^[a-zA-Z0-9_-]+$/.test(name)) return { error: { message: 'Username darf nur Buchstaben, Zahlen, _ und - enthalten.' } };
+      const { error } = await client.from('profiles')
+        .update({ username: name }).eq('id', this.user.id);
+      if (error) {
+        if (error.code === '23505') return { error: { message: 'Username schon vergeben' } };
+        return { error };
+      }
+      await this._loadProfile();
+      this._notify();
+      return {};
+    },
+
+    // Passwort ändern (Nutzer muss eingeloggt sein).
+    async updatePassword(newPassword) {
+      if (!this.user) return { error: { message: 'Nicht angemeldet' } };
+      if (!newPassword || newPassword.length < 6) {
+        return { error: { message: 'Passwort muss mindestens 6 Zeichen haben.' } };
+      }
+      const { error } = await client.auth.updateUser({ password: newPassword });
+      if (error) return { error };
+      return {};
+    },
+
+    // Profilbild hochladen → Supabase Storage Bucket "avatars". Pfad beginnt mit
+    // der user.id, damit die Storage-RLS-Policy (foldername[1] === auth.uid) greift.
+    async uploadAvatar(file) {
+      if (!this.user) return { error: { message: 'Nicht angemeldet' } };
+      if (!file) return { error: { message: 'Keine Datei gewählt' } };
+      if (!file.type.startsWith('image/')) return { error: { message: 'Nur Bilddateien erlaubt.' } };
+      if (file.size > 5 * 1024 * 1024) return { error: { message: 'Bild zu groß (max. 5 MB).' } };
+
+      const ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
+      const path = `${this.user.id}/avatar_${Date.now()}.${ext}`;
+      const { error: upErr } = await client.storage.from('avatars')
+        .upload(path, file, { upsert: true, cacheControl: '3600', contentType: file.type });
+      if (upErr) return { error: upErr };
+
+      const { data } = client.storage.from('avatars').getPublicUrl(path);
+      const url = data.publicUrl;
+      const { error: pErr } = await client.from('profiles')
+        .update({ avatar_url: url }).eq('id', this.user.id);
+      if (pErr) return { error: pErr };
+
+      await this._loadProfile();
+      this._notify();
+      return { url };
+    },
+
+    // Profilbild entfernen.
+    async removeAvatar() {
+      if (!this.user) return { error: { message: 'Nicht angemeldet' } };
+      const { error } = await client.from('profiles')
+        .update({ avatar_url: null }).eq('id', this.user.id);
+      if (error) return { error };
+      await this._loadProfile();
+      this._notify();
+      return {};
+    },
+
     // ─── UI ────────────────────────────────────────────────────────────────
     openLogin() { showModal('login'); },
     openRegister() { showModal('register'); }
@@ -720,9 +786,13 @@
       if (Auth.user && Auth.profile) {
         const name = Auth.profile.username || Auth.user.email;
         const initial = (name[0] || '?').toUpperCase();
+        const avatarUrl = Auth.profile.avatar_url;
+        const avatarHtml = avatarUrl
+          ? `<img class="auth-chip-avatar auth-chip-avatar-img" src="${escapeHtml(avatarUrl)}" alt="" />`
+          : `<span class="auth-chip-avatar">${initial}</span>`;
         slot.innerHTML = `
           <button class="auth-chip" type="button" aria-haspopup="true">
-            <span class="auth-chip-avatar">${initial}</span>
+            ${avatarHtml}
             <span class="auth-chip-name">${escapeHtml(name)}</span>
             <span class="auth-chip-caret">▾</span>
           </button>
@@ -731,6 +801,7 @@
               <div class="auth-menu-name">${escapeHtml(name)}</div>
               <div class="auth-menu-email">${escapeHtml(Auth.user.email)}</div>
             </div>
+            <button class="auth-menu-item" data-act="profile" type="button">Profil</button>
             <button class="auth-menu-item" data-act="achievements" type="button">Achievements</button>
             <button class="auth-menu-item danger" data-act="logout" type="button">Abmelden</button>
           </div>
@@ -746,6 +817,7 @@
           btn.addEventListener('click', () => {
             const act = btn.dataset.act;
             if (act === 'logout') Auth.signOut();
+            if (act === 'profile') window.location.href = '/profile/';
             if (act === 'achievements') {
               // Auf jeden Pfad funktionierender Link
               window.location.href = '/achievements/';
