@@ -320,7 +320,11 @@
   function renderHeader(user, profile) {
     const name = (profile && profile.username) || (user && user.email) || '?';
     headerName.textContent = name;
-    headerEmail.textContent = user ? user.email : '';
+    // Synthetische Auth-Mails (<username>@blockdrop.local) nicht zeigen —
+    // stattdessen die echte Kontakt-Mail, falls vorhanden.
+    const rawEmail = (user && user.email) || '';
+    const contactEmail = (user && user.user_metadata && user.user_metadata.contact_email) || '';
+    headerEmail.textContent = rawEmail.endsWith('@blockdrop.local') ? contactEmail : rawEmail;
 
     // Member since (aus profile.created_at oder user.created_at)
     const created = (profile && profile.created_at) || (user && user.created_at);
