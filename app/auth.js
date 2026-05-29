@@ -175,6 +175,18 @@
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
   });
 
+  // ─── Username-basierter Login ───────────────────────────────────────────────
+  // Supabase Auth verlangt technisch eine Email. Wer ohne echte Email registriert,
+  // bekommt eine synthetische Adresse <username>@blockdrop.local als Auth-Identität.
+  // Eine optional angegebene echte Email landet nur als privates user_metadata
+  // (contact_email) — nie als Auth-Mail, nie öffentlich. Login per Username oder
+  // Kontakt-Mail löst serverseitig (RPC) zur synthetischen Mail auf; echte Mails
+  // werden dabei nie an den Client zurückgegeben.
+  const SYNTH_DOMAIN = 'blockdrop.local';
+  const syntheticEmail = (username) =>
+    `${String(username || '').trim().toLowerCase()}@${SYNTH_DOMAIN}`;
+  const looksLikeEmail = (s) => /@/.test(String(s || ''));
+
   // ─── Styles ────────────────────────────────────────────────────────────────
   const css = `
   .auth-chip {
@@ -415,8 +427,8 @@
 
         <form id="auth-form-login" method="post" action="#login" autocomplete="on" data-form-type="login" aria-label="Anmelden">
           <div class="auth-field">
-            <label for="login-email">Email</label>
-            <input id="login-email" name="email" type="email" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email" />
+            <label for="login-email">Email oder Username</label>
+            <input id="login-email" name="username" type="text" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" />
           </div>
           <div class="auth-field">
             <label for="login-password">Passwort</label>
@@ -431,8 +443,8 @@
             <input id="register-username" name="username" type="text" required minlength="3" maxlength="20" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" />
           </div>
           <div class="auth-field">
-            <label for="register-email">Email</label>
-            <input id="register-email" name="email" type="email" required autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email" />
+            <label for="register-email">Email <span style="opacity:.5;font-weight:400">(optional)</span></label>
+            <input id="register-email" name="email" type="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email" placeholder="Nur falls du sie als zweiten Login willst" />
           </div>
           <div class="auth-field">
             <label for="register-password">Passwort</label>
@@ -496,23 +508,38 @@
       });
     },
 
+    // Registrierung. `email` ist optional — fehlt sie, wird der Account allein
+    // über den Username (via synthetischer Auth-Mail) angelegt.
     async signUp(email, password, username) {
-      const { data, error } = await client.auth.signUp({ email, password });
-      if (error) return { error };
+      const uname = (username || '').trim();
+      const contact = (email || '').trim();
+      const authEmail = syntheticEmail(uname);
+
+      const { data, error } = await client.auth.signUp({
+        email: authEmail,
+        password,
+        options: { data: { username: uname, contact_email: contact || null } }
+      });
+      if (error) {
+        // Synthetische Mail kollidiert → Username (case-insensitiv) schon vergeben.
+        const m = (error.message || '').toLowerCase();
+        if (m.includes('already registered') || m.includes('already exists') || m.includes('user already')) {
+          return { error: { message: 'Username schon vergeben' } };
+        }
+        return { error };
+      }
       if (!data.user) return { error: { message: 'Registrierung fehlgeschlagen' } };
 
       // Sicherstellen dass wir wirklich eingeloggt sind — sonst RLS blockiert Profile-Insert
       if (!data.session) {
-        const { error: signInErr } = await client.auth.signInWithPassword({ email, password });
-        if (signInErr) {
-          return { error: { message: 'Account erstellt, aber Email muss erst bestätigt werden. Bestätigungs-Mail prüfen.' } };
-        }
+        const { error: signInErr } = await client.auth.signInWithPassword({ email: authEmail, password });
+        if (signInErr) return { error: signInErr };
       }
 
       // Profile erstellen (RLS erlaubt nur insert für auth.uid() === id)
       const { error: pErr } = await client.from('profiles').insert({
         id: data.user.id,
-        username: username.trim()
+        username: uname
       });
       if (pErr) {
         if (pErr.code === '23505') return { error: { message: 'Username schon vergeben' } };
@@ -521,8 +548,32 @@
       return { data };
     },
 
-    async signIn(email, password) {
-      return await client.auth.signInWithPassword({ email, password });
+    // Login per Email ODER Username. Reihenfolge:
+    //  1. Email-artig → direkter Versuch (deckt Alt-Accounts mit echter Auth-Mail ab).
+    //  2. Username → synthetische Mail client-seitig ableiten und versuchen
+    //     (funktioniert ohne Backend für alle neuen Accounts).
+    //  3. Fallback: RPC `resolve_login_email` löst Kontakt-Mail bzw. Username zur
+    //     synthetischen Auth-Mail auf (gibt nie echte Mails zurück).
+    async signIn(identifier, password) {
+      const id = (identifier || '').trim();
+      let directErr = null;
+
+      if (looksLikeEmail(id)) {
+        const r = await client.auth.signInWithPassword({ email: id, password });
+        if (!r.error) return r;
+        directErr = r.error;
+      } else {
+        const r = await client.auth.signInWithPassword({ email: syntheticEmail(id), password });
+        if (!r.error) return r;
+        directErr = r.error;
+      }
+
+      const { data: resolved, error: rpcErr } = await client.rpc('resolve_login_email', { identifier: id });
+      if (!rpcErr && resolved) {
+        return await client.auth.signInWithPassword({ email: resolved, password });
+      }
+
+      return { error: directErr || { message: 'Email/Username oder Passwort falsch.' } };
     },
 
     async signOut() {
@@ -849,7 +900,7 @@
     } else {
       eyebrowEl.textContent = 'Registrieren';
       titleEl.textContent = 'Account erstellen';
-      subEl.textContent = 'Wähl einen Username und ein Passwort — Highscores + Achievements sind danach auf allen Geräten verfügbar.';
+      subEl.textContent = 'Username + Passwort genügen — eine Email ist optional. Highscores + Achievements sind danach auf allen Geräten verfügbar.';
       loginForm.style.display = 'none';
       registerForm.style.display = '';
       switchText.textContent = 'Schon angemeldet?';
@@ -922,7 +973,7 @@
 
   function translateError(err) {
     const m = (err.message || '').toLowerCase();
-    if (m.includes('invalid login')) return 'Email oder Passwort falsch.';
+    if (m.includes('invalid login')) return 'Email/Username oder Passwort falsch.';
     if (m.includes('already registered') || m.includes('user already')) return 'Diese Email ist schon registriert.';
     if (m.includes('password should be')) return 'Passwort muss mindestens 6 Zeichen haben.';
     if (m.includes('rate limit')) return 'Zu viele Versuche. Bitte kurz warten.';
@@ -936,6 +987,11 @@
       slot.innerHTML = ''; // reset
       if (Auth.user && Auth.profile) {
         const name = Auth.profile.username || Auth.user.email;
+        // Synthetische Auth-Mails (<username>@blockdrop.local) nicht anzeigen —
+        // stattdessen die echte Kontakt-Mail, falls vorhanden, sonst nichts.
+        const rawEmail = Auth.user.email || '';
+        const contactEmail = Auth.user.user_metadata?.contact_email || '';
+        const displayEmail = rawEmail.endsWith('@' + SYNTH_DOMAIN) ? contactEmail : rawEmail;
         const initial = (name[0] || '?').toUpperCase();
         const avatarUrl = Auth.profile.avatar_url;
         const avatarHtml = avatarUrl
@@ -950,7 +1006,7 @@
           <div class="auth-menu">
             <div class="auth-menu-header">
               <div class="auth-menu-name">${escapeHtml(name)}</div>
-              <div class="auth-menu-email">${escapeHtml(Auth.user.email)}</div>
+              ${displayEmail ? `<div class="auth-menu-email">${escapeHtml(displayEmail)}</div>` : ''}
             </div>
             <button class="auth-menu-item" data-act="profile" type="button">Profil</button>
             <button class="auth-menu-item" data-act="friends" type="button">Freunde</button>
