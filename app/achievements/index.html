@@ -197,6 +197,8 @@
     .lb-rank.silver { color: #c8c8d0; }
     .lb-rank.bronze { color: #cd7f32; }
     .lb-name { font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    a.lb-name { text-decoration: none; transition: color 0.15s; cursor: pointer; }
+    a.lb-name:hover { color: var(--red); }
     .lb-score { color: var(--red); font-weight: 800; text-align: right; }
     .lb-plays { color: rgba(255,255,255,0.35); font-weight: 600; text-align: right; }
     .lb-empty {
@@ -497,12 +499,16 @@ async function renderLeaderboard() {
   rows.forEach((r, i) => {
     const rank = i + 1;
     const rankCls = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
-    const meCls = (r.username === myUsername) ? 'me' : '';
+    const isMe = r.username === myUsername;
+    const meCls = isMe ? 'me' : '';
     const escape = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const href = isMe
+      ? '/profile/'
+      : (r.user_id ? `/u/?id=${encodeURIComponent(r.user_id)}` : `/u/?name=${encodeURIComponent(r.username)}`);
     html += `
       <div class="lb-row ${meCls}">
         <div class="lb-rank ${rankCls}">#${rank}</div>
-        <div class="lb-name">${escape(r.username)}</div>
+        <a class="lb-name" href="${href}">${escape(r.username)}</a>
         <div class="lb-score">${Number(r.best_score).toLocaleString()}</div>
         <div class="lb-plays">${r.plays}×</div>
       </div>`;
