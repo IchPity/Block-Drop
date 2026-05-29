@@ -1,7 +1,5 @@
 .claude/
 .idea/
-Schach/.idea/
-Schach/out/
 
 # Cloudflare / Wrangler
 .wrangler/
