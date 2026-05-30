@@ -549,6 +549,15 @@
         if (pErr.code === '23505') return { error: { message: 'Username schon vergeben' } };
         return { error: pErr };
       }
+
+      // Wichtig: onAuthStateChange feuert direkt nach signUp — also BEVOR die
+      // profiles-Zeile oben existiert — und lädt darum ein leeres Profil. Ohne
+      // Profil zeigt die Navbar trotz gültiger Session weiter "Anmelden".
+      // Jetzt, wo das Profil steht, den Auth-State frisch übernehmen, damit man
+      // sofort eingeloggt ist (kein zweiter manueller Login nötig).
+      this.user = data.user;
+      await this._loadProfile();
+      this._notify();
       return { data };
     },
 
