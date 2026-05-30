@@ -31,7 +31,10 @@
     /* ── Animated Background ───────────────────────────────────── */
     .orb {
       position: fixed; border-radius: 50%;
-      filter: blur(130px); pointer-events: none; z-index: 0;
+      filter: blur(100px); pointer-events: none; z-index: 0;
+      will-change: transform;
+      transform: translateZ(0);
+      backface-visibility: hidden;
     }
     .orb-1 {
       width: 720px; height: 720px; background: #e94560; opacity: 0.07;
@@ -45,7 +48,7 @@
     }
     .orb-3 {
       width: 480px; height: 480px; background: #8030c8; opacity: 0.05;
-      top: 45%; left: 50%; transform: translate(-50%, -50%);
+      top: 45%; left: 50%;
       animation: orbFloat3 20s ease-in-out infinite alternate;
     }
     @keyframes orbFloat1 {
@@ -302,19 +305,16 @@
 
     /* ── Cards ──────────────────────────────────────────────────── */
     .game-card {
-      background: rgba(18, 18, 42, 0.72);
+      background: rgba(17, 17, 38, 0.92);
       border: 1px solid rgba(255,255,255,0.09);
       border-radius: 22px;
       overflow: hidden;
       text-decoration: none;
       color: inherit;
       display: flex; flex-direction: column;
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
       opacity: 0; transform: translateY(32px) scale(0.98);
       animation: cardIn 0.7s both cubic-bezier(0.22, 1, 0.36, 1);
       transition: border-color 0.3s ease, box-shadow 0.3s ease;
-      will-change: transform;
     }
 
     .game-card.available { cursor: pointer; }
@@ -657,6 +657,15 @@
     @media (hover: none) {
       .game-card.available:hover { transform: none !important; }
     }
+
+    /* Respect reduced-motion: kill the continuous orb drift and entrance
+       animations so low-power devices aren't repainting forever. */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .orb { animation: none !important; }
+      .hero-text, .hero-visual, .login-cta-banner,
+      .game-card { animation: none !important; opacity: 1 !important; transform: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -994,31 +1003,36 @@
     let targetX = 0, targetY = 0, currentX = 0, currentY = 0;
     let lifted = false;
 
-    card.addEventListener('mouseenter', () => { lifted = true; });
+    const lerp = () => {
+      currentX += (targetX - currentX) * 0.12;
+      currentY += (targetY - currentY) * 0.12;
+      card.style.transform = `perspective(700px) translateY(-8px) rotateY(${currentX}deg) rotateX(${currentY}deg) scale(1.018)`;
+
+      // Stop the loop once we've essentially reached the target — no point
+      // burning a frame every 16ms while the cursor sits still.
+      const settled = Math.abs(targetX - currentX) < 0.01 && Math.abs(targetY - currentY) < 0.01;
+      raf = (lifted && !settled) ? requestAnimationFrame(lerp) : null;
+    };
+
+    card.addEventListener('mouseenter', () => {
+      lifted = true;
+      card.style.willChange = 'transform';
+      card.style.transition = 'border-color 0.3s, box-shadow 0.3s';
+    });
 
     card.addEventListener('mousemove', e => {
       const r = card.getBoundingClientRect();
       targetX = ((e.clientX - r.left) / r.width  - 0.5) * 10;
       targetY = ((e.clientY - r.top)  / r.height - 0.5) * -8;
-
-      if (!raf) {
-        const lerp = () => {
-          currentX += (targetX - currentX) * 0.12;
-          currentY += (targetY - currentY) * 0.12;
-          card.style.transition = 'border-color 0.3s, box-shadow 0.3s';
-          card.style.transform  = `perspective(700px) translateY(-8px) rotateY(${currentX}deg) rotateX(${currentY}deg) scale(1.018)`;
-          if (lifted) raf = requestAnimationFrame(lerp);
-          else raf = null;
-        };
-        raf = requestAnimationFrame(lerp);
-      }
+      if (!raf && lifted) raf = requestAnimationFrame(lerp);
     });
 
     card.addEventListener('mouseleave', () => {
       lifted = false;
-      cancelAnimationFrame(raf); raf = null;
+      if (raf) { cancelAnimationFrame(raf); raf = null; }
       card.style.transition = 'border-color 0.3s, box-shadow 0.3s, transform 0.55s cubic-bezier(0.22,1,0.36,1)';
       card.style.transform  = '';
+      card.style.willChange = 'auto';
     });
   });
 </script>
