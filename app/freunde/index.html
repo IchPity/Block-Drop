@@ -137,6 +137,11 @@
     .mini-btn.danger:hover:not(:disabled) { background: rgba(233,69,96,0.18); color: #ff97aa; }
     .mini-btn.add { background: var(--red); color: #fff; }
     .mini-btn.add:hover:not(:disabled) { background: #f05672; }
+    .mini-btn.msg {
+      display: inline-flex; align-items: center; text-decoration: none;
+      background: rgba(233,69,96,0.1); border: 1px solid rgba(233,69,96,0.28); color: #ff8fa1;
+    }
+    .mini-btn.msg:hover { background: rgba(233,69,96,0.18); color: #ffa7b6; }
     .mini-btn:disabled { opacity: 0.55; cursor: not-allowed; }
     .mini-tag { font-size: 11px; font-weight: 800; padding: 7px 12px; border-radius: 9px; }
     .mini-tag.pending { color: var(--gold); background: rgba(240,192,0,0.08); border: 1px solid rgba(240,192,0,0.3); }
@@ -300,6 +305,7 @@
             <div class="frow-meta">Freunde seit ${esc(fmtSince(f.since))}</div>
           </div>
           <div class="frow-actions">
+            <a class="mini-btn msg" href="/chat/?id=${encodeURIComponent(f.id)}">💬 Nachricht</a>
             <button class="mini-btn danger" data-act="remove" data-id="${esc(f.id)}">Entfernen</button>
           </div>
         </div>`).join('');

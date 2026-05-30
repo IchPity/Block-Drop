@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Nachrichten — Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --red: #e94560; --gold: #f0c000; --green: #22c55e; --bg: #060818; --nav-h: 58px; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg); min-height: 100vh; min-height: 100dvh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #eee; overflow: hidden;
+    }
+
+    .orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; will-change: transform; }
+    .orb-1 { width: 680px; height: 680px; background: #e94560; opacity: 0.05; top: -240px; right: -220px; animation: orbFloat1 26s ease-in-out infinite alternate; }
+    .orb-2 { width: 560px; height: 560px; background: #6d4ae9; opacity: 0.045; bottom: -200px; left: -180px; animation: orbFloat2 32s ease-in-out infinite alternate; }
+    @keyframes orbFloat1 { from { transform: translate(0,0) scale(1); } to { transform: translate(-80px,80px) scale(1.15); } }
+    @keyframes orbFloat2 { from { transform: translate(0,0) scale(1); } to { transform: translate(80px,-80px) scale(1.18); } }
+    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px); background-size: 30px 30px; }
+    .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 35%, rgba(5,5,14,0.7) 100%); }
+
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 32px;
+      background: rgba(6,8,24,0.7);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-left { display: flex; align-items: center; gap: 16px; }
+    .nav-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none; color: rgba(255,255,255,0.35);
+      font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+      padding: 7px 14px; transition: all 0.2s;
+    }
+    .nav-back:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.04); }
+    .nav-title { font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.5); letter-spacing: 0.3px; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+
+    /* ─── Gate (nicht eingeloggt) ─────────────────────────────────────────── */
+    .gate-wrap {
+      position: fixed; inset: var(--nav-h) 0 0 0; z-index: 1;
+      display: none; align-items: center; justify-content: center; padding: 24px;
+    }
+    .gate-wrap.show { display: flex; }
+    .gate {
+      background: rgba(18,18,42,0.7); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 22px; padding: 44px 32px; text-align: center; max-width: 380px;
+      animation: fadeUp 0.5s both;
+    }
+    .gate-icon { font-size: 40px; margin-bottom: 14px; }
+    .gate h2 { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.5px; }
+    .gate p { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 24px; line-height: 1.6; }
+    .login-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--red); border: none; border-radius: 12px;
+      padding: 13px 28px; color: #fff; font-family: inherit; font-size: 14px; font-weight: 800;
+      cursor: pointer; box-shadow: 0 0 28px rgba(233,69,96,0.35); transition: all 0.2s;
+    }
+    .login-btn:hover { background: #f05672; transform: translateY(-1px); box-shadow: 0 0 40px rgba(233,69,96,0.5); }
+
+    /* ─── App ─────────────────────────────────────────────────────────────── */
+    .chat-app { position: fixed; inset: var(--nav-h) 0 0 0; z-index: 1; display: none; }
+    .chat-app.show { display: block; }
+    .chat-shell {
+      max-width: 1080px; height: 100%; margin: 0 auto;
+      display: flex; gap: 14px; padding: 14px 16px 16px;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 304px; flex-shrink: 0; display: flex; flex-direction: column;
+      background: rgba(16,16,38,0.62); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 20px; overflow: hidden;
+    }
+    .sidebar-head {
+      padding: 16px 18px 12px; border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .sidebar-head h2 { font-size: 16px; font-weight: 900; color: #fff; letter-spacing: -0.4px; }
+    .sidebar-head p { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+    .conv-list { flex: 1; overflow-y: auto; padding: 6px; }
+
+    .conv {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 11px; border-radius: 14px; cursor: pointer;
+      transition: background 0.15s; position: relative;
+    }
+    .conv:hover { background: rgba(255,255,255,0.04); }
+    .conv.active { background: rgba(233,69,96,0.12); }
+    .conv-avatar {
+      width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, #e94560, #b8334a);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 900; color: #fff; object-fit: cover; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    img.conv-avatar { display: block; }
+    .conv-main { flex: 1; min-width: 0; }
+    .conv-top { display: flex; align-items: baseline; gap: 8px; }
+    .conv-name {
+      font-size: 13.5px; font-weight: 800; color: #fff; letter-spacing: -0.2px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
+    }
+    .conv-time { font-size: 10px; color: rgba(255,255,255,0.3); flex-shrink: 0; }
+    .conv-preview {
+      font-size: 11.5px; color: rgba(255,255,255,0.4); margin-top: 2px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .conv.unread .conv-name { color: #fff; }
+    .conv.unread .conv-preview { color: rgba(255,255,255,0.7); font-weight: 600; }
+    .conv-badge {
+      flex-shrink: 0; min-width: 19px; height: 19px; padding: 0 6px;
+      background: var(--red); color: #fff; border-radius: 99px;
+      font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 12px rgba(233,69,96,0.5);
+    }
+
+    /* Main thread */
+    .main {
+      flex: 1; min-width: 0; display: flex; flex-direction: column;
+      background: rgba(16,16,38,0.62); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 20px; overflow: hidden;
+    }
+    .thread-head {
+      display: flex; align-items: center; gap: 12px;
+      padding: 13px 18px; border-bottom: 1px solid rgba(255,255,255,0.06);
+      background: rgba(10,10,28,0.4); flex-shrink: 0;
+    }
+    .thread-back {
+      display: none; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.7); border-radius: 10px; width: 34px; height: 34px;
+      font-size: 16px; cursor: pointer; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .thread-avatar {
+      width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, #e94560, #b8334a);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 900; color: #fff; object-fit: cover; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    img.thread-avatar { display: block; }
+    .thread-name { font-size: 15px; font-weight: 800; color: #fff; text-decoration: none; letter-spacing: -0.2px; }
+    .thread-name:hover { color: var(--red); }
+    .thread-sub { font-size: 10.5px; color: rgba(255,255,255,0.32); margin-top: 1px; }
+
+    .messages {
+      flex: 1; overflow-y: auto; padding: 18px 18px 10px;
+      display: flex; flex-direction: column; gap: 3px;
+    }
+    .day-sep {
+      align-self: center; margin: 14px 0 10px;
+      font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+      color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.04);
+      padding: 4px 12px; border-radius: 99px;
+    }
+    .bubble {
+      max-width: 75%; padding: 9px 13px; border-radius: 16px;
+      font-size: 13.5px; line-height: 1.45; word-wrap: break-word; white-space: pre-wrap;
+      position: relative; animation: pop 0.18s ease;
+    }
+    @keyframes pop { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .bubble.them {
+      align-self: flex-start; background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.06); color: #f1f1f4;
+      border-bottom-left-radius: 5px;
+    }
+    .bubble.me {
+      align-self: flex-end; background: linear-gradient(135deg, #e94560, #d23354);
+      color: #fff; border-bottom-right-radius: 5px;
+    }
+    .bubble.them + .bubble.me, .bubble.me + .bubble.them { margin-top: 9px; }
+    .bubble-time { font-size: 9.5px; opacity: 0.6; margin-left: 10px; float: right; margin-top: 4px; }
+    .bubble.me .bubble-time { color: rgba(255,255,255,0.7); }
+    .bubble.pending { opacity: 0.6; }
+
+    .composer {
+      display: flex; align-items: flex-end; gap: 10px;
+      padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.06);
+      background: rgba(10,10,28,0.4); flex-shrink: 0;
+    }
+    .composer textarea {
+      flex: 1; resize: none; max-height: 120px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px; padding: 11px 14px; color: #fff;
+      font-family: inherit; font-size: 14px; line-height: 1.4; outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .composer textarea:focus { border-color: rgba(233,69,96,0.5); background: rgba(255,255,255,0.07); }
+    .send-btn {
+      flex-shrink: 0; width: 44px; height: 44px; border-radius: 14px; border: none;
+      background: var(--red); color: #fff; cursor: pointer; font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 18px rgba(233,69,96,0.3); transition: all 0.18s;
+    }
+    .send-btn:hover:not(:disabled) { background: #f05672; transform: translateY(-1px); }
+    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+    /* Placeholder / empty states */
+    .placeholder {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 30px; color: rgba(255,255,255,0.4);
+    }
+    .placeholder .big { font-size: 44px; margin-bottom: 14px; opacity: 0.8; }
+    .placeholder h3 { font-size: 16px; font-weight: 800; color: rgba(255,255,255,0.6); margin-bottom: 6px; }
+    .placeholder p { font-size: 12.5px; line-height: 1.6; max-width: 280px; }
+    .placeholder a { color: var(--red); text-decoration: none; font-weight: 700; }
+    .placeholder a:hover { text-decoration: underline; }
+
+    .spinner {
+      display: inline-block; width: 26px; height: 26px;
+      border: 2px solid rgba(255,255,255,0.12); border-top-color: var(--red);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
+
+    /* ─── Mobile: ein Pane gleichzeitig ───────────────────────────────────── */
+    @media (max-width: 760px) {
+      .navbar { padding: 12px 16px; }
+      .nav-back { padding: 6px 12px; font-size: 10px; }
+      .chat-shell { padding: 0; gap: 0; }
+      .sidebar { width: 100%; border-radius: 0; border: none; }
+      .main {
+        position: absolute; inset: 0; border-radius: 0; border: none;
+        transform: translateX(100%); transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+      }
+      .chat-app.show-thread .main { transform: translateX(0); }
+      .chat-app.show-thread .sidebar { visibility: hidden; }
+      .thread-back { display: flex; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="dot-grid"></div>
+<div class="vignette"></div>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="/" class="nav-back">&#8592; Arcade</a>
+    <div class="nav-title">Nachrichten</div>
+  </div>
+  <div class="nav-right">
+    <div data-auth-slot></div>
+  </div>
+</nav>
+
+<!-- Nicht eingeloggt -->
+<div class="gate-wrap" id="gate">
+  <div class="gate">
+    <div class="gate-icon">🔒</div>
+    <h2>Bitte anmelden</h2>
+    <p>Melde dich an, um mit deinen Freunden zu chatten.</p>
+    <button class="login-btn" id="gate-login">Anmelden</button>
+  </div>
+</div>
+
+<!-- Eingeloggt -->
+<div class="chat-app" id="app">
+  <div class="chat-shell">
+
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <h2>Chats</h2>
+        <p>Schreib deinen Freunden</p>
+      </div>
+      <div class="conv-list" id="conv-list">
+        <div class="placeholder"><span class="spinner"></span></div>
+      </div>
+    </aside>
+
+    <section class="main" id="main">
+      <div class="placeholder" id="main-placeholder">
+        <div class="big">💬</div>
+        <h3>Wähle einen Chat</h3>
+        <p>Such dir links einen Freund aus, um die Unterhaltung zu öffnen.</p>
+      </div>
+
+      <!-- Aktiver Thread (wird per JS befüllt/angezeigt) -->
+      <div class="thread-head" id="thread-head" style="display:none">
+        <button class="thread-back" id="thread-back" aria-label="Zurück">&#8592;</button>
+        <div class="thread-avatar" id="thread-avatar"></div>
+        <div style="min-width:0">
+          <a class="thread-name" id="thread-name" href="#">—</a>
+          <div class="thread-sub">Freund</div>
+        </div>
+      </div>
+      <div class="messages" id="messages" style="display:none"></div>
+      <form class="composer" id="composer" style="display:none">
+        <textarea id="msg-input" rows="1" placeholder="Nachricht schreiben…"
+                  autocomplete="off" maxlength="2000"></textarea>
+        <button type="submit" class="send-btn" id="send-btn" aria-label="Senden">➤</button>
+      </form>
+    </section>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script>
+(function () {
+  const A = () => window.Auth;
+  const POLL_MS = 6000;
+
+  // DOM
+  const gate        = document.getElementById('gate');
+  const app         = document.getElementById('app');
+  const convList    = document.getElementById('conv-list');
+  const mainEl      = document.getElementById('main');
+  const placeholder = document.getElementById('main-placeholder');
+  const threadHead  = document.getElementById('thread-head');
+  const threadBack  = document.getElementById('thread-back');
+  const threadAv    = document.getElementById('thread-avatar');
+  const threadName  = document.getElementById('thread-name');
+  const messagesEl  = document.getElementById('messages');
+  const composer    = document.getElementById('composer');
+  const input       = document.getElementById('msg-input');
+  const sendBtn     = document.getElementById('send-btn');
+
+  // State
+  let me = null;                 // my user id
+  let friends = [];              // [{id, username, avatar_url, since}]
+  const friendById = new Map();
+  const preview = new Map();     // friendId -> {body, at, fromMe, unread}
+  let activeId = null;
+  let channel = null;
+  let pollTimer = null;
+  let setupDone = false;
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function initial(name) { return (String(name || '?')[0] || '?').toUpperCase(); }
+  function avatarMarkup(p, cls) {
+    if (p && p.avatar_url) return `<img class="${cls}" src="${esc(p.avatar_url)}" alt="" />`;
+    return initial(p && p.username);
+  }
+  function fmtTime(iso) {
+    try { return new Date(iso).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' }); }
+    catch (e) { return ''; }
+  }
+  function fmtDay(iso) {
+    const d = new Date(iso);
+    const today = new Date(); const y = new Date(); y.setDate(today.getDate() - 1);
+    const same = (a, b) => a.toDateString() === b.toDateString();
+    if (same(d, today)) return 'Heute';
+    if (same(d, y)) return 'Gestern';
+    return d.toLocaleDateString('de-AT', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+  function fmtPreviewTime(iso) {
+    const d = new Date(iso);
+    const today = new Date();
+    if (d.toDateString() === today.toDateString()) return fmtTime(iso);
+    const y = new Date(); y.setDate(today.getDate() - 1);
+    if (d.toDateString() === y.toDateString()) return 'Gestern';
+    return d.toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit' });
+  }
+  function nearBottom(el) { return el.scrollHeight - el.scrollTop - el.clientHeight < 90; }
+
+  // ── Sidebar ──────────────────────────────────────────────────────────────────
+  function buildPreviews(recent) {
+    preview.clear();
+    // recent ist neueste->älteste. Erster Treffer pro Partner = letzte Nachricht.
+    for (const m of recent) {
+      const other = m.sender_id === me ? m.recipient_id : m.sender_id;
+      if (!preview.has(other)) {
+        preview.set(other, { body: m.body, at: m.created_at, fromMe: m.sender_id === me, unread: 0 });
+      }
+      if (m.recipient_id === me && !m.read_at) {
+        const p = preview.get(other);
+        if (p) p.unread++;
+      }
+    }
+  }
+
+  function totalUnread() {
+    let n = 0; preview.forEach(p => n += (p.unread || 0)); return n;
+  }
+  function updateTitle() {
+    const n = totalUnread();
+    document.title = (n > 0 ? `(${n}) ` : '') + 'Nachrichten — Arcade';
+  }
+
+  function renderSidebar() {
+    if (!friends.length) {
+      convList.innerHTML = `
+        <div class="placeholder">
+          <div class="big">🫂</div>
+          <h3>Noch keine Freunde</h3>
+          <p>Füge erst <a href="/freunde/">Freunde</a> hinzu, dann könnt ihr hier chatten.</p>
+        </div>`;
+      return;
+    }
+    // Sortierung: mit Verlauf zuerst (nach letzter Nachricht), dann alphabetisch.
+    const sorted = [...friends].sort((a, b) => {
+      const pa = preview.get(a.id), pb = preview.get(b.id);
+      if (pa && pb) return new Date(pb.at) - new Date(pa.at);
+      if (pa) return -1;
+      if (pb) return 1;
+      return (a.username || '').localeCompare(b.username || '');
+    });
+
+    convList.innerHTML = sorted.map(f => {
+      const p = preview.get(f.id);
+      const prev = p ? (p.fromMe ? 'Du: ' : '') + p.body : 'Sag Hallo 👋';
+      const unread = p && p.unread > 0;
+      return `
+        <div class="conv ${f.id === activeId ? 'active' : ''} ${unread ? 'unread' : ''}" data-id="${esc(f.id)}">
+          <div class="conv-avatar">${avatarMarkup(f, 'conv-avatar')}</div>
+          <div class="conv-main">
+            <div class="conv-top">
+              <span class="conv-name">${esc(f.username || '—')}</span>
+              ${p ? `<span class="conv-time">${esc(fmtPreviewTime(p.at))}</span>` : ''}
+            </div>
+            <div class="conv-preview">${esc(prev)}</div>
+          </div>
+          ${unread ? `<span class="conv-badge">${p.unread > 99 ? '99+' : p.unread}</span>` : ''}
+        </div>`;
+    }).join('');
+
+    convList.querySelectorAll('.conv').forEach(el => {
+      el.addEventListener('click', () => openConversation(el.dataset.id));
+    });
+    updateTitle();
+  }
+
+  // ── Thread ────────────────────────────────────────────────────────────────────
+  let renderedKey = '';   // Signatur der aktuell gezeichneten Nachrichten
+  let lastMsgs = [];      // letzter gerenderter Stand (für optimistisches Anhängen)
+
+  function renderMessages(msgs, { force } = {}) {
+    lastMsgs = msgs.slice();
+    const key = msgs.map(m => m.id).join(',');
+    if (!force && key === renderedKey) return;
+    renderedKey = key;
+
+    const stick = nearBottom(messagesEl);
+    let html = '';
+    let lastDay = '';
+    for (const m of msgs) {
+      const day = fmtDay(m.created_at);
+      if (day !== lastDay) { html += `<div class="day-sep">${esc(day)}</div>`; lastDay = day; }
+      const mine = m.sender_id === me;
+      html += `
+        <div class="bubble ${mine ? 'me' : 'them'} ${m._pending ? 'pending' : ''}">${esc(m.body)}<span class="bubble-time">${esc(fmtTime(m.created_at))}</span></div>`;
+    }
+    messagesEl.innerHTML = html || `<div class="placeholder"><div class="big">👋</div><h3>Noch keine Nachrichten</h3><p>Schreib die erste!</p></div>`;
+    if (stick || force) messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  async function openConversation(id) {
+    if (!id || !friendById.has(id)) return;
+    activeId = id;
+    const f = friendById.get(id);
+
+    placeholder.style.display = 'none';
+    threadHead.style.display = '';
+    messagesEl.style.display = '';
+    composer.style.display = '';
+    app.classList.add('show-thread');
+
+    threadAv.innerHTML = avatarMarkup(f, 'thread-avatar');
+    threadName.textContent = f.username || '—';
+    threadName.href = '/u/?id=' + encodeURIComponent(f.id);
+
+    renderedKey = '';
+    messagesEl.innerHTML = `<div class="placeholder"><span class="spinner"></span></div>`;
+    input.focus();
+    renderSidebar();   // active-Markierung
+
+    const msgs = await A().getConversation(id);
+    if (activeId !== id) return;   // inzwischen gewechselt
+    renderMessages(msgs, { force: true });
+
+    // Als gelesen markieren + Badge lokal löschen
+    const p = preview.get(id);
+    if (p && p.unread) { p.unread = 0; renderSidebar(); }
+    await A().markMessagesRead(id);
+
+    // URL ohne Reload aktualisieren
+    history.replaceState(null, '', '/chat/?id=' + encodeURIComponent(id));
+  }
+
+  function closeThreadMobile() {
+    app.classList.remove('show-thread');
+  }
+
+  // ── Senden ─────────────────────────────────────────────────────────────────────
+  async function send() {
+    const text = input.value.trim();
+    if (!text || !activeId) return;
+    const target = activeId;
+    input.value = '';
+    autoGrow();
+
+    // Optimistisch anzeigen
+    const tmp = {
+      id: 'tmp-' + Date.now(), sender_id: me, recipient_id: target,
+      body: text, created_at: new Date().toISOString(), read_at: null, _pending: true
+    };
+    const current = currentMsgs();
+    current.push(tmp);
+    renderMessages(current, { force: true });
+
+    const { data, error } = await A().sendMessage(target, text);
+    if (error) {
+      input.value = text;   // zurückgeben
+      autoGrow();
+      // Optimistische Blase wieder entfernen
+      const without = current.filter(m => m.id !== tmp.id);
+      renderMessages(without, { force: true });
+      alert(error.message || 'Senden fehlgeschlagen.');
+      return;
+    }
+    // Vorschau aktualisieren
+    preview.set(target, { body: text, at: data.created_at, fromMe: true, unread: 0 });
+    renderSidebar();
+    // Falls noch derselbe Chat offen: sauberen Verlauf nachladen
+    if (activeId === target) {
+      const fresh = await A().getConversation(target);
+      renderMessages(fresh, { force: true });
+    }
+  }
+
+  // Letzter gerenderter Nachrichten-Stand (Cache fürs optimistische Anhängen).
+  function currentMsgs() { return lastMsgs.slice(); }
+
+  function autoGrow() {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  }
+
+  // ── Realtime + Polling ───────────────────────────────────────────────────────
+  function onIncoming(msg) {
+    const other = msg.sender_id;   // Subscription liefert nur recipient = me
+    // Vorschau aktualisieren
+    const p = preview.get(other) || { unread: 0 };
+    p.body = msg.body; p.at = msg.created_at; p.fromMe = false;
+    if (other === activeId && document.hasFocus()) {
+      p.unread = 0;
+    } else {
+      p.unread = (p.unread || 0) + 1;
+    }
+    preview.set(other, p);
+
+    if (other === activeId) {
+      const cur = currentMsgs();
+      cur.push(msg);
+      renderMessages(cur, { force: false });
+      if (document.hasFocus()) A().markMessagesRead(other);
+    }
+    renderSidebar();
+  }
+
+  async function pollRefresh() {
+    if (!me) return;
+    const recent = await A().getRecentMessages();
+    buildPreviews(recent);
+    // Beim aktiven Chat unread lokal auf 0 halten
+    if (activeId) { const p = preview.get(activeId); if (p) p.unread = 0; }
+    renderSidebar();
+    if (activeId) {
+      const msgs = await A().getConversation(activeId);
+      renderMessages(msgs);   // re-rendert nur bei Änderung (Signatur-Diff)
+    }
+  }
+
+  // ── Setup nach Login ──────────────────────────────────────────────────────────
+  async function setup() {
+    me = A().user.id;
+
+    const overview = await A().getFriendOverview();
+    friends = overview.friends || [];
+    friendById.clear();
+    friends.forEach(f => friendById.set(f.id, f));
+
+    const recent = await A().getRecentMessages();
+    buildPreviews(recent);
+    renderSidebar();
+
+    // Realtime-Inbox
+    if (channel) { try { channel.unsubscribe(); } catch (e) {} }
+    channel = A().subscribeMessages(onIncoming);
+
+    // Polling-Fallback (falls Realtime nicht durchkommt)
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(pollRefresh, POLL_MS);
+
+    // Tief-Link ?id=<uuid>
+    const wanted = new URLSearchParams(location.search).get('id');
+    if (wanted && friendById.has(wanted)) openConversation(wanted);
+  }
+
+  function teardown() {
+    if (channel) { try { channel.unsubscribe(); } catch (e) {} channel = null; }
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+
+  // ── Events ────────────────────────────────────────────────────────────────────
+  composer.addEventListener('submit', e => { e.preventDefault(); send(); });
+  input.addEventListener('input', autoGrow);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  });
+  threadBack.addEventListener('click', closeThreadMobile);
+  document.getElementById('gate-login').addEventListener('click', () => A() && A().openLogin());
+
+  // Fenster-Fokus: aktiven Chat als gelesen markieren
+  window.addEventListener('focus', () => {
+    if (me && activeId) {
+      const p = preview.get(activeId);
+      if (p && p.unread) { p.unread = 0; renderSidebar(); }
+      A().markMessagesRead(activeId);
+    }
+  });
+
+  // ── Auth-State ──────────────────────────────────────────────────────────────
+  function apply(user) {
+    if (user) {
+      gate.classList.remove('show');
+      app.classList.add('show');
+      if (!setupDone) { setupDone = true; setup(); }
+    } else {
+      teardown(); setupDone = false;
+      app.classList.remove('show');
+      gate.classList.add('show');
+    }
+  }
+
+  // Navbar-Höhe als CSS-Variable (für fixe App-Höhe)
+  function syncNavHeight() {
+    const nav = document.querySelector('.navbar');
+    if (nav) document.documentElement.style.setProperty('--nav-h', nav.offsetHeight + 'px');
+  }
+  window.addEventListener('resize', syncNavHeight);
+  syncNavHeight();
+
+  if (window.Auth) window.Auth.onChange(apply);
+  else gate.classList.add('show');
+})();
+</script>
+</body>
+</html>
