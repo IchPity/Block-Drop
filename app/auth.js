@@ -497,12 +497,16 @@
     async init() {
       const { data: { session } } = await client.auth.getSession();
       this.user = session?.user || null;
+      // Realtime mit dem User-Token autorisieren, damit RLS-gefilterte
+      // postgres_changes (Chat) ankommen.
+      if (session?.access_token) { try { client.realtime.setAuth(session.access_token); } catch (e) {} }
       await this._loadProfile();
       this._ready = true;
       this._notify();
 
       client.auth.onAuthStateChange(async (_event, session) => {
         this.user = session?.user || null;
+        try { client.realtime.setAuth(session?.access_token || null); } catch (e) {}
         await this._loadProfile();
         this._notify();
       });
@@ -859,6 +863,77 @@
       return (data && data[0]) || null;
     },
 
+    // ─── Chat / Direktnachrichten ─────────────────────────────────────────────
+    // Tabelle `messages` (sender_id, recipient_id, body, read_at, created_at).
+    // Senden erlaubt RLS nur zwischen bestätigten Freunden. Setup: messages_setup.sql.
+
+    // Nachricht an einen Freund senden. Gibt { data } (die eingefügte Zeile) oder { error }.
+    async sendMessage(recipientId, body) {
+      if (!this.user) return { error: { message: 'Nicht angemeldet' } };
+      if (!recipientId) return { error: { message: 'Kein Empfänger' } };
+      const text = (body || '').trim();
+      if (!text) return { error: { message: 'Leere Nachricht' } };
+      if (text.length > 2000) return { error: { message: 'Nachricht zu lang (max. 2000 Zeichen).' } };
+      const { data, error } = await client.from('messages')
+        .insert({ sender_id: this.user.id, recipient_id: recipientId, body: text })
+        .select().single();
+      if (error) {
+        // RLS-Verstoß = keine (bestätigte) Freundschaft.
+        if (error.code === '42501') return { error: { message: 'Du kannst nur Freunden schreiben.' } };
+        return { error };
+      }
+      return { data };
+    },
+
+    // Kompletter Verlauf zwischen mir und otherId, chronologisch (älteste zuerst).
+    async getConversation(otherId, limit = 200) {
+      if (!this.user || !otherId) return [];
+      const uid = this.user.id;
+      const { data, error } = await client.from('messages')
+        .select('*')
+        .or(`and(sender_id.eq.${uid},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${uid})`)
+        .order('created_at', { ascending: true })
+        .limit(limit);
+      if (error) { console.warn('[Auth] getConversation:', error.message); return []; }
+      return data || [];
+    },
+
+    // Meine letzten Nachrichten (gesendet + empfangen), neueste zuerst.
+    // Dient dem Chat-Sidebar (letzte Nachricht + Ungelesen pro Freund).
+    async getRecentMessages(limit = 400) {
+      if (!this.user) return [];
+      const uid = this.user.id;
+      const { data, error } = await client.from('messages')
+        .select('*')
+        .or(`sender_id.eq.${uid},recipient_id.eq.${uid}`)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      if (error) { console.warn('[Auth] getRecentMessages:', error.message); return []; }
+      return data || [];
+    },
+
+    // Alle von otherId an mich gesendeten, noch ungelesenen Nachrichten als gelesen markieren.
+    async markMessagesRead(otherId) {
+      if (!this.user || !otherId) return;
+      const { error } = await client.from('messages')
+        .update({ read_at: new Date().toISOString() })
+        .eq('sender_id', otherId).eq('recipient_id', this.user.id).is('read_at', null);
+      if (error) console.warn('[Auth] markMessagesRead:', error.message);
+    },
+
+    // Realtime: ruft cb(msg) bei jeder neuen Nachricht auf, die an MICH geht.
+    // Gibt das Channel-Objekt zurück — channel.unsubscribe() zum Beenden.
+    subscribeMessages(cb) {
+      if (!this.user) return null;
+      const uid = this.user.id;
+      const channel = client.channel('dm-inbox-' + uid)
+        .on('postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'messages', filter: `recipient_id=eq.${uid}` },
+          payload => { try { cb(payload.new); } catch (e) { console.error(e); } })
+        .subscribe();
+      return channel;
+    },
+
     // ─── UI ────────────────────────────────────────────────────────────────
     openLogin() { showModal('login'); },
     openRegister() { showModal('register'); }
@@ -1010,6 +1085,7 @@
             </div>
             <button class="auth-menu-item" data-act="profile" type="button">Profil</button>
             <button class="auth-menu-item" data-act="friends" type="button">Freunde</button>
+            <button class="auth-menu-item" data-act="chat" type="button">Nachrichten</button>
             <button class="auth-menu-item" data-act="achievements" type="button">Achievements</button>
             <button class="auth-menu-item danger" data-act="logout" type="button">Abmelden</button>
           </div>
@@ -1027,6 +1103,7 @@
             if (act === 'logout') Auth.signOut();
             if (act === 'profile') window.location.href = '/profile/';
             if (act === 'friends') window.location.href = '/freunde/';
+            if (act === 'chat') window.location.href = '/chat/';
             if (act === 'achievements') {
               // Auf jeden Pfad funktionierender Link
               window.location.href = '/achievements/';
