@@ -228,6 +228,12 @@
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
 
+    /* auth.js hängt global einen .site-footer (Impressum/Datenschutz) an <body>.
+       Der Chat ist aber eine fixe Vollbild-App (body: overflow hidden, alles
+       position:fixed) — der Footer hätte nichts, was ihn nach unten schiebt, und
+       landet sonst oben am Bildschirm. Hier also ausblenden. */
+    .site-footer { display: none !important; }
+
     /* ─── Mobile: ein Pane gleichzeitig ───────────────────────────────────── */
     @media (max-width: 760px) {
       .navbar { padding: 12px 16px; }
