@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <title>Eins — Arcade</title>
+  <title>Jedno — Arcade</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -227,7 +227,7 @@
     .ov-icon { font-size:54px;line-height:1;animation:popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
     @keyframes popIn { from{transform:scale(0)rotate(-12deg);opacity:0} to{transform:scale(1)rotate(0);opacity:1} }
     .ov-title { font-size:24px;font-weight:900;color:#fff;letter-spacing:-0.6px; }
-    .ov-logo-eins { font-style:italic;color:var(--accent); }
+    .ov-logo-jedno { font-style:italic;color:var(--accent); }
     .ov-text { font-size:13px;line-height:1.6;color:rgba(255,255,255,0.55); }
     .ov-text strong { color:#fff; }
     .ov-btn {
@@ -293,7 +293,7 @@
 <nav class="navbar">
   <div class="nav-left">
     <a href="../../" class="nav-back">&#8592; Arcade</a>
-    <div class="nav-title">Eins</div>
+    <div class="nav-title">Jedno</div>
   </div>
   <div class="nav-right">
     <button class="btn-new" id="new-game-btn" disabled>&#8635; <span class="lbl">Neues Spiel</span></button>
@@ -309,7 +309,7 @@
       <span class="lb-lock">🔒</span>
       <div class="lb-txt">
         <div class="lb-ttl">Zum Spielen anmelden</div>
-        <div class="lb-sub">Du kannst <b>Eins</b> hier ansehen — gespielt wird nur mit Account.</div>
+        <div class="lb-sub">Du kannst <b>Jedno</b> hier ansehen — gespielt wird nur mit Account.</div>
       </div>
     </div>
     <button class="lb-btn" id="login-gate-btn">Anmelden</button>
@@ -323,7 +323,7 @@
     <div id="color-dot"><span class="swatch"></span><span id="color-dot-label">Farbe</span></div>
     <div class="pile">
       <div class="pile-label">Ziehen</div>
-      <div id="draw-pile-card" title="Karte ziehen"><span class="logo">EINS</span></div>
+      <div id="draw-pile-card" title="Karte ziehen"><span class="logo">JEDNO</span></div>
     </div>
     <div class="pile">
       <div class="pile-label">Ablage</div>
@@ -338,7 +338,7 @@
   <div id="hand-wrap">
     <div id="hand-label">
       <div class="ttl"><span class="me-ava" id="me-ava">D</span><span id="me-name">Deine Karten</span></div>
-      <button id="uno-btn">EINS!</button>
+      <button id="uno-btn">JEDNO!</button>
     </div>
     <div id="hand"></div>
   </div>
@@ -349,8 +349,8 @@
 <div class="overlay" id="start-overlay">
   <div class="ov-card">
     <div class="ov-icon">🃏</div>
-    <div class="ov-title"><span class="ov-logo-eins">Eins</span></div>
-    <div class="ov-text">Wirf alle deine Karten ab, bevor die drei Bots es tun. Farbe oder Zahl muss passen — und vergiss nicht, bei der vorletzten Karte <strong>„Eins!“</strong> zu drücken.</div>
+    <div class="ov-title"><span class="ov-logo-jedno">Jedno</span></div>
+    <div class="ov-text">Wirf alle deine Karten ab, bevor die drei Bots es tun. Farbe oder Zahl muss passen — und vergiss nicht, bei der vorletzten Karte <strong>„Jedno!“</strong> zu drücken.</div>
     <button class="ov-btn" id="start-btn">Spiel starten</button>
   </div>
 </div>
