@@ -459,17 +459,25 @@
 (function() {
   const ROWS = 6;
   const COLS = 5;
-  const VALID_LETTERS = /^[A-ZÄÖÜ]$/;
+  const VALID_LETTERS = /^[A-Z]$/;
 
-  // ─── Word list (filter to exactly 5 letters, uppercase, A-Z + ÄÖÜ) ────────
+  // ─── Word list (filter to exactly 5 letters, uppercase, A-Z) ──────────────
   const rawWords = (window.WOERTLE_WORDS || []).map(w => String(w).toUpperCase().trim());
   const wordSet = new Set();
   for (const w of rawWords) {
     if (w.length !== 5) continue;
-    if (!/^[A-ZÄÖÜ]{5}$/.test(w)) continue;
+    if (!/^[A-Z]{5}$/.test(w)) continue;
     wordSet.add(w);
   }
   const WORDS = Array.from(wordSet).sort();
+
+  // ─── Valid guesses: answers + extra real English words ────────────────────
+  // Jeder Rateversuch muss ein echtes Wort aus dieser Menge sein.
+  const VALID_GUESSES = new Set(wordSet);
+  for (const w of (window.WOERTLE_VALID_EXTRA || [])) {
+    const u = String(w).toUpperCase().trim();
+    if (/^[A-Z]{5}$/.test(u)) VALID_GUESSES.add(u);
+  }
 
   if (WORDS.length === 0) {
     document.getElementById('board').innerHTML =
@@ -647,9 +655,9 @@
 
   // ─── Keyboard ─────────────────────────────────────────────────────────────
   const KB_ROWS = [
-    ['Q','W','E','R','T','Z','U','I','O','P','Ü'],
-    ['A','S','D','F','G','H','J','K','L','Ö','Ä'],
-    ['ENTER','Y','X','C','V','B','N','M','DEL']
+    ['Q','W','E','R','T','Y','U','I','O','P'],
+    ['A','S','D','F','G','H','J','K','L'],
+    ['ENTER','Z','X','C','V','B','N','M','DEL']
   ];
 
   function buildKeyboard() {
@@ -719,8 +727,12 @@
       return;
     }
     const guess = grid[currentRow].join('');
-    if (!/^[A-ZÄÖÜ]{5}$/.test(guess)) {
+    if (!/^[A-Z]{5}$/.test(guess)) {
       shakeRow(currentRow, 'Nur Buchstaben erlaubt');
+      return;
+    }
+    if (!VALID_GUESSES.has(guess)) {
+      shakeRow(currentRow, 'Kein gültiges Wort');
       return;
     }
     evaluate(guess, currentRow);
