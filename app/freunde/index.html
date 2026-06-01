@@ -356,6 +356,9 @@
     }
 
     wireActions();
+
+    // Navbar-Badge (offene Anfragen) sofort mitziehen
+    if (window.Auth && window.Auth.refreshNotifications) window.Auth.refreshNotifications();
   }
 
   function wireActions() {

@@ -475,6 +475,7 @@
   async function openConversation(id) {
     if (!id || !friendById.has(id)) return;
     activeId = id;
+    if (A().setActiveChat) A().setActiveChat(id);   // globalen Notifier informieren
     const f = friendById.get(id);
 
     placeholder.style.display = 'none';
@@ -500,6 +501,7 @@
     const p = preview.get(id);
     if (p && p.unread) { p.unread = 0; renderSidebar(); }
     await A().markMessagesRead(id);
+    if (A().refreshNotifications) A().refreshNotifications();   // Navbar-Badge aktualisieren
 
     // URL ohne Reload aktualisieren
     history.replaceState(null, '', '/chat/?id=' + encodeURIComponent(id));
@@ -618,6 +620,7 @@
   function teardown() {
     if (channel) { try { channel.unsubscribe(); } catch (e) {} channel = null; }
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    if (A() && A().setActiveChat) A().setActiveChat(null);
   }
 
   // ── Events ────────────────────────────────────────────────────────────────────
@@ -634,7 +637,9 @@
     if (me && activeId) {
       const p = preview.get(activeId);
       if (p && p.unread) { p.unread = 0; renderSidebar(); }
-      A().markMessagesRead(activeId);
+      A().markMessagesRead(activeId).then(() => {
+        if (A().refreshNotifications) A().refreshNotifications();
+      });
     }
   });
 

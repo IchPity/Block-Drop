@@ -407,6 +407,47 @@
   }
   .ach-toast-name { font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -0.2px; }
   .ach-toast-desc { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; line-height: 1.4; }
+
+  /* ─── Unread-Badge auf dem Auth-Chip + Zähler im Menü ─────────────────── */
+  .auth-chip { position: relative; }
+  .auth-badge {
+    position: absolute; top: -5px; right: -5px;
+    min-width: 18px; height: 18px; padding: 0 5px;
+    background: var(--red, #e94560); color: #fff;
+    border: 2px solid #0a0c18; border-radius: 99px;
+    font-size: 9px; font-weight: 900; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 10px rgba(233,69,96,0.6);
+  }
+  .menu-count {
+    float: right; background: var(--red, #e94560); color: #fff;
+    min-width: 17px; height: 17px; padding: 0 5px; border-radius: 99px;
+    font-size: 10px; font-weight: 900;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+
+  /* ─── Notification-Toasts (Nachricht / Freundschaftsanfrage) ──────────── */
+  .notif-toast {
+    pointer-events: all; cursor: pointer;
+    background: rgba(10,10,24,0.96);
+    border: 1px solid rgba(233,69,96,0.35);
+    border-radius: 14px; padding: 13px 16px;
+    display: flex; align-items: center; gap: 13px; min-width: 280px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.55), 0 0 30px rgba(233,69,96,0.08);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    transform: translateX(120%); opacity: 0;
+    transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+    position: relative; overflow: hidden;
+  }
+  .notif-toast.show { transform: translateX(0); opacity: 1; }
+  .notif-toast.exit { transform: translateX(120%); opacity: 0; }
+  .notif-toast.blue { border-color: rgba(59,130,246,0.4); box-shadow: 0 16px 40px rgba(0,0,0,0.55), 0 0 30px rgba(59,130,246,0.1); }
+  .notif-toast-icon { font-size: 26px; flex-shrink: 0; line-height: 1; }
+  .notif-toast-body { flex: 1; min-width: 0; }
+  .notif-toast-label { font-size: 9px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #ff8fa1; margin-bottom: 3px; }
+  .notif-toast.blue .notif-toast-label { color: #93c5fd; }
+  .notif-toast-title { font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -0.2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .notif-toast-text { font-size: 11.5px; color: rgba(255,255,255,0.55); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   `;
   const styleEl = document.createElement('style');
   styleEl.textContent = css;
@@ -935,7 +976,9 @@
     subscribeMessages(cb) {
       if (!this.user) return null;
       const uid = this.user.id;
-      const channel = client.channel('dm-inbox-' + uid)
+      // Eindeutiger Channel-Name pro Aufruf — sonst kollidieren die globale
+      // Benachrichtigung und die Chat-Seite (gleicher Topic = Konflikt).
+      const channel = client.channel('dm-' + uid + '-' + Math.random().toString(36).slice(2))
         .on('postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'messages', filter: `recipient_id=eq.${uid}` },
           payload => { try { cb(payload.new); } catch (e) { console.error(e); } })
@@ -1165,6 +1208,172 @@
     toast.addEventListener('click', () => { clearTimeout(auto); dismiss(); });
   }
   window.showAchToast = showAchToast;
+
+  // ─── Generischer Benachrichtigungs-Toast (klickbar) ───────────────────────
+  function showNotifyToast({ icon, label, title, body, href, accent }) {
+    let container = document.getElementById('ach-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'ach-toast-container';
+      document.body.appendChild(container);
+    }
+    const t = document.createElement('div');
+    t.className = 'notif-toast' + (accent === 'blue' ? ' blue' : '');
+    t.innerHTML = `
+      <div class="notif-toast-icon">${icon || '🔔'}</div>
+      <div class="notif-toast-body">
+        <div class="notif-toast-label">${escapeHtml(label || '')}</div>
+        <div class="notif-toast-title">${escapeHtml(title || '')}</div>
+        ${body ? `<div class="notif-toast-text">${escapeHtml(body)}</div>` : ''}
+      </div>`;
+    container.appendChild(t);
+    requestAnimationFrame(() => t.classList.add('show'));
+    const dismiss = () => {
+      t.classList.remove('show'); t.classList.add('exit');
+      setTimeout(() => t.remove(), 450);
+    };
+    const auto = setTimeout(dismiss, 5500);
+    t.addEventListener('click', () => {
+      clearTimeout(auto);
+      if (href) window.location.href = href; else dismiss();
+    });
+    return t;
+  }
+  window.showNotifyToast = showNotifyToast;
+
+  // ─── Globaler Benachrichtigungs-Manager ───────────────────────────────────
+  // Läuft auf jeder Seite (auth.js ist überall eingebunden). Zeigt einen Badge
+  // auf dem Auth-Chip (ungelesene Nachrichten + offene Freundschaftsanfragen)
+  // und feuert Toasts bei neuen Nachrichten/Anfragen.
+  const Notify = {
+    unreadMsgs: 0,
+    pendingReqs: 0,
+    activePeer: null,        // offener Chat-Partner (von der Chat-Seite gesetzt)
+    _started: false,
+    _msgChannel: null,
+    _friendChannel: null,
+    _poll: null,
+    _seenReq: null,          // Set bereits gesehener Anfrage-Absender
+    _nameCache: new Map(),
+
+    async start() {
+      if (this._started || !Auth.user) return;
+      this._started = true;
+      await this.refresh(true);
+
+      this._msgChannel = Auth.subscribeMessages(m => this._onMessage(m));
+
+      // Freundschaftsanfragen live (nur falls friends in der Realtime-Publication
+      // liegt — sonst greift der 30s-Poll-Fallback). Schadet sonst nicht.
+      try {
+        const uid = Auth.user.id;
+        this._friendChannel = client.channel('reqs-' + uid + '-' + Math.random().toString(36).slice(2))
+          .on('postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'friends', filter: `addressee_id=eq.${uid}` },
+            () => this.refresh())
+          .subscribe();
+      } catch (e) {}
+
+      if (this._poll) clearInterval(this._poll);
+      this._poll = setInterval(() => this.refresh(), 30000);
+    },
+
+    stop() {
+      this._started = false;
+      if (this._msgChannel) { try { this._msgChannel.unsubscribe(); } catch (e) {} this._msgChannel = null; }
+      if (this._friendChannel) { try { this._friendChannel.unsubscribe(); } catch (e) {} this._friendChannel = null; }
+      if (this._poll) { clearInterval(this._poll); this._poll = null; }
+      this.unreadMsgs = 0; this.pendingReqs = 0; this._seenReq = null;
+      renderBadges();
+    },
+
+    setActivePeer(id) { this.activePeer = id || null; },
+
+    async refresh(initial) {
+      if (!Auth.user) return;
+      const uid = Auth.user.id;
+
+      const recent = await Auth.getRecentMessages();
+      let unread = 0;
+      for (const m of recent) if (m.recipient_id === uid && !m.read_at) unread++;
+      this.unreadMsgs = unread;
+
+      const ov = await Auth.getFriendOverview();
+      this.pendingReqs = ov.incoming.length;
+
+      // Neue Anfragen seit dem letzten Stand toasten (beim ersten Lauf nur merken).
+      const currentIds = new Set(ov.incoming.map(i => i.id));
+      if (initial || !this._seenReq) {
+        this._seenReq = currentIds;
+      } else {
+        for (const inc of ov.incoming) {
+          if (!this._seenReq.has(inc.id)) {
+            showNotifyToast({
+              icon: '👋', label: 'Freundschaftsanfrage',
+              title: inc.username || 'Jemand', body: 'möchte dich als Freund hinzufügen',
+              href: '/freunde/', accent: 'blue'
+            });
+          }
+        }
+        this._seenReq = currentIds;
+      }
+      renderBadges();
+    },
+
+    async _onMessage(m) {
+      // Subscription liefert nur recipient = me. Offenen, fokussierten Chat nicht stören.
+      if (this.activePeer && m.sender_id === this.activePeer && document.hasFocus()) return;
+      this.unreadMsgs++;
+      renderBadges();
+
+      let name = this._nameCache.get(m.sender_id);
+      if (!name) {
+        const p = await Auth.getPublicProfile(m.sender_id);
+        name = (p && p.username) || 'Freund';
+        this._nameCache.set(m.sender_id, name);
+      }
+      const preview = (m.body || '').length > 60 ? m.body.slice(0, 60) + '…' : m.body;
+      showNotifyToast({
+        icon: '💬', label: 'Neue Nachricht', title: name, body: preview,
+        href: '/chat/?id=' + encodeURIComponent(m.sender_id), accent: 'red'
+      });
+    },
+  };
+
+  function setItemCount(item, n) {
+    if (!item) return;
+    let b = item.querySelector('.menu-count');
+    if (n > 0) {
+      if (!b) { b = document.createElement('span'); b.className = 'menu-count'; item.appendChild(b); }
+      b.textContent = n > 99 ? '99+' : n;
+    } else if (b) { b.remove(); }
+  }
+
+  function renderBadges() {
+    const total = Notify.unreadMsgs + Notify.pendingReqs;
+    document.querySelectorAll('[data-auth-slot]').forEach(slot => {
+      const chip = slot.querySelector('.auth-chip');
+      if (chip) {
+        let dot = chip.querySelector('.auth-badge');
+        if (total > 0) {
+          if (!dot) { dot = document.createElement('span'); dot.className = 'auth-badge'; chip.appendChild(dot); }
+          dot.textContent = total > 9 ? '9+' : total;
+        } else if (dot) { dot.remove(); }
+      }
+      setItemCount(slot.querySelector('.auth-menu-item[data-act="chat"]'), Notify.unreadMsgs);
+      setItemCount(slot.querySelector('.auth-menu-item[data-act="friends"]'), Notify.pendingReqs);
+    });
+  }
+
+  // Lifecycle: nach mountSlots (oben registriert) Badges/Notifier starten.
+  Auth.onChange((user) => {
+    if (user) Notify.start(); else Notify.stop();
+    renderBadges();
+  });
+
+  // Für die Chat-Seite: aktiven Chat setzen + Zähler neu berechnen lassen.
+  Auth.setActiveChat = (id) => Notify.setActivePeer(id);
+  Auth.refreshNotifications = () => Notify.refresh();
 
   // Expose
   window.Auth = Auth;
