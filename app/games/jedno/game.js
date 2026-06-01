@@ -1,5 +1,5 @@
 /* ===================================================================
- *  Eins — ein UNO-Klon fürs Arcade
+ *  Jedno — ein UNO-Klon fürs Arcade
  *  Du gegen 3 Bots. Sichtbar für alle, spielbar nur für Angemeldete.
  * =================================================================== */
 
@@ -144,7 +144,7 @@ function renderOpponents() {
     const p = i + 1;
     const n = state ? state.hands[p].length : 7;
     const minis = Array.from({ length: Math.min(n, 7) }, () => '<div class="mini"></div>').join('');
-    const uno = n === 1 ? '<span class="opp-uno">EINS!</span>' : `${n} Karten`;
+    const uno = n === 1 ? '<span class="opp-uno">JEDNO!</span>' : `${n} Karten`;
     const active = state && state.turn === p ? 'active' : '';
     return `<div class="opp ${active}" data-opp="${p}">
               <div class="opp-name"><span class="opp-ava" style="background:${b.avaBg}33">${b.ava}</span>${b.name}</div>
@@ -175,7 +175,7 @@ function renderHand() {
     const extra = myTurn ? (playable ? 'playable' : 'disabled') : '';
     return cardHTML(card, { extra, attrs: `data-idx="${idx}"` });
   }).join('');
-  // Eins-Button: sichtbar, wenn ich genau 2 Karten habe und noch nicht gerufen habe
+  // Jedno-Button: sichtbar, wenn ich genau 2 Karten habe und noch nicht gerufen habe
   unoBtn.style.display = (state.hands[0].length === 2 && !state.saidUno[0] && myTurn) ? 'inline-block' : 'none';
 }
 
@@ -207,7 +207,7 @@ unoBtn.addEventListener('click', () => {
   if (!state || state.turn !== 0) return;
   state.saidUno[0] = true;
   unoBtn.style.display = 'none';
-  toast('Du hast „Eins!“ gerufen 🎉');
+  toast('Du hast „Jedno!“ gerufen 🎉');
 });
 
 // Farbwahl-Buttons
@@ -247,12 +247,12 @@ function playCard(player, idx, chosenColor) {
   // Farbe aktualisieren
   state.current = (card.color === 'wild') ? chosenColor : card.color;
 
-  // „Eins!“-Strafe-Check für Spieler: hatte 2, jetzt 1, nicht gerufen
+  // „Jedno!“-Strafe-Check für Spieler: hatte 2, jetzt 1, nicht gerufen
   if (player === 0 && hand.length === 1 && !state.saidUno[0]) {
     // kleine Gnade: automatisch +2 als Strafe fürs Vergessen
     const p1 = drawFromDeck(); const p2 = drawFromDeck();
     if (p1) hand.push(p1); if (p2) hand.push(p2);
-    toast('„Eins!“ vergessen — 2 Strafkarten!', 'warn');
+    toast('„Jedno!“ vergessen — 2 Strafkarten!', 'warn');
   }
   if (player !== 0 && hand.length === 1) state.saidUno[player] = true;
   if (hand.length !== 1) state.saidUno[player] = false;
@@ -416,8 +416,8 @@ function endGame(winner) {
 
   // Score speichern (nur bei Sieg, fire-and-forget)
   if (youWon && window.Auth && window.Auth.user) {
-    window.Auth.saveScore({ game: 'eins', mode: 'classic', score: points }).catch(() => {});
-    unlockAch('eins_first_win');
+    window.Auth.saveScore({ game: 'jedno', mode: 'classic', score: points }).catch(() => {});
+    unlockAch('jedno_first_win');
   }
 }
 
@@ -435,7 +435,7 @@ function scoreRemaining() {
 
 /* ─── Achievements (localStorage + Cloud-Sync wie im Rest der App) ─ */
 const ACH_DEFS = {
-  eins_first_win: { name: 'Eins, zwei, weg', desc: 'Gewinne deine erste Runde Eins', icon: '🃏' },
+  jedno_first_win: { name: 'Jedno, zwei, weg', desc: 'Gewinne deine erste Runde Jedno', icon: '🃏' },
 };
 function unlockAch(id) {
   const def = ACH_DEFS[id];
