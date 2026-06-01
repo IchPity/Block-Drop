@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <title>WarShips — Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --sea:   #0a2a44;
+      --aqua:  #38bdf8;
+      --gold:  #f0c000;
+      --red:   #e94560;
+      --green: #4ade80;
+      --bg:    #02101c;
+    }
+
+    body {
+      background: var(--bg); min-height: 100vh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #eee; overflow-x: hidden;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 72px 12px 20px; gap: 14px;
+    }
+
+    /* ── Background ───────────────────────────────────────── */
+    .orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 640px; height: 640px; background: #0e7490; opacity: 0.10; top: -240px; left: -200px; animation: orbFloat1 26s ease-in-out infinite alternate; }
+    .orb-2 { width: 520px; height: 520px; background: #1d4ed8; opacity: 0.07; bottom: -200px; right: -200px; animation: orbFloat2 32s ease-in-out infinite alternate; }
+    @keyframes orbFloat1 { from { transform: translate(0,0) scale(1); } to { transform: translate(80px,70px) scale(1.15); } }
+    @keyframes orbFloat2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-70px,-90px) scale(1.2); } }
+    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px); background-size: 30px 30px; }
+    .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 30%, rgba(2,16,28,0.85) 100%); }
+
+    /* ── Navbar ───────────────────────────────────────────── */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px;
+      background: rgba(2,16,28,0.82);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-left { display: flex; align-items: center; gap: 14px; }
+    .nav-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none; color: rgba(255,255,255,0.35);
+      font-size: 11px; font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+      padding: 6px 12px; transition: all 0.2s;
+    }
+    .nav-back:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); }
+    .nav-game-title { font-size: 13px; font-weight: 900; color: #fff; letter-spacing: -0.3px; }
+    .nav-game-title span { color: var(--aqua); }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .nav-score-display {
+      display: flex; align-items: center; gap: 16px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px; padding: 6px 14px;
+    }
+    .nav-stat { display: flex; flex-direction: column; align-items: center; }
+    .nav-stat-val { font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -0.5px; line-height: 1; }
+    .nav-stat-lbl { font-size: 8px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-top: 1px; }
+    .nav-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.07); }
+
+    /* ── Game area ────────────────────────────────────────── */
+    #game-area {
+      position: relative; border-radius: 14px; overflow: hidden;
+      z-index: 1; width: min(100%, 960px); aspect-ratio: 16 / 10;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 0 80px rgba(56,189,248,0.08), 0 32px 80px rgba(0,0,0,0.85);
+      touch-action: none;
+    }
+    canvas#board { display: block; width: 100%; height: 100%; background: #06283d; }
+
+    /* ── HUD bars over canvas ─────────────────────────────── */
+    #hud {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 5;
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 12px 14px; pointer-events: none; gap: 12px;
+    }
+    .hud-left { display: flex; flex-direction: column; gap: 7px; min-width: 200px; max-width: 46%; }
+    .bar-wrap { background: rgba(0,0,0,0.42); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 4px 7px; backdrop-filter: blur(4px); }
+    .bar-label { display: flex; justify-content: space-between; font-size: 8px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 3px; }
+    .bar-track { height: 7px; background: rgba(255,255,255,0.08); border-radius: 100px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 100px; transition: width 0.18s ease; }
+    #hp-fill     { background: linear-gradient(90deg, #ff5470, #ff8aa0); }
+    #shield-fill { background: linear-gradient(90deg, #38bdf8, #7dd3fc); }
+    #shield-wrap { display: none; }
+
+    .hud-right { display: flex; gap: 8px; align-items: flex-start; }
+    .hud-chip {
+      background: rgba(0,0,0,0.42); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; padding: 5px 10px; text-align: center; backdrop-filter: blur(4px);
+    }
+    .hud-chip .v { font-size: 16px; font-weight: 900; letter-spacing: -0.5px; line-height: 1; }
+    .hud-chip .l { font-size: 7px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-top: 3px; }
+    #chip-scrap .v { color: var(--gold); }
+    #chip-wave .v  { color: var(--aqua); }
+
+    /* ── Overlay (start / shop / gameover) ────────────────── */
+    #overlay {
+      position: absolute; inset: 0; z-index: 10;
+      background: rgba(2,14,26,0.93);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 24px; gap: 16px; overflow-y: auto;
+    }
+    #overlay.hidden { display: none; }
+    .ov-eyebrow { font-size: 9px; letter-spacing: 4px; text-transform: uppercase; color: var(--aqua); font-weight: 700; }
+    .ov-title { font-size: clamp(30px, 6vw, 52px); font-weight: 900; letter-spacing: -2px; color: #fff; line-height: 0.95; text-align: center; text-shadow: 0 0 48px rgba(56,189,248,0.4); }
+    .ov-title em { font-style: normal; color: var(--aqua); }
+    .ov-sub { font-size: 12px; color: rgba(255,255,255,0.4); text-align: center; line-height: 1.6; max-width: 460px; }
+    .ov-sub strong { color: rgba(255,255,255,0.8); }
+
+    .btn {
+      background: var(--aqua); color: #042135; border: none;
+      padding: 14px 32px; font-size: 14px; font-weight: 800;
+      font-family: inherit; border-radius: 12px; cursor: pointer;
+      letter-spacing: 0.5px;
+      box-shadow: 0 0 28px rgba(56,189,248,0.4);
+      transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn:hover { background: #5cc8fa; box-shadow: 0 0 40px rgba(56,189,248,0.6); transform: translateY(-1px); }
+    .btn:active { transform: scale(0.98); }
+    .btn.ghost { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.14); box-shadow: none; }
+    .btn.ghost:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+    /* ── Shop ─────────────────────────────────────────────── */
+    #shop { width: 100%; max-width: 760px; display: none; flex-direction: column; gap: 14px; }
+    #shop.show { display: flex; }
+    .shop-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .shop-head h2 { font-size: 22px; font-weight: 900; letter-spacing: -0.8px; }
+    .shop-head .scrap-have { font-size: 13px; font-weight: 800; color: var(--gold); }
+    .shop-head .scrap-have small { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.35); font-weight: 700; margin-right: 5px; }
+    .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+    .up-card {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 14px; padding: 13px 14px; display: flex; flex-direction: column; gap: 9px;
+      transition: border-color 0.2s, transform 0.1s; text-align: left;
+    }
+    .up-card .uc-top { display: flex; align-items: center; gap: 9px; }
+    .up-card .uc-icon { font-size: 22px; line-height: 1; }
+    .up-card .uc-name { font-size: 13px; font-weight: 800; color: #fff; }
+    .up-card .uc-desc { font-size: 10px; color: rgba(255,255,255,0.4); line-height: 1.45; min-height: 28px; }
+    .up-card .uc-pips { display: flex; gap: 3px; }
+    .up-card .pip { flex: 1; height: 4px; border-radius: 100px; background: rgba(255,255,255,0.1); }
+    .up-card .pip.on { background: var(--aqua); }
+    .up-card .uc-buy {
+      margin-top: 2px; width: 100%; border: none; border-radius: 9px;
+      padding: 9px 0; font-family: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
+      background: rgba(56,189,248,0.15); color: var(--aqua); border: 1px solid rgba(56,189,248,0.3);
+      transition: all 0.15s;
+    }
+    .up-card .uc-buy:hover:not(:disabled) { background: rgba(56,189,248,0.28); }
+    .up-card .uc-buy:disabled { opacity: 0.4; cursor: not-allowed; }
+    .up-card.maxed .uc-buy { background: rgba(74,222,128,0.12); color: var(--green); border-color: rgba(74,222,128,0.3); }
+
+    .shop-foot { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 4px; }
+
+    /* ── Stats list (start screen) ────────────────────────── */
+    .start-stats { font-size: 11px; color: rgba(255,255,255,0.4); line-height: 1.9; text-align: center; }
+    .start-stats b { color: rgba(255,255,255,0.75); }
+    #hs-line { font-size: 12px; color: var(--gold); font-weight: 700; }
+
+    /* ── Floating toast ───────────────────────────────────── */
+    #toast {
+      position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%) translateY(20px);
+      z-index: 8; background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.12);
+      padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 600;
+      opacity: 0; transition: all 0.25s; pointer-events: none; backdrop-filter: blur(6px);
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Controls hint ────────────────────────────────────── */
+    .ctrl-hint { font-size: 10px; color: rgba(255,255,255,0.25); text-align: center; line-height: 1.7; z-index: 1; }
+    .ctrl-hint b { color: rgba(255,255,255,0.45); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+    @media (max-width: 640px) {
+      body { padding: 60px 6px 14px; }
+      .navbar { padding: 10px 12px; }
+      .nav-game-title { font-size: 12px; }
+      .nav-score-display { gap: 10px; padding: 5px 10px; }
+      .hud-left { min-width: 130px; }
+      .shop-grid { grid-template-columns: 1fr 1fr; }
+      .up-card .uc-desc { min-height: 0; }
+    }
+    @media (max-width: 420px) {
+      .shop-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="dot-grid"></div>
+<div class="vignette"></div>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="../../" class="nav-back">&#8592; Arcade</a>
+    <div class="nav-game-title">War<span>Ships</span></div>
+  </div>
+  <div class="nav-right">
+    <div data-auth-slot></div>
+    <div class="nav-score-display">
+      <div class="nav-stat">
+        <div class="nav-stat-val" id="nav-wave">1</div>
+        <div class="nav-stat-lbl">Welle</div>
+      </div>
+      <div class="nav-divider"></div>
+      <div class="nav-stat">
+        <div class="nav-stat-val" id="nav-scrap">0</div>
+        <div class="nav-stat-lbl">Schrott</div>
+      </div>
+      <div class="nav-divider"></div>
+      <div class="nav-stat">
+        <div class="nav-stat-val" id="nav-best">0</div>
+        <div class="nav-stat-lbl">Rekord</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div id="game-area">
+  <canvas id="board" width="960" height="600"></canvas>
+
+  <!-- In-game HUD -->
+  <div id="hud">
+    <div class="hud-left">
+      <div class="bar-wrap">
+        <div class="bar-label"><span>Rumpf</span><span id="hp-text">100 / 100</span></div>
+        <div class="bar-track"><div class="bar-fill" id="hp-fill" style="width:100%"></div></div>
+      </div>
+      <div class="bar-wrap" id="shield-wrap">
+        <div class="bar-label"><span>Schild</span><span id="shield-text">0</span></div>
+        <div class="bar-track"><div class="bar-fill" id="shield-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-chip" id="chip-wave"><div class="v" id="hud-wave">1</div><div class="l">Welle</div></div>
+      <div class="hud-chip"><div class="v" id="hud-enemies">0</div><div class="l">Gegner</div></div>
+      <div class="hud-chip" id="chip-scrap"><div class="v" id="hud-scrap">0</div><div class="l">Schrott</div></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- Overlay -->
+  <div id="overlay">
+    <!-- start / gameover content injected; shop is separate -->
+    <div id="ov-intro">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+        <div class="ov-eyebrow">Wellenbasiertes Seegefecht</div>
+        <div class="ov-title">War<em>Ships</em></div>
+        <div class="ov-sub">
+          Du startest mit einer kleinen <strong>Schaluppe</strong>. Überlebe Welle um Welle —
+          deine Geschütze <strong>zielen und feuern von selbst</strong>. Du steuerst nur das Schiff
+          und weichst aus. Zwischen den Wellen rüstest du <strong>Boot, Waffen, Zielsysteme</strong> und mehr auf.
+        </div>
+        <div class="start-stats">
+          Steuerung: <b>WASD</b> / <b>Pfeile</b> oder <b>Maus / Finger</b> folgen &nbsp;·&nbsp; <b>P</b> = Pause
+        </div>
+        <div id="hs-line"></div>
+        <button class="btn" id="start-btn">Auslaufen &nbsp;→</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shop overlay (between waves) -->
+  <div id="overlay-shop" class="hidden" style="position:absolute;inset:0;z-index:11;background:rgba(2,14,26,0.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding:22px 18px;overflow-y:auto;">
+    <div id="shop" class="show">
+      <div class="shop-head">
+        <div>
+          <div class="ov-eyebrow" id="shop-eyebrow">Werft · Welle 1 geschafft</div>
+          <h2 id="shop-title">Rüste auf, Kapitän</h2>
+        </div>
+        <div class="scrap-have"><small>Schrott</small><span id="shop-scrap">0</span></div>
+      </div>
+      <div class="shop-grid" id="shop-grid"></div>
+      <div class="shop-foot">
+        <button class="btn" id="next-wave-btn">Nächste Welle &nbsp;→</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ctrl-hint">
+  <b>WASD</b>/Pfeile bewegen · <b>Maus/Finger</b> halten zum Steuern · Geschütze feuern automatisch · <b>P</b> Pause
+</div>
+
+<script>
+  // Mirror HUD stats to navbar
+  function mirror(srcId, dstId) {
+    const src = document.getElementById(srcId), dst = document.getElementById(dstId);
+    if (!src || !dst) return;
+    new MutationObserver(() => { dst.textContent = src.textContent; })
+      .observe(src, { childList: true, subtree: true, characterData: true });
+  }
+  mirror('hud-wave', 'nav-wave');
+  mirror('hud-scrap', 'nav-scrap');
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

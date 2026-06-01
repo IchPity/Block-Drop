@@ -363,6 +363,44 @@
     .thumb-tictactoe    { background: linear-gradient(145deg, #0d0220 0%, #1f0a3d 55%, #0d0220 100%); }
     .thumb-jedno        { background: linear-gradient(145deg, #1a0408 0%, #3d0d12 55%, #1a0408 100%); }
     .thumb-speedtest    { background: linear-gradient(145deg, #00080d 0%, #06283a 55%, #00080d 100%); }
+    .thumb-warships     { background: linear-gradient(145deg, #02101c 0%, #0a3553 55%, #02101c 100%); }
+
+    .warships-card:hover {
+      border-color: rgba(56,189,248,0.5) !important;
+      box-shadow:
+        0 0 0 1px rgba(56,189,248,0.08),
+        0 32px 72px rgba(0,0,0,0.8),
+        0 0 60px rgba(56,189,248,0.16) !important;
+    }
+    .warships-card .card-tag { color: #38bdf8 !important; }
+    .warships-card .play-btn { background: linear-gradient(135deg, #38bdf8, #0e7490); color: #042135; box-shadow: 0 0 18px rgba(56,189,248,0.3); }
+
+    /* WarShips Schiffs-Art */
+    .ws-art { position: relative; width: 96px; height: 64px; }
+    .ws-art .ws-sea {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 26px;
+      background: linear-gradient(180deg, rgba(56,189,248,0.18), rgba(14,116,144,0.05));
+      border-top: 2px solid rgba(56,189,248,0.35); border-radius: 0 0 6px 6px;
+    }
+    .ws-art .ws-hull {
+      position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+      width: 60px; height: 16px; background: #d7e3ee;
+      border-radius: 3px 3px 22px 22px / 3px 3px 14px 14px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+    .ws-art .ws-tower {
+      position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+      width: 16px; height: 14px; background: #8fa6ba; border-radius: 2px;
+    }
+    .ws-art .ws-gun {
+      position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%) rotate(-32deg);
+      width: 3px; height: 16px; background: #5d748a; border-radius: 2px; transform-origin: bottom center;
+    }
+    .ws-art .ws-shot {
+      position: absolute; width: 5px; height: 5px; border-radius: 50%;
+      background: #cdebff; box-shadow: 0 0 6px #7dd3fc;
+      bottom: 48px; left: 64px;
+    }
 
     .speedtest-card:hover {
       border-color: rgba(34,211,238,0.5) !important;
@@ -898,6 +936,26 @@
         <div class="card-tag">Login · Karten · KI</div>
         <div class="card-title">Jedno</div>
         <div class="card-desc">UNO im Browser: wirf alle Karten ab, bevor die drei Bots es tun. Spielen nur mit Account.</div>
+        <div class="card-footer">
+          <div class="play-btn">Spielen <span class="btn-arrow">→</span></div>
+        </div>
+      </div>
+    </a>
+
+    <a class="game-card available warships-card" href="games/warships/" style="--accent:#38bdf8">
+      <div class="card-thumb thumb-warships">
+        <div class="ws-art">
+          <div class="ws-shot"></div>
+          <div class="ws-gun"></div>
+          <div class="ws-tower"></div>
+          <div class="ws-hull"></div>
+          <div class="ws-sea"></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">Wellen · Upgrades · Auto-Fire</div>
+        <div class="card-title">WarShips</div>
+        <div class="card-desc">Überlebe Welle um Welle. Deine Geschütze zielen selbst — rüste Boot, Waffen &amp; Zielsysteme auf.</div>
         <div class="card-footer">
           <div class="play-btn">Spielen <span class="btn-arrow">→</span></div>
         </div>
