@@ -361,6 +361,68 @@
     .thumb-weather      { background: linear-gradient(145deg, #050818 0%, #1a2854 55%, #050818 100%); }
     .thumb-woertle      { background: linear-gradient(145deg, #001f0a 0%, #003d18 55%, #001f0a 100%); }
     .thumb-tictactoe    { background: linear-gradient(145deg, #0d0220 0%, #1f0a3d 55%, #0d0220 100%); }
+    .thumb-eins         { background: linear-gradient(145deg, #1a0408 0%, #3d0d12 55%, #1a0408 100%); }
+    .thumb-speedtest    { background: linear-gradient(145deg, #00080d 0%, #06283a 55%, #00080d 100%); }
+
+    .speedtest-card:hover {
+      border-color: rgba(34,211,238,0.5) !important;
+      box-shadow:
+        0 0 0 1px rgba(34,211,238,0.08),
+        0 32px 72px rgba(0,0,0,0.8),
+        0 0 60px rgba(34,211,238,0.14) !important;
+    }
+    .speedtest-card .card-tag { color: #22d3ee !important; }
+    .speedtest-card .play-btn { background: linear-gradient(135deg, #22d3ee, #3b82f6); color: #04141a; box-shadow: 0 0 18px rgba(34,211,238,0.3); }
+
+    /* Speedtest gauge art */
+    .speed-art { position: relative; width: 90px; height: 50px; opacity: 0.95; }
+    .speed-art .dial {
+      width: 90px; height: 45px; box-sizing: border-box;
+      border: 6px solid rgba(34,211,238,0.22); border-bottom: none;
+      border-radius: 90px 90px 0 0;
+    }
+    .speed-art .arc {
+      position: absolute; top: 0; left: 0; width: 90px; height: 45px; box-sizing: border-box;
+      border: 6px solid transparent; border-top-color: #22d3ee; border-left-color: #22d3ee;
+      border-bottom: none; border-radius: 90px 90px 0 0;
+    }
+    .speed-art .needle {
+      position: absolute; left: 50%; bottom: 0; width: 3px; height: 36px;
+      background: #e94560; border-radius: 2px;
+      transform-origin: bottom center; transform: translateX(-50%) rotate(42deg);
+    }
+    .speed-art .hub {
+      position: absolute; left: 50%; bottom: -4px; width: 9px; height: 9px;
+      background: #fff; border-radius: 50%; transform: translateX(-50%);
+    }
+
+    .eins-card:hover {
+      border-color: rgba(239,68,68,0.5) !important;
+      box-shadow:
+        0 0 0 1px rgba(239,68,68,0.08),
+        0 32px 72px rgba(0,0,0,0.8),
+        0 0 60px rgba(239,68,68,0.14) !important;
+    }
+    .eins-card .card-tag { color: #f87171 !important; }
+    .eins-card .play-btn { background: #ef4444; box-shadow: 0 0 18px rgba(239,68,68,0.3); }
+
+    /* Eins (UNO) Karten-Art */
+    .eins-art { position: relative; width: 88px; height: 64px; }
+    .eins-art .uc {
+      position: absolute; width: 38px; height: 56px; border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 20px; font-style: italic; color: #fff;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.5), inset 0 0 0 2.5px rgba(255,255,255,0.3);
+      overflow: hidden;
+    }
+    .eins-art .uc::before {
+      content: ''; position: absolute; width: 60%; height: 78%;
+      border-radius: 50%; background: rgba(255,255,255,0.92); transform: rotate(28deg);
+    }
+    .eins-art .uc span { position: relative; z-index: 1; }
+    .eins-art .uc.r { background: linear-gradient(150deg,#f25555,#d32f2f); left: 2px;  top: 6px;  transform: rotate(-14deg); color:#d32f2f; }
+    .eins-art .uc.b { background: linear-gradient(150deg,#4f93f7,#2563eb); left: 25px; top: 2px;  transform: rotate(2deg);   color:#2563eb; z-index: 2; }
+    .eins-art .uc.g { background: linear-gradient(150deg,#34d36b,#16a34a); left: 48px; top: 6px;  transform: rotate(15deg);  color:#16a34a; }
 
     .ttt-card:hover {
       border-color: rgba(168,85,247,0.5) !important;
@@ -742,7 +804,7 @@
   <div class="section-header">
     <div class="section-title">Spielen</div>
     <div class="section-divider"></div>
-    <div class="section-count">8 verfügbar</div>
+    <div class="section-count">10 verfügbar</div>
   </div>
 
   <div class="games-grid">
@@ -824,6 +886,24 @@
       </div>
     </a>
 
+    <a class="game-card available eins-card" href="games/eins/" style="--accent:#ef4444">
+      <div class="card-thumb thumb-eins">
+        <div class="eins-art">
+          <div class="uc r"><span>7</span></div>
+          <div class="uc b"><span>1</span></div>
+          <div class="uc g"><span>+2</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">Login · Karten · KI</div>
+        <div class="card-title">Eins</div>
+        <div class="card-desc">UNO im Browser: wirf alle Karten ab, bevor die drei Bots es tun. Spielen nur mit Account.</div>
+        <div class="card-footer">
+          <div class="play-btn">Spielen <span class="btn-arrow">→</span></div>
+        </div>
+      </div>
+    </a>
+
     <a class="game-card available weather-card" href="weather/">
       <div class="card-thumb thumb-weather">
         <div class="weather-art">
@@ -884,6 +964,25 @@
         <div class="card-tag">Live Daten</div>
         <div class="card-title">Formel 1 Hub</div>
         <div class="card-desc">Fahrer-WM, Konstrukteure und Live-Race-Tracker. Echtzeit von der Strecke.</div>
+        <div class="card-footer">
+          <div class="play-btn">Öffnen <span class="btn-arrow">→</span></div>
+        </div>
+      </div>
+    </a>
+
+    <a class="game-card available speedtest-card" href="speedtest/">
+      <div class="card-thumb thumb-speedtest">
+        <div class="speed-art">
+          <div class="dial"></div>
+          <div class="arc"></div>
+          <div class="needle"></div>
+          <div class="hub"></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">Live · Tool</div>
+        <div class="card-title">Speedtest</div>
+        <div class="card-desc">Miss Download, Upload, Ping &amp; Jitter deiner Verbindung — direkt im Browser.</div>
         <div class="card-footer">
           <div class="play-btn">Öffnen <span class="btn-arrow">→</span></div>
         </div>
