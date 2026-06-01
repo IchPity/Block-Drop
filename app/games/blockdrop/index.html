@@ -517,13 +517,40 @@
     bindTap('tc-hold',  g => g.holdPiece && g.holdPiece());
     bindTap('tc-pause', g => g.togglePause && g.togglePause());
 
-    // Swipe on the board itself: left/right = move, up = rotate, down-fast = hard drop
+    // Swipe on the board itself: left/right = move, up = rotate, down-fast = hard drop.
+    // Halten (langer Druck ohne Bewegung) = schneller dropen, je länger desto schneller.
     const board = document.getElementById('game-area');
     if (board) {
       let sx = 0, sy = 0, sxLast = 0, syLast = 0, startTime = 0, moving = false;
       const STEP = 24;       // px per cell move
       const SWIPE_UP = 30;   // px swipe up = rotate
       const HARD_DROP = 60;  // fast down flick triggers hard drop
+      const HOLD_DELAY = 180;   // ms gedrückt halten, bevor der Schnell-Drop startet
+      const HOLD_MOVE_TOL = 14; // px Wackeln, das noch als "halten" durchgeht
+
+      let holdPressTimer = null;  // wartet HOLD_DELAY ab
+      let holdDropTimer  = null;  // wiederholt den Soft-Drop
+      let holdDelay = 0;          // aktueller Abstand zwischen den Drops
+      let holding = false;        // läuft der Schnell-Drop gerade?
+
+      function holdStep() {
+        const g = G();
+        if (!g || g.state !== 'playing') { stopHold(); return; }
+        g.softDrop();
+        holdDelay = Math.max(28, holdDelay - 7); // je länger gehalten, desto schneller
+        holdDropTimer = setTimeout(holdStep, holdDelay);
+      }
+      function startHold() {
+        if (holding) return;
+        holding = true;
+        holdDelay = 75;
+        holdStep();
+      }
+      function stopHold() {
+        holding = false;
+        clearTimeout(holdPressTimer); holdPressTimer = null;
+        clearTimeout(holdDropTimer);  holdDropTimer  = null;
+      }
 
       board.addEventListener('touchstart', e => {
         const g = G();
@@ -533,6 +560,8 @@
         sy = syLast = t.clientY;
         startTime = Date.now();
         moving = false;
+        stopHold();
+        holdPressTimer = setTimeout(startHold, HOLD_DELAY);
       }, { passive: false });
 
       board.addEventListener('touchmove', e => {
@@ -542,6 +571,11 @@
         const t = e.touches[0];
         const dx = t.clientX - sxLast;
         const dy = t.clientY - syLast;
+
+        // Sobald der Finger merklich wandert, ist es kein "Halten" mehr → Schnell-Drop abbrechen
+        if (Math.abs(t.clientX - sx) > HOLD_MOVE_TOL || Math.abs(t.clientY - sy) > HOLD_MOVE_TOL) {
+          stopHold();
+        }
 
         // horizontal step
         if (Math.abs(dx) >= STEP && Math.abs(dx) > Math.abs(dy)) {
@@ -559,11 +593,16 @@
 
       board.addEventListener('touchend', e => {
         const g = G();
-        if (!g || g.state !== 'playing') return;
+        if (!g || g.state !== 'playing') { stopHold(); return; }
+        const wasHolding = holding;
+        stopHold();
         const ch = e.changedTouches[0];
         const dx = ch.clientX - sx;
         const dy = ch.clientY - sy;
         const dt = Date.now() - startTime;
+
+        // Langer Druck wurde schon als Schnell-Drop gewertet → nichts weiter tun
+        if (wasHolding) return;
 
         // fast flick down → hard drop
         if (!moving && dy > HARD_DROP && Math.abs(dx) < 40 && dt < 350) {
@@ -580,6 +619,7 @@
           g.rotate(1);
         }
       });
+      board.addEventListener('touchcancel', stopHold);
     }
   })();
 </script>
