@@ -357,6 +357,45 @@
     }
     .leaflet-control-attribution a { color: rgba(125,211,252,0.6) !important; }
 
+    /* Scrubber */
+    .map-scrubber-wrap {
+      padding: 12px 22px 16px;
+      border-top: 1px solid var(--border);
+    }
+    .scrubber-row {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .scrubber-lbl {
+      font-size: 9px; font-weight: 800; letter-spacing: 1px;
+      text-transform: uppercase; white-space: nowrap; flex-shrink: 0;
+    }
+    .scrubber-lbl.past   { color: rgba(56,189,248,0.65); }
+    .scrubber-lbl.future { color: rgba(168,85,247,0.65); }
+    #radar-scrubber {
+      flex: 1; -webkit-appearance: none; appearance: none;
+      height: 4px; border-radius: 2px; outline: none; cursor: pointer;
+      background: linear-gradient(to right,
+        rgba(56,189,248,0.4) 0%, rgba(56,189,248,0.4) var(--scrubber-now,70%),
+        rgba(168,85,247,0.4) var(--scrubber-now,70%), rgba(168,85,247,0.4) 100%
+      );
+    }
+    #radar-scrubber::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 14px; height: 14px;
+      border-radius: 50%; background: #fff; cursor: pointer;
+      border: 2px solid rgba(56,189,248,0.9);
+      box-shadow: 0 0 8px rgba(56,189,248,0.5);
+    }
+    #radar-scrubber::-moz-range-thumb {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #fff; cursor: pointer;
+      border: 2px solid rgba(56,189,248,0.9);
+      box-shadow: 0 0 8px rgba(56,189,248,0.5);
+    }
+    @media (max-width: 720px) {
+      .map-scrubber-wrap { padding: 8px 14px 12px; }
+      .scrubber-lbl { font-size: 8px; letter-spacing: 0.5px; }
+    }
+
     /* Loading / empty */
     .loading {
       padding: 60px 24px; text-align: center;
@@ -500,6 +539,11 @@ let radarLayer = null;
 let radarFrames = [];
 let radarIdx = 0;
 let radarInterval = null;
+let radarPastCount = 0;
+let satelliteFrames = [];
+let satelliteLayer = null;
+let satelliteIdx = 0;
+let currentMode = 'radar';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -815,8 +859,15 @@ function renderCurrent() {
       </div>
       <div id="leaflet-map"></div>
       <div class="map-time-bar" id="map-time-bar">
-        <span>Radar-Zeit:</span><strong id="radar-time">—</strong>
+        <span>Zeit:</span><strong id="radar-time">—</strong>
         <span style="margin-left:auto;font-size:10px;opacity:.5">Daten: RainViewer · OpenStreetMap</span>
+      </div>
+      <div class="map-scrubber-wrap">
+        <div class="scrubber-row">
+          <span class="scrubber-lbl past">◀ Vergangen</span>
+          <input type="range" id="radar-scrubber" min="0" max="0" value="0" />
+          <span class="scrubber-lbl future">Prognose ▶</span>
+        </div>
       </div>
     </div>
   `;
@@ -993,15 +1044,34 @@ async function initMap() {
   }).addTo(map);
   L.marker([lat, lon]).addTo(map);
 
-  // Load radar frames
+  // Load radar + satellite frames
   try {
     const r = await fetch(RAIN).then(r => r.json());
-    radarFrames = [...(r.radar?.past || []), ...(r.radar?.nowcast || [])];
+    const past = r.radar?.past || [];
+    const nowcast = r.radar?.nowcast || [];
+    radarPastCount = past.length;
+    radarFrames = [...past, ...nowcast];
+    satelliteFrames = r.satellite?.infrared || [];
     if (radarFrames.length) {
-      radarIdx = (r.radar.past?.length || 1) - 1;
+      radarIdx = Math.max(0, radarPastCount - 1);
+      updateScrubber();
       setRadarFrame(radarIdx);
     }
   } catch (e) { /* ignore radar errors */ }
+
+  // Wire scrubber
+  const scrubber = document.getElementById('radar-scrubber');
+  if (scrubber) {
+    scrubber.addEventListener('input', () => {
+      stopRadarPlay();
+      const i = parseInt(scrubber.value, 10);
+      if (currentMode === 'clouds' && satelliteFrames.length) {
+        setSatelliteFrame(i);
+      } else {
+        setRadarFrame(i);
+      }
+    });
+  }
 }
 
 function setRadarFrame(i) {
@@ -1019,18 +1089,23 @@ function setRadarFrame(i) {
   const timeEl = document.getElementById('radar-time');
   if (timeEl) timeEl.textContent =
     `${t.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} ${isFuture ? '(Prognose)' : ''}`;
+  const scrubber = document.getElementById('radar-scrubber');
+  if (scrubber) scrubber.value = radarIdx;
 }
 
 function setMapLayer(kind) {
+  currentMode = kind;
   if (radarLayer) { map.removeLayer(radarLayer); radarLayer = null; }
+  if (satelliteLayer) { map.removeLayer(satelliteLayer); satelliteLayer = null; }
   stopRadarPlay();
+  updateScrubber();
   if (kind === 'radar' && radarFrames.length) {
     setRadarFrame(radarIdx);
   } else if (kind === 'clouds') {
-    // Use latest radar past for clouds proxy too — RainViewer also has satellite
-    // Stick with radar since clouds satellite is on a different endpoint
-    const r = radarFrames[radarFrames.length - 1];
-    if (r) {
+    if (satelliteFrames.length) {
+      setSatelliteFrame(satelliteFrames.length - 1);
+    } else if (radarFrames.length) {
+      const r = radarFrames[radarFrames.length - 1];
       radarLayer = L.tileLayer(
         `https://tilecache.rainviewer.com${r.path}/256/{z}/{x}/{y}/4/0_1.png`,
         { opacity: 0.55, attribution: 'RainViewer' }
@@ -1040,6 +1115,39 @@ function setMapLayer(kind) {
   // 'off' = nichts überlagern
 }
 
+function setSatelliteFrame(i) {
+  if (!map || !satelliteFrames.length) return;
+  i = ((i % satelliteFrames.length) + satelliteFrames.length) % satelliteFrames.length;
+  satelliteIdx = i;
+  const frame = satelliteFrames[i];
+  if (satelliteLayer) { map.removeLayer(satelliteLayer); satelliteLayer = null; }
+  satelliteLayer = L.tileLayer(
+    `https://tilecache.rainviewer.com${frame.path}/512/{z}/{x}/{y}/0/0_0.png`,
+    { opacity: 0.65, tileSize: 512, attribution: 'RainViewer Satellite' }
+  ).addTo(map);
+  const t = new Date(frame.time * 1000);
+  const timeEl = document.getElementById('radar-time');
+  if (timeEl) timeEl.textContent = t.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const scrubber = document.getElementById('radar-scrubber');
+  if (scrubber) scrubber.value = satelliteIdx;
+}
+
+function updateScrubber() {
+  const scrubber = document.getElementById('radar-scrubber');
+  if (!scrubber) return;
+  if (currentMode === 'clouds' && satelliteFrames.length) {
+    scrubber.max = satelliteFrames.length - 1;
+    scrubber.value = satelliteIdx;
+    scrubber.style.setProperty('--scrubber-now', '100%');
+  } else {
+    const total = radarFrames.length;
+    scrubber.max = Math.max(0, total - 1);
+    scrubber.value = radarIdx;
+    const pct = total > 0 ? (radarPastCount / total * 100).toFixed(1) + '%' : '70%';
+    scrubber.style.setProperty('--scrubber-now', pct);
+  }
+}
+
 function toggleRadarPlay() {
   const btn = $('radar-play');
   if (radarInterval) {
@@ -1047,7 +1155,13 @@ function toggleRadarPlay() {
     btn.textContent = '▶';
   } else {
     btn.textContent = '⏸';
-    radarInterval = setInterval(() => setRadarFrame(radarIdx + 1), 600);
+    radarInterval = setInterval(() => {
+      if (currentMode === 'clouds' && satelliteFrames.length) {
+        setSatelliteFrame(satelliteIdx + 1);
+      } else {
+        setRadarFrame(radarIdx + 1);
+      }
+    }, 600);
   }
 }
 function stopRadarPlay() {
