@@ -917,7 +917,7 @@
 
     // ─── Chat / Direktnachrichten ─────────────────────────────────────────────
     // Tabelle `messages` (sender_id, recipient_id, body, read_at, created_at).
-    // Senden erlaubt RLS nur zwischen bestätigten Freunden. Setup: messages_setup.sql.
+    // Senden erlaubt RLS nur zwischen bestätigten Freunden. Setup: db/messages_setup.sql.
 
     // Nachricht an einen Freund senden. Gibt { data } (die eingefügte Zeile) oder { error }.
     async sendMessage(recipientId, body) {
