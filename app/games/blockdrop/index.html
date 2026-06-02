@@ -4,160 +4,207 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <title>Block Drop — Arcade</title>
+  <title>BLOCK DROP — Insert Coin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    :root { --red: #e94560; --gold: #f0c000; --bg: #05050e; }
+    :root {
+      --bg:      #07020f;
+      --cyan:    #00e5ff;
+      --magenta: #ff2bd6;
+      --gold:    #ffd400;
+      --green:   #00ff7b;
+      --red:     #ff3b5c;
+      --ink:     #d7f5ff;
+      --pixel:   'Press Start 2P', monospace;
+      --crt:     'VT323', monospace;
+    }
 
     body {
       background: var(--bg); min-height: 100vh;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color: #eee; overflow-x: hidden;
+      font-family: var(--crt);
+      color: var(--ink); overflow-x: hidden;
       display: flex; flex-direction: column; align-items: center;
-      padding: 80px 16px 32px; gap: 20px;
+      padding: 86px 16px 32px; gap: 18px;
     }
 
-    /* ── Background ─────────────────────────────────────── */
-    .orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; }
-    .orb-1 { width: 640px; height: 640px; background: #e94560; opacity: 0.05; top: -240px; left: -200px; animation: orbFloat1 24s ease-in-out infinite alternate; }
-    .orb-2 { width: 520px; height: 520px; background: #3050e0; opacity: 0.04; bottom: -200px; right: -200px; animation: orbFloat2 30s ease-in-out infinite alternate; }
-    @keyframes orbFloat1 { from { transform: translate(0,0) scale(1); } to { transform: translate(80px,70px) scale(1.15); } }
-    @keyframes orbFloat2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-70px,-90px) scale(1.2); } }
-    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,0.01) 1px, transparent 1px); background-size: 30px 30px; }
-    .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 30%, rgba(5,5,14,0.8) 100%); }
+    /* ── CRT screen atmosphere ──────────────────────────── */
+    .crt-bg {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 35%, rgba(0,229,255,0.10), transparent 60%),
+        radial-gradient(ellipse 70% 55% at 80% 90%, rgba(255,43,214,0.09), transparent 60%),
+        radial-gradient(ellipse 60% 50% at 15% 80%, rgba(0,255,123,0.06), transparent 60%),
+        linear-gradient(180deg, #0a0418 0%, #07020f 55%, #04010a 100%);
+    }
+    .crt-grid {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.5;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.05) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: radial-gradient(ellipse 75% 75% at 50% 45%, #000 30%, transparent 80%);
+      -webkit-mask-image: radial-gradient(ellipse 75% 75% at 50% 45%, #000 30%, transparent 80%);
+    }
+    .scanlines {
+      position: fixed; inset: 0; z-index: 50; pointer-events: none; opacity: 0.5;
+      background: repeating-linear-gradient(0deg, rgba(0,0,0,0.32) 0 1px, transparent 1px 3px);
+      mix-blend-mode: multiply;
+    }
+    .crt-vignette {
+      position: fixed; inset: 0; z-index: 51; pointer-events: none;
+      background: radial-gradient(ellipse 95% 88% at 50% 50%, transparent 55%, rgba(2,0,8,0.85) 100%);
+      box-shadow: inset 0 0 120px rgba(0,0,0,0.6);
+    }
+    @keyframes flicker { 0%,97%,100% { opacity:0.5; } 98% { opacity:0.4; } 99% { opacity:0.55; } }
+    @media (prefers-reduced-motion: no-preference) { .scanlines { animation: flicker 6s steps(60) infinite; } }
 
-    /* ── Navbar ─────────────────────────────────────────── */
+    /* ── Marquee navbar ─────────────────────────────────── */
     .navbar {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 24px;
-      background: rgba(5,5,14,0.8);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      padding: 12px 22px;
+      background: linear-gradient(180deg, rgba(14,4,28,0.92), rgba(8,2,16,0.82));
+      border-bottom: 2px solid var(--magenta);
+      box-shadow: 0 0 22px rgba(255,43,214,0.35), inset 0 -1px 0 rgba(0,229,255,0.25);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
     }
     .nav-left { display: flex; align-items: center; gap: 14px; }
     .nav-back {
       display: inline-flex; align-items: center; gap: 6px;
-      text-decoration: none; color: rgba(255,255,255,0.35);
-      font-size: 11px; font-weight: 600;
-      border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
-      padding: 6px 12px; transition: all 0.2s;
+      text-decoration: none; color: var(--cyan);
+      font-family: var(--pixel); font-size: 8px;
+      border: 2px solid rgba(0,229,255,0.4); border-radius: 4px;
+      padding: 7px 10px; transition: all 0.15s;
+      text-shadow: 0 0 8px rgba(0,229,255,0.6);
     }
-    .nav-back:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); }
-    .nav-game-title { font-size: 13px; font-weight: 900; color: #fff; letter-spacing: -0.3px; }
+    .nav-back:hover { background: rgba(0,229,255,0.12); border-color: var(--cyan); box-shadow: 0 0 14px rgba(0,229,255,0.4); }
+    .nav-game-title {
+      font-family: var(--pixel); font-size: 13px; color: var(--gold);
+      letter-spacing: 1px; text-shadow: 0 0 10px rgba(255,212,0,0.6), 2px 2px 0 rgba(255,43,214,0.5);
+    }
     .nav-right { display: flex; align-items: center; gap: 12px; }
     .nav-score-display {
       display: flex; align-items: center; gap: 16px;
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 10px; padding: 6px 14px;
+      background: rgba(0,0,0,0.5); border: 1px solid rgba(0,229,255,0.3);
+      border-radius: 6px; padding: 5px 14px;
     }
     .nav-stat { display: flex; flex-direction: column; align-items: center; }
-    .nav-stat-val { font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -0.5px; line-height: 1; }
-    .nav-stat-lbl { font-size: 8px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-top: 1px; }
-    .nav-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.07); }
+    .nav-stat-val { font-family: var(--crt); font-size: 22px; color: var(--cyan); line-height: 0.9; text-shadow: 0 0 10px rgba(0,229,255,0.7); }
+    .nav-stat-lbl { font-family: var(--pixel); font-size: 6px; letter-spacing: 1px; text-transform: uppercase; color: rgba(215,245,255,0.4); margin-top: 3px; }
+    .nav-divider { width: 1px; height: 24px; background: rgba(0,229,255,0.25); }
 
     /* ── Layout ─────────────────────────────────────────── */
     #wrapper { position: relative; z-index: 1; display: flex; gap: 14px; align-items: center; }
-    #left-panel { display: flex; flex-direction: column; gap: 8px; width: 120px; }
-    #right-panel { display: flex; flex-direction: column; gap: 8px; width: 140px; }
+    #left-panel { display: flex; flex-direction: column; gap: 8px; width: 126px; }
+    #right-panel { display: flex; flex-direction: column; gap: 8px; width: 146px; }
 
     /* ── Panels ─────────────────────────────────────────── */
     .panel-box {
-      background: rgba(255,255,255,0.028);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 14px; padding: 12px 14px;
-      transition: border-color 0.3s;
+      background: rgba(6,2,16,0.72);
+      border: 1px solid rgba(0,229,255,0.25);
+      border-radius: 8px; padding: 11px 13px;
+      box-shadow: inset 0 0 18px rgba(0,229,255,0.05), 0 0 14px rgba(0,0,0,0.5);
+      transition: border-color 0.3s, box-shadow 0.3s;
     }
     .panel-box h3 {
-      font-size: 8px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 3px;
-      color: rgba(255,255,255,0.2); margin-bottom: 8px;
+      font-family: var(--pixel); font-size: 7px;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--magenta); margin-bottom: 9px;
+      text-shadow: 0 0 8px rgba(255,43,214,0.5);
     }
     .panel-box .value {
-      font-size: 28px; font-weight: 900; color: #fff;
-      letter-spacing: -1.5px; line-height: 1;
+      font-family: var(--crt); font-size: 38px; color: var(--ink);
+      letter-spacing: 1px; line-height: 0.8;
+      text-shadow: 0 0 12px rgba(0,229,255,0.4);
     }
-    #score-display { font-size: 22px; color: var(--red); text-shadow: 0 0 20px rgba(233,69,96,0.3); }
+    #score-display { color: var(--gold); text-shadow: 0 0 16px rgba(255,212,0,0.6); }
 
     /* ── Board ──────────────────────────────────────────── */
     #game-area {
-      position: relative; border-radius: 12px; overflow: hidden;
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 0 60px rgba(233,69,96,0.08), 0 32px 80px rgba(0,0,0,0.85);
+      position: relative; border-radius: 8px; overflow: hidden;
+      border: 2px solid rgba(0,229,255,0.45);
+      box-shadow: 0 0 0 4px rgba(7,2,15,0.9), 0 0 38px rgba(0,229,255,0.28), 0 0 80px rgba(255,43,214,0.18), 0 30px 70px rgba(0,0,0,0.85);
     }
-    canvas#board { display: block; background: rgba(0,0,0,0.7); }
+    canvas#board { display: block; background: #04010a; }
     canvas#next-canvas, canvas#hold-canvas { display: block; }
 
     /* ── Overlay ────────────────────────────────────────── */
     #overlay {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(5,5,14,0.94);
-      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      background: rgba(4,1,10,0.92);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
       display: flex; flex-direction: column;
-      justify-content: center; align-items: center; gap: 16px;
+      justify-content: center; align-items: center; gap: 18px;
       padding: 24px;
     }
     #overlay h1 {
-      font-size: 32px; font-weight: 900; color: #fff;
-      letter-spacing: -1.5px;
-      text-shadow: 0 0 48px rgba(233,69,96,0.5);
+      font-family: var(--pixel); font-size: 24px; color: var(--cyan);
+      letter-spacing: 1px; line-height: 1.4; text-align: center;
+      text-shadow: 0 0 16px rgba(0,229,255,0.7), 3px 3px 0 var(--magenta);
     }
-    #overlay .overlay-sub { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: -8px; }
-    #overlay p { font-size: 12px; color: rgba(255,255,255,0.35); text-align: center; line-height: 1.5; }
-    #overlay p strong { color: rgba(255,255,255,0.75); }
+    #overlay .overlay-sub {
+      font-family: var(--pixel); font-size: 8px; color: var(--gold);
+      text-shadow: 0 0 8px rgba(255,212,0,0.5); margin-top: -4px;
+      animation: blink 1.1s steps(1) infinite;
+    }
+    @keyframes blink { 50% { opacity: 0.25; } }
+    #overlay p { font-size: 18px; color: rgba(215,245,255,0.6); text-align: center; line-height: 1.4; }
+    #overlay p strong { color: var(--cyan); }
 
     /* ── Mode Buttons ───────────────────────────────────── */
     .mode-btns { display: flex; gap: 8px; width: 100%; }
     .mode-btn {
-      flex: 1; background: rgba(255,255,255,0.04);
-      color: rgba(255,255,255,0.4);
-      border: 1px solid rgba(255,255,255,0.09);
-      padding: 10px 8px; font-size: 11px; font-weight: 700;
-      font-family: inherit; border-radius: 10px;
-      cursor: pointer; transition: all 0.2s; text-align: center; line-height: 1.3;
+      flex: 1; background: rgba(0,229,255,0.05);
+      color: rgba(215,245,255,0.55);
+      border: 1px solid rgba(0,229,255,0.25);
+      padding: 11px 8px; font-family: var(--pixel); font-size: 8px;
+      border-radius: 6px; cursor: pointer; transition: all 0.15s;
+      text-align: center; line-height: 1.5;
     }
-    .mode-btn:hover { border-color: rgba(233,69,96,0.35); color: #fff; background: rgba(233,69,96,0.06); }
+    .mode-btn:hover { border-color: var(--cyan); color: var(--cyan); background: rgba(0,229,255,0.1); }
     .mode-btn.selected {
-      background: rgba(233,69,96,0.14); border-color: rgba(233,69,96,0.45); color: #fff;
-      box-shadow: 0 0 16px rgba(233,69,96,0.12);
+      background: rgba(255,43,214,0.16); border-color: var(--magenta); color: #fff;
+      box-shadow: 0 0 16px rgba(255,43,214,0.35);
+      text-shadow: 0 0 8px rgba(255,43,214,0.6);
     }
-    .mode-btn small { display: block; font-size: 9px; font-weight: 400; opacity: 0.55; margin-top: 2px; }
+    .mode-btn small { display: block; font-family: var(--crt); font-size: 13px; font-weight: 400; opacity: 0.7; margin-top: 5px; letter-spacing: 0; }
 
     /* ── Start Button ───────────────────────────────────── */
     .btn {
-      background: var(--red); color: #fff; border: none;
-      padding: 14px 0; font-size: 14px; font-weight: 800;
-      font-family: inherit; border-radius: 12px; cursor: pointer;
-      letter-spacing: 0.5px; width: 100%;
-      box-shadow: 0 0 28px rgba(233,69,96,0.45);
-      transition: all 0.2s;
+      background: linear-gradient(180deg, var(--magenta), #c8189f);
+      color: #fff; border: 2px solid #ff7be8;
+      padding: 14px 0; font-family: var(--pixel); font-size: 11px;
+      border-radius: 8px; cursor: pointer; letter-spacing: 1px; width: 100%;
+      box-shadow: 0 0 26px rgba(255,43,214,0.5), inset 0 0 12px rgba(255,255,255,0.15);
+      transition: all 0.15s; text-shadow: 0 2px 0 rgba(0,0,0,0.35);
       display: flex; align-items: center; justify-content: center; gap: 8px;
     }
-    .btn:hover { background: #f05672; box-shadow: 0 0 40px rgba(233,69,96,0.6); transform: translateY(-1px); }
-    .btn:active { transform: scale(0.98); }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(255,43,214,0.7), inset 0 0 12px rgba(255,255,255,0.2); }
+    .btn:active { transform: scale(0.97); }
 
     /* ── Level Bar ──────────────────────────────────────── */
-    #level-bar-wrap { background: rgba(255,255,255,0.06); border-radius: 100px; height: 3px; width: 100%; margin-top: 8px; overflow: hidden; }
-    #level-bar { height: 100%; background: var(--red); border-radius: 100px; transition: width 0.4s ease; width: 0%; }
+    #level-bar-wrap { background: rgba(0,229,255,0.12); border-radius: 100px; height: 5px; width: 100%; margin-top: 9px; overflow: hidden; border: 1px solid rgba(0,229,255,0.2); }
+    #level-bar { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--green)); border-radius: 100px; transition: width 0.4s ease; width: 0%; box-shadow: 0 0 10px rgba(0,229,255,0.6); }
 
     /* ── Mode Badge ─────────────────────────────────────── */
     #mode-badge {
-      font-size: 8px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 2px; padding: 3px 8px; border-radius: 5px;
-      margin-top: 8px; display: inline-block;
+      font-family: var(--pixel); font-size: 6px; text-transform: uppercase;
+      letter-spacing: 1px; padding: 4px 8px; border-radius: 4px;
+      margin-top: 9px; display: inline-block;
     }
-    #mode-badge.classic  { background: rgba(233,69,96,0.15); color: var(--red); }
-    #mode-badge.standard { background: rgba(56,189,248,0.12); color: #38bdf8; }
+    #mode-badge.classic  { background: rgba(255,59,92,0.15); color: var(--red); border: 1px solid rgba(255,59,92,0.4); }
+    #mode-badge.standard { background: rgba(0,229,255,0.12); color: var(--cyan); border: 1px solid rgba(0,229,255,0.4); }
 
     /* ── Controls ───────────────────────────────────────── */
-    #controls-hint { font-size: 9px; color: rgba(255,255,255,0.18); line-height: 2.1; }
+    #controls-hint { font-family: var(--crt); font-size: 15px; color: rgba(215,245,255,0.42); line-height: 1.65; }
 
     /* ── High Scores ────────────────────────────────────── */
-    #hs-mode-label { font-size: 8px; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.2); margin-bottom: 10px; }
-    .highscore-list { font-size: 11px; color: rgba(255,255,255,0.4); line-height: 2; min-height: 100px; }
-    .highscore-list span { color: var(--red); font-weight: 700; }
+    #hs-mode-label { font-family: var(--pixel); font-size: 6px; text-transform: uppercase; letter-spacing: 1px; color: var(--gold); margin-bottom: 10px; }
+    .highscore-list { font-family: var(--crt); font-size: 17px; color: rgba(215,245,255,0.55); line-height: 1.5; min-height: 100px; }
+    .highscore-list span { color: var(--gold); }
 
     /* ── Achievement Overlay ────────────────────────────── */
     #ach-overlay {
@@ -165,12 +212,12 @@
       display: flex; align-items: center; justify-content: center;
       z-index: 10000; pointer-events: none; transition: background 0.35s;
     }
-    #ach-overlay.show { background: rgba(0,0,0,0.88); pointer-events: all; }
+    #ach-overlay.show { background: rgba(0,0,0,0.9); pointer-events: all; }
     #ach-modal {
-      background: rgba(10,10,26,0.98); border: 1px solid rgba(240,192,0,0.2);
-      border-radius: 24px; padding: 44px 64px; text-align: center;
+      background: rgba(8,2,16,0.98); border: 2px solid rgba(255,212,0,0.4);
+      border-radius: 14px; padding: 44px 64px; text-align: center;
       position: relative; overflow: hidden;
-      box-shadow: 0 0 80px rgba(240,192,0,0.07), 0 40px 80px rgba(0,0,0,0.95);
+      box-shadow: 0 0 60px rgba(255,212,0,0.2), 0 40px 80px rgba(0,0,0,0.95);
       transform: scale(0.55) translateY(48px); opacity: 0;
       transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s;
     }
@@ -178,17 +225,17 @@
     #ach-modal::before {
       content: ''; position: absolute; top: 0; left: -100%;
       width: 100%; height: 2px;
-      background: linear-gradient(90deg, transparent, #f0c000, transparent);
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
     }
     #ach-overlay.show #ach-modal::before { animation: achShimmer 2s 0.5s ease-in-out infinite; }
     @keyframes achShimmer { 0% { left:-100%; } 100% { left:200%; } }
-    .ach-label { font-size: 9px; letter-spacing: 4px; text-transform: uppercase; color: var(--gold); margin-bottom: 18px; }
+    .ach-label { font-family: var(--pixel); font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); margin-bottom: 18px; }
     #ach-icon-big { font-size: 68px; display: block; margin-bottom: 14px; transform: scale(0); }
     #ach-overlay.show #ach-icon-big { animation: achIconPop 0.55s 0.2s both cubic-bezier(0.34,1.56,0.64,1); }
     @keyframes achIconPop { from { transform: scale(0) rotate(-15deg); } to { transform: scale(1) rotate(0deg); } }
-    #ach-name-big { font-size: 22px; font-weight: 900; color: #fff; margin-bottom: 8px; letter-spacing: -0.5px; }
-    #ach-desc-big { font-size: 12px; color: rgba(255,255,255,0.3); line-height: 1.5; }
-    .ach-hint { font-size: 9px; color: rgba(255,255,255,0.12); text-transform: uppercase; letter-spacing: 2px; margin-top: 28px; opacity: 0; }
+    #ach-name-big { font-family: var(--pixel); font-size: 15px; color: #fff; margin-bottom: 12px; letter-spacing: 0; }
+    #ach-desc-big { font-size: 17px; color: rgba(215,245,255,0.5); line-height: 1.4; }
+    .ach-hint { font-family: var(--pixel); font-size: 7px; color: rgba(215,245,255,0.2); text-transform: uppercase; letter-spacing: 1px; margin-top: 28px; opacity: 0; }
     #ach-overlay.show .ach-hint { animation: achHintFade 0.6s 1.8s both; }
     @keyframes achHintFade { from { opacity:0; } to { opacity:1; } }
 
@@ -208,8 +255,7 @@
     }
     .tetris-banner {
       position: fixed; top: 40%; left: 50%; z-index: 9999; pointer-events: none;
-      font-family: 'Inter', sans-serif; font-weight: 900;
-      font-size: clamp(48px, 13vw, 130px); letter-spacing: -5px;
+      font-family: var(--pixel); font-size: clamp(34px, 9vw, 92px); letter-spacing: 2px;
       background: linear-gradient(90deg, #00cfcf, #f0c000, #e94560, #a000f0);
       -webkit-background-clip: text; background-clip: text;
       -webkit-text-fill-color: transparent; color: transparent;
@@ -243,7 +289,7 @@
 
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,229,255,0.2); border-radius: 3px; }
 
     /* ── Touch Controls (mobile only) ───────────────────── */
     #touch-controls { display: none; }
@@ -260,24 +306,25 @@
         touch-action: manipulation;
       }
       .tc-btn {
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.12);
-        border-radius: 14px;
-        color: #fff; font-size: 20px;
-        font-family: inherit; font-weight: 700;
+        background: rgba(0,229,255,0.06);
+        border: 1px solid rgba(0,229,255,0.3);
+        border-radius: 8px;
+        color: var(--cyan); font-size: 22px;
+        font-family: var(--crt);
         padding: 14px 0;
         display: flex; align-items: center; justify-content: center;
         cursor: pointer;
         transition: background 0.1s, transform 0.05s;
         -webkit-tap-highlight-color: transparent;
+        text-shadow: 0 0 8px rgba(0,229,255,0.5);
       }
       .tc-btn:active {
-        background: rgba(233,69,96,0.18);
-        border-color: rgba(233,69,96,0.45);
+        background: rgba(255,43,214,0.2);
+        border-color: var(--magenta);
         transform: scale(0.95);
       }
       .tc-btn.wide { grid-column: span 1; }
-      .tc-btn.lbl { font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
+      .tc-btn.lbl { font-family: var(--pixel); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
       .tc-row2 { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 8px; }
     }
 
@@ -285,68 +332,62 @@
     @media (max-width: 760px) {
       body { padding: 64px 8px 16px; gap: 10px; }
       .navbar { padding: 10px 14px; }
-      .nav-back { padding: 5px 10px; font-size: 10px; }
-      .nav-game-title { font-size: 12px; }
+      .nav-back { padding: 6px 8px; font-size: 7px; }
+      .nav-game-title { font-size: 10px; }
       .nav-right { gap: 8px; }
-      .nav-score-display { gap: 10px; padding: 5px 10px; }
-      .nav-stat-val { font-size: 12px; }
-      .nav-stat-lbl { font-size: 7px; letter-spacing: 1px; }
+      .nav-score-display { gap: 10px; padding: 4px 10px; }
+      .nav-stat-val { font-size: 17px; }
+      .nav-stat-lbl { font-size: 5px; letter-spacing: 0.5px; }
       .nav-divider { height: 18px; }
 
       #wrapper { flex-direction: column; gap: 10px; align-items: center; }
       #left-panel, #right-panel { width: min(100vw - 24px, 380px); flex-direction: row; gap: 8px; flex-wrap: wrap; }
 
-      /* Reorder: board first, then mini-stats row, then next preview, then high-scores, hide controls hint */
       #left-panel { order: 1; }
       #game-area { order: 0; }
       #right-panel { order: 2; }
 
       .panel-box { padding: 10px 12px; flex: 1 1 calc(33.333% - 6px); min-width: 80px; }
-      .panel-box h3 { font-size: 7px; letter-spacing: 2px; margin-bottom: 4px; }
-      .panel-box .value { font-size: 18px; letter-spacing: -0.5px; }
-      #score-display { font-size: 17px; }
+      .panel-box h3 { font-size: 6px; letter-spacing: 0.5px; margin-bottom: 5px; }
+      .panel-box .value { font-size: 26px; }
       #level-bar-wrap { margin-top: 6px; }
-      #mode-badge { margin-top: 6px; font-size: 7px; padding: 2px 6px; }
+      #mode-badge { margin-top: 6px; font-size: 5px; padding: 3px 6px; }
 
-      /* Hide on-screen keyboard hint (replaced by touch buttons) */
       #controls-hint-box, .controls-hint-box { display: none; }
 
-      /* Hold + Next: smaller canvases */
       #hold-canvas { width: 60px; height: 48px; display: block; margin: 0 auto; }
       #next-canvas { width: 60px; height: 156px; display: block; margin: 0 auto; }
 
-      /* Board: scale to fit screen */
       #game-area { width: 100%; max-width: min(100vw - 16px, 320px); aspect-ratio: 1 / 2; touch-action: none; }
       canvas#board { width: 100% !important; height: 100% !important; touch-action: none; }
       #overlay { padding: 16px; }
-      #overlay h1 { font-size: 26px; }
-      .mode-btn { padding: 9px 6px; font-size: 10px; }
-      .mode-btn small { font-size: 8px; }
-      .btn { padding: 12px 0; font-size: 13px; }
+      #overlay h1 { font-size: 17px; }
+      .mode-btn { padding: 9px 6px; font-size: 7px; }
+      .mode-btn small { font-size: 12px; }
+      .btn { padding: 12px 0; font-size: 9px; }
 
-      /* High score list compact */
-      #hs-list { font-size: 10px; line-height: 1.7; min-height: 70px; }
-      #hs-mode-label { font-size: 7px; letter-spacing: 1.5px; margin-bottom: 6px; }
+      #hs-list { font-size: 15px; line-height: 1.4; min-height: 70px; }
+      #hs-mode-label { font-size: 5px; letter-spacing: 0.5px; margin-bottom: 6px; }
     }
 
     @media (max-width: 380px) {
-      #overlay h1 { font-size: 22px; }
-      .panel-box .value { font-size: 16px; }
+      #overlay h1 { font-size: 15px; }
+      .panel-box .value { font-size: 22px; }
       #left-panel, #right-panel { gap: 6px; }
     }
   </style>
 </head>
 <body>
 
-<div class="orb orb-1"></div>
-<div class="orb orb-2"></div>
-<div class="dot-grid"></div>
-<div class="vignette"></div>
+<div class="crt-bg"></div>
+<div class="crt-grid"></div>
+<div class="scanlines"></div>
+<div class="crt-vignette"></div>
 
 <nav class="navbar">
   <div class="nav-left">
     <a href="../../" class="nav-back">&#8592; Arcade</a>
-    <div class="nav-game-title">Block Drop</div>
+    <div class="nav-game-title">BLOCK DROP</div>
   </div>
   <div class="nav-right">
     <div data-auth-slot></div>
@@ -406,7 +447,7 @@
   <div id="game-area">
     <canvas id="board" width="300" height="600"></canvas>
     <div id="overlay">
-      <h1>BLOCK DROP</h1>
+      <h1>BLOCK<br>DROP</h1>
       <div class="overlay-sub">Wähl deinen Modus</div>
       <div class="mode-btns">
         <button class="mode-btn" id="mode-classic">Classic<small>Speed increases</small></button>
@@ -439,7 +480,7 @@
   <button class="tc-btn" id="tc-rotR" type="button" aria-label="Drehen rechts">↻</button>
   <div class="tc-row2">
     <button class="tc-btn lbl" id="tc-hold" type="button">Hold</button>
-    <button class="tc-btn lbl" id="tc-drop" type="button" style="background:rgba(233,69,96,0.18);border-color:rgba(233,69,96,0.4);">Drop</button>
+    <button class="tc-btn lbl" id="tc-drop" type="button" style="background:rgba(255,43,214,0.2);border-color:var(--magenta);">Drop</button>
     <button class="tc-btn lbl" id="tc-pause" type="button">⏸</button>
   </div>
 </div>
