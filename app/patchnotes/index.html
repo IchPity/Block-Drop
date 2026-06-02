@@ -4,335 +4,357 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <title>Patch Notes — Arcade</title>
+  <title>Patch Notes — ARCADE OS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     :root {
-      --red:   #e94560;
-      --green: #4ade80;
-      --blue:  #38bdf8;
-      --gold:  #f0c000;
-      --bg:    #060818;
-      --card:  rgba(18, 22, 34, 0.72);
-      --border: rgba(255,255,255,0.08);
-      --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+      --screen:  #0b0d06;          /* phosphor-black */
+      --amber:   #ffb454;          /* primary phosphor */
+      --amber-d: #b3792a;          /* dim phosphor    */
+      --amber-x: #6e4d22;          /* ghost phosphor  */
+      --neu:  #74f7a0;             /* green   */
+      --verb: #ffcf4d;             /* amber   */
+      --fix:  #5fd0ff;             /* cyan    */
+      --weg:  #ff7a6b;             /* red     */
+      --glow: 0 0 5px rgba(255,180,84,0.45);
+      --pixel: 'Press Start 2P', monospace;
+      --term:  'VT323', 'Courier New', monospace;
     }
+
     html { scroll-behavior: smooth; }
+
     body {
-      background: var(--bg); min-height: 100vh;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color: #eee; overflow-x: hidden;
-      padding: 72px 0 24px;
+      background: #050603;
+      min-height: 100vh;
+      font-family: var(--term);
+      color: var(--amber);
+      font-size: 21px;
+      line-height: 1.35;
+      overflow-x: hidden;
+      -webkit-font-smoothing: none;
     }
 
-    /* Background */
-    .orb { position: fixed; border-radius: 50%; filter: blur(140px); pointer-events: none; z-index: 0; }
-    .orb-1 { width: 660px; height: 660px; background: #e94560; opacity: 0.06; top: -250px; left: -220px; animation: f1 24s ease-in-out infinite alternate; }
-    .orb-2 { width: 540px; height: 540px; background: #3050e0; opacity: 0.05; bottom: -200px; right: -200px; animation: f2 30s ease-in-out infinite alternate; }
-    @keyframes f1 { to { transform: translate(80px,70px) scale(1.15); } }
-    @keyframes f2 { to { transform: translate(-90px,-110px) scale(1.2); } }
-    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px); background-size: 30px 30px; }
-    .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 35%, rgba(5,5,14,0.78) 100%); }
+    /* ── CRT screen field ──────────────────────────────────────── */
+    .crt {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 120% 130% at 50% 50%, rgba(28,40,16,0.35) 0%, transparent 55%),
+        var(--screen);
+    }
+    /* glowing scanlines */
+    .scanlines {
+      position: fixed; inset: 0; z-index: 60; pointer-events: none;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,180,84,0.045) 0px,
+        rgba(255,180,84,0.045) 1px,
+        transparent 1px,
+        transparent 3px);
+      mix-blend-mode: screen;
+    }
+    /* a single bright scanline sweeping down */
+    .sweep {
+      position: fixed; left: 0; right: 0; height: 120px; z-index: 61; pointer-events: none;
+      background: linear-gradient(to bottom, transparent, rgba(255,210,140,0.05), transparent);
+      animation: sweep 7s linear infinite;
+    }
+    @keyframes sweep { 0% { top: -120px; } 100% { top: 100%; } }
+    /* curvature + edge darkening (fake tube) */
+    .vignette {
+      position: fixed; inset: 0; z-index: 62; pointer-events: none;
+      background: radial-gradient(ellipse 88% 82% at 50% 50%, transparent 58%, rgba(0,0,0,0.85) 100%);
+      box-shadow: inset 0 0 160px rgba(0,0,0,0.7);
+    }
+    /* whole-screen phosphor flicker */
+    .flicker { position: fixed; inset: 0; z-index: 59; pointer-events: none;
+      background: rgba(255,180,84,0.012); animation: flicker 110ms steps(2) infinite; }
+    @keyframes flicker { 0%{opacity:0.32} 50%{opacity:0.55} 100%{opacity:0.4} }
 
-    /* Navbar */
-    .navbar {
+    /* ── Top status bar ────────────────────────────────────────── */
+    .statusbar {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 24px;
-      background: rgba(6,8,24,0.8);
-      border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 9px 18px;
+      background: rgba(7,9,4,0.92);
+      border-bottom: 1px solid var(--amber-x);
+      font-family: var(--pixel); font-size: 8px; letter-spacing: 1px;
+      color: var(--amber-d);
+      backdrop-filter: blur(2px);
     }
-    .nav-left { display: flex; align-items: center; gap: 14px; }
-    .nav-back {
-      display: inline-flex; align-items: center; gap: 6px;
-      text-decoration: none; color: rgba(255,255,255,0.4);
-      font-size: 11px; font-weight: 600;
-      border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
-      padding: 6px 12px; transition: all 0.2s;
+    .sb-left { display: flex; align-items: center; gap: 12px; }
+    .sb-back {
+      color: var(--amber); text-decoration: none;
+      border: 1px solid var(--amber-x); padding: 6px 9px;
+      transition: all 0.15s; text-shadow: var(--glow);
     }
-    .nav-back:hover { color: #fff; border-color: rgba(255,255,255,0.25); }
-    .nav-game-title {
-      font-size: 13px; font-weight: 900; color: #fff; letter-spacing: 1px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .nav-game-title .pill {
-      background: var(--red); color: #0a0a14; padding: 2px 7px;
-      border-radius: 4px; font-size: 10px; font-weight: 900; letter-spacing: 1px;
-    }
-    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .sb-back:hover { background: var(--amber); color: var(--screen); text-shadow: none; box-shadow: 0 0 12px rgba(255,180,84,0.5); }
+    .sb-tag { color: var(--amber-d); }
+    .sb-tag b { color: var(--amber); }
+    .sb-right { display: flex; align-items: center; gap: 12px; }
+    .sb-live { display: inline-flex; align-items: center; gap: 6px; color: var(--neu); }
+    .sb-live::before { content:''; width: 7px; height: 7px; background: var(--neu); border-radius: 50%;
+      box-shadow: 0 0 8px var(--neu); animation: blink 1.4s steps(2) infinite; }
+    @media (max-width: 600px) { .sb-live, .sb-tag { display: none; } }
 
-    /* Container */
-    .container { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 0 24px; }
+    /* ── Layout ────────────────────────────────────────────────── */
+    .wrap { position: relative; z-index: 10; max-width: 800px; margin: 0 auto; padding: 96px 22px 40px; }
 
-    /* Hero */
-    .hero {
-      margin-top: 28px; margin-bottom: 34px;
-      opacity: 0; transform: translateY(18px); animation: fadeUp 0.7s 0.05s both;
-    }
-    .hero-eyebrow {
-      display: inline-flex; align-items: center; gap: 8px;
-      font-size: 10px; font-weight: 800; letter-spacing: 4px;
-      text-transform: uppercase; color: var(--red); margin-bottom: 12px;
-    }
-    .hero-eyebrow::before { content:''; width: 18px; height: 2px; background: var(--red); border-radius: 1px; }
-    .hero h1 {
-      font-size: 50px; font-weight: 900; letter-spacing: -2.5px; line-height: 0.98;
-      color: #fff;
-    }
-    .hero h1 em { font-style: normal; color: var(--red); }
-    .hero-sub {
-      margin-top: 14px; font-size: 13px; max-width: 520px;
-      color: rgba(255,255,255,0.5); line-height: 1.6;
-    }
+    /* ── Boot header ───────────────────────────────────────────── */
+    .boot { margin-bottom: 30px; }
+    .boot-line { color: var(--amber-d); font-size: 19px; letter-spacing: 0.5px; }
+    .boot-line .ok { color: var(--neu); }
+    .boot-line b { color: var(--amber); }
 
-    /* Legende */
-    .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
-    .legend .tag { cursor: default; }
+    .masthead {
+      font-family: var(--pixel);
+      font-size: 30px; line-height: 1.25; letter-spacing: 1px;
+      color: var(--amber); text-shadow: 0 0 8px rgba(255,180,84,0.55), 0 0 22px rgba(255,150,40,0.25);
+      margin: 16px 0 14px;
+    }
+    .masthead .sub { display: block; font-size: 13px; color: var(--verb); margin-top: 12px; text-shadow: 0 0 6px rgba(255,207,77,0.4); }
 
-    /* Tag chips */
+    .blurb { color: var(--amber-d); font-size: 20px; max-width: 60ch; }
+    .blurb .cursor { display: inline-block; width: 11px; height: 19px; background: var(--amber);
+      margin-left: 2px; vertical-align: -2px; box-shadow: var(--glow); animation: blink 1s steps(2) infinite; }
+    @keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+
+    /* ── Legend ────────────────────────────────────────────────── */
+    .legend {
+      display: flex; flex-wrap: wrap; gap: 10px 16px; margin: 22px 0 36px;
+      padding: 12px 16px; border: 1px dashed var(--amber-x);
+      font-size: 17px;
+    }
+    .legend .li { display: inline-flex; align-items: center; gap: 8px; color: var(--amber-d); }
+
+    /* tag chip — bracketed phosphor label */
     .tag {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-family: var(--mono); font-size: 10px; font-weight: 700;
-      letter-spacing: 0.5px; text-transform: uppercase;
-      padding: 3px 9px; border-radius: 6px;
-      border: 1px solid transparent;
+      font-family: var(--pixel); font-size: 9px; letter-spacing: 0.5px;
+      padding: 5px 7px; border: 1px solid currentColor; line-height: 1;
+      white-space: nowrap; position: relative;
     }
-    .tag::before { content:''; width: 6px; height: 6px; border-radius: 50%; }
-    .tag.neu  { color: var(--green); background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.25); }
-    .tag.neu::before  { background: var(--green); box-shadow: 0 0 7px var(--green); }
-    .tag.fix  { color: var(--blue);  background: rgba(56,189,248,0.08); border-color: rgba(56,189,248,0.25); }
-    .tag.fix::before  { background: var(--blue);  box-shadow: 0 0 7px var(--blue); }
-    .tag.verb { color: var(--gold);  background: rgba(240,192,0,0.08);  border-color: rgba(240,192,0,0.25); }
-    .tag.verb::before { background: var(--gold);  box-shadow: 0 0 7px var(--gold); }
-    .tag.weg  { color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.12); }
-    .tag.weg::before  { background: rgba(255,255,255,0.4); }
+    .tag.neu  { color: var(--neu);  text-shadow: 0 0 6px rgba(116,247,160,0.5); }
+    .tag.verb { color: var(--verb); text-shadow: 0 0 6px rgba(255,207,77,0.5); }
+    .tag.fix  { color: var(--fix);  text-shadow: 0 0 6px rgba(95,208,255,0.5); }
+    .tag.weg  { color: var(--weg);  text-shadow: 0 0 6px rgba(255,122,107,0.5); }
 
-    /* Timeline */
-    .timeline { position: relative; padding-left: 26px; }
-    .timeline::before {
-      content: ''; position: absolute; top: 6px; bottom: 6px; left: 5px; width: 2px;
-      background: linear-gradient(to bottom, var(--red), rgba(233,69,96,0.15) 18%, rgba(255,255,255,0.06));
-    }
-
+    /* ── Release log ───────────────────────────────────────────── */
     .release {
-      position: relative; margin-bottom: 22px;
-      opacity: 0; transform: translateY(16px); animation: fadeUp 0.6s both;
+      position: relative; margin-bottom: 26px;
+      border: 1px solid var(--amber-x);
+      background: linear-gradient(180deg, rgba(255,180,84,0.025), transparent 60%);
+      padding: 18px 22px 20px;
+      opacity: 0; transform: translateY(14px);
+      animation: bootIn 0.5s both;
     }
-    .release::before {
-      content: ''; position: absolute; left: -25px; top: 22px;
-      width: 12px; height: 12px; border-radius: 50%;
-      background: var(--bg); border: 2px solid rgba(255,255,255,0.25);
+    /* corner ticks */
+    .release::before, .release::after {
+      content: ''; position: absolute; width: 9px; height: 9px; border: 1px solid var(--amber); opacity: 0.7;
     }
-    .release.latest::before {
-      border-color: var(--red); background: var(--red);
-      box-shadow: 0 0 0 5px rgba(233,69,96,0.15), 0 0 16px rgba(233,69,96,0.6);
-    }
+    .release::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+    .release::after  { bottom: -1px; right: -1px; border-left: none; border-top: none; }
 
-    .rel-card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 18px; padding: 20px 24px;
-      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      transition: border-color 0.25s, box-shadow 0.25s;
+    .release.latest {
+      border-color: var(--amber);
+      box-shadow: 0 0 0 1px rgba(255,180,84,0.25), 0 0 34px rgba(255,150,40,0.12);
+      background: linear-gradient(180deg, rgba(255,180,84,0.06), transparent 65%);
     }
-    .release.latest .rel-card {
-      border-color: rgba(233,69,96,0.3);
-      box-shadow: 0 0 40px rgba(233,69,96,0.08);
-    }
-    .rel-card:hover { border-color: rgba(255,255,255,0.16); }
 
     .rel-head {
-      display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px;
-      margin-bottom: 4px;
+      display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px;
+      padding-bottom: 12px; margin-bottom: 14px;
+      border-bottom: 1px solid var(--amber-x);
     }
     .rel-ver {
-      font-family: var(--mono); font-size: 17px; font-weight: 700;
-      color: #fff; letter-spacing: -0.5px;
+      font-family: var(--pixel); font-size: 14px; letter-spacing: 1px; color: var(--amber);
+      text-shadow: var(--glow);
     }
-    .rel-ver .v { color: var(--red); }
-    .rel-name { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.55); }
-    .rel-date {
-      margin-left: auto; font-family: var(--mono); font-size: 11px;
-      color: rgba(255,255,255,0.32); letter-spacing: 0.3px;
-    }
+    .rel-name { font-size: 21px; letter-spacing: 1px; color: var(--verb); text-transform: uppercase; }
+    .rel-date { margin-left: auto; font-size: 17px; color: var(--amber-x); letter-spacing: 1px; }
     .rel-now {
-      font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1px;
-      text-transform: uppercase; color: #0a0a14; background: var(--red);
-      padding: 2px 7px; border-radius: 5px;
+      font-family: var(--pixel); font-size: 8px; letter-spacing: 1px; color: var(--screen);
+      background: var(--amber); padding: 5px 7px; box-shadow: 0 0 14px rgba(255,180,84,0.55);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{ box-shadow: 0 0 10px rgba(255,180,84,0.4);} 50%{ box-shadow: 0 0 22px rgba(255,180,84,0.75);} }
+
+    .log { list-style: none; display: flex; flex-direction: column; gap: 11px; }
+    .log li {
+      display: flex; align-items: flex-start; gap: 11px;
+      font-size: 20px; line-height: 1.4; color: var(--amber);
+    }
+    .log li::before { content: '>'; color: var(--amber-d); flex-shrink: 0; }
+    .log .tag { flex-shrink: 0; margin-top: 2px; }
+    .log b { color: #ffe7c4; font-weight: 400; text-shadow: 0 0 6px rgba(255,210,150,0.4); }
+    .log .txt { flex: 1; }
+
+    /* ── EOF ───────────────────────────────────────────────────── */
+    .eof { margin-top: 30px; color: var(--amber-d); font-size: 19px; letter-spacing: 0.5px; }
+    .eof .ok { color: var(--neu); }
+
+    footer.site-footer { position: relative; z-index: 10; }
+
+    @keyframes bootIn { to { opacity: 1; transform: translateY(0); } }
+
+    /* ── Responsive ────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      body { font-size: 19px; }
+      .wrap { padding: 84px 16px 30px; }
+      .masthead { font-size: 19px; line-height: 1.35; }
+      .masthead .sub { font-size: 11px; }
+      .rel-head { gap: 6px 10px; }
+      .rel-ver { font-size: 11px; }
+      .rel-name { font-size: 18px; }
+      .rel-date { width: 100%; margin-left: 0; font-size: 15px; }
+      .log li { font-size: 18px; }
+      .legend { font-size: 15px; }
+    }
+    @media (max-width: 380px) {
+      .masthead { font-size: 16px; }
     }
 
-    .rel-list { list-style: none; margin-top: 14px; display: flex; flex-direction: column; gap: 9px; }
-    .rel-list li {
-      display: flex; align-items: flex-start; gap: 10px;
-      font-size: 13.5px; line-height: 1.5; color: rgba(255,255,255,0.78);
-    }
-    .rel-list li .tag { flex-shrink: 0; margin-top: 1px; }
-    .rel-list strong { color: #fff; font-weight: 700; }
-
-    footer.site-footer { z-index: 1; }
-
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-
-    @media (max-width: 720px) {
-      body { padding: 64px 0 24px; }
-      .navbar { padding: 10px 14px; }
-      .nav-back { padding: 5px 10px; font-size: 10px; }
-      .nav-game-title { font-size: 12px; }
-      .container { padding: 0 16px; }
-      .hero { margin-top: 20px; margin-bottom: 26px; }
-      .hero h1 { font-size: 36px; letter-spacing: -1.5px; }
-      .hero-eyebrow { font-size: 9px; letter-spacing: 3px; }
-      .hero-sub { font-size: 12px; }
-      .rel-card { padding: 16px 16px; border-radius: 15px; }
-      .rel-date { margin-left: 0; width: 100%; }
-      .rel-list li { font-size: 13px; }
-      .timeline { padding-left: 22px; }
-    }
-    @media (max-width: 420px) {
-      .hero h1 { font-size: 30px; }
-    }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
-      .orb { animation: none !important; }
-      .hero, .release { animation: none !important; opacity: 1 !important; transform: none !important; }
+      .sweep, .flicker, .release, .rel-now, .sb-live::before, .cursor { animation: none !important; }
+      .release { opacity: 1; transform: none; }
+      .flicker { display: none; }
     }
 
-    ::-webkit-scrollbar { width: 5px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #050603; }
+    ::-webkit-scrollbar-thumb { background: var(--amber-x); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--amber-d); }
+    ::selection { background: var(--amber); color: var(--screen); }
   </style>
 </head>
 <body>
 
-<div class="orb orb-1"></div>
-<div class="orb orb-2"></div>
-<div class="dot-grid"></div>
+<div class="crt"></div>
+<div class="flicker"></div>
+<div class="sweep"></div>
+<div class="scanlines"></div>
 <div class="vignette"></div>
 
-<nav class="navbar">
-  <div class="nav-left">
-    <a href="/" class="nav-back">&larr; Arcade</a>
-    <div class="nav-game-title"><span class="pill">&#9776;</span> Patch Notes</div>
+<!-- Status bar -->
+<nav class="statusbar">
+  <div class="sb-left">
+    <a href="/" class="sb-back">&#9664; ARCADE</a>
+    <span class="sb-tag">SVC&#47;<b>PATCHNOTES</b></span>
   </div>
-  <div class="nav-right">
+  <div class="sb-right">
+    <span class="sb-live">SYS ONLINE</span>
     <div data-auth-slot></div>
   </div>
 </nav>
 
-<div class="container">
+<div class="wrap">
 
-  <section class="hero">
-    <div class="hero-eyebrow">Changelog</div>
-    <h1>PATCH <em>NOTES</em></h1>
-    <p class="hero-sub">Was sich im Arcade getan hat &mdash; jedes neue Spiel, jeder Fix, jede kleine Politur. Von oben nach unten: das Neueste zuerst.</p>
+  <!-- Boot header -->
+  <header class="boot">
+    <div class="boot-line">[ <span class="ok">OK</span> ] mounting <b>arcade.os</b> &middot; reading service log&hellip;</div>
+    <h1 class="masthead">
+      PATCH NOTES
+      <span class="sub">&#47;&#47; CHANGELOG &middot; BUILD HISTORY</span>
+    </h1>
+    <p class="blurb">Alles, was im Arcade je gepatcht wurde &mdash; jedes neue Spiel, jeder Fix, jede Politur. Neuester Build oben.<span class="cursor"></span></p>
+
+    <!-- Legend -->
     <div class="legend">
-      <span class="tag neu">Neu</span>
-      <span class="tag verb">Verbessert</span>
-      <span class="tag fix">Fix</span>
-      <span class="tag weg">Entfernt</span>
+      <span class="li"><span class="tag neu">NEU</span> Feature</span>
+      <span class="li"><span class="tag verb">VERB</span> Verbessert</span>
+      <span class="li"><span class="tag fix">FIX</span> Behoben</span>
+      <span class="li"><span class="tag weg">WEG</span> Entfernt</span>
     </div>
-  </section>
+  </header>
 
-  <div class="timeline">
+  <!-- ── v0.9 — Aktuell ──────────────────────────────────────── -->
+  <article class="release latest" style="animation-delay:0.05s">
+    <div class="rel-head">
+      <span class="rel-ver">v0.9</span>
+      <span class="rel-name">Eigener Look</span>
+      <span class="rel-now">LATEST BUILD</span>
+      <span class="rel-date">2026&middot;06&middot;02</span>
+    </div>
+    <ul class="log">
+      <li><span class="tag neu">NEU</span><span class="txt">Jedes Spiel bekommt sein <b>eigenes Kostüm</b> &mdash; Schluss mit dem Einheitslook im Arcade.</span></li>
+      <li><span class="tag verb">VERB</span><span class="txt"><b>Wörtle</b> spielt jetzt streng nach Wörterbuch: nur echte Wörter zählen.</span></li>
+      <li><span class="tag fix">FIX</span><span class="txt"><b>Tic Tac Toe:</b> das Modus-Auswahlfenster wächst jetzt mit &mdash; alle vier Modi passen rein.</span></li>
+    </ul>
+  </article>
 
-    <!-- ── Aktuell ─────────────────────────────────────────── -->
-    <article class="release latest" style="animation-delay:0.1s">
-      <div class="rel-card">
-        <div class="rel-head">
-          <span class="rel-ver">v0.<span class="v">9</span></span>
-          <span class="rel-name">Eigener Look</span>
-          <span class="rel-now">Aktuell</span>
-          <span class="rel-date">02. Juni 2026</span>
-        </div>
-        <ul class="rel-list">
-          <li><span class="tag neu">Neu</span><span>Jedes Spiel bekommt sein <strong>eigenes Kostüm</strong> &mdash; Schluss mit dem Einheitslook im Arcade.</span></li>
-          <li><span class="tag verb">Verbessert</span><span><strong>Wörtle</strong> spielt jetzt streng nach Wörterbuch: nur echte Wörter zählen.</span></li>
-          <li><span class="tag fix">Fix</span><span><strong>Tic Tac Toe:</strong> das Modus-Auswahlfenster wächst jetzt mit &mdash; alle vier Modi passen rein.</span></li>
-        </ul>
-      </div>
-    </article>
+  <!-- ── v0.8 ────────────────────────────────────────────────── -->
+  <article class="release" style="animation-delay:0.12s">
+    <div class="rel-head">
+      <span class="rel-ver">v0.8</span>
+      <span class="rel-name">Volles Regal</span>
+      <span class="rel-date">2026&middot;06&middot;01</span>
+    </div>
+    <ul class="log">
+      <li><span class="tag neu">NEU</span><span class="txt"><b>WarShips</b> entert das Arcade: überlebe Welle um Welle, deine Geschütze zielen selbst, rüste Boot &amp; Waffen auf.</span></li>
+      <li><span class="tag neu">NEU</span><span class="txt"><b>Jedno</b> &mdash; UNO im Browser gegen drei Bots.</span></li>
+      <li><span class="tag neu">NEU</span><span class="txt"><b>Speedtest</b> mit Live-Tacho: Download, Upload, Ping &amp; Jitter direkt im Browser.</span></li>
+      <li><span class="tag neu">NEU</span><span class="txt"><b>Benachrichtigungen:</b> Badges blinken und Toasts ploppen, sobald wer schreibt oder anklopft.</span></li>
+      <li><span class="tag verb">VERB</span><span class="txt"><b>Wörtle</b> frisst jetzt das ganze (englische) Wörterbuch.</span></li>
+      <li><span class="tag verb">VERB</span><span class="txt"><b>Block Drop:</b> gedrückt halten lässt den Block immer schneller purzeln.</span></li>
+      <li><span class="tag verb">VERB</span><span class="txt"><b>Wetter-Karte:</b> Zeit-Scrubber zeigt Vergangenheit links, Prognose rechts.</span></li>
+      <li><span class="tag fix">FIX</span><span class="txt"><b>Wetter-Radar</b> lädt endlich seine Tiles auf der Karte (doppelter Pfad war schuld).</span></li>
+    </ul>
+  </article>
 
-    <!-- ── v0.8 ────────────────────────────────────────────── -->
-    <article class="release" style="animation-delay:0.16s">
-      <div class="rel-card">
-        <div class="rel-head">
-          <span class="rel-ver">v0.<span class="v">8</span></span>
-          <span class="rel-name">Volles Regal</span>
-          <span class="rel-date">01. Juni 2026</span>
-        </div>
-        <ul class="rel-list">
-          <li><span class="tag neu">Neu</span><span><strong>WarShips</strong> entert das Arcade: überlebe Welle um Welle, deine Geschütze zielen selbst, rüste Boot &amp; Waffen auf.</span></li>
-          <li><span class="tag neu">Neu</span><span><strong>Jedno</strong> &mdash; UNO im Browser gegen drei Bots.</span></li>
-          <li><span class="tag neu">Neu</span><span><strong>Speedtest</strong> mit Live-Tacho: Download, Upload, Ping &amp; Jitter direkt im Browser.</span></li>
-          <li><span class="tag neu">Neu</span><span><strong>Benachrichtigungen:</strong> Badges blinken und Toasts ploppen, sobald wer schreibt oder anklopft.</span></li>
-          <li><span class="tag verb">Verbessert</span><span><strong>Wörtle</strong> frisst jetzt das ganze (englische) Wörterbuch.</span></li>
-          <li><span class="tag verb">Verbessert</span><span><strong>Block Drop:</strong> gedrückt halten lässt den Block immer schneller purzeln.</span></li>
-          <li><span class="tag verb">Verbessert</span><span><strong>Wetter-Karte:</strong> Zeit-Scrubber zeigt Vergangenheit links, Prognose rechts.</span></li>
-          <li><span class="tag fix">Fix</span><span><strong>Wetter-Radar</strong> lädt endlich seine Tiles auf der Karte (doppelter Pfad war schuld).</span></li>
-        </ul>
-      </div>
-    </article>
+  <!-- ── v0.7 ────────────────────────────────────────────────── -->
+  <article class="release" style="animation-delay:0.19s">
+    <div class="rel-head">
+      <span class="rel-ver">v0.7</span>
+      <span class="rel-name">Sag was</span>
+      <span class="rel-date">2026&middot;05&middot;30</span>
+    </div>
+    <ul class="log">
+      <li><span class="tag neu">NEU</span><span class="txt"><b>Chat:</b> quatsch direkt mit deinen Freunden, statt nur Anfragen zu schicken.</span></li>
+      <li><span class="tag verb">VERB</span><span class="txt"><b>Landing Page</b> entstaut &mdash; die Backdrop-Blur-Orgie ist raus, jetzt läuft's flüssig.</span></li>
+      <li><span class="tag fix">FIX</span><span class="txt">Frisch registriert = sofort drin. Und das Impressum klebt nicht mehr oben im Chat.</span></li>
+    </ul>
+  </article>
 
-    <!-- ── v0.7 ────────────────────────────────────────────── -->
-    <article class="release" style="animation-delay:0.22s">
-      <div class="rel-card">
-        <div class="rel-head">
-          <span class="rel-ver">v0.<span class="v">7</span></span>
-          <span class="rel-name">Sag was</span>
-          <span class="rel-date">30. Mai 2026</span>
-        </div>
-        <ul class="rel-list">
-          <li><span class="tag neu">Neu</span><span><strong>Chat:</strong> quatsch direkt mit deinen Freunden, statt nur Anfragen zu schicken.</span></li>
-          <li><span class="tag verb">Verbessert</span><span><strong>Landing Page</strong> entstaut &mdash; die Backdrop-Blur-Orgie ist raus, jetzt läuft's flüssig.</span></li>
-          <li><span class="tag fix">Fix</span><span>Frisch registriert = sofort drin. Und das Impressum klebt nicht mehr oben im Chat.</span></li>
-        </ul>
-      </div>
-    </article>
+  <!-- ── v0.6 ────────────────────────────────────────────────── -->
+  <article class="release" style="animation-delay:0.26s">
+    <div class="rel-head">
+      <span class="rel-ver">v0.6</span>
+      <span class="rel-name">Freunde &amp; Profile</span>
+      <span class="rel-date">2026&middot;05&middot;29</span>
+    </div>
+    <ul class="log">
+      <li><span class="tag neu">NEU</span><span class="txt"><b>Tic Tac Toe</b> &mdash; drei in einer Reihe gegen Mensch, Welt oder unbesiegbare KI.</span></li>
+      <li><span class="tag neu">NEU</span><span class="txt"><b>Freunde-Feature:</b> Profile antippen, anfreunden, verwalten.</span></li>
+      <li><span class="tag neu">NEU</span><span class="txt"><b>Profilseite:</b> Selfie hochladen, Namen tunen, Passwort frisieren.</span></li>
+      <li><span class="tag neu">NEU</span><span class="txt"><b>Login ohne E-Mail</b> &mdash; Username reicht, die Mail darf zuhause bleiben.</span></li>
+      <li><span class="tag verb">VERB</span><span class="txt"><b>Block Drop</b> zündet jetzt Konfetti, Banner und Beben. <b>Wörtle</b> bekommt einen Übungsmodus.</span></li>
+      <li><span class="tag fix">FIX</span><span class="txt"><b>METAR:</b> Proxy-Kette als Lebensversicherung, nachdem corsproxy.io starb.</span></li>
+      <li><span class="tag weg">WEG</span><span class="txt"><b>Schach</b> wurde matt gesetzt und aus dem Arcade verbannt.</span></li>
+    </ul>
+  </article>
 
-    <!-- ── v0.6 ────────────────────────────────────────────── -->
-    <article class="release" style="animation-delay:0.28s">
-      <div class="rel-card">
-        <div class="rel-head">
-          <span class="rel-ver">v0.<span class="v">6</span></span>
-          <span class="rel-name">Freunde &amp; Profile</span>
-          <span class="rel-date">29. Mai 2026</span>
-        </div>
-        <ul class="rel-list">
-          <li><span class="tag neu">Neu</span><span><strong>Tic Tac Toe</strong> &mdash; drei in einer Reihe gegen Mensch, Welt oder unbesiegbare KI.</span></li>
-          <li><span class="tag neu">Neu</span><span><strong>Freunde-Feature:</strong> Profile antippen, anfreunden, verwalten.</span></li>
-          <li><span class="tag neu">Neu</span><span><strong>Profilseite:</strong> Selfie hochladen, Namen tunen, Passwort frisieren.</span></li>
-          <li><span class="tag neu">Neu</span><span><strong>Login ohne E-Mail</strong> &mdash; Username reicht, die Mail darf zuhause bleiben.</span></li>
-          <li><span class="tag verb">Verbessert</span><span><strong>Block Drop</strong> zündet jetzt Konfetti, Banner und Beben. <strong>Wörtle</strong> bekommt einen Übungsmodus.</span></li>
-          <li><span class="tag fix">Fix</span><span><strong>METAR:</strong> Proxy-Kette als Lebensversicherung, nachdem corsproxy.io starb.</span></li>
-          <li><span class="tag weg">Entfernt</span><span><strong>Schach</strong> wurde matt gesetzt und aus dem Arcade verbannt.</span></li>
-        </ul>
-      </div>
-    </article>
+  <!-- ── v0.5 ────────────────────────────────────────────────── -->
+  <article class="release" style="animation-delay:0.33s">
+    <div class="rel-head">
+      <span class="rel-ver">v0.5</span>
+      <span class="rel-name">Großer Aufschlag</span>
+      <span class="rel-date">2026&middot;05&middot;28</span>
+    </div>
+    <ul class="log">
+      <li><span class="tag neu">NEU</span><span class="txt"><b>Wörtle</b> &mdash; das tägliche 5-Buchstaben-Worträtsel (Vienna-TZ).</span></li>
+      <li><span class="tag neu">NEU</span><span class="txt"><b>Weather Dashboard:</b> Current, 24h &amp; 7 Tage, Radar-Karte, UV und Luftqualität.</span></li>
+      <li><span class="tag neu">NEU</span><span class="txt"><b>METAR Browser:</b> ICAO-Code rein, Roh-METAR + Decode raus.</span></li>
+      <li><span class="tag neu">NEU</span><span class="txt"><b>F1 Wetten</b> &mdash; tipp das Podium, sammle Punkte.</span></li>
+      <li><span class="tag neu">NEU</span><span class="txt"><b>Impressum &amp; Datenschutz</b> (AT-Recht) plus globaler Footer auf allen Seiten.</span></li>
+      <li><span class="tag verb">VERB</span><span class="txt">Mobile-Optimierung quer durchs Arcade &mdash; und 12 frisch geschneiderte Favicons.</span></li>
+      <li><span class="tag fix">FIX</span><span class="txt"><b>Auth:</b> getrennte Login- und Register-Formulare für saubere Passwort-Manager-Erkennung.</span></li>
+    </ul>
+  </article>
 
-    <!-- ── v0.5 ────────────────────────────────────────────── -->
-    <article class="release" style="animation-delay:0.34s">
-      <div class="rel-card">
-        <div class="rel-head">
-          <span class="rel-ver">v0.<span class="v">5</span></span>
-          <span class="rel-name">Großer Aufschlag</span>
-          <span class="rel-date">28. Mai 2026</span>
-        </div>
-        <ul class="rel-list">
-          <li><span class="tag neu">Neu</span><span><strong>Wörtle</strong> &mdash; das tägliche 5-Buchstaben-Worträtsel (Vienna-TZ).</span></li>
-          <li><span class="tag neu">Neu</span><span><strong>Weather Dashboard:</strong> Current, 24h &amp; 7 Tage, Radar-Karte, UV und Luftqualität.</span></li>
-          <li><span class="tag neu">Neu</span><span><strong>METAR Browser:</strong> ICAO-Code rein, Roh-METAR + Decode raus.</span></li>
-          <li><span class="tag neu">Neu</span><span><strong>F1 Wetten</strong> &mdash; tipp das Podium, sammle Punkte.</span></li>
-          <li><span class="tag neu">Neu</span><span><strong>Impressum &amp; Datenschutz</strong> (AT-Recht) plus globaler Footer auf allen Seiten.</span></li>
-          <li><span class="tag verb">Verbessert</span><span>Mobile-Optimierung quer durchs Arcade &mdash; und 12 frisch geschneiderte Favicons.</span></li>
-          <li><span class="tag fix">Fix</span><span><strong>Auth:</strong> getrennte Login- und Register-Formulare für saubere Passwort-Manager-Erkennung.</span></li>
-        </ul>
-      </div>
-    </article>
-
-  </div>
+  <div class="eof">[ <span class="ok">EOF</span> ] end of service log &middot; <b>5 builds</b> protokolliert _</div>
 
 </div>
 
