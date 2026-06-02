@@ -147,6 +147,8 @@
       <div class="site-footer-inner">
         <span>&copy; Peter Scheikl</span>
         <span class="sep">&middot;</span>
+        <a href="/patchnotes/">Patch Notes</a>
+        <span class="sep">&middot;</span>
         <a href="/impressum/">Impressum</a>
         <span class="sep">&middot;</span>
         <a href="/datenschutz/">Datenschutz</a>
