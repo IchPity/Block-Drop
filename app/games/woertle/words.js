@@ -1,5 +1,5 @@
 // ───────────────────────────────────────────────────────────────────
-// Woertle word list — English 5-letter words (Quelle: words-Datei).
+// Woertle word list — English 5-letter words (Quelle: tools/woertle-words.txt).
 //   WOERTLE_WORDS       : kompletter Wortschatz = Antwort-Pool UND einzige
 //                         erlaubte Rateversuche.
 //   WOERTLE_VALID_EXTRA : leer — es sind ausschliesslich die Woerter aus
