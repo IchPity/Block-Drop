@@ -5,6 +5,19 @@
 // In der Navbar irgendwo: <div data-auth-slot></div>
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─── Theme früh anwenden (Anti-Flash) ───────────────────────────────────────
+// Läuft synchron beim Laden im <head>, noch bevor der <body> gerendert wird, damit
+// kein kurzes Aufblitzen des Dark-Themes entsteht. Default ist "dark" → bestehende
+// Seiten sehen unverändert aus, bis aktiv auf hell umgeschaltet wird.
+(function applyTheme() {
+  try {
+    const t = localStorage.getItem('arcade_theme') === 'light' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = t;
+  } catch (_) {
+    document.documentElement.dataset.theme = 'dark';
+  }
+})();
+
 // ─── Globale Mobile-Fixes ───────────────────────────────────────────────────
 // Wird ans Ende des <head> appended, damit die Regeln Seiten-CSS überschreiben.
 (function injectMobileFixes() {
@@ -155,6 +168,226 @@
       </div>
     `;
     document.body.appendChild(footer);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', build);
+  } else {
+    build();
+  }
+})();
+
+// ─── Dark/Light-Theme-Toggle ────────────────────────────────────────────────
+// Zentrale Override-Lösung: ein einziges Light-Theme-Stylesheet wird ans Ende des
+// <head> injiziert (überschreibt Seiten-CSS) und nur unter html[data-theme="light"]
+// aktiv. Der Toggle-Button wird neben den Auth-Slot in die Navbar gehängt. Läuft
+// unabhängig von Supabase.
+(function injectThemeToggle() {
+  const css = `
+  /* ── Toggle-Button (beide Modi) ── */
+  .theme-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 999px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    cursor: pointer; font-size: 16px; line-height: 1; color: inherit;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    transition: background 0.2s, border-color 0.2s, transform 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.22); transform: translateY(-1px); }
+  .theme-toggle:active { transform: translateY(0); }
+  @media (max-width: 560px) { .theme-toggle { width: 34px; height: 34px; font-size: 15px; } }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     LIGHT THEME — nur aktiv unter html[data-theme="light"]
+     ════════════════════════════════════════════════════════════════════════ */
+
+  /* Variablen-Remap (greift auf allen Seiten, die diese Variablen nutzen) */
+  html[data-theme="light"] {
+    --bg: #eef1f7;
+    --card: rgba(255,255,255,0.90);
+    --border: rgba(15,23,42,0.12);
+    color-scheme: light;
+  }
+
+  /* Basis: heller Hintergrund, dunkle Schrift als Default */
+  html[data-theme="light"] body { background: #eef1f7 !important; color: #1f2433 !important; }
+  /* Dekorative Orbs / Grid-Overlays etwas zähmen */
+  html[data-theme="light"] body::before,
+  html[data-theme="light"] body::after { opacity: 0.45; }
+
+  /* Lesbare dunkle Schrift für generische Textelemente (Akzent-Buttons/Links bleiben unberührt) */
+  html[data-theme="light"] p,
+  html[data-theme="light"] li,
+  html[data-theme="light"] label,
+  html[data-theme="light"] dt,
+  html[data-theme="light"] dd,
+  html[data-theme="light"] td,
+  html[data-theme="light"] th,
+  html[data-theme="light"] blockquote { color: #2a3142 !important; }
+  html[data-theme="light"] h1,
+  html[data-theme="light"] h2,
+  html[data-theme="light"] h3,
+  html[data-theme="light"] h4,
+  html[data-theme="light"] h5,
+  html[data-theme="light"] h6 { color: #11141f !important; }
+
+  /* Navbar / Statusbar */
+  html[data-theme="light"] .navbar {
+    background: rgba(255,255,255,0.80) !important;
+    border-bottom-color: rgba(15,23,42,0.10) !important;
+  }
+  html[data-theme="light"] .nav-logo,
+  html[data-theme="light"] .nav-title { color: #14151f !important; }
+  html[data-theme="light"] .nav-back,
+  html[data-theme="light"] .nav-btn {
+    color: #2a3142 !important;
+    border-color: rgba(15,23,42,0.16) !important;
+  }
+  html[data-theme="light"] .nav-back:hover,
+  html[data-theme="light"] .nav-btn:hover { background: rgba(15,23,42,0.05) !important; }
+
+  /* Karten / Panels */
+  html[data-theme="light"] .card,
+  html[data-theme="light"] .doc-card,
+  html[data-theme="light"] .game-card,
+  html[data-theme="light"] .ach-card,
+  html[data-theme="light"] .daily-card,
+  html[data-theme="light"] .tracker-card {
+    background: rgba(255,255,255,0.92) !important;
+    border-color: rgba(15,23,42,0.10) !important;
+    box-shadow: 0 2px 16px rgba(15,23,42,0.06) !important;
+  }
+
+  /* Formularfelder */
+  html[data-theme="light"] input,
+  html[data-theme="light"] textarea,
+  html[data-theme="light"] select {
+    background: #ffffff !important;
+    color: #1f2433 !important;
+    border-color: rgba(15,23,42,0.18) !important;
+  }
+  html[data-theme="light"] input::placeholder,
+  html[data-theme="light"] textarea::placeholder { color: rgba(15,23,42,0.4) !important; }
+
+  /* Footer */
+  html[data-theme="light"] .site-footer { border-top-color: rgba(15,23,42,0.10); }
+  html[data-theme="light"] .site-footer-inner { color: rgba(15,23,42,0.5); }
+  html[data-theme="light"] .site-footer-inner a { color: rgba(15,23,42,0.7); }
+  html[data-theme="light"] .site-footer-inner a:hover { color: #11141f; }
+  html[data-theme="light"] .site-footer-inner .sep { color: rgba(15,23,42,0.25); }
+
+  /* Auth-UI (Navbar-Chip + Dropdown, kommen aus auth.js) */
+  html[data-theme="light"] .auth-chip {
+    background: rgba(15,23,42,0.05) !important;
+    border-color: rgba(15,23,42,0.12) !important;
+  }
+  html[data-theme="light"] .auth-chip:hover { background: rgba(15,23,42,0.09) !important; border-color: rgba(15,23,42,0.20) !important; }
+  html[data-theme="light"] .auth-chip-name { color: #14151f !important; }
+  html[data-theme="light"] .auth-chip-caret { color: rgba(15,23,42,0.5) !important; }
+  html[data-theme="light"] .auth-menu {
+    background: rgba(255,255,255,0.98) !important;
+    border-color: rgba(15,23,42,0.12) !important;
+    box-shadow: 0 16px 40px rgba(15,23,42,0.18) !important;
+  }
+  html[data-theme="light"] .auth-menu-header { border-bottom-color: rgba(15,23,42,0.08) !important; }
+  html[data-theme="light"] .auth-menu-name { color: #14151f !important; }
+  html[data-theme="light"] .auth-menu-email { color: rgba(15,23,42,0.5) !important; }
+  html[data-theme="light"] .auth-menu-item { color: #2a3142 !important; }
+  html[data-theme="light"] .auth-menu-item:hover { background: rgba(15,23,42,0.06) !important; color: #11141f !important; }
+
+  /* Toggle-Button im Light-Modus */
+  html[data-theme="light"] .theme-toggle {
+    background: rgba(15,23,42,0.05);
+    border-color: rgba(15,23,42,0.14);
+  }
+  html[data-theme="light"] .theme-toggle:hover { background: rgba(15,23,42,0.10); border-color: rgba(15,23,42,0.22); }
+
+  /* ── Patchnotes: helle "Paper-Phosphor"-Variante ──
+     Eigene Tokens werden umgesetzt; CRT-Effekte abgeschwächt, damit dunkle
+     Tinten-Schrift auf hellem Schirm lesbar bleibt. Greift nur dort, weil nur die
+     Patchnotes-Seite diese Tokens/Klassen verwendet. */
+  html[data-theme="light"] {
+    --screen: #efe7d4;
+    --amber:  #5a3e12;   /* dunkle Tinte statt leuchtendem Phosphor */
+    --amber-d:#7c5a26;
+    --amber-x:#b69a63;
+    --neu:  #1f7a45;
+    --verb: #8a6a13;
+    --fix:  #1c6f93;
+    --weg:  #b23a2c;
+    --glow: 0 0 1px rgba(90,62,18,0.25);
+  }
+  html[data-theme="light"] .crt {
+    background:
+      radial-gradient(ellipse 120% 130% at 50% 50%, rgba(120,140,90,0.12) 0%, transparent 55%),
+      #efe7d4 !important;
+  }
+  html[data-theme="light"] .scanlines {
+    background: repeating-linear-gradient(to bottom,
+      rgba(90,62,18,0.05) 0px, rgba(90,62,18,0.05) 1px,
+      transparent 1px, transparent 3px) !important;
+    mix-blend-mode: multiply !important;
+  }
+  html[data-theme="light"] .sweep { background: linear-gradient(to bottom, transparent, rgba(120,90,30,0.05), transparent) !important; }
+  html[data-theme="light"] .flicker { display: none !important; }
+  html[data-theme="light"] .vignette {
+    background: radial-gradient(ellipse 88% 82% at 50% 50%, transparent 62%, rgba(80,70,40,0.16) 100%) !important;
+    box-shadow: inset 0 0 120px rgba(120,110,70,0.16) !important;
+  }
+  html[data-theme="light"] .statusbar {
+    background: rgba(245,240,228,0.92) !important;
+    border-bottom-color: var(--amber-x) !important;
+  }
+  html[data-theme="light"] .sb-back:hover { color: var(--screen) !important; }
+  html[data-theme="light"] .masthead,
+  html[data-theme="light"] .boot-line,
+  html[data-theme="light"] .blurb { text-shadow: none !important; }
+  `;
+
+  const ICON = { dark: '☀️', light: '🌙' }; // zeigt das Ziel der Aktion
+  const LABEL = { dark: 'Heller Modus', light: 'Dunkler Modus' };
+
+  function currentTheme() {
+    return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+  }
+
+  function syncButton(btn) {
+    const t = currentTheme();
+    btn.textContent = ICON[t];
+    btn.setAttribute('aria-label', LABEL[t]);
+    btn.title = LABEL[t];
+  }
+
+  function setTheme(t) {
+    document.documentElement.dataset.theme = t;
+    try { localStorage.setItem('arcade_theme', t); } catch (_) {}
+    document.querySelectorAll('.theme-toggle').forEach(syncButton);
+  }
+
+  function build() {
+    if (!document.getElementById('arcade-theme-style')) {
+      const style = document.createElement('style');
+      style.id = 'arcade-theme-style';
+      style.textContent = css;
+      document.head.appendChild(style); // ans Ende → überschreibt Seiten-CSS
+    }
+    if (document.querySelector('.theme-toggle')) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'theme-toggle';
+    syncButton(btn);
+    btn.addEventListener('click', () => setTheme(currentTheme() === 'light' ? 'dark' : 'light'));
+
+    // Bevorzugt direkt vor dem Auth-Slot platzieren, sonst in den Navbar-Container.
+    const slot = document.querySelector('[data-auth-slot]');
+    if (slot && slot.parentNode) {
+      slot.parentNode.insertBefore(btn, slot);
+    } else {
+      const host = document.querySelector('.nav-right, .sb-right, .navbar, .statusbar');
+      if (host) host.appendChild(btn);
+    }
   }
 
   if (document.readyState === 'loading') {
