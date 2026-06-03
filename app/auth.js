@@ -204,17 +204,30 @@
 
   /* Variablen-Remap (greift auf allen Seiten, die diese Variablen nutzen) */
   html[data-theme="light"] {
-    --bg: #eef1f7;
-    --card: rgba(255,255,255,0.90);
-    --border: rgba(15,23,42,0.12);
+    --bg: #ece8df;                  /* warmes, weiches Papier statt kühlem Blau-Weiß */
+    --card: rgba(250,248,243,0.94);
+    --border: rgba(55,48,38,0.13);
+    /* Schrift-Töne: warmes Anthrazit statt hartem Schwarz → weniger Kontrast-Härte */
+    --lt-ink:   #2a2722;            /* Überschriften / starke Werte */
+    --lt-text:  #3b382f;            /* Fließtext */
+    --lt-muted: #6c6657;            /* sekundär / Labels */
+    --lt-faint: #908a7a;            /* tertiär */
     color-scheme: light;
   }
 
-  /* Basis: heller Hintergrund, dunkle Schrift als Default */
-  html[data-theme="light"] body { background: #eef1f7 !important; color: #1f2433 !important; }
-  /* Dekorative Orbs / Grid-Overlays etwas zähmen */
+  /* Basis: weicher, warmer Hintergrund mit dezenter Tiefe; dunkle Schrift als Default */
+  html[data-theme="light"] body {
+    background:
+      radial-gradient(ellipse 90% 70% at 50% -10%, rgba(233,69,96,0.05), transparent 60%),
+      #ece8df !important;
+    color: var(--lt-text) !important;
+  }
+  /* Dekorative Orbs / Grid-Overlays stark zähmen, damit keine dunklen Schlieren bleiben */
   html[data-theme="light"] body::before,
-  html[data-theme="light"] body::after { opacity: 0.45; }
+  html[data-theme="light"] body::after { opacity: 0.28; }
+  html[data-theme="light"] .orb-1,
+  html[data-theme="light"] .orb-2,
+  html[data-theme="light"] .orb-3 { opacity: 0.16 !important; }
 
   /* Lesbare dunkle Schrift für generische Textelemente (Akzent-Buttons/Links bleiben unberührt) */
   html[data-theme="light"] p,
@@ -224,13 +237,13 @@
   html[data-theme="light"] dd,
   html[data-theme="light"] td,
   html[data-theme="light"] th,
-  html[data-theme="light"] blockquote { color: #2a3142 !important; }
+  html[data-theme="light"] blockquote { color: var(--lt-text) !important; }
   html[data-theme="light"] h1,
   html[data-theme="light"] h2,
   html[data-theme="light"] h3,
   html[data-theme="light"] h4,
   html[data-theme="light"] h5,
-  html[data-theme="light"] h6 { color: #11141f !important; }
+  html[data-theme="light"] h6 { color: var(--lt-ink) !important; }
 
   /* Navbar / Statusbar */
   html[data-theme="light"] .navbar {
@@ -238,70 +251,172 @@
     border-bottom-color: rgba(15,23,42,0.10) !important;
   }
   html[data-theme="light"] .nav-logo,
-  html[data-theme="light"] .nav-title { color: #14151f !important; }
+  html[data-theme="light"] .nav-title,
+  html[data-theme="light"] .nav-game-title { color: var(--lt-ink) !important; }
   html[data-theme="light"] .nav-back,
   html[data-theme="light"] .nav-btn {
-    color: #2a3142 !important;
-    border-color: rgba(15,23,42,0.16) !important;
+    color: var(--lt-text) !important;
+    border-color: var(--border) !important;
   }
   html[data-theme="light"] .nav-back:hover,
-  html[data-theme="light"] .nav-btn:hover { background: rgba(15,23,42,0.05) !important; }
+  html[data-theme="light"] .nav-btn:hover { background: rgba(55,48,38,0.06) !important; }
 
-  /* Karten / Panels */
+  /* Karten / Panels — auch die hart als Dunkel-Navy codierten Flächen der
+     Hub-/Profil-/Chat-Seiten (.gate, .sidebar, .main, .avatar-card …) werden
+     hier auf warmes Weiß gehoben, damit keine dunklen Inseln auf hellem Grund
+     stehen bleiben. */
   html[data-theme="light"] .card,
   html[data-theme="light"] .doc-card,
   html[data-theme="light"] .game-card,
   html[data-theme="light"] .ach-card,
   html[data-theme="light"] .daily-card,
-  html[data-theme="light"] .tracker-card {
-    background: rgba(255,255,255,0.92) !important;
-    border-color: rgba(15,23,42,0.10) !important;
-    box-shadow: 0 2px 16px rgba(15,23,42,0.06) !important;
+  html[data-theme="light"] .tracker-card,
+  html[data-theme="light"] .stat-card,
+  html[data-theme="light"] .gate,
+  html[data-theme="light"] .sidebar,
+  html[data-theme="light"] .main,
+  html[data-theme="light"] .avatar-card,
+  html[data-theme="light"] .profile-card,
+  html[data-theme="light"] .state-box {
+    background: rgba(250,248,243,0.94) !important;
+    border-color: var(--border) !important;
+    box-shadow: 0 2px 16px rgba(60,50,35,0.07) !important;
   }
+  /* Index-Hero-Karte: Grund aufhellen, roten Akzent-Rand erhalten */
+  html[data-theme="light"] .hero-card {
+    background: rgba(250,248,243,0.96) !important;
+    box-shadow: 0 12px 44px rgba(60,50,35,0.12) !important;
+  }
+  /* Innere Chat-Leisten flach halten (kein zusätzlicher Schatten im Panel) */
+  html[data-theme="light"] .thread-head,
+  html[data-theme="light"] .composer {
+    background: rgba(55,48,38,0.04) !important;
+    border-color: var(--border) !important;
+    box-shadow: none !important;
+  }
+  /* Trennlinien in Listen/Leaderboards sichtbar machen */
+  html[data-theme="light"] .lb-row { border-bottom-color: var(--border) !important; }
 
   /* Formularfelder */
   html[data-theme="light"] input,
   html[data-theme="light"] textarea,
   html[data-theme="light"] select {
-    background: #ffffff !important;
-    color: #1f2433 !important;
-    border-color: rgba(15,23,42,0.18) !important;
+    background: #fffdf8 !important;
+    color: var(--lt-text) !important;
+    border-color: rgba(55,48,38,0.20) !important;
   }
   html[data-theme="light"] input::placeholder,
-  html[data-theme="light"] textarea::placeholder { color: rgba(15,23,42,0.4) !important; }
+  html[data-theme="light"] textarea::placeholder { color: var(--lt-faint) !important; }
 
   /* Footer */
-  html[data-theme="light"] .site-footer { border-top-color: rgba(15,23,42,0.10); }
-  html[data-theme="light"] .site-footer-inner { color: rgba(15,23,42,0.5); }
-  html[data-theme="light"] .site-footer-inner a { color: rgba(15,23,42,0.7); }
-  html[data-theme="light"] .site-footer-inner a:hover { color: #11141f; }
-  html[data-theme="light"] .site-footer-inner .sep { color: rgba(15,23,42,0.25); }
+  html[data-theme="light"] .site-footer { border-top-color: var(--border); }
+  html[data-theme="light"] .site-footer-inner { color: var(--lt-muted); }
+  html[data-theme="light"] .site-footer-inner a { color: var(--lt-text); }
+  html[data-theme="light"] .site-footer-inner a:hover { color: var(--lt-ink); }
+  html[data-theme="light"] .site-footer-inner .sep { color: var(--lt-faint); }
 
   /* Auth-UI (Navbar-Chip + Dropdown, kommen aus auth.js) */
   html[data-theme="light"] .auth-chip {
-    background: rgba(15,23,42,0.05) !important;
-    border-color: rgba(15,23,42,0.12) !important;
+    background: rgba(55,48,38,0.05) !important;
+    border-color: var(--border) !important;
   }
-  html[data-theme="light"] .auth-chip:hover { background: rgba(15,23,42,0.09) !important; border-color: rgba(15,23,42,0.20) !important; }
-  html[data-theme="light"] .auth-chip-name { color: #14151f !important; }
-  html[data-theme="light"] .auth-chip-caret { color: rgba(15,23,42,0.5) !important; }
+  html[data-theme="light"] .auth-chip:hover { background: rgba(55,48,38,0.09) !important; border-color: rgba(55,48,38,0.20) !important; }
+  html[data-theme="light"] .auth-chip-name { color: var(--lt-ink) !important; }
+  html[data-theme="light"] .auth-chip-caret { color: var(--lt-muted) !important; }
   html[data-theme="light"] .auth-menu {
-    background: rgba(255,255,255,0.98) !important;
-    border-color: rgba(15,23,42,0.12) !important;
-    box-shadow: 0 16px 40px rgba(15,23,42,0.18) !important;
+    background: rgba(252,250,245,0.98) !important;
+    border-color: var(--border) !important;
+    box-shadow: 0 16px 40px rgba(60,50,35,0.18) !important;
   }
-  html[data-theme="light"] .auth-menu-header { border-bottom-color: rgba(15,23,42,0.08) !important; }
-  html[data-theme="light"] .auth-menu-name { color: #14151f !important; }
-  html[data-theme="light"] .auth-menu-email { color: rgba(15,23,42,0.5) !important; }
-  html[data-theme="light"] .auth-menu-item { color: #2a3142 !important; }
-  html[data-theme="light"] .auth-menu-item:hover { background: rgba(15,23,42,0.06) !important; color: #11141f !important; }
+  html[data-theme="light"] .auth-menu-header { border-bottom-color: var(--border) !important; }
+  html[data-theme="light"] .auth-menu-name { color: var(--lt-ink) !important; }
+  html[data-theme="light"] .auth-menu-email { color: var(--lt-muted) !important; }
+  html[data-theme="light"] .auth-menu-item { color: var(--lt-text) !important; }
+  html[data-theme="light"] .auth-menu-item:hover { background: rgba(55,48,38,0.06) !important; color: var(--lt-ink) !important; }
 
   /* Toggle-Button im Light-Modus */
   html[data-theme="light"] .theme-toggle {
-    background: rgba(15,23,42,0.05);
-    border-color: rgba(15,23,42,0.14);
+    background: rgba(55,48,38,0.05);
+    border-color: rgba(55,48,38,0.14);
   }
-  html[data-theme="light"] .theme-toggle:hover { background: rgba(15,23,42,0.10); border-color: rgba(15,23,42,0.22); }
+  html[data-theme="light"] .theme-toggle:hover { background: rgba(55,48,38,0.10); border-color: rgba(55,48,38,0.22); }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     DURCHGÄNGIGE LESBARKEIT
+     Die Einzelseiten codieren ihre Schrift hart als Weiß (#fff / rgba(255,…)).
+     Auf hellem Grund würde das verschwinden — darum zentral umfärben:
+     starke Titel/Werte → Tinte, sekundäre Labels → gedämpftes Warmgrau.
+     Akzent-Buttons (roter Hintergrund) behalten ihr Weiß und sind hier
+     bewusst NICHT gelistet.
+     ════════════════════════════════════════════════════════════════════════ */
+  html[data-theme="light"] :is(
+    .stat-val, .val, .gauge-value,
+    .race-name, .race-meta-val, .cd-num,
+    .live-pos, .live-name, .name, .pts,
+    .conv-name, .thread-name,
+    .lb-name, .lb-pos, .lb-pts, .lb-ttl, .opp-name,
+    .balance-val, .bet-race, .rule-val,
+    .ach-name, .card-title, .hero-card-title,
+    .p-name, .avatar-name, .suggestion-main, .daily-hi,
+    .section-label, .progress-title, .section-title
+  ) { color: var(--lt-ink) !important; }
+
+  html[data-theme="light"] :is(
+    .stat-lbl, .stat-sub, .stat-tag, .lbl, .gauge-unit,
+    .race-circuit, .race-meta-lbl, .cd-lbl,
+    .live-team, .live-gap, .code, .wins,
+    .conv-time, .conv-preview, .thread-sub, .bubble-time,
+    .lb-rank, .lb-plays,
+    .card-sub, .card-desc, .card-tag, .ach-desc, .hero-card-desc,
+    .avatar-email, .avatar-since, .p-since,
+    .rule-tag, .rule-desc, .section-count, .user-label, .refresh-info,
+    .note, .dot, .unit, .daily-date, .daily-lo, .dry,
+    .fav-empty, .empty, .frow-meta, .public-race, .todo,
+    .suggestion-sub, .muted, .sub, .hint, .meta, .desc
+  ) { color: var(--lt-muted) !important; }
+
+  /* Tabs / Segment-Schalter: aktiver Zustand als Tinte statt Weiß */
+  html[data-theme="light"] .tab,
+  html[data-theme="light"] .lb-tab { color: var(--lt-muted) !important; }
+  html[data-theme="light"] .tab.active,
+  html[data-theme="light"] .lb-tab.active { color: var(--lt-ink) !important; }
+
+  /* Chat-Blasen: eingehende (heller Grund) lesbar, eigene bleiben rot/weiß */
+  html[data-theme="light"] .bubble.them {
+    background: #f1eee6 !important;
+    border-color: var(--border) !important;
+    color: var(--lt-text) !important;
+  }
+
+  /* Weather: „Aktuelle Bedingungen"-Karte aufhellen + große Werte lesbar machen */
+  html[data-theme="light"] .current-card {
+    background:
+      linear-gradient(135deg, rgba(56,189,248,0.10), rgba(99,102,241,0.06)),
+      rgba(250,248,243,0.92) !important;
+    border-color: var(--border) !important;
+  }
+  html[data-theme="light"] :is(.current-title, .current-desc, .current-temp .big, .current-time strong) { color: var(--lt-ink) !important; }
+  html[data-theme="light"] :is(.current-country, .current-feels, .current-temp .unit) { color: var(--lt-muted) !important; }
+
+  /* Subtile „Geist"-Buttons / neutrale Flächen: heller Grund + lesbare Schrift */
+  html[data-theme="light"] .ghost,
+  html[data-theme="light"] .neutral,
+  html[data-theme="light"] .mini-btn.ghost,
+  html[data-theme="light"] .friend-btn.ghost {
+    background: rgba(55,48,38,0.05) !important;
+    border-color: var(--border) !important;
+    color: var(--lt-text) !important;
+  }
+
+  /* Rote Akzent-Glows abmildern → weicher, weniger „stechend" auf hellem Grund */
+  html[data-theme="light"] .nav-cta,
+  html[data-theme="light"] .auth-login-btn,
+  html[data-theme="light"] .auth-submit {
+    box-shadow: 0 6px 18px rgba(225,55,75,0.20) !important;
+  }
+
+  /* Warm getönte Auswahl */
+  html[data-theme="light"] ::selection { background: rgba(233,69,96,0.20); color: #2a2722; }
 
   /* ── Patchnotes: helle "Paper-Phosphor"-Variante ──
      Eigene Tokens werden umgesetzt; CRT-Effekte abgeschwächt, damit dunkle
