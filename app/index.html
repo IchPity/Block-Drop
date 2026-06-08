@@ -364,6 +364,7 @@
     .thumb-jedno        { background: linear-gradient(145deg, #1a0408 0%, #3d0d12 55%, #1a0408 100%); }
     .thumb-speedtest    { background: linear-gradient(145deg, #00080d 0%, #06283a 55%, #00080d 100%); }
     .thumb-warships     { background: linear-gradient(145deg, #02101c 0%, #0a3553 55%, #02101c 100%); }
+    .thumb-rechner      { background: linear-gradient(145deg, #02110f 0%, #073d36 55%, #02110f 100%); }
 
     .warships-card:hover {
       border-color: rgba(56,189,248,0.5) !important;
@@ -411,6 +412,20 @@
     }
     .speedtest-card .card-tag { color: #22d3ee !important; }
     .speedtest-card .play-btn { background: linear-gradient(135deg, #22d3ee, #3b82f6); color: #04141a; box-shadow: 0 0 18px rgba(34,211,238,0.3); }
+
+    .rechner-card:hover {
+      border-color: rgba(45,212,191,0.5) !important;
+      box-shadow:
+        0 0 0 1px rgba(45,212,191,0.08),
+        0 32px 72px rgba(0,0,0,0.8),
+        0 0 60px rgba(45,212,191,0.16) !important;
+    }
+    .rechner-card .card-tag { color: #2dd4bf !important; }
+    .rechner-card .play-btn { background: linear-gradient(135deg, #2dd4bf, #0f766e); color: #042b26; box-shadow: 0 0 18px rgba(45,212,191,0.3); }
+    .calc-art { display: grid; grid-template-columns: repeat(3, 14px); grid-auto-rows: 14px; gap: 6px; }
+    .calc-art .scr { grid-column: 1 / -1; height: 16px; border-radius: 4px; margin-bottom: 2px; background: linear-gradient(90deg, rgba(45,212,191,0.55), rgba(45,212,191,0.12)); }
+    .calc-art .k { width: 14px; height: 14px; border-radius: 4px; background: rgba(255,255,255,0.16); }
+    .calc-art .k.op { background: rgba(45,212,191,0.6); }
 
     /* Speedtest gauge art */
     .speed-art { position: relative; width: 90px; height: 50px; opacity: 0.95; }
@@ -842,7 +857,7 @@
   <div class="section-header">
     <div class="section-title">Spielen</div>
     <div class="section-divider"></div>
-    <div class="section-count">10 verfügbar</div>
+    <div class="section-count">11 verfügbar</div>
   </div>
 
   <div class="games-grid">
@@ -1041,6 +1056,25 @@
         <div class="card-tag">Live · Tool</div>
         <div class="card-title">Speedtest</div>
         <div class="card-desc">Miss Download, Upload, Ping &amp; Jitter deiner Verbindung — direkt im Browser.</div>
+        <div class="card-footer">
+          <div class="play-btn">Öffnen <span class="btn-arrow">→</span></div>
+        </div>
+      </div>
+    </a>
+
+    <a class="game-card available rechner-card" href="rechner/">
+      <div class="card-thumb thumb-rechner">
+        <div class="calc-art">
+          <div class="scr"></div>
+          <div class="k"></div><div class="k"></div><div class="k op"></div>
+          <div class="k"></div><div class="k"></div><div class="k op"></div>
+          <div class="k"></div><div class="k"></div><div class="k op"></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">Standard · Wissenschaft · Einheiten · Bits</div>
+        <div class="card-title">Rechner</div>
+        <div class="card-desc">Umfassender Rechner: Grundrechnen, wissenschaftliche Funktionen, Einheiten-Umrechner und Programmierer-Modus (HEX/BIN/Bitweise).</div>
         <div class="card-footer">
           <div class="play-btn">Öffnen <span class="btn-arrow">→</span></div>
         </div>
