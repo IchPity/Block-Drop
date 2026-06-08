@@ -66,7 +66,8 @@ function celebrateTetris() {
   ];
   const container = document.createElement('div');
   container.className = 'tetris-confetti';
-  const N = reduceMotion ? 40 : 120;
+  // Weniger Teilchen = kein Paint-Spike beim Einblenden (sonst ruckelt's kurz).
+  const N = reduceMotion ? 28 : 80;
   for (let i = 0; i < N; i++) {
     const piece = document.createElement('i');
     const color = COLORS_CONFETTI[Math.floor(Math.random() * COLORS_CONFETTI.length)];

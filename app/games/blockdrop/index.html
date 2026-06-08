@@ -52,11 +52,14 @@
       position: fixed; inset: 0; z-index: 50; pointer-events: none; opacity: 0.5;
       background: repeating-linear-gradient(0deg, rgba(0,0,0,0.32) 0 1px, transparent 1px 3px);
       mix-blend-mode: multiply;
+      /* Stabile GPU-Ebene: mix-blend-mode flackert sonst beim Compositing-Wechsel schwarz. */
+      transform: translateZ(0);
     }
     .crt-vignette {
       position: fixed; inset: 0; z-index: 51; pointer-events: none;
       background: radial-gradient(ellipse 95% 88% at 50% 50%, transparent 55%, rgba(2,0,8,0.85) 100%);
       box-shadow: inset 0 0 120px rgba(0,0,0,0.6);
+      transform: translateZ(0);
     }
     @keyframes flicker { 0%,97%,100% { opacity:0.5; } 98% { opacity:0.4; } 99% { opacity:0.55; } }
     @media (prefers-reduced-motion: no-preference) { .scanlines { animation: flicker 6s steps(60) infinite; } }
@@ -70,6 +73,9 @@
       border-bottom: 2px solid var(--magenta);
       box-shadow: 0 0 22px rgba(255,43,214,0.35), inset 0 -1px 0 rgba(0,229,255,0.25);
       backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      /* Eigene, stabile GPU-Ebene: verhindert das Neu-Rastern (Schwarz-Blitz),
+         wenn das TETRIS-Konfetti oben drüber erscheint. */
+      transform: translateZ(0); will-change: transform;
     }
     .nav-left { display: flex; align-items: center; gap: 14px; }
     .nav-back {
@@ -240,13 +246,17 @@
     @keyframes achHintFade { from { opacity:0; } to { opacity:1; } }
 
     /* ── Tetris-Effekt (4 Zeilen) ───────────────────────── */
-    .tetris-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 9998; overflow: hidden; }
+    /* Eigene Compositing-Ebene + isoliert: das Einblenden zwingt die anderen
+       fixed-Ebenen (Navbar-backdrop-filter) nicht zum Neu-Rastern → kein Schwarz-Blitz. */
+    .tetris-confetti {
+      position: fixed; inset: 0; pointer-events: none; z-index: 9998; overflow: hidden;
+      isolation: isolate; transform: translateZ(0); contain: layout style paint;
+    }
     .tetris-confetti i {
       position: absolute; top: -24px; display: block; opacity: 0;
       animation-name: tetrisConfettiFall;
       animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
       animation-fill-mode: forwards;
-      box-shadow: 0 0 6px rgba(255,255,255,0.15);
     }
     @keyframes tetrisConfettiFall {
       0%   { opacity: 0; transform: translate(0, -10vh) rotate(0deg); }
@@ -261,6 +271,7 @@
       -webkit-text-fill-color: transparent; color: transparent;
       filter: drop-shadow(0 0 24px rgba(240,192,0,0.55)) drop-shadow(0 0 48px rgba(233,69,96,0.4));
       transform: translate(-50%, -50%) scale(0.3); opacity: 0;
+      will-change: transform, opacity;
       animation: tetrisBannerPop 1.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
     @keyframes tetrisBannerPop {
