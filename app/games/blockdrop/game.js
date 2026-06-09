@@ -105,6 +105,22 @@ function celebrateTetris() {
   }
 }
 
+// ── Level-Up-Feier ──────────────────────────────────────────────────────────
+function celebrateLevelUp(level) {
+  const area = document.getElementById('game-area');
+  if (area) {
+    area.classList.remove('level-pulse');
+    void area.offsetWidth;
+    area.classList.add('level-pulse');
+    setTimeout(() => area.classList.remove('level-pulse'), 700);
+  }
+  const banner = document.createElement('div');
+  banner.className = 'levelup-banner';
+  banner.innerHTML = `<span>LEVEL</span><b>${level}</b>`;
+  (area || document.body).appendChild(banner);
+  setTimeout(() => banner.remove(), 1300);
+}
+
 // ── Constants ──────────────────────────────────────────────────────────────
 const COLS = 10;
 const ROWS = 20;
@@ -179,6 +195,99 @@ function rotate(matrix, dir = 1) {
 function deepCopy(m) { return m.map(r => [...r]); }
 
 function easeOut(t) { return 1 - (1 - t) * (1 - t); }
+function easeOutBack(t) { const s = 1.70158; return 1 + (s + 1) * Math.pow(t - 1, 3) + s * Math.pow(t - 1, 2); }
+
+// ── Farb-Helfer ──────────────────────────────────────────────────────────────
+function hexToRgb(hex) {
+  hex = hex.replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  const n = parseInt(hex, 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+const _shadeCache = new Map();
+function shade(hex, t) {
+  // t > 0 = aufhellen, t < 0 = abdunkeln
+  const key = hex + '|' + t;
+  let v = _shadeCache.get(key);
+  if (v) return v;
+  const c = hexToRgb(hex);
+  const tgt = t >= 0 ? 255 : 0;
+  const a = Math.abs(t);
+  const r = Math.round(c.r + (tgt - c.r) * a);
+  const g = Math.round(c.g + (tgt - c.g) * a);
+  const b = Math.round(c.b + (tgt - c.b) * a);
+  v = `rgb(${r},${g},${b})`;
+  _shadeCache.set(key, v);
+  return v;
+}
+
+function roundRectPath(ctx, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// ── Block-Sprites (einmal rendern, dann nur noch blitten) ────────────────────
+// Glänzende, abgeschrägte Neon-Steine mit Verlauf + Glanzlicht. Pro Farbe/Größe
+// nur einmal gezeichnet und gecacht → flüssig, auch bei vollem Brett.
+const _blockSprites = new Map();
+function renderBlockTo(ctx, bs, color) {
+  const pad = Math.max(1, bs * 0.05);
+  const x = pad, y = pad, s = bs - pad * 2;
+  const r = Math.max(2, bs * 0.18);
+
+  // Körper-Verlauf
+  const g = ctx.createLinearGradient(x, y, x, y + s);
+  g.addColorStop(0,    shade(color, 0.42));
+  g.addColorStop(0.5,  color);
+  g.addColorStop(1,    shade(color, -0.36));
+  roundRectPath(ctx, x, y, s, s, r);
+  ctx.fillStyle = g;
+  ctx.fill();
+
+  // Glanzlicht oben
+  const sheen = ctx.createLinearGradient(x, y, x, y + s * 0.55);
+  sheen.addColorStop(0, 'rgba(255,255,255,0.55)');
+  sheen.addColorStop(1, 'rgba(255,255,255,0)');
+  roundRectPath(ctx, x + s * 0.13, y + s * 0.1, s * 0.74, s * 0.42, r * 0.55);
+  ctx.fillStyle = sheen;
+  ctx.fill();
+
+  // heller Neon-Rand
+  roundRectPath(ctx, x + 0.8, y + 0.8, s - 1.6, s - 1.6, r);
+  ctx.strokeStyle = shade(color, 0.55);
+  ctx.lineWidth = Math.max(1, bs * 0.045);
+  ctx.stroke();
+
+  // dunkle Innenkante unten/rechts für Tiefe
+  ctx.save();
+  roundRectPath(ctx, x, y, s, s, r);
+  ctx.clip();
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+  ctx.lineWidth = Math.max(1.5, bs * 0.07);
+  ctx.beginPath();
+  ctx.moveTo(x, y + s);
+  ctx.lineTo(x + s, y + s);
+  ctx.lineTo(x + s, y);
+  ctx.stroke();
+  ctx.restore();
+}
+function getBlockSprite(color, bs) {
+  bs = Math.round(bs);
+  const key = color + '|' + bs;
+  let cv = _blockSprites.get(key);
+  if (cv) return cv;
+  cv = document.createElement('canvas');
+  cv.width = bs; cv.height = bs;
+  renderBlockTo(cv.getContext('2d'), bs, color);
+  _blockSprites.set(key, cv);
+  return cv;
+}
 
 // ── Bag randomizer ─────────────────────────────────────────────────────────
 class Bag {
@@ -296,6 +405,12 @@ class BlockDrop {
     this.lastDrop  = 0;
     this.clearAnim = null;
     this.shake     = null;
+    // Effekt-Systeme
+    this.particles   = [];   // freie Funken/Staub
+    this.flashes     = [];   // kurzes Aufblitzen abgelegter Steine
+    this.dropTrail   = null; // Schweif beim Hard Drop
+    this.spawn       = null; // Einblend-Animation des neuen Steins
+    this.lastFrameTs = 0;
     this.state     = 'playing';
 
     this.queue = [];
@@ -321,6 +436,7 @@ class BlockDrop {
       rot: 0,
     };
     this.holdUsed = false;
+    this.spawn = { start: performance.now(), dur: 130 };
     if (!this.isValid(this.current.shape, this.current.x, this.current.y)) {
       this.gameOver();
     }
@@ -331,8 +447,12 @@ class BlockDrop {
   }
 
   loop(ts = 0) {
+    const dt = this.lastFrameTs ? Math.min(50, ts - this.lastFrameTs) : 16;
+    this.lastFrameTs = ts;
+
     if (this.state === 'clearing') {
       this.updateClearAnim(ts);
+      this.updateFx(dt);
       this.draw();
       this.animFrame = requestAnimationFrame(t => this.loop(t));
       return;
@@ -343,8 +463,24 @@ class BlockDrop {
       this.softDrop(false);
       this.lastDrop = ts;
     }
+    this.updateFx(dt);
     this.draw();
     this.animFrame = requestAnimationFrame(t => this.loop(t));
+  }
+
+  // ── Effekte aktualisieren ───────────────────────────────────────────────────
+  updateFx(dt) {
+    if (this.particles.length) {
+      const grav = 0.00055;
+      for (const p of this.particles) {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += grav * dt;
+        p.life -= dt;
+        p.alpha = Math.max(0, p.life / p.maxLife);
+      }
+      this.particles = this.particles.filter(p => p.life > 0);
+    }
   }
 
   // ── Movement ──────────────────────────────────────────────────────────────
@@ -373,12 +509,70 @@ class BlockDrop {
   }
 
   hardDrop() {
+    const startY = this.current.y;
     let dropped = 0;
     while (this.tryMove(0, 1)) dropped++;
     this.score += dropped * 2;
     this.hardDropCount++;
     if (this.hardDropCount === 25) tryUnlock('bd_harddrop');
+
+    if (dropped > 0) {
+      this.addDropTrail(startY, this.current.y);
+      this.spawnLandingDust(this.current, Math.min(1, 0.4 + dropped * 0.06));
+      if (dropped >= 3) {
+        this.shake = {
+          intensity: Math.min(7, 2 + dropped * 0.35),
+          start: performance.now(), duration: 220,
+        };
+      }
+    }
     this.lock();
+  }
+
+  // ── Hard-Drop-Schweif ───────────────────────────────────────────────────────
+  addDropTrail(fromY, toY) {
+    const shape = this.current.shape;
+    const cols = [];
+    for (let c = 0; c < shape[0].length; c++) {
+      let top = -1;
+      for (let r = 0; r < shape.length; r++) if (shape[r][c]) { top = r; break; }
+      if (top >= 0) cols.push({ x: this.current.x + c, top });
+    }
+    this.dropTrail = {
+      cols, fromY, toY, color: this.current.color,
+      start: performance.now(), dur: 230,
+    };
+  }
+
+  // ── Aufprall-Staub am unteren Rand des gelandeten Steins ─────────────────────
+  spawnLandingDust(piece, intensity) {
+    const shape = piece.shape;
+    const bottomByCol = {};
+    for (let r = 0; r < shape.length; r++)
+      for (let c = 0; c < shape[r].length; c++)
+        if (shape[r][c]) bottomByCol[c] = Math.max(bottomByCol[c] ?? -1, r);
+
+    for (const c in bottomByCol) {
+      const r = bottomByCol[c];
+      const bx = (piece.x + (+c) + 0.5) * BLOCK;
+      const by = (piece.y + r + 1) * BLOCK;
+      if (by < 0) continue;
+      const n = 2 + Math.floor(Math.random() * 3 * intensity);
+      for (let i = 0; i < n; i++) {
+        const ang = -Math.PI / 2 + (Math.random() - 0.5) * 2.2;
+        const sp  = (0.04 + Math.random() * 0.12) * (0.6 + intensity);
+        const life = 220 + Math.random() * 260;
+        this.particles.push({
+          x: bx + (Math.random() - 0.5) * BLOCK * 0.7,
+          y: by - 2,
+          vx: Math.cos(ang) * sp,
+          vy: Math.sin(ang) * sp,
+          life, maxLife: life, alpha: 1,
+          size: 2 + Math.random() * 3,
+          color: Math.random() < 0.5 ? piece.color : '#ffffff',
+        });
+      }
+    }
   }
 
   rotate(dir = 1) {
@@ -425,13 +619,17 @@ class BlockDrop {
   lock() {
     this.clearLockDelay();
     const p = this.current;
+    const flashCells = [];
     for (let r = 0; r < p.shape.length; r++)
       for (let c = 0; c < p.shape[r].length; c++)
         if (p.shape[r][c]) {
           const by = p.y + r;
           if (by < 0) { this.gameOver(); return; }
           this.board[by][p.x + c] = p.color;
+          flashCells.push({ x: p.x + c, y: by });
         }
+    this.flashes.push({ cells: flashCells, start: performance.now(), dur: 160 });
+    this.spawn = null;
 
     const clearedRows = this.findClearedRows();
     if (clearedRows.length > 0) {
@@ -543,7 +741,9 @@ class BlockDrop {
       const comboBonus = this.combo > 0 ? 50 * this.combo * this.level : 0;
       this.score += base + comboBonus;
       this.lines += lines;
+      const prevLevel = this.level;
       this.level = Math.floor(this.lines / 10) + 1;
+      if (this.level > prevLevel) celebrateLevelUp(this.level);
 
       if (lines === 4)                               { tryUnlock('bd_tetris'); celebrateTetris(); }
       if (this.combo >= 4)                             tryUnlock('bd_combo5');
@@ -638,11 +838,28 @@ class BlockDrop {
         if (this.board[r][c]) this.drawCell(ctx, c, r, this.board[r][c], BLOCK);
     }
 
+    if (!isClearing) this.drawDropTrail(ctx);
+    if (!isClearing) this.drawFlashes(ctx);
+
     if (this.current && !isClearing) {
       const gy = this.ghostY();
-      this.drawPiece(ctx, this.current.shape, this.current.x, gy, COLORS.ghost, BLOCK);
-      this.drawPiece(ctx, this.current.shape, this.current.x, this.current.y, this.current.color, BLOCK);
+      if (gy !== this.current.y)
+        this.drawGhostPiece(ctx, this.current.shape, this.current.x, gy, this.current.color, BLOCK);
+
+      // Einblenden des frisch gespawnten Steins
+      let alpha = 1;
+      if (this.spawn) {
+        const t = (performance.now() - this.spawn.start) / this.spawn.dur;
+        if (t >= 1) this.spawn = null;
+        else alpha = 0.35 + 0.65 * easeOut(t);
+      }
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      this.drawPiece(ctx, this.current.shape, this.current.x, this.current.y, this.current.color, BLOCK, true);
+      ctx.restore();
     }
+
+    this.drawParticles(ctx);
 
     if (isClearing) this.drawClearAnim(ctx);
 
@@ -718,23 +935,97 @@ class BlockDrop {
     }
   }
 
-  drawPiece(ctx, shape, ox, oy, color, bs) {
-    for (let r = 0; r < shape.length; r++)
-      for (let c = 0; c < shape[r].length; c++)
-        if (shape[r][c]) this.drawCell(ctx, ox + c, oy + r, color, bs);
+  drawDropTrail(ctx) {
+    const tr = this.dropTrail;
+    if (!tr) return;
+    const t = (performance.now() - tr.start) / tr.dur;
+    if (t >= 1) { this.dropTrail = null; return; }
+    const fade = 1 - t;
+    const c = hexToRgb(tr.color);
+    for (const col of tr.cols) {
+      const x = col.x * BLOCK;
+      const y1 = (tr.fromY + col.top) * BLOCK;
+      const y2 = (tr.toY + col.top) * BLOCK;
+      if (y2 <= y1) continue;
+      const grad = ctx.createLinearGradient(0, y1, 0, y2 + BLOCK);
+      grad.addColorStop(0, `rgba(${c.r},${c.g},${c.b},0)`);
+      grad.addColorStop(1, `rgba(${c.r},${c.g},${c.b},${0.5 * fade})`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(x + BLOCK * 0.2, Math.max(0, y1), BLOCK * 0.6, y2 - y1 + BLOCK);
+    }
   }
 
-  drawCell(ctx, cx, cy, color, bs) {
+  drawFlashes(ctx) {
+    if (!this.flashes.length) return;
+    const now = performance.now();
+    const r = Math.max(2, BLOCK * 0.18);
+    const pad = Math.max(1, BLOCK * 0.05);
+    for (const f of this.flashes) {
+      const t = (now - f.start) / f.dur;
+      if (t >= 1) continue;
+      const a = (1 - t) * 0.85;
+      ctx.fillStyle = `rgba(255,255,255,${a})`;
+      for (const cell of f.cells) {
+        if (cell.y < 0) continue;
+        roundRectPath(ctx, cell.x * BLOCK + pad, cell.y * BLOCK + pad, BLOCK - pad * 2, BLOCK - pad * 2, r);
+        ctx.fill();
+      }
+    }
+    this.flashes = this.flashes.filter(f => (now - f.start) / f.dur < 1);
+  }
+
+  drawParticles(ctx) {
+    for (const p of this.particles) {
+      if (p.alpha <= 0) continue;
+      ctx.globalAlpha = p.alpha;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  drawPiece(ctx, shape, ox, oy, color, bs, glow = false) {
+    for (let r = 0; r < shape.length; r++)
+      for (let c = 0; c < shape[r].length; c++)
+        if (shape[r][c]) this.drawCell(ctx, ox + c, oy + r, color, bs, glow);
+  }
+
+  drawCell(ctx, cx, cy, color, bs, glow = false) {
     if (cy < 0) return;
+    const sprite = getBlockSprite(color, bs);
     const x = cx * bs, y = cy * bs;
-    ctx.fillStyle = color;
-    ctx.fillRect(x + 1, y + 1, bs - 2, bs - 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.25)';
-    ctx.fillRect(x + 1, y + 1, bs - 2, 3);
-    ctx.fillRect(x + 1, y + 1, 3, bs - 2);
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fillRect(x + 1, y + bs - 4, bs - 2, 3);
-    ctx.fillRect(x + bs - 4, y + 1, 3, bs - 2);
+    if (glow) {
+      ctx.save();
+      ctx.shadowColor = color;
+      ctx.shadowBlur = bs * 0.55;
+      ctx.drawImage(sprite, x, y);
+      ctx.restore();
+    } else {
+      ctx.drawImage(sprite, x, y);
+    }
+  }
+
+  // Ghost: nur Umriss in der Stein-Farbe, dezent gefüllt
+  drawGhostPiece(ctx, shape, ox, oy, color, bs) {
+    const c = hexToRgb(color);
+    const pad = Math.max(1, bs * 0.05);
+    const r = Math.max(2, bs * 0.18);
+    ctx.save();
+    ctx.setLineDash([bs * 0.22, bs * 0.16]);
+    ctx.lineWidth = Math.max(1, bs * 0.06);
+    for (let rr = 0; rr < shape.length; rr++)
+      for (let cc = 0; cc < shape[rr].length; cc++) {
+        if (!shape[rr][cc]) continue;
+        const gy = oy + rr;
+        if (gy < 0) continue;
+        const x = (ox + cc) * bs + pad, y = gy * bs + pad, s = bs - pad * 2;
+        roundRectPath(ctx, x, y, s, s, r);
+        ctx.fillStyle = `rgba(${c.r},${c.g},${c.b},0.08)`;
+        ctx.fill();
+        ctx.strokeStyle = `rgba(${c.r},${c.g},${c.b},0.55)`;
+        ctx.stroke();
+      }
+    ctx.restore();
   }
 
   drawNextQueue() {
@@ -760,7 +1051,14 @@ class BlockDrop {
     const shape = def.shape;
     const ox = Math.floor((this.holdCanvas.width  / bs - shape[0].length) / 2);
     const oy = Math.floor((this.holdCanvas.height / bs - shape.length)    / 2);
-    this.drawPiece(ctx, shape, ox, oy, this.holdUsed ? 'rgba(150,150,150,0.5)' : def.color, bs);
+    if (this.holdUsed) {
+      ctx.save();
+      ctx.globalAlpha = 0.4;
+      this.drawPiece(ctx, shape, ox, oy, '#8088aa', bs);
+      ctx.restore();
+    } else {
+      this.drawPiece(ctx, shape, ox, oy, def.color, bs);
+    }
   }
 
   drawIdleBoard() {
