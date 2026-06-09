@@ -64,10 +64,15 @@ function celebrateTetris() {
     '#00cfcf', '#f0c000', '#a000f0', '#00b800',
     '#e00000', '#0000e0', '#e07000', '#ffffff', '#e94560',
   ];
-  const container = document.createElement('div');
-  container.className = 'tetris-confetti';
+  // Persistente FX-Ebene (existiert dauerhaft im DOM). Wir hängen nur Kinder
+  // ein/aus – die Ebene selbst bleibt, damit der Compositing-Baum stabil ist
+  // und die fixed-Ebenen (Navbar/Scanlines) nicht neu rastern (kein Blitz).
+  const layer = document.getElementById('tetris-fx');
+  if (!layer) return;
+
   // Weniger Teilchen = kein Paint-Spike beim Einblenden (sonst ruckelt's kurz).
   const N = reduceMotion ? 28 : 80;
+  const pieces = [];
   for (let i = 0; i < N; i++) {
     const piece = document.createElement('i');
     const color = COLORS_CONFETTI[Math.floor(Math.random() * COLORS_CONFETTI.length)];
@@ -81,16 +86,16 @@ function celebrateTetris() {
     piece.style.setProperty('--rot', ((Math.random() * 2 - 1) * 900) + 'deg');
     piece.style.animationDuration = (1.6 + Math.random() * 1.6) + 's';
     piece.style.animationDelay     = (Math.random() * 0.35) + 's';
-    container.appendChild(piece);
+    layer.appendChild(piece);
+    pieces.push(piece);
   }
-  document.body.appendChild(container);
-  setTimeout(() => container.remove(), 4000);
+  setTimeout(() => pieces.forEach(p => p.remove()), 4000);
 
   // ── "TETRIS!"-Banner ──
   const banner = document.createElement('div');
   banner.className = 'tetris-banner';
   banner.textContent = 'TETRIS!';
-  document.body.appendChild(banner);
+  layer.appendChild(banner);
   setTimeout(() => banner.remove(), 1600);
 
   // ── Screen-Shake aufs Spielfeld ──
