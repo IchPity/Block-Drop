@@ -6,6 +6,12 @@
 node_modules/
 .dev.vars
 
+# Secrets — NUR lokal, NIEMALS committen (DB-Admin-Keys, Connection-Strings, …)
+.env
+.env.*
+.secrets
+.secrets.*
+
 # Windows-Kram
 desktop.ini
 
