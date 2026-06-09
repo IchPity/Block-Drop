@@ -5,3 +5,9 @@
 .wrangler/
 node_modules/
 .dev.vars
+
+# Windows-Kram
+desktop.ini
+
+# Lose Dateien, die nicht ins Repo sollen
+kurt_converted.jpg
