@@ -392,34 +392,21 @@
  * METAR Browser
  *  - Datenquelle: NOAA Aviation Weather Center
  *    https://aviationweather.gov/api/data/metar?ids=...&format=json
- *  - kein API-Key nötig, aber NOAA sendet keine CORS-Header → CORS-Proxy nötig
+ *  - NOAA sendet keine CORS-Header → unser Worker proxyt serverseitig
+ *    unter /api/metar (same-origin, kein Drittanbieter nötig)
  * =================================================================== */
 
-const NOAA = 'https://aviationweather.gov/api/data/metar';
-// NOAA sendet keine CORS-Header → Browser-Direktabruf scheitert immer.
-// Daher mehrere CORS-Proxies als Kette; der erste, der gültiges JSON liefert,
-// gewinnt. Reihenfolge nach Zuverlässigkeit.
-const PROXIES = [
-  noaaUrl => 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(noaaUrl),
-  noaaUrl => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(noaaUrl),
-  noaaUrl => 'https://corsproxy.io/?url=' + encodeURIComponent(noaaUrl),
-];
-
-// Holt die NOAA-Daten über die Proxy-Kette und gibt geparste JSON-Daten zurück.
-async function fetchMetarJson(noaaUrl) {
-  let lastErr;
-  for (const build of PROXIES) {
-    try {
-      const res = await fetch(build(noaaUrl), { headers: { 'Accept': 'application/json' } });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const text = await res.text();
-      if (!text.trim()) throw new Error('Leere Antwort');
-      return JSON.parse(text); // wirft bei HTML/Fehlerseiten → nächster Proxy
-    } catch (e) {
-      lastErr = e;
-    }
-  }
-  throw lastErr || new Error('Keine Datenquelle erreichbar');
+// Holt die NOAA-Daten über den eigenen Worker-Proxy und gibt geparste
+// JSON-Daten zurück. Die früheren öffentlichen CORS-Proxies (codetabs,
+// allorigins, corsproxy.io) sind alle tot — daher der eigene Endpunkt.
+async function fetchMetarJson(codes) {
+  const res = await fetch('/api/metar?ids=' + encodeURIComponent(codes.join(',')), {
+    headers: { 'Accept': 'application/json' },
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const text = await res.text();
+  if (!text.trim()) throw new Error('Leere Antwort');
+  return JSON.parse(text);
 }
 
 const QUICK_AIRPORTS = [
@@ -505,8 +492,7 @@ async function fetchAndRender(query) {
   $('results').innerHTML = `<div class="loading"><div class="spinner"></div><div>METAR von NOAA ziehen…</div></div>`;
 
   try {
-    const noaaUrl = `${NOAA}?ids=${codes.join(',')}&format=json`;
-    const data = await fetchMetarJson(noaaUrl);
+    const data = await fetchMetarJson(codes);
     addRecent(codes);
     render(codes, Array.isArray(data) ? data : []);
   } catch (e) {
@@ -611,7 +597,7 @@ function decodeFields(m) {
     else val = `${String(wdir).padStart(3,'0')}° / ${wspd}`;
     if (wgst) val += ` G${wgst}`;
     const isStrong = (wspd >= 25 || (wgst && wgst >= 30));
-    out.push({ label: 'Wind', val, unit: wspd === 'Calm' ? '' : 'kt', cls: isStrong ? 'flagged' : '' });
+    out.push({ label: 'Wind', val, unit: val === 'Calm' ? '' : 'kt', cls: isStrong ? 'flagged' : '' });
   }
 
   // Visibility

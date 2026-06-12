@@ -82,20 +82,26 @@ const WORKER = {
   target: 'browser',
 };
 
+// WICHTIG: identifiersPrefix muss pro Datei EINDEUTIG sein. Mehrere klassische
+// <script>-Dateien teilen sich den globalen Lexical Scope — ohne Prefix können
+// zwei unabhängig obfuskierte Dateien denselben kurzen Top-Level-Namen würfeln
+// (z.B. `const N`), und das zweite Skript stirbt beim Parsen mit
+// "Identifier 'N' has already been declared" (so war Block Drop kaputt:
+// auth.js + game.js kollidierten).
 const JOBS = [
-  ['app/auth.js', FRONTEND],
-  ['app/games/blockdrop/game.js', FRONTEND],
-  ['app/games/jedno/game.js', FRONTEND],
-  ['app/games/tictactoe/game.js', FRONTEND],
-  ['app/games/warships/game.js', FRONTEND],
-  ['app/games/woertle/words.js', DATA],
-  ['worker.js', WORKER],
+  ['app/auth.js', FRONTEND, 'au'],
+  ['app/games/blockdrop/game.js', FRONTEND, 'bd'],
+  ['app/games/jedno/game.js', FRONTEND, 'jd'],
+  ['app/games/tictactoe/game.js', FRONTEND, 'tt'],
+  ['app/games/warships/game.js', FRONTEND, 'ws'],
+  ['app/games/woertle/words.js', DATA, 'wo'],
+  ['worker.js', WORKER, 'wk'],
 ];
 
-for (const [rel, opts] of JOBS) {
+for (const [rel, opts, prefix] of JOBS) {
   const abs = path.join(ROOT, rel);
   const src = fs.readFileSync(abs, 'utf8');
-  const out = JO.obfuscate(src, opts).getObfuscatedCode();
+  const out = JO.obfuscate(src, { ...opts, identifiersPrefix: prefix }).getObfuscatedCode();
   fs.writeFileSync(abs, out);
   const k = n => (n / 1024).toFixed(1) + 'kB';
   console.log(`✓ ${rel.padEnd(34)} ${k(src.length)} → ${k(out.length)}`);
