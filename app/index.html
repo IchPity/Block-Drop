@@ -366,6 +366,35 @@
     .thumb-warships     { background: linear-gradient(145deg, #02101c 0%, #0a3553 55%, #02101c 100%); }
     .thumb-rechner      { background: linear-gradient(145deg, #02110f 0%, #073d36 55%, #02110f 100%); }
 
+    .thumb-blockclicker { background: linear-gradient(145deg, #0d0800 0%, #2a1d00 55%, #0d0800 100%); }
+
+    .clicker-card:hover {
+      border-color: rgba(251,191,36,0.5) !important;
+      box-shadow:
+        0 0 0 1px rgba(251,191,36,0.08),
+        0 32px 72px rgba(0,0,0,0.8),
+        0 0 60px rgba(251,191,36,0.16) !important;
+    }
+    .clicker-card .card-tag { color: #fbbf24 !important; }
+    .clicker-card .play-btn { background: linear-gradient(135deg, #fbbf24, #b45309); color: #2a1500; box-shadow: 0 0 18px rgba(251,191,36,0.3); }
+
+    /* Block-Clicker Würfel-Art */
+    .bc-art { position: relative; width: 84px; height: 80px; animation: bcBounce 2.2s ease-in-out infinite; }
+    @keyframes bcBounce { 0%,100% { transform: scale(1); } 50% { transform: scale(0.93); } }
+    .bc-art .bc-top { position: absolute; top: 0; left: 0; width: 72px; height: 42px;
+      background: linear-gradient(135deg, #fde68a, #fbbf24);
+      clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+    .bc-art .bc-left { position: absolute; top: 21px; left: 0; width: 72px; height: 56px;
+      background: linear-gradient(180deg, #d97706, #92400e);
+      clip-path: polygon(0 0, 50% 37%, 50% 100%, 0 63%); }
+    .bc-art .bc-right { position: absolute; top: 21px; left: 0; width: 72px; height: 56px;
+      background: linear-gradient(180deg, #f59e0b, #b45309);
+      clip-path: polygon(50% 37%, 100% 0, 100% 63%, 50% 100%); }
+    .bc-art .bc-plus { position: absolute; top: -6px; right: 0; font-family: var(--font-head, inherit);
+      font-size: 16px; font-weight: 800; color: #fde68a; text-shadow: 0 0 10px rgba(251,191,36,0.8);
+      animation: bcFloat 2.2s ease-in-out infinite; }
+    @keyframes bcFloat { 0%,100% { transform: translateY(0); opacity: 0.6; } 50% { transform: translateY(-7px); opacity: 1; } }
+
     .warships-card:hover {
       border-color: rgba(56,189,248,0.5) !important;
       box-shadow:
@@ -857,7 +886,7 @@
   <div class="section-header">
     <div class="section-title">Spielen</div>
     <div class="section-divider"></div>
-    <div class="section-count">12 verfügbar</div>
+    <div class="section-count">13 verfügbar</div>
   </div>
 
   <div class="games-grid">
@@ -971,6 +1000,25 @@
         <div class="card-tag">Wellen · Upgrades · Auto-Fire</div>
         <div class="card-title">WarShips</div>
         <div class="card-desc">Überlebe Welle um Welle. Deine Geschütze zielen selbst — rüste Boot, Waffen &amp; Zielsysteme auf.</div>
+        <div class="card-footer">
+          <div class="play-btn">Spielen <span class="btn-arrow">→</span></div>
+        </div>
+      </div>
+    </a>
+
+    <a class="game-card available clicker-card" href="games/blockclicker/" style="--accent:#fbbf24">
+      <div class="card-thumb thumb-blockclicker">
+        <div class="bc-art">
+          <div class="bc-plus">+1</div>
+          <div class="bc-left"></div>
+          <div class="bc-right"></div>
+          <div class="bc-top"></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">Idle · Upgrades</div>
+        <div class="card-title">Block Clicker</div>
+        <div class="card-desc">Klick den Block, kauf Fabriken &amp; Portale und lass Milliarden Blöcke von allein entstehen.</div>
         <div class="card-footer">
           <div class="play-btn">Spielen <span class="btn-arrow">→</span></div>
         </div>

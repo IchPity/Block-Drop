@@ -90,6 +90,7 @@ const WORKER = {
 // auth.js + game.js kollidierten).
 const JOBS = [
   ['app/auth.js', FRONTEND, 'au'],
+  ['app/games/blockclicker/game.js', FRONTEND, 'bc'],
   ['app/games/blockdrop/game.js', FRONTEND, 'bd'],
   ['app/games/jedno/game.js', FRONTEND, 'jd'],
   ['app/games/tictactoe/game.js', FRONTEND, 'tt'],

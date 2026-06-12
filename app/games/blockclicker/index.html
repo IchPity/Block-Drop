@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <title>Block Clicker — Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --accent: #fbbf24;
+      --accent-dark: #b45309;
+      --bg: #0a0a14;
+      --panel: rgba(255,255,255,0.04);
+      --panel-border: rgba(251,191,36,0.16);
+      --text: #f0ece2;
+      --text-soft: #9b94a8;
+      --head: 'Orbitron', sans-serif;
+      --body: 'Rajdhani', sans-serif;
+    }
+
+    html, body { height: 100%; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: var(--body); overflow-x: hidden;
+      min-height: 100vh;
+      padding: 76px 16px 32px;
+    }
+
+    /* ── Hintergrund ────────────────────────────────────── */
+    .bg-glow { position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 60% 50% at 30% 35%, rgba(251,191,36,0.07), transparent 70%),
+        radial-gradient(ellipse 50% 60% at 80% 70%, rgba(180,83,9,0.06), transparent 70%);
+    }
+    .bg-grid { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.5;
+      background-image:
+        linear-gradient(rgba(251,191,36,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(251,191,36,0.04) 1px, transparent 1px);
+      background-size: 42px 42px;
+    }
+    /* fallende Deko-Blöcke */
+    .fall-block { position: fixed; top: -30px; z-index: 0; pointer-events: none;
+      width: 16px; height: 16px; border-radius: 3px;
+      background: rgba(251,191,36,0.10); border: 1px solid rgba(251,191,36,0.18);
+      animation: fall linear infinite;
+    }
+    @keyframes fall {
+      from { transform: translateY(-5vh) rotate(0deg); }
+      to   { transform: translateY(110vh) rotate(320deg); }
+    }
+
+    /* ── Navbar ─────────────────────────────────────────── */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 24px; background: rgba(10,10,20,0.86);
+      border-bottom: 1px solid rgba(251,191,36,0.18);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    }
+    .nav-left { display: flex; align-items: center; gap: 14px; }
+    .nav-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none; color: var(--text-soft);
+      font-size: 15px; font-weight: 600; letter-spacing: 0.5px;
+      border: 1px solid rgba(255,255,255,0.16); border-radius: 9px;
+      padding: 3px 12px; transition: all 0.2s;
+    }
+    .nav-back:hover { color: var(--text); border-color: var(--accent); background: rgba(251,191,36,0.08); }
+    .nav-title { font-family: var(--head); font-size: 17px; font-weight: 800; letter-spacing: 2px; color: var(--accent);
+      text-shadow: 0 0 18px rgba(251,191,36,0.4); }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .btn-nav {
+      background: transparent; border: 1px solid rgba(255,255,255,0.16); border-radius: 9px;
+      padding: 4px 13px; color: var(--text-soft); font-family: var(--body);
+      font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-nav:hover { color: var(--text); border-color: var(--accent); background: rgba(251,191,36,0.08); }
+
+    /* ── Layout ─────────────────────────────────────────── */
+    #layout {
+      position: relative; z-index: 1;
+      display: flex; gap: 22px; align-items: flex-start; justify-content: center;
+      max-width: 1060px; margin: 0 auto; width: 100%;
+    }
+    #click-col { flex: 1.2; display: flex; flex-direction: column; align-items: center; gap: 4px;
+      position: sticky; top: 90px; min-width: 0; }
+    #shop-col { flex: 1; min-width: 0; max-width: 430px; display: flex; flex-direction: column; gap: 16px; }
+
+    /* ── Zähler ─────────────────────────────────────────── */
+    #counter {
+      font-family: var(--head); font-size: clamp(30px, 5vw, 44px); font-weight: 800;
+      color: var(--text); letter-spacing: 1px; text-align: center; line-height: 1.1;
+      text-shadow: 0 0 30px rgba(251,191,36,0.25);
+    }
+    #counter span { color: var(--accent); }
+    #bps-line { font-size: 17px; font-weight: 600; color: var(--text-soft); text-align: center; }
+    #bps-line b { color: var(--accent); font-weight: 700; }
+    #frenzy-line { font-size: 16px; font-weight: 700; color: #4ade80; min-height: 20px; text-align: center; }
+
+    /* ── Der große Block (Iso-Würfel) ───────────────────── */
+    #block-stage { position: relative; width: 300px; height: 300px; margin: 18px 0 6px;
+      display: flex; align-items: center; justify-content: center; }
+    #block-aura { position: absolute; inset: 12%; border-radius: 50%; pointer-events: none;
+      background: radial-gradient(circle, rgba(251,191,36,0.2), transparent 65%);
+      animation: pulse 3s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.12); opacity: 1; } }
+
+    #big-block {
+      position: relative; width: 170px; height: 196px; cursor: pointer;
+      transition: transform 0.07s ease-out;
+      -webkit-tap-highlight-color: transparent; user-select: none;
+      filter: drop-shadow(0 18px 30px rgba(0,0,0,0.6)) drop-shadow(0 0 26px rgba(251,191,36,0.22));
+    }
+    #big-block:hover { transform: scale(1.04); }
+    #big-block.squish { transform: scale(0.92); }
+    .face { position: absolute; left: 0; width: 170px; }
+    /* Deckel */
+    .face-top { top: 0; height: 96px;
+      background: linear-gradient(135deg, #fde68a, #fbbf24);
+      clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+    /* linke Wand */
+    .face-left { top: 48px; height: 148px;
+      background: linear-gradient(180deg, #d97706, #92400e);
+      clip-path: polygon(0 0, 50% 33%, 50% 100%, 0 67%); }
+    /* rechte Wand */
+    .face-right { top: 48px; height: 148px;
+      background: linear-gradient(180deg, #f59e0b, #b45309);
+      clip-path: polygon(50% 33%, 100% 0, 100% 67%, 50% 100%); }
+    .face-top::after { content: ''; position: absolute; inset: 14%;
+      background: rgba(255,255,255,0.18); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+
+    /* schwebende +N Partikel */
+    .float-txt { position: absolute; z-index: 5; pointer-events: none;
+      font-family: var(--head); font-weight: 800; font-size: 20px; color: var(--accent);
+      text-shadow: 0 0 10px rgba(251,191,36,0.6), 0 2px 4px rgba(0,0,0,0.8);
+      animation: floatUp 1.1s ease-out forwards; }
+    @keyframes floatUp {
+      from { opacity: 1; transform: translateY(0) scale(1); }
+      to   { opacity: 0; transform: translateY(-90px) scale(1.25); }
+    }
+
+    /* ── Goldener Block (Event) ─────────────────────────── */
+    #gold-block { position: fixed; z-index: 50; width: 56px; height: 64px; cursor: pointer;
+      display: none; animation: goldWobble 1.6s ease-in-out infinite;
+      filter: drop-shadow(0 0 18px rgba(255,215,0,0.8)); }
+    #gold-block.show { display: block; }
+    #gold-block .face { width: 56px; }
+    #gold-block .face-top { height: 32px; background: linear-gradient(135deg, #fff7c2, #ffd700); }
+    #gold-block .face-left { top: 16px; height: 48px; background: linear-gradient(180deg, #eab308, #a16207); }
+    #gold-block .face-right { top: 16px; height: 48px; background: linear-gradient(180deg, #facc15, #ca8a04); }
+    @keyframes goldWobble { 0%,100% { transform: rotate(-7deg) scale(1); } 50% { transform: rotate(7deg) scale(1.1); } }
+
+    /* ── Panels ─────────────────────────────────────────── */
+    .panel { background: var(--panel); border: 1px solid var(--panel-border); border-radius: 16px;
+      padding: 16px; backdrop-filter: blur(4px); }
+    .panel-title { font-family: var(--head); font-size: 13px; font-weight: 800; letter-spacing: 2.5px;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+
+    /* Upgrades */
+    #upgrade-row { display: flex; flex-wrap: wrap; gap: 8px; min-height: 10px; }
+    .upg {
+      width: 56px; height: 56px; border-radius: 11px; cursor: pointer; position: relative;
+      background: rgba(251,191,36,0.07); border: 1px solid rgba(251,191,36,0.3);
+      display: flex; align-items: center; justify-content: center; font-size: 25px;
+      transition: all 0.15s;
+    }
+    .upg:hover { background: rgba(251,191,36,0.16); transform: translateY(-2px);
+      box-shadow: 0 4px 14px rgba(251,191,36,0.2); }
+    .upg.locked { opacity: 0.4; cursor: default; filter: grayscale(0.8); }
+    .upg.locked:hover { transform: none; box-shadow: none; background: rgba(251,191,36,0.07); }
+    .upg-empty { font-size: 15px; color: var(--text-soft); padding: 6px 2px; }
+
+    /* Tooltip */
+    #tooltip { position: fixed; z-index: 200; pointer-events: none; display: none;
+      max-width: 250px; padding: 10px 13px; border-radius: 11px;
+      background: rgba(16,14,26,0.97); border: 1px solid rgba(251,191,36,0.35);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6); font-size: 15px; line-height: 1.35; }
+    #tooltip.show { display: block; }
+    #tooltip .tt-name { font-weight: 700; color: var(--text); font-size: 16px; }
+    #tooltip .tt-desc { color: var(--text-soft); }
+    #tooltip .tt-cost { color: var(--accent); font-weight: 700; margin-top: 3px; }
+    #tooltip .tt-cost.too-expensive { color: #f87171; }
+
+    /* Gebäude */
+    #building-list { display: flex; flex-direction: column; gap: 8px; }
+    .bld {
+      display: flex; align-items: center; gap: 12px; width: 100%;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 13px; padding: 9px 13px; cursor: pointer; text-align: left;
+      font-family: var(--body); color: var(--text); transition: all 0.15s;
+    }
+    .bld:hover { border-color: rgba(251,191,36,0.45); background: rgba(251,191,36,0.06); }
+    .bld:active { transform: scale(0.985); }
+    .bld.cant { opacity: 0.55; cursor: default; }
+    .bld.cant:hover { border-color: rgba(255,255,255,0.09); background: rgba(255,255,255,0.03); }
+    .bld.hidden-bld { display: none; }
+    .bld-ico { font-size: 28px; width: 38px; text-align: center; flex-shrink: 0; }
+    .bld-info { flex: 1; min-width: 0; }
+    .bld-name { font-size: 17px; font-weight: 700; letter-spacing: 0.3px; }
+    .bld-cost { font-size: 15px; font-weight: 600; color: var(--accent); }
+    .bld.cant .bld-cost { color: #f87171; }
+    .bld-meta { text-align: right; flex-shrink: 0; }
+    .bld-count { font-family: var(--head); font-size: 24px; font-weight: 800; color: rgba(255,255,255,0.85); line-height: 1; }
+    .bld-bps { font-size: 13px; color: var(--text-soft); white-space: nowrap; }
+
+    /* Statistik */
+    #stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; font-size: 15px; }
+    #stats-grid .st-label { color: var(--text-soft); }
+    #stats-grid .st-val { text-align: right; font-weight: 700; color: var(--text); }
+
+    .btn-danger {
+      margin-top: 12px; width: 100%; background: transparent;
+      border: 1px solid rgba(248,113,113,0.4); border-radius: 10px; padding: 7px;
+      color: #f87171; font-family: var(--body); font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .btn-danger:hover { background: rgba(248,113,113,0.1); border-color: #f87171; }
+
+    /* Toast */
+    #toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
+      z-index: 300; padding: 11px 22px; border-radius: 12px; opacity: 0; pointer-events: none;
+      background: rgba(16,14,26,0.97); border: 1px solid rgba(251,191,36,0.4);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6); font-size: 16px; font-weight: 600;
+      transition: all 0.3s; max-width: 90vw; text-align: center; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: rgba(251,191,36,0.25); border-radius: 3px; }
+
+    /* ── Mobile ─────────────────────────────────────────── */
+    @media (max-width: 760px) {
+      body { padding: 70px 12px 28px; }
+      #layout { flex-direction: column; align-items: center; }
+      #click-col { position: static; width: 100%; }
+      #shop-col { max-width: 460px; width: 100%; }
+      #block-stage { width: 240px; height: 240px; margin-top: 8px; }
+      #big-block { width: 140px; height: 162px; }
+      .face { width: 140px; }
+      .face-top { height: 79px; }
+      .face-left, .face-right { top: 40px; height: 122px; }
+      .nav-title { font-size: 14px; letter-spacing: 1px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-glow"></div>
+<div class="bg-grid"></div>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="../../" class="nav-back">&#8592; Arcade</a>
+    <div class="nav-title">BLOCK CLICKER</div>
+  </div>
+  <div class="nav-right">
+    <button class="btn-nav" id="save-btn">&#128190; Speichern</button>
+    <div data-auth-slot></div>
+  </div>
+</nav>
+
+<div id="layout">
+
+  <!-- Klick-Spalte -->
+  <div id="click-col">
+    <div id="counter"><span id="counter-num">0</span> Blöcke</div>
+    <div id="bps-line"><b id="bps-num">0</b> Blöcke pro Sekunde</div>
+    <div id="frenzy-line"></div>
+
+    <div id="block-stage">
+      <div id="block-aura"></div>
+      <div id="big-block">
+        <div class="face face-left"></div>
+        <div class="face face-right"></div>
+        <div class="face face-top"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shop-Spalte -->
+  <div id="shop-col">
+
+    <div class="panel">
+      <div class="panel-title">Upgrades</div>
+      <div id="upgrade-row"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Gebäude</div>
+      <div id="building-list"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Statistik</div>
+      <div id="stats-grid">
+        <div class="st-label">Blöcke insgesamt</div><div class="st-val" id="st-total">0</div>
+        <div class="st-label">Klicks</div><div class="st-val" id="st-clicks">0</div>
+        <div class="st-label">Pro Klick</div><div class="st-val" id="st-click-power">1</div>
+        <div class="st-label">Goldene Blöcke</div><div class="st-val" id="st-gold">0</div>
+        <div class="st-label">Spielzeit</div><div class="st-val" id="st-time">0 min</div>
+      </div>
+      <button class="btn-danger" id="reset-btn">Spielstand zurücksetzen</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Goldener Block (Event) -->
+<div id="gold-block">
+  <div class="face face-left"></div>
+  <div class="face face-right"></div>
+  <div class="face face-top"></div>
+</div>
+
+<div id="tooltip"></div>
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
