@@ -4,16 +4,20 @@ Desktop-Party-Spiel (Mario-Party-Stil) für die Block-Drop Arcade.
 Alles zu diesem Spiel lebt **nur in diesem Ordner** (`block-games/`), bis es
 am Ende in die Repo-Struktur integriert wird.
 
-## Stand (2026-06-12)
+> **Doku:** Architektur, Entscheidungen und Änderungsprotokoll stehen in
+> `DOKUMENTATION.md`. Diese Datei hier listet nur, was noch zu bauen ist.
+
+## Stand (2026-06-13)
 
 ✅ **Fertig:**
 - Electron-Grundgerüst (main.js, preload.js, Renderer)
-- Login-Pflicht beim Start: ohne Konto kein Hauptmenü
 - Anmeldung/Registrierung **mit bestehenden Website-Konten** — gleiches
   Supabase-Backend wie die Website (Flow 1:1 aus `app/auth.js` übernommen:
   synthetische Mail `<username>@blockdrop.local`, RPC `resolve_login_email`)
+- **Gast-Modus**: Login überspringbar, ohne Konto aber nur Spiele gegen Bots
+- Vollbild-Start (F11 zum Umschalten), Doppelklick-Start per
+  `Block Games starten.bat`
 - Hauptmenü im Mario-Party-Stil mit Party-Button und 6 Minigame-Platzhaltern
-- Portables Node.js in `tools/node/` (keine Systeminstallation nötig)
 
 ## Noch zu bauen
 
@@ -47,20 +51,15 @@ setzen und eine `start`-Funktion geben.
 - Ordner ggf. umziehen/umbenennen gemäß Repo-Konvention
 - `tools/node/` und `node_modules/` gehören NICHT ins Git
   (siehe `.gitignore` hier im Ordner)
-- Obfuskation: Renderer-JS vor Release durch `tools/_obfuscate.js`-artigen
-  Schritt jagen (Achtung: `debugProtection` nur im Browser sinnvoll)
-- **Wichtig:** Der Supabase-Publishable-Key steht im Klartext in
-  `renderer/auth.js` — das ist ok (gleicher Key wie Website, RLS schützt),
-  aber beim Release-Build an die Obfuskation denken, wenn gewünscht
+- **Beschluss (2026-06-13): Der Code in `block-games/` wird NICHT
+  obfuskiert** — er bleibt im Klartext und wird in `DOKUMENTATION.md`
+  dokumentiert. (Die Obfuskation der Website in `app/` bleibt davon
+  unberührt.)
+- Der Supabase-Publishable-Key steht im Klartext in `renderer/auth.js` —
+  das ist ok (gleicher Key wie Website, RLS schützt)
 
 ## Entwicklung
 
-```powershell
-# Abhängigkeiten installieren (portables Node liegt in tools/node):
-$env:Path = "D:\Block-Drop\block-games\tools\node;$env:Path"
-cd D:\Block-Drop\block-games
-npm install
-
-# App starten:
-npm start
-```
+Siehe `DOKUMENTATION.md` → „App starten". Kurzfassung: Doppelklick auf
+`Block Games starten.bat`, oder `npm install` + `npm start` im Ordner
+`block-games/` (Node liegt portabel auf `D:\`).

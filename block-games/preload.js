@@ -4,6 +4,6 @@
 const { contextBridge } = require('electron');
 
 contextBridge.exposeInMainWorld('blockGames', {
-  version: '0.1.0',
+  version: '0.2.0',
   platform: process.platform
 });

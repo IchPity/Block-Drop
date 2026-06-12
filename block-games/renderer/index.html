@@ -25,43 +25,53 @@
     </div>
   </div>
 
-  <!-- ── Login / Registrierung (Pflicht beim ersten Start) ───────────── -->
+  <!-- ── Login / Registrierung (überspringbar → Gast-Modus) ──────────── -->
   <div id="screen-auth" class="screen">
-    <div class="auth-card">
+    <div class="auth-wrap">
       <h1 class="game-logo">BLOCK<span>GAMES</span></h1>
-      <p class="auth-subtitle">Melde dich mit deinem Block-Drop&nbsp;Arcade Konto an</p>
+      <p class="auth-tagline">Würfeln · Zocken · Abräumen</p>
 
-      <div class="auth-tabs">
-        <button id="tabLogin" class="auth-tab active">Anmelden</button>
-        <button id="tabRegister" class="auth-tab">Registrieren</button>
+      <div class="auth-card">
+        <div class="auth-tabs">
+          <button id="tabLogin" class="auth-tab active">Anmelden</button>
+          <button id="tabRegister" class="auth-tab">Registrieren</button>
+        </div>
+
+        <!-- Login -->
+        <form id="formLogin" class="auth-form">
+          <label>Username oder E-Mail
+            <input type="text" id="loginId" autocomplete="username" required>
+          </label>
+          <label>Passwort
+            <input type="password" id="loginPw" autocomplete="current-password" required>
+          </label>
+          <button type="submit" class="btn btn-primary" id="btnLogin">Anmelden</button>
+        </form>
+
+        <!-- Registrierung -->
+        <form id="formRegister" class="auth-form" hidden>
+          <label>Username <span class="hint">(3–20 Zeichen)</span>
+            <input type="text" id="regUser" minlength="3" maxlength="20" autocomplete="username" required>
+          </label>
+          <label>E-Mail <span class="hint">(optional)</span>
+            <input type="email" id="regMail" autocomplete="email">
+          </label>
+          <label>Passwort <span class="hint">(min. 6 Zeichen)</span>
+            <input type="password" id="regPw" minlength="6" autocomplete="new-password" required>
+          </label>
+          <button type="submit" class="btn btn-primary" id="btnRegister">Konto erstellen</button>
+        </form>
+
+        <p id="authError" class="auth-error" hidden></p>
+
+        <div class="auth-divider"><span>oder</span></div>
+
+        <button class="btn btn-guest" id="btnGuest">
+          🤖 Als Gast spielen
+          <small>ohne Konto — nur gegen Bots</small>
+        </button>
       </div>
 
-      <!-- Login -->
-      <form id="formLogin" class="auth-form">
-        <label>Username oder E-Mail
-          <input type="text" id="loginId" autocomplete="username" required>
-        </label>
-        <label>Passwort
-          <input type="password" id="loginPw" autocomplete="current-password" required>
-        </label>
-        <button type="submit" class="btn btn-primary" id="btnLogin">Anmelden</button>
-      </form>
-
-      <!-- Registrierung -->
-      <form id="formRegister" class="auth-form" hidden>
-        <label>Username <span class="hint">(3–20 Zeichen)</span>
-          <input type="text" id="regUser" minlength="3" maxlength="20" autocomplete="username" required>
-        </label>
-        <label>E-Mail <span class="hint">(optional)</span>
-          <input type="email" id="regMail" autocomplete="email">
-        </label>
-        <label>Passwort <span class="hint">(min. 6 Zeichen)</span>
-          <input type="password" id="regPw" minlength="6" autocomplete="new-password" required>
-        </label>
-        <button type="submit" class="btn btn-primary" id="btnRegister">Konto erstellen</button>
-      </form>
-
-      <p id="authError" class="auth-error" hidden></p>
       <p class="auth-note">Dein Konto funktioniert auch auf der Block-Drop Arcade Website.</p>
     </div>
   </div>
@@ -73,9 +83,15 @@
       <div class="player-badge">
         <div class="avatar" id="menuAvatar">?</div>
         <span id="menuUsername">…</span>
-        <button class="btn btn-ghost" id="btnLogout" title="Abmelden">Abmelden</button>
+        <button class="btn btn-ghost" id="btnAccount">Abmelden</button>
       </div>
     </header>
+
+    <!-- Hinweis-Band im Gast-Modus -->
+    <div class="guest-banner" id="guestBanner" hidden>
+      <strong>Gast-Modus</strong> — du spielst nur gegen Bots.
+      Melde dich an, um online gegen andere zu spielen und Fortschritt zu speichern.
+    </div>
 
     <main class="menu-main">
       <!-- Hauptaktion: Party starten -->
@@ -83,7 +99,7 @@
         <span class="party-btn-icon">🎲</span>
         <span class="party-btn-text">
           <strong>Party starten</strong>
-          <small>Brettspiel-Modus · 4 Spieler · bald verfügbar</small>
+          <small id="partyHint">Brettspiel-Modus · 4 Spieler · bald verfügbar</small>
         </span>
       </button>
 
@@ -98,6 +114,9 @@
       <span id="appVersion"></span>
     </footer>
   </div>
+
+  <!-- Toast für kurze Hinweise (statt alert) -->
+  <div id="toast" class="toast" hidden></div>
 
   <script src="../node_modules/@supabase/supabase-js/dist/umd/supabase.js"></script>
   <script src="auth.js"></script>

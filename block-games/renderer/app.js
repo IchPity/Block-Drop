@@ -1,4 +1,9 @@
-// Block Games — UI-Logik: Screen-Wechsel, Login-Pflicht, Hauptmenü.
+// Block Games — UI-Logik: Screen-Wechsel, Login/Gast-Modus, Hauptmenü.
+//
+// Gast-Modus: Der Login ist überspringbar ("Als Gast spielen"). Ohne Konto
+// gibt es ausschließlich Partien gegen Bots — kein Online-Spiel, kein
+// gespeicherter Fortschritt. Die Sperre hängt an `isOnlineAllowed()`:
+// JEDE künftige Online-Funktion muss diese Funktion prüfen.
 'use strict';
 
 // ── Minigame-Katalog ─────────────────────────────────────────────────
@@ -13,10 +18,32 @@ const MINIGAMES = [
   { id: 'quiz-blocks',  icon: '❓', name: 'Quiz Blocks',  desc: 'Wissen schlägt Würfelglück',      available: false },
 ];
 
+// ── Gast-Modus ───────────────────────────────────────────────────────
+let guestMode = false;
+
+// Online-Partien nur mit echtem Konto. Gäste spielen nur gegen Bots.
+function isOnlineAllowed() {
+  return !!Auth.user;
+}
+
 // ── Screen-Verwaltung ────────────────────────────────────────────────
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+}
+
+// ── Toast (kurze Einblend-Hinweise, ersetzt alert) ───────────────────
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.hidden = false;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => { t.hidden = true; }, 300);
+  }, 3200);
 }
 
 // ── Animierter Hintergrund ───────────────────────────────────────────
@@ -96,20 +123,47 @@ function setupAuthForms() {
     if (error) showAuthError(error.message || 'Registrierung fehlgeschlagen.');
   });
 
-  document.getElementById('btnLogout').addEventListener('click', () => Auth.signOut());
+  // Login überspringen → Gast-Modus (nur Bots).
+  document.getElementById('btnGuest').addEventListener('click', () => {
+    guestMode = true;
+    renderMenu();
+    showScreen('screen-menu');
+  });
+
+  // Im Menü: Gast → zurück zum Login; eingeloggt → abmelden.
+  document.getElementById('btnAccount').addEventListener('click', () => {
+    if (guestMode) {
+      guestMode = false;
+      showAuthError('');
+      showScreen('screen-auth');
+    } else {
+      Auth.signOut();
+    }
+  });
 }
 
 // ── Hauptmenü ────────────────────────────────────────────────────────
 function renderMenu() {
-  const name = Auth.username;
+  const guest = !Auth.user;
+  const name = guest ? 'Gast' : Auth.username;
+
   document.getElementById('menuUsername').textContent = name;
-  document.getElementById('menuAvatar').textContent = name.charAt(0).toUpperCase();
+  const avatar = document.getElementById('menuAvatar');
+  avatar.textContent = name.charAt(0).toUpperCase();
+  avatar.classList.toggle('guest', guest);
+
+  document.getElementById('guestBanner').hidden = !guest;
+  document.getElementById('btnAccount').textContent = guest ? 'Anmelden' : 'Abmelden';
+  document.getElementById('partyHint').textContent = guest
+    ? 'Brettspiel-Modus · du + 3 Bots · bald verfügbar'
+    : 'Brettspiel-Modus · 4 Spieler · bald verfügbar';
 
   const grid = document.getElementById('minigameGrid');
   grid.innerHTML = '';
-  for (const game of MINIGAMES) {
+  MINIGAMES.forEach((game, i) => {
     const card = document.createElement('div');
     card.className = `minigame-card ${game.available ? 'available' : 'locked'}`;
+    card.style.setProperty('--card-i', i);
     card.innerHTML = `
       <span class="minigame-icon">${game.icon}</span>
       <h3>${game.name}</h3>
@@ -118,7 +172,7 @@ function renderMenu() {
     `;
     if (game.available && game.start) card.addEventListener('click', game.start);
     grid.appendChild(card);
-  }
+  });
 }
 
 // ── Start ────────────────────────────────────────────────────────────
@@ -127,18 +181,22 @@ async function boot() {
   setupAuthTabs();
   setupAuthForms();
   document.getElementById('appVersion').textContent =
-    `Block Games v${window.blockGames?.version || '?'}`;
+    `Block Games v${window.blockGames?.version || '?'} · F11 = Vollbild an/aus`;
 
   document.getElementById('btnParty').addEventListener('click', () => {
-    alert('Der Party-Modus kommt bald! 🎲\n(4 Spieler — freie Plätze füllt die KI)');
+    showToast(isOnlineAllowed()
+      ? 'Der Party-Modus kommt bald! 🎲 (4 Spieler — freie Plätze füllt die KI)'
+      : 'Der Party-Modus kommt bald! 🎲 (Als Gast spielst du gegen 3 Bots)');
   });
 
-  // Login-Pflicht: ohne Session geht es nur zum Auth-Screen.
-  Auth.onChange((auth) => {
-    if (auth.user) {
+  // Auth-Änderungen steuern die Screens. Der Gast-Modus bleibt aktiv,
+  // bis sich der Spieler anmeldet oder selbst zum Login zurückgeht.
+  Auth.onChange(() => {
+    if (Auth.user) {
+      guestMode = false;
       renderMenu();
       showScreen('screen-menu');
-    } else {
+    } else if (!guestMode) {
       showScreen('screen-auth');
     }
   });
