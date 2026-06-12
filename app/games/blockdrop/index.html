@@ -51,8 +51,11 @@
     .scanlines {
       position: fixed; inset: 0; z-index: 50; pointer-events: none; opacity: 0.5;
       background: repeating-linear-gradient(0deg, rgba(0,0,0,0.32) 0 1px, transparent 1px 3px);
-      mix-blend-mode: multiply;
-      /* Stabile GPU-Ebene: mix-blend-mode flackert sonst beim Compositing-Wechsel schwarz. */
+      /* KEIN mix-blend-mode hier: In Firefox/Zen rendert die Blend-Ebene beim
+         Compositing-Wechsel (Tetris-Konfetti) kurz ohne Backdrop → der ganze
+         Schirm blitzt schwarz. Multiply mit reinem Schwarz ist ohnehin
+         mathematisch identisch mit normaler Alpha-Transparenz (Cb·(1−α)),
+         also sieht das ohne Blend exakt gleich aus — nur ohne Blitz. */
       transform: translateZ(0);
     }
     .crt-vignette {
@@ -282,8 +285,9 @@
     /* ── Tetris-Effekt (4 Zeilen) ───────────────────────── */
     /* Dauerhaft vorhandene, GPU-isolierte Ebene. Weil sie nie ein-/ausgehängt
        wird, bleibt der Compositing-Baum stabil und die anderen fixed-Ebenen
-       (Navbar-backdrop-filter, Scanlines mit mix-blend-mode) müssen beim
-       Konfetti nicht neu rastern → kein Schwarz-/Weiß-Blitz. */
+       (Navbar-backdrop-filter, Scanlines) müssen beim Konfetti nicht neu
+       rastern. Reicht in Chromium; für Firefox/Zen musste zusätzlich der
+       mix-blend-mode der Scanlines weg (siehe .scanlines oben). */
     #tetris-fx {
       position: fixed; inset: 0; pointer-events: none; z-index: 9998; overflow: hidden;
       isolation: isolate; transform: translateZ(0); contain: layout style paint;
