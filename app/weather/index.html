@@ -674,7 +674,16 @@ function toggleFavorite(loc) {
   }
   saveFavorites();
   renderFavs();
-  renderCurrent();
+  updateFavButton();
+}
+// Nur den Stern-Button aktualisieren — kein kompletter Re-Render
+// (renderCurrent würde sonst die Karte samt Radar neu aufbauen)
+function updateFavButton() {
+  const btn = document.getElementById('toggle-fav');
+  if (!btn || !state.loc) return;
+  const fav = isFavorite(state.loc);
+  btn.classList.toggle('active', fav);
+  btn.textContent = fav ? '★ Favorit' : '☆ Als Favorit';
 }
 function renderFavs() {
   const row = $('fav-row');
@@ -702,7 +711,7 @@ function renderFavs() {
       state.favorites.splice(i, 1);
       saveFavorites();
       renderFavs();
-      renderCurrent();
+      updateFavButton();
     });
   });
 }

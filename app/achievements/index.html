@@ -469,6 +469,7 @@ window.Auth?.onChange?.(user => {
 
 // ─── Leaderboard ───────────────────────────────────────────────────────
 let lbMode = 'standard';
+let lbSeq = 0;   // Guard gegen veraltete Antworten bei schnellem Tab-Wechsel
 
 async function renderLeaderboard() {
   const listEl = document.getElementById('lb-list');
@@ -481,7 +482,9 @@ async function renderLeaderboard() {
     return;
   }
 
+  const seq = ++lbSeq;
   const rows = await window.Auth.getLeaderboard('blockdrop', lbMode, 50);
+  if (seq !== lbSeq) return;
   countEl.textContent = rows.length ? `${rows.length} Spieler` : '';
 
   if (!rows.length) {

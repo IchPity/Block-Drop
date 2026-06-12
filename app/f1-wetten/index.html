@@ -810,18 +810,18 @@ async function settleOpenBets() {
 async function placeBet({ p1, p2, p3, stake }) {
   const sb = window.Auth.client;
   const race = state.nextRace;
-  if (!race) { toast('Kein nächstes Rennen verfügbar', 'err'); return; }
+  if (!race) { toast('Kein nächstes Rennen verfügbar', 'err'); return false; }
 
   const raceStart = new Date(race.date + 'T' + (race.time || '14:00:00Z'));
-  if (raceStart <= new Date()) { toast('Rennen läuft oder ist vorbei — keine Wetten mehr.', 'err'); return; }
-  if (new Set([p1, p2, p3]).size !== 3) { toast('Drei verschiedene Fahrer wählen', 'err'); return; }
-  if (!Number.isFinite(stake) || stake <= 0) { toast('Ungültiger Einsatz', 'err'); return; }
-  if (stake > state.points.points) { toast('Nicht genug Punkte', 'err'); return; }
+  if (raceStart <= new Date()) { toast('Rennen läuft oder ist vorbei — keine Wetten mehr.', 'err'); return false; }
+  if (new Set([p1, p2, p3]).size !== 3) { toast('Drei verschiedene Fahrer wählen', 'err'); return false; }
+  if (!Number.isFinite(stake) || stake <= 0) { toast('Ungültiger Einsatz', 'err'); return false; }
+  if (stake > state.points.points) { toast('Nicht genug Punkte', 'err'); return false; }
 
   // Doppelten Bet vermeiden (1 pro Rennen)
   if (state.myBets.some(b => b.round === parseInt(race.round, 10) && b.status === 'open')) {
     toast('Du hast bereits eine offene Wette für dieses Rennen', 'err');
-    return;
+    return false;
   }
 
   // 1. Bet einfügen
@@ -837,7 +837,7 @@ async function placeBet({ p1, p2, p3, stake }) {
   if (error) {
     if (error.code === '23505') toast('Du hast für dieses Rennen schon getippt', 'err');
     else toast('Wette fehlgeschlagen: ' + error.message, 'err');
-    return;
+    return false;
   }
 
   // 2. Stake vom Konto abziehen
@@ -846,12 +846,13 @@ async function placeBet({ p1, p2, p3, stake }) {
     points: newPts,
     updated_at: new Date().toISOString(),
   }).eq('user_id', state.user.id).eq('season', state.season);
-  if (pErr) { toast('Konto-Update fehlgeschlagen: ' + pErr.message, 'err'); return; }
+  if (pErr) { toast('Konto-Update fehlgeschlagen: ' + pErr.message, 'err'); return false; }
 
   state.points.points = newPts;
   state.myBets.unshift(ins);
   toast(`Wette platziert: ${stake} Punkte auf ${race.raceName}`, 'ok');
   render();
+  return true;
 }
 
 /* ── Render ──────────────────────────────────────────────── */
@@ -1091,7 +1092,12 @@ function render() {
       if (!p1 || !p2 || !p3) { toast('Bitte alle drei Plätze auswählen', 'err'); return; }
       placeBtn.disabled = true;
       placeBtn.textContent = '...';
-      await placeBet({ p1, p2, p3, stake });
+      const ok = await placeBet({ p1, p2, p3, stake });
+      // Bei Erfolg hat render() das DOM ersetzt — sonst Button wieder freigeben
+      if (!ok) {
+        placeBtn.disabled = false;
+        placeBtn.textContent = 'Wette platzieren';
+      }
     });
   }
 }

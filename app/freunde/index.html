@@ -383,19 +383,23 @@
 
   // ─── Suche ──────────────────────────────────────────────────────────────────
   let searchTimer = null;
+  let searchSeq = 0;   // Guard gegen veraltete Antworten (langsamer Request überholt neueren)
   function setupSearch() {
     const input = document.getElementById('search-input');
     const results = document.getElementById('search-results');
     input.addEventListener('input', () => {
       clearTimeout(searchTimer);
       const q = input.value.trim();
-      if (q.length < 2) { results.innerHTML = ''; return; }
+      if (q.length < 2) { searchSeq++; results.innerHTML = ''; return; }
       results.innerHTML = `<div class="empty"><span class="spinner"></span></div>`;
       searchTimer = setTimeout(async () => {
+        const seq = ++searchSeq;
         const users = await A().searchUsers(q);
+        if (seq !== searchSeq) return;
         if (!users.length) { results.innerHTML = `<div class="empty">Niemand gefunden.</div>`; return; }
         // Status pro User ermitteln
         const withStatus = await Promise.all(users.map(async u => ({ u, st: await A().friendStatus(u.id) })));
+        if (seq !== searchSeq) return;
         results.innerHTML = withStatus.map(({ u, st }) => {
           let action;
           if (st === 'friends') action = `<span class="mini-tag ok">✓ Freund</span>`;

@@ -593,7 +593,7 @@ async function renderTracker() {
       // alle 5s aktualisieren
       trackerInterval = setInterval(() => renderLiveSession(box, liveSession, nextRace, true), 5000);
     } else {
-      renderUpcoming(box, nextRace, lastRace, season);
+      renderUpcoming(box, nextRace, lastRace, season, races.length);
     }
   } catch (e) {
     box.innerHTML = `<div class="empty"><div class="empty-icon">⚠</div>Tracker nicht verfügbar.<br><span style="font-size:11px;opacity:.6">${e.message}</span></div>`;
@@ -604,7 +604,7 @@ function fmtDate(d) {
   return d.toLocaleString('de-DE', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
-function renderUpcoming(box, nextRace, lastRace, season) {
+function renderUpcoming(box, nextRace, lastRace, season, totalRounds) {
   const start = new Date(nextRace.date + 'T' + (nextRace.time || '14:00:00Z'));
   const isUpcoming = start > new Date();
 
@@ -635,7 +635,7 @@ function renderUpcoming(box, nextRace, lastRace, season) {
         <div class="race-meta">
           <div class="race-meta-item">
             <div class="race-meta-lbl">Runde</div>
-            <div class="race-meta-val">${nextRace.round} / ${nextRace.season ? '' : ''}</div>
+            <div class="race-meta-val">${nextRace.round}${totalRounds ? ' / ' + totalRounds : ''}</div>
           </div>
           <div class="race-meta-item">
             <div class="race-meta-lbl">Saison</div>

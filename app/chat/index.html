@@ -544,6 +544,7 @@
     // Falls noch derselbe Chat offen: sauberen Verlauf nachladen
     if (activeId === target) {
       const fresh = await A().getConversation(target);
+      if (activeId !== target) return;   // Chat wurde währenddessen gewechselt
       renderMessages(fresh, { force: true });
     }
   }
@@ -586,7 +587,9 @@
     if (activeId) { const p = preview.get(activeId); if (p) p.unread = 0; }
     renderSidebar();
     if (activeId) {
-      const msgs = await A().getConversation(activeId);
+      const id = activeId;
+      const msgs = await A().getConversation(id);
+      if (activeId !== id) return;   // Chat wurde währenddessen gewechselt
       renderMessages(msgs);   // re-rendert nur bei Änderung (Signatur-Diff)
     }
   }
