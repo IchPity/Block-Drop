@@ -92,7 +92,7 @@ function spawnBackgroundBlocks() {
 // ── Sound-Verdrahtung ────────────────────────────────────────────────
 // UI-Sounds laufen zentral über Event-Delegation — neue Buttons/Karten
 // klingen damit automatisch, ohne dass jeder Listener Sfx.play() rufen muss.
-const SFX_SELECTOR = '.auth-tab, .settings-tab, .party-btn, .minigame-card.available, .badge-id, .btn';
+const SFX_SELECTOR = '.auth-tab, .settings-tab, .party-btn, .minigame-card, .badge-id, .btn';
 
 function setupSfx() {
   document.addEventListener('click', (e) => {
@@ -444,6 +444,17 @@ function setupKeyboard() {
       return;
     }
 
+    // Einstellungen: Enter auf einem Kategorie-Reiter springt direkt in dessen
+    // erste Option (Schalter/Auswahl/Regler). So kommt man per Enter von den
+    // Reitern oben zu den eigentlichen Einstellungen — z.B. zum Vollbild-
+    // Schalter oder den Lautstärke-Reglern, ganz ohne Maus.
+    if (e.key === 'Enter' && e.target.classList.contains('settings-tab')) {
+      const panel = document.getElementById(e.target.dataset.panel);
+      const first = panel && panel.querySelector(FOCUSABLE);
+      if (first) { e.preventDefault(); first.focus(); Sfx.play('hover'); }
+      return;
+    }
+
     // Tastenkombis (Strg+W, Alt+←, …) NICHT als Navigation deuten.
     if (e.ctrlKey || e.metaKey || e.altKey) return;
 
@@ -463,6 +474,14 @@ function setupKeyboard() {
     else if (isActive('screen-credits')) container = document.getElementById('screen-credits');
     if (!container) return;
 
+    // In den Einstellungen die deterministische Reiter-/Options-Navigation
+    // verwenden (zuverlässiger als die geometrische, s. handleSettingsKey).
+    if (isActive('screen-settings') && !quitOpen && !accountOpen()) {
+      if (handleSettingsKey(e, dir)) { e.preventDefault(); return; }
+      // nicht behandelt (←/→ auf einer Option) → native Aufgabe behalten
+      if (dir === 'left' || dir === 'right') return;
+    }
+
     // Auf Bedienelementen (Textfeld, Regler, Auswahl, Schalter) bleibt die
     // WAAGERECHTE Pfeilbewegung ihre native Aufgabe: Cursor im Text, Regler
     // verstellen, Auswahl wechseln. Hoch/Runter springt immer zwischen Zeilen.
@@ -476,6 +495,58 @@ function setupKeyboard() {
 // Alles, was per Tastatur fokussierbar ist (nicht nur Buttons): Schalter,
 // Regler, Auswahlfelder und Eingaben gehören zur Navigation dazu.
 const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), a[href]';
+
+// ── Einstellungen: deterministische Tastatur-Navigation ──────────────────
+// In den Einstellungen ist die geometrische Navigation zu unzuverlässig: nach
+// dem Verstellen einer Option (Regler/Auswahl) kam man nicht mehr sicher zu
+// den Reitern zurück (Hoch landete schlimmstenfalls auf „Zurücksetzen"), und
+// ←/→ verstellte nur die Option, statt den Reiter zu wechseln. Diese Funktion
+// regelt die Navigation klar:
+//   • Auf einem Reiter:  ←/→ wechselt den Reiter, ↓/Enter springt in die Optionen.
+//   • Auf einer Option:  ↑/↓ wechselt die Option, an der obersten zurück zum Reiter.
+//                        ←/→ bleibt native (Regler verstellen / Auswahl wechseln).
+// Gibt true zurück, wenn die Taste behandelt wurde (dann kein moveFocus mehr).
+// Back/Reset im Header bleiben per Tab-Taste erreichbar (Tab ist nicht belegt).
+function handleSettingsKey(e, dir) {
+  const tabs = [...document.querySelectorAll('.settings-tab')].filter(t => !t.hidden);
+  if (!tabs.length) return false;
+  const activeTab = tabs.find(t => t.classList.contains('active')) || tabs[0];
+  const panel = activeTab && document.getElementById(activeTab.dataset.panel);
+  const controls = panel
+    ? [...panel.querySelectorAll(FOCUSABLE)].filter(c => c.offsetParent !== null)
+    : [];
+  const onTab = e.target.classList.contains('settings-tab');
+  const ctlIndex = controls.indexOf(e.target);
+
+  if (onTab) {
+    if (dir === 'left' || dir === 'right') {
+      const next = tabs[tabs.indexOf(e.target) + (dir === 'right' ? 1 : -1)];
+      if (next) { activateSettingsTab(next); next.focus(); Sfx.play('tab'); }
+      return true;
+    }
+    if (dir === 'down') {
+      if (controls[0]) { controls[0].focus(); Sfx.play('hover'); }
+      return true;
+    }
+    return true; // ↑ ganz oben — nichts darüber (kein Sprung auf „Zurücksetzen")
+  }
+
+  if (ctlIndex !== -1) {
+    if (dir === 'up') {
+      (ctlIndex === 0 ? activeTab : controls[ctlIndex - 1]).focus();
+      Sfx.play('hover');
+      return true;
+    }
+    if (dir === 'down') {
+      const next = controls[ctlIndex + 1];
+      if (next) { next.focus(); Sfx.play('hover'); }
+      return true; // an der untersten Option bleiben
+    }
+    return false; // ←/→ → native (Regler/Auswahl)
+  }
+
+  return false; // weder Reiter noch Option (z.B. Header-Buttons) → geometrisch
+}
 
 // Geometrische Fokus-Navigation: springt zum nächstgelegenen sichtbaren
 // Element in Richtung `dir` ('up'|'down'|'left'|'right'). Funktioniert dadurch
@@ -531,10 +602,12 @@ function renderMenu() {
   const grid = document.getElementById('minigameGrid');
   grid.innerHTML = '';
   MINIGAMES.forEach((game, i) => {
-    // <button> statt <div>: per Tab/Pfeiltasten fokussierbar (Tastatur-Nav)
+    // <button> statt <div>: per Tab/Pfeiltasten fokussierbar (Tastatur-Nav).
+    // Karten sind IMMER auswählbar/fokussierbar — auch noch nicht spielbare
+    // („Bald"). Klick/Enter auf ein „Bald"-Spiel zeigt nur einen Hinweis-Toast,
+    // gestartet wird (noch) nichts.
     const card = document.createElement('button');
     card.type = 'button';
-    card.disabled = !game.available;
     card.className = `minigame-card ${game.available ? 'available' : 'locked'}`;
     card.style.setProperty('--card-i', i);
     card.innerHTML = `
@@ -543,7 +616,10 @@ function renderMenu() {
       <p>${game.desc}</p>
       <span class="badge">${game.available ? 'Spielen' : 'Bald'}</span>
     `;
-    if (game.available && game.start) card.addEventListener('click', game.start);
+    card.addEventListener('click', () => {
+      if (game.available && game.start) game.start();
+      else showToast(`🎮 „${game.name}" kommt bald!`);
+    });
     grid.appendChild(card);
   });
 }
@@ -892,7 +968,7 @@ async function boot() {
   setupKeyboard();
   await setupSettings();
   document.getElementById('appVersion').textContent =
-    `Block Games v${window.blockGames?.version || '?'} · F11 = Vollbild an/aus`;
+    `Block Games v${window.blockGames?.version || '?'}`;
 
   document.getElementById('btnParty').addEventListener('click', () => {
     showToast(isOnlineAllowed()

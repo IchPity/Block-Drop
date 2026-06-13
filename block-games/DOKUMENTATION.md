@@ -235,9 +235,20 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
 - **Login/Registrierung:** Der Cursor steht beim Öffnen direkt im ersten Feld
   (`showAuth()`). Der Fokus auf einen Reiter (per Pfeil/WASD) schaltet das
   Formular sofort um (`focus`-Aktivierung wie bei den Einstellungs-Reitern).
-- **Einstellungen:** Die Kategorie-Reiter werden per ←/→ (bzw. A/D)
-  angesteuert; der Fokus auf einen Reiter aktiviert ihn direkt
-  (`activateSettingsTab()`).
+- **Einstellungen (deterministische Navigation, `handleSettingsKey()`):** In den
+  Einstellungen gilt NICHT die geometrische Navigation, sondern eine klare
+  Reiter-/Options-Logik (zuverlässiger, besonders nach dem Verstellen einer
+  Option):
+  - **Auf einem Reiter:** ←/→ (bzw. A/D) wechselt den Reiter; **↓ oder Enter**
+    springt in die erste Option (Schalter/Auswahl/Regler).
+  - **Auf einer Option:** ↑/↓ wechselt die Option; an der **obersten Option
+    bringt ↑ zurück zum Reiter** — von dort wechselt ←/→ wieder die Reiter.
+    ←/→ auf einer Option bleibt native (Regler verstellen / Auswahl wechseln).
+  - Back/Reset im Header bleiben per **Tab** erreichbar (Tab ist nicht belegt).
+  - Die gerade angesteuerte Option wird **deutlich gelb markiert**: gelber Balken
+    + gelbe Schrift auf der Zeile (`.setting-row:focus-within`), beim Lautstärke-
+    Regler zusätzlich gelber, vergrößerter Griff. Der aktive Reiter selbst trägt
+    gelbe Schrift + gelbe Unterkante.
 - Fokus-Ring nur bei Tastatur-Bedienung (`:focus-visible`, gelber Rahmen) —
   Mausklicks erzeugen keinen Ring.
 - **Esc**: schließt das offene Overlay (Beenden / Konto) bzw. führt von den
@@ -281,6 +292,47 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
   Klartext — gleicher Key wie die Website, RLS schützt die Daten.
 
 ## Änderungsprotokoll
+
+### v0.7.1 — 2026-06-13
+- **„F11 = Vollbild"-Hinweis aus dem Hauptmenü-Footer entfernt:** Die
+  Versionszeile unten im Menü (`#appVersion`) zeigt nur noch
+  „Block Games v…", ohne den F11-Zusatz. F11 schaltet weiterhin den Vollbild
+  um (Hinweis dazu steht weiter im Vollbild-Setting).
+- **Beenden-Dialog Nachricht geändert:** Statt „Block Games wird geschlossen."
+  heißt es nun „Möchtest du uns denn etwa wirklich verlassen?" — freundlicher,
+  spielerischer Ton.
+- **Gelber Fokus-Ring am Spieler-Badge entzerrt:** `.badge-id` bekommt etwas
+  Innen-Padding (`3px 10px 3px 3px`), damit der gelbe `:focus-visible`-Ring
+  nicht direkt am Namen (z.B. am „t" von „Gast") klebt.
+- **Minigame-Karten immer auswählbar (noch nicht spielbar):** Karten sind
+  nicht mehr `disabled` — auch „Bald"-Spiele lassen sich per Maus/Tastatur
+  anwählen und animieren (Lift + `@keyframes iconPulse` beim Hover/Fokus, jetzt
+  für ALLE Karten statt nur `.available`). Klick/Enter auf ein „Bald"-Spiel
+  zeigt einen Hinweis-Toast („… kommt bald!"), gestartet wird nichts. Gesperrte
+  Karten sind nur noch leicht gedimmt (`opacity 0.62`, beim Hover 0.85).
+  `SFX_SELECTOR` deckt jetzt alle `.minigame-card` ab.
+- **Einstellungen-Navigation komplett überarbeitet (deterministisch):** Die
+  geometrische Navigation war hier zu unzuverlässig — nach dem Verstellen einer
+  Option kam man nicht mehr zu den Reitern zurück (↑ landete u.U. auf
+  „Zurücksetzen"), und ←/→ verstellte nur die Option statt den Reiter zu
+  wechseln. Neue Funktion `handleSettingsKey()` (in `app.js`):
+  - **Auf einem Reiter:** ←/→ wechselt den Reiter, **↓ oder Enter** springt in
+    die Optionen.
+  - **Auf einer Option:** ↑/↓ wechselt die Option; an der obersten bringt **↑
+    zurück zum Reiter** (von dort wechselt ←/→ wieder die Reiter). ←/→ auf der
+    Option bleibt native (Regler/Auswahl). Back/Reset per Tab erreichbar.
+  - Verifiziert per Playwright: voller Ablauf Reiter→Enter→Option verstellen→↑
+    zurück→Reiter wechseln klappt.
+- **Einstellungen per Tastatur deutlich sichtbarer:**
+  - **Gerade angesteuerte Option wird klar gelb markiert**
+    (`.setting-row:focus-within`: gelber Hintergrund + Balken links + gelbe
+    Schrift; `.range-value` gelb). So sieht man bei den drei Lautstärke-Reglern
+    sofort, welcher ausgewählt ist.
+  - **Fokussierter Regler-Griff wird gelb, größer und glüht**
+    (`input[type=range]:focus-visible::-webkit-slider-thumb`).
+  - **Aktiver Reiter** trägt jetzt gelbe Schrift + gelbe Unterkante
+    (`.settings-tab.active`), statt nur einer leicht helleren Fläche.
+  - Hinweistext unten erwähnt die Enter-Navigation.
 
 ### v0.7.0 — 2026-06-13
 - **Einstellungen in Kategorie-Reiter aufgeteilt:** Oben wählbar (Konto ·
