@@ -89,8 +89,10 @@
         <p class="brand-sub"><span class="brand-star">★</span> Party Arcade <span class="brand-star">★</span></p>
       </div>
       <div class="player-badge">
-        <div class="avatar" id="menuAvatar">?</div>
-        <span id="menuUsername">…</span>
+        <button class="badge-id" id="btnAccountPanel" title="Konto & Freunde">
+          <span class="avatar" id="menuAvatar">?</span>
+          <span id="menuUsername">…</span>
+        </button>
         <button class="btn btn-ghost btn-gear" id="btnSettings" title="Einstellungen">⚙️</button>
         <button class="btn btn-ghost" id="btnAccount">Abmelden</button>
         <button class="btn btn-ghost btn-gear btn-quit" id="btnQuit" title="Spiel beenden">⏻</button>
@@ -163,6 +165,40 @@
       </header>
 
       <div class="settings-grid">
+        <!-- Konto bearbeiten — nur sichtbar, wenn angemeldet (app.js).
+             Name = Username/Login-Schlüssel, E-Mail ist optionale Kontaktadresse. -->
+        <section class="settings-card wide" id="accountSettingsCard" hidden>
+          <h2>👤 Konto</h2>
+          <div class="account-forms">
+            <form class="account-form" id="formName">
+              <label>Anzeigename
+                <span class="hint">Username &amp; Login (3–20 Zeichen)</span>
+                <div class="account-field">
+                  <input type="text" id="accName" minlength="3" maxlength="20" autocomplete="username">
+                  <button type="submit" class="btn btn-primary btn-sm">Speichern</button>
+                </div>
+              </label>
+            </form>
+            <form class="account-form" id="formEmail">
+              <label>E-Mail <span class="hint">(optional, für Kontakt)</span>
+                <div class="account-field">
+                  <input type="email" id="accMail" autocomplete="email" placeholder="keine hinterlegt">
+                  <button type="submit" class="btn btn-primary btn-sm">Speichern</button>
+                </div>
+              </label>
+            </form>
+            <form class="account-form" id="formPw">
+              <label>Neues Passwort <span class="hint">(min. 6 Zeichen)</span>
+                <div class="account-field">
+                  <input type="password" id="accPw" minlength="6" autocomplete="new-password" placeholder="••••••">
+                  <button type="submit" class="btn btn-primary btn-sm">Ändern</button>
+                </div>
+              </label>
+            </form>
+          </div>
+          <p id="accountMsg" class="account-msg" hidden></p>
+        </section>
+
         <section class="settings-card">
           <h2>🖥️ Anzeige</h2>
           <div class="setting-row">
@@ -235,6 +271,46 @@
         In den Minigames öffnet später ein kleines Einstellungs-Fenster (Pause)
         dieselben Regler — alles bleibt automatisch synchron.
       </p>
+    </div>
+  </div>
+
+  <!-- ── Konto & Freunde ──────────────────────────────────────────────
+       Öffnet der Klick aufs Spieler-Badge im Menü. Zeigt Profil, offene
+       Freundschaftsanfragen und die Freundesliste; „Freund suchen" sucht
+       per Username. Konto-Bearbeitung liegt in den Einstellungen. -->
+  <div id="accountOverlay" class="overlay" hidden>
+    <div class="overlay-card account-card">
+      <header class="account-head">
+        <div class="avatar avatar-lg" id="accAvatar">?</div>
+        <div class="account-id">
+          <strong id="accUsername">…</strong>
+          <small id="accEmail"></small>
+        </div>
+        <button class="btn btn-back account-close" id="btnAccountClose" title="Schließen">✕</button>
+      </header>
+
+      <div class="account-body">
+        <div class="friends-add">
+          <input type="text" id="friendSearch" placeholder="🔍 Freund per Username suchen…"
+                 maxlength="20" autocomplete="off">
+          <div class="friend-results" id="friendResults" hidden></div>
+        </div>
+
+        <h3 class="friends-title">Anfragen <span class="count-chip" id="reqCount" hidden>0</span></h3>
+        <div class="friend-list" id="friendRequests">
+          <p class="friend-empty">Keine offenen Anfragen.</p>
+        </div>
+
+        <h3 class="friends-title">Freunde <span class="count-chip" id="friendCount" hidden>0</span></h3>
+        <div class="friend-list" id="friendList">
+          <p class="friend-empty">Noch keine Freunde — such oben jemanden!</p>
+        </div>
+      </div>
+
+      <div class="account-actions">
+        <button class="btn btn-ghost" id="btnAccountSettings">⚙️ Konto bearbeiten</button>
+        <button class="btn btn-ghost btn-signout" id="btnSignOut">Abmelden</button>
+      </div>
     </div>
   </div>
 

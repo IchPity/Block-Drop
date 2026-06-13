@@ -92,7 +92,7 @@ function spawnBackgroundBlocks() {
 // ── Sound-Verdrahtung ────────────────────────────────────────────────
 // UI-Sounds laufen zentral über Event-Delegation — neue Buttons/Karten
 // klingen damit automatisch, ohne dass jeder Listener Sfx.play() rufen muss.
-const SFX_SELECTOR = '.auth-tab, .party-btn, .minigame-card.available, .btn';
+const SFX_SELECTOR = '.auth-tab, .party-btn, .minigame-card.available, .badge-id, .btn';
 
 function setupSfx() {
   document.addEventListener('click', (e) => {
@@ -316,14 +316,23 @@ async function setupSettings() {
     showToast('Einstellungen zurückgesetzt.');
   });
 
-  document.getElementById('btnSettings').addEventListener('click', () => showScreen('screen-settings'));
+  document.getElementById('btnSettings').addEventListener('click', () => {
+    syncAccountCard();
+    showScreen('screen-settings');
+  });
   document.getElementById('btnSettingsBack').addEventListener('click', () => showScreen('screen-menu'));
   // Esc → zurück ins Menü übernimmt der zentrale Tastatur-Handler (setupKeyboard).
 
-  // Gespeicherte Einstellungen beim Start anwenden. Das Fenster startet
-  // immer im Vollbild (main.js); wer Fenstermodus gespeichert hat, landet
-  // hier sofort wieder dort (Größe setzt der onFullscreenChange-Handler).
-  if (!Settings.get('fullscreen')) window.blockGames.setFullscreen(false);
+  // Start IMMER im Vollbild — wie bei anderen Videospielen, ohne Taskleiste.
+  // Das Fenster startet bereits im Vollbild (main.js); hier erzwingen wir es
+  // unabhängig vom gespeicherten Wert noch einmal und ziehen Store + UI nach
+  // (sonst würde ein zuvor gespeicherter Fenstermodus das Spiel beim Start
+  // im Fenster — mit sichtbarer Taskleiste — öffnen). Fenstermodus bleibt
+  // jederzeit per Schalter oder F11 erreichbar.
+  Settings.set('fullscreen', true);
+  chkFull.checked = true;
+  selRes.disabled = true;
+  window.blockGames.setFullscreen(true);
   applyReducedFx();
 }
 
@@ -358,9 +367,10 @@ function setupKeyboard() {
     const isActive = (id) => document.getElementById(id).classList.contains('active');
 
     if (e.key === 'Escape') {
-      // Esc schließt erst den Dialog, sonst führt es aus Einstellungen
-      // bzw. der Credits-Seite zurück ins Hauptmenü.
+      // Esc schließt erst offene Overlays (Beenden / Konto), sonst führt es
+      // aus Einstellungen bzw. der Credits-Seite zurück ins Hauptmenü.
       if (quitOpen) closeQuitDialog();
+      else if (accountOpen()) closeAccount();
       else if (isActive('screen-settings') || isActive('screen-credits')) {
         showScreen('screen-menu');
       }
@@ -370,6 +380,9 @@ function setupKeyboard() {
     if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
     // In Eingabefeldern/Slidern/Selects behalten die Pfeile ihre normale Aufgabe
     if (e.target.matches('input, select, textarea')) return;
+    // Das Konto-Overlay nutzt normale Tab-Navigation — Pfeile dürfen nicht
+    // zu den Buttons im Menü dahinter springen.
+    if (accountOpen()) return;
 
     // Pfeil-Navigation gilt im Beenden-Dialog, im Hauptmenü und auf Credits
     let container = null;
@@ -497,6 +510,285 @@ function setupCredits() {
   // Esc → zurück ins Menü übernimmt der zentrale Tastatur-Handler (setupKeyboard).
 }
 
+// ── Konto & Freunde ──────────────────────────────────────────────────
+// Overlay (Profil + Freundesliste + Anfragen + Freund-Suche), geöffnet über
+// das Spieler-Badge im Menü. Die eigentliche Konto-Bearbeitung (Name/E-Mail/
+// Passwort) liegt in den Einstellungen — der „Konto bearbeiten"-Knopf hier
+// springt nur dorthin. Im Gast-Modus gibt es kein Konto → Hinweis.
+
+function accountOpen() {
+  return !document.getElementById('accountOverlay').hidden;
+}
+
+function openAccount() {
+  if (!isOnlineAllowed()) {
+    showToast('Im Gast-Modus gibt es kein Konto — melde dich an, um Freunde zu sehen.');
+    return;
+  }
+  renderAccountHeader();
+  document.getElementById('accountOverlay').hidden = false;
+  document.getElementById('btnAccountClose').focus();
+  loadFriends();
+}
+
+function closeAccount() {
+  document.getElementById('accountOverlay').hidden = true;
+  const results = document.getElementById('friendResults');
+  results.hidden = true;
+  results.innerHTML = '';
+  document.getElementById('friendSearch').value = '';
+  document.getElementById('btnAccountPanel').focus();
+}
+
+function renderAccountHeader() {
+  const name = Auth.username;
+  document.getElementById('accUsername').textContent = name;
+  document.getElementById('accAvatar').textContent = name.charAt(0).toUpperCase();
+  const mail = Auth.contactEmail;
+  const mailEl = document.getElementById('accEmail');
+  mailEl.textContent = mail || 'keine E-Mail hinterlegt';
+  mailEl.classList.toggle('muted', !mail);
+}
+
+// Eine Freundes-/Anfrage-Zeile bauen (Avatar-Initiale + Name + Aktionen).
+// `kind`: 'friend' | 'incoming' | 'outgoing'
+function buildFriendRow(entry, kind) {
+  const row = document.createElement('div');
+  row.className = 'friend-row';
+
+  const av = document.createElement('span');
+  av.className = 'avatar friend-avatar';
+  av.textContent = entry.username.charAt(0).toUpperCase();
+
+  const name = document.createElement('span');
+  name.className = 'friend-name';
+  name.textContent = entry.username;
+
+  const actions = document.createElement('span');
+  actions.className = 'friend-actions';
+
+  if (kind === 'incoming') {
+    const accept = document.createElement('button');
+    accept.className = 'btn btn-primary btn-sm';
+    accept.textContent = 'Annehmen';
+    accept.dataset.accept = entry.rowId;
+    const decline = document.createElement('button');
+    decline.className = 'btn btn-ghost btn-sm';
+    decline.textContent = 'Ablehnen';
+    decline.dataset.remove = entry.rowId;
+    actions.append(accept, decline);
+  } else if (kind === 'outgoing') {
+    const pending = document.createElement('span');
+    pending.className = 'friend-pending';
+    pending.textContent = 'Angefragt';
+    const cancel = document.createElement('button');
+    cancel.className = 'btn btn-ghost btn-sm';
+    cancel.textContent = 'Abbrechen';
+    cancel.dataset.remove = entry.rowId;
+    actions.append(pending, cancel);
+  } else {
+    const remove = document.createElement('button');
+    remove.className = 'btn btn-ghost btn-sm';
+    remove.textContent = 'Entfernen';
+    remove.dataset.remove = entry.rowId;
+    actions.append(remove);
+  }
+
+  row.append(av, name, actions);
+  return row;
+}
+
+async function loadFriends() {
+  const reqBox = document.getElementById('friendRequests');
+  const listBox = document.getElementById('friendList');
+  const { friends, incoming, outgoing } = await Auth.getFriendOverview();
+
+  // Overlay könnte inzwischen geschlossen sein → nichts mehr tun.
+  if (!accountOpen()) return;
+
+  // Anfragen: eingehende (mit Annehmen/Ablehnen) + eigene offene.
+  reqBox.innerHTML = '';
+  if (!incoming.length && !outgoing.length) {
+    reqBox.innerHTML = '<p class="friend-empty">Keine offenen Anfragen.</p>';
+  } else {
+    incoming.forEach(e => reqBox.appendChild(buildFriendRow(e, 'incoming')));
+    outgoing.forEach(e => reqBox.appendChild(buildFriendRow(e, 'outgoing')));
+  }
+
+  listBox.innerHTML = '';
+  if (!friends.length) {
+    listBox.innerHTML = '<p class="friend-empty">Noch keine Freunde — such oben jemanden!</p>';
+  } else {
+    friends.forEach(e => listBox.appendChild(buildFriendRow(e, 'friend')));
+  }
+
+  setCountChip('reqCount', incoming.length);
+  setCountChip('friendCount', friends.length);
+}
+
+function setCountChip(id, n) {
+  const chip = document.getElementById(id);
+  chip.textContent = n;
+  chip.hidden = n === 0;
+}
+
+// Suchergebnisse für „Freund hinzufügen". Knöpfe schicken eine Anfrage.
+async function runFriendSearch(query) {
+  const box = document.getElementById('friendResults');
+  const users = await Auth.searchUsers(query);
+  if (!accountOpen()) return;
+  box.innerHTML = '';
+  if (!users.length) {
+    box.hidden = false;
+    box.innerHTML = '<p class="friend-empty">Niemand gefunden.</p>';
+    return;
+  }
+  users.forEach(u => {
+    const row = document.createElement('div');
+    row.className = 'friend-row';
+    const av = document.createElement('span');
+    av.className = 'avatar friend-avatar';
+    av.textContent = (u.username || '?').charAt(0).toUpperCase();
+    const name = document.createElement('span');
+    name.className = 'friend-name';
+    name.textContent = u.username;
+    const add = document.createElement('button');
+    add.className = 'btn btn-primary btn-sm';
+    add.textContent = '+ Hinzufügen';
+    add.dataset.add = u.id;
+    row.append(av, name, add);
+    box.appendChild(row);
+  });
+  box.hidden = false;
+}
+
+function setupAccount() {
+  document.getElementById('btnAccountPanel').addEventListener('click', openAccount);
+  document.getElementById('btnAccountClose').addEventListener('click', closeAccount);
+
+  // Klick auf den abgedunkelten Hintergrund schließt das Overlay.
+  document.getElementById('accountOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'accountOverlay') closeAccount();
+  });
+
+  document.getElementById('btnSignOut').addEventListener('click', () => {
+    closeAccount();
+    Auth.signOut(); // onChange wechselt zum Auth-Screen
+  });
+
+  document.getElementById('btnAccountSettings').addEventListener('click', () => {
+    closeAccount();
+    syncAccountCard();
+    showScreen('screen-settings');
+  });
+
+  // Freund-Suche (entprellt).
+  let searchTimer = null;
+  const searchInput = document.getElementById('friendSearch');
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.trim();
+    clearTimeout(searchTimer);
+    if (q.length < 2) {
+      const box = document.getElementById('friendResults');
+      box.hidden = true;
+      box.innerHTML = '';
+      return;
+    }
+    searchTimer = setTimeout(() => runFriendSearch(q), 300);
+  });
+
+  // Aktionen in Listen + Suchergebnissen (Event-Delegation).
+  document.getElementById('accountOverlay').addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-add], button[data-accept], button[data-remove]');
+    if (!btn) return;
+    btn.disabled = true;
+
+    if (btn.dataset.add) {
+      const { error } = await Auth.sendFriendRequest(btn.dataset.add);
+      showToast(error ? (error.message || 'Anfrage fehlgeschlagen.') : 'Anfrage gesendet! 🎉');
+      Sfx.play(error ? 'error' : 'success');
+      const box = document.getElementById('friendResults');
+      box.hidden = true;
+      box.innerHTML = '';
+      document.getElementById('friendSearch').value = '';
+      loadFriends();
+    } else if (btn.dataset.accept) {
+      const { error } = await Auth.acceptFriendRequest(btn.dataset.accept);
+      if (error) { showToast(error.message || 'Fehlgeschlagen.'); btn.disabled = false; }
+      else { Sfx.play('success'); loadFriends(); }
+    } else if (btn.dataset.remove) {
+      const { error } = await Auth.removeFriend(btn.dataset.remove);
+      if (error) { showToast(error.message || 'Fehlgeschlagen.'); btn.disabled = false; }
+      else loadFriends();
+    }
+  });
+}
+
+// ── Konto bearbeiten (in den Einstellungen) ──────────────────────────
+// Die Karte ist nur für angemeldete Nutzer sichtbar und wird beim Öffnen
+// der Einstellungen mit den aktuellen Werten gefüllt.
+function syncAccountCard() {
+  const card = document.getElementById('accountSettingsCard');
+  const loggedIn = isOnlineAllowed();
+  card.hidden = !loggedIn;
+  if (!loggedIn) return;
+  document.getElementById('accName').value = Auth.username;
+  document.getElementById('accMail').value = Auth.contactEmail;
+  document.getElementById('accPw').value = '';
+  hideAccountMsg();
+}
+
+let accountMsgTimer = null;
+function showAccountMsg(msg, ok) {
+  const el = document.getElementById('accountMsg');
+  el.textContent = msg;
+  el.hidden = false;
+  el.classList.toggle('ok', !!ok);
+  el.classList.toggle('err', !ok);
+  Sfx.play(ok ? 'success' : 'error');
+  clearTimeout(accountMsgTimer);
+  accountMsgTimer = setTimeout(hideAccountMsg, 4000);
+}
+function hideAccountMsg() {
+  const el = document.getElementById('accountMsg');
+  el.hidden = true;
+  el.textContent = '';
+}
+
+function setupAccountSettings() {
+  // Hilfsfunktion: Formular absenden, Knopf sperren, Ergebnis melden.
+  function wire(formId, run) {
+    document.getElementById(formId).addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      const { ok, msg } = await run();
+      btn.disabled = false;
+      showAccountMsg(msg, ok);
+    });
+  }
+
+  wire('formName', async () => {
+    const { error } = await Auth.updateUsername(document.getElementById('accName').value);
+    if (error) return { ok: false, msg: error.message || 'Name konnte nicht geändert werden.' };
+    return { ok: true, msg: 'Name aktualisiert.' };
+  });
+
+  wire('formEmail', async () => {
+    const { error } = await Auth.updateContactEmail(document.getElementById('accMail').value);
+    if (error) return { ok: false, msg: error.message || 'E-Mail konnte nicht geändert werden.' };
+    return { ok: true, msg: 'E-Mail gespeichert.' };
+  });
+
+  wire('formPw', async () => {
+    const input = document.getElementById('accPw');
+    const { error } = await Auth.updatePassword(input.value);
+    if (error) return { ok: false, msg: error.message || 'Passwort konnte nicht geändert werden.' };
+    input.value = '';
+    return { ok: true, msg: 'Passwort geändert.' };
+  });
+}
+
 // ── Start ────────────────────────────────────────────────────────────
 async function boot() {
   spawnBackgroundBlocks();
@@ -505,6 +797,8 @@ async function boot() {
   setupAuthForms();
   setupQuit();
   setupCredits();
+  setupAccount();
+  setupAccountSettings();
   setupKeyboard();
   await setupSettings();
   document.getElementById('appVersion').textContent =
@@ -522,9 +816,21 @@ async function boot() {
     if (Auth.user) {
       guestMode = false;
       renderMenu();
-      showScreen('screen-menu');
-    } else if (!guestMode) {
-      showScreen('screen-auth');
+      // Nur beim Login (vom Lade-/Auth-Screen) ins Menü springen. Profil-
+      // Updates (Name/E-Mail/Passwort) feuern denselben Event — dabei darf
+      // die aktuelle Seite (z.B. die Einstellungen) NICHT verlassen werden.
+      const isActive = (id) => document.getElementById(id).classList.contains('active');
+      if (isActive('screen-auth') || isActive('screen-loading')) showScreen('screen-menu');
+      // Konto-Overlay-Kopf nachziehen (z.B. Name geändert); die Konto-Karte
+      // in den Einstellungen wird bewusst NICHT neu gefüllt, damit die
+      // Erfolgsmeldung und laufende Eingaben nicht überschrieben werden.
+      if (accountOpen()) renderAccountHeader();
+    } else {
+      // Abgemeldet: evtl. offenes Konto-Overlay schließen + Konto-Karte
+      // in den Einstellungen verstecken.
+      if (accountOpen()) closeAccount();
+      syncAccountCard();
+      if (!guestMode) showScreen('screen-auth');
     }
   });
 

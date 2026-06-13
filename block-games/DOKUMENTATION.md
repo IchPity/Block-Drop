@@ -36,11 +36,11 @@ Hinweis: Node.js liegt portabel auf `D:\` (`D:\node.exe`).
 |---|---|
 | `main.js` | Electron-Hauptprozess: Fenster (Vollbild), F11-Toggle, kein App-Menü, IPC für Anzeige-Einstellungen + `app:quit` |
 | `preload.js` | Brücke Main↔Renderer: Version/Plattform, Anzeige-Steuerung (Vollbild, Fenstergröße, Display-Infos), `quitApp()` |
-| `renderer/index.html` | Alle Screens: Laden, Login/Registrierung, Hauptmenü, Einstellungen, **Credits** + Beenden-Overlay; Bühnen-Hintergrund-Layer |
-| `renderer/app.js` | UI-Logik: Screen-Wechsel, Gast-Modus, Menü-Rendering, **Credits-Rendering**, Einstellungs-UI, Toast, Sound-Verdrahtung, Beenden-Dialog, Tastatur-Navigation, animierter Hintergrund (Blöcke/Würfel/Sterne) |
+| `renderer/index.html` | Alle Screens: Laden, Login/Registrierung, Hauptmenü, Einstellungen (inkl. **Konto bearbeiten**), **Credits** + Beenden-Overlay + **Konto/Freunde-Overlay**; Bühnen-Hintergrund-Layer |
+| `renderer/app.js` | UI-Logik: Screen-Wechsel, Gast-Modus, Menü-Rendering, **Credits-Rendering**, Einstellungs-UI, **Konto/Freunde-Overlay + Konto-Bearbeitung**, Toast, Sound-Verdrahtung, Beenden-Dialog, Tastatur-Navigation, animierter Hintergrund (Blöcke/Würfel/Sterne) |
 | `renderer/settings.js` | Zentraler Einstellungs-Store (localStorage, onChange-Events, `effectiveVolume()`) |
 | `renderer/audio.js` | Sound-System `Sfx`: UI-Effekte per WebAudio synthetisiert (keine Audio-Dateien), Lautstärke aus dem Settings-Store |
-| `renderer/auth.js` | Supabase-Auth (gleiches Backend/Flow wie die Website) |
+| `renderer/auth.js` | Supabase-Auth + **Freundes- und Konto-API** (gleiches Backend wie die Website) |
 | `renderer/style.css` | Arcade-Look: Farben, Animationen, Layout, unsichtbare Scrollbalken, Kompakt-Stufen, Credits-Styling, Bühnen-Hintergrund |
 | `renderer/assets/` | Eigene lokale Assets: `block-icon.svg/.png/.ico` (Marken-Block), `cube.svg`/`star.svg` (Deko-Masken) |
 | `Block Games starten.bat` | Doppelklick-Start der App |
@@ -48,10 +48,16 @@ Hinweis: Node.js liegt portabel auf `D:\` (`D:\node.exe`).
 ## Verhalten & Entscheidungen
 
 ### Vollbild
-Die App startet **immer im Vollbild** (`fullscreen: true` in `main.js`).
-**F11** schaltet den Vollbildmodus um — das ist nötig, weil das Standard-Menü
-deaktiviert ist und es sonst keinen Weg aus dem Vollbild gäbe. Verlässt man
-den Vollbildmodus, fällt das Fenster auf 1280×800 zurück (min. 960×640).
+Die App startet **immer im Vollbild** — wie andere Videospiele, ohne sichtbare
+Taskleiste. Das Fenster wird mit `fullscreen: true` erzeugt (`main.js`);
+zusätzlich erzwingt `app.js` beim Start den Vollbildmodus unabhängig vom
+gespeicherten Wert (`Settings.set('fullscreen', true)` + `setFullscreen(true)`).
+Dadurch öffnet das Spiel auch dann im Vollbild, wenn zuvor Fenstermodus
+gespeichert war (sonst wäre beim Start die Taskleiste sichtbar).
+**F11** (oder der Schalter in den Einstellungen) wechselt jederzeit in den
+Fenstermodus — das ist nötig, weil das Standard-Menü deaktiviert ist und es
+sonst keinen Weg aus dem Vollbild gäbe. Verlässt man den Vollbildmodus, fällt
+das Fenster auf 1280×800 zurück (min. 960×640).
 
 ### Login & Gast-Modus
 - Anmeldung/Registrierung läuft gegen **dasselbe Supabase-Backend wie die
@@ -84,8 +90,9 @@ Erreichbar über das **⚙️-Zahnrad oben rechts im Hauptmenü** (zurück per
 | Audio | Gesamt / Musik / Soundeffekte (0–100 %) | nur gespeichert (noch kein Sound in der App); Spiele lesen die fertige Lautstärke über `Settings.effectiveVolume('music'|'sfx')` (0–1, Master eingerechnet) |
 
 „Zurücksetzen" stellt alle Defaults wieder her. Gespeicherte
-Anzeige-Einstellungen werden beim App-Start angewendet (Start ist immer
-Vollbild; wer Fenstermodus gespeichert hat, landet sofort dort).
+Anzeige-Einstellungen werden beim App-Start angewendet — **mit einer Ausnahme:
+der Start ist immer Vollbild** (siehe Abschnitt „Vollbild"), ein gespeicherter
+Fenstermodus greift erst, wenn man im laufenden Spiel umschaltet.
 
 **Geplant & verbindlich (siehe ROADMAP):** Jedes Minigame bekommt ein
 eigenes, **kleineres Einstellungs-Overlay** (z.B. im Pause-Menü, v.a. für
@@ -120,6 +127,44 @@ und die Haupt-Einstellungsseite immer synchron bleiben.
   („Spiel beenden?"); „Beenden" ruft per IPC `app:quit` → `app.quit()`.
   Abbrechen, Esc oder Klick auf den abgedunkelten Hintergrund schließen nur
   den Dialog. Nötig, weil die App im Vollbild ohne Menüleiste läuft.
+
+### Konto & Freunde
+
+- **Konto-Overlay** (`#accountOverlay` in `index.html`), geöffnet per Klick aufs
+  **Spieler-Badge** (Avatar + Name) oben links im Menü. Zeigt Profilkopf
+  (großer Avatar mit Initiale, Username, hinterlegte Kontakt-E-Mail),
+  **offene Freundschaftsanfragen** (eingehend mit „Annehmen/Ablehnen",
+  eigene als „Angefragt") und die **Freundesliste** (mit „Entfernen"),
+  dazu eine **Username-Suche** zum Anfragen neuer Freunde. Schließen per
+  „✕", **Esc** oder Klick auf den Hintergrund.
+- **Gast-Modus:** kein Konto → Klick aufs Badge zeigt nur einen Hinweis-Toast
+  (über `isOnlineAllowed()` gegated).
+- **Freundes-API in `renderer/auth.js`** gegen die Supabase-Tabelle
+  `public.friends` (Spiegel der Website): `getFriendOverview()` (eine Abfrage
+  + Nachladen der Usernamen), `searchUsers()`, `sendFriendRequest()`,
+  `acceptFriendRequest()`, `removeFriend()`. RLS erlaubt nur Zeilen, an denen
+  man selbst beteiligt ist. **Profilbilder bleiben außen vor** (CSP lässt nur
+  lokale Bilder zu) — Avatare zeigen wie im Menü die Namens-Initiale.
+
+### Konto bearbeiten (Einstellungen)
+
+- Eigene **Karte „👤 Konto"** oben in den Einstellungen — nur sichtbar, wenn
+  angemeldet (im Gast-Modus ausgeblendet). Drei kleine Formulare:
+  - **Anzeigename:** ändert `profiles.username` (unique). Da der Username der
+    **Login-Schlüssel** ist, zieht `Auth.updateUsername()` für Accounts mit
+    synthetischer Auth-Mail die Login-Mail `<username>@blockdrop.local`
+    automatisch nach (`auth.updateUser({ email })`), damit der Login mit dem
+    neuen Namen weiter klappt. Alt-Accounts mit echter Auth-Mail behalten ihre
+    Login-Mail. Validierung wie bei der Registrierung (3–20 Zeichen, `a–z 0–9 _`).
+  - **E-Mail:** optionale **Kontakt-Adresse** (`user_metadata.contact_email`,
+    nie die Auth-Mail). Leeren entfernt sie.
+  - **Passwort:** `auth.updateUser({ password })`, min. 6 Zeichen.
+- Jedes Formular meldet Erfolg/Fehler unter der Karte (`#accountMsg`, grün/rot).
+- **Wichtig:** Profil-Updates feuern denselben `Auth.onChange`-Event wie der
+  Login. Der Screen-Wechsel ins Menü passiert deshalb **nur beim Login**
+  (vom Lade-/Auth-Screen) — sonst würde das Bearbeiten aus den Einstellungen
+  herausspringen. Die Konto-Karte wird bei Update bewusst **nicht** neu
+  befüllt, damit Erfolgsmeldung und laufende Eingaben erhalten bleiben.
 
 ### Credits
 
@@ -203,6 +248,39 @@ und die Haupt-Einstellungsseite immer synchron bleiben.
   Klartext — gleicher Key wie die Website, RLS schützt die Daten.
 
 ## Änderungsprotokoll
+
+### v0.6.0 — 2026-06-13
+- **Konto & Freunde:** Neues Overlay (`#accountOverlay`), geöffnet per Klick
+  aufs Spieler-Badge im Menü — Profilkopf, offene Freundschaftsanfragen
+  (Annehmen/Ablehnen), Freundesliste (Entfernen) und Username-Suche zum
+  Anfragen. Schließen per ✕/Esc/Hintergrund. Im Gast-Modus nur Hinweis-Toast.
+- **Konto bearbeiten:** Neue Karte „👤 Konto" oben in den Einstellungen
+  (nur angemeldet sichtbar) zum Ändern von Anzeigename (Username/Login-Mail),
+  Kontakt-E-Mail und Passwort, mit Erfolg-/Fehlermeldung.
+- **`renderer/auth.js` erweitert:** Freundes-API (`getFriendOverview`,
+  `searchUsers`, `sendFriendRequest`, `acceptFriendRequest`, `removeFriend`)
+  gegen `public.friends` sowie Konto-API (`updateUsername`,
+  `updateContactEmail`, `updatePassword`) + Getter `userId`/`contactEmail`.
+- **`Auth.onChange`-Logik geschärft:** Screen-Wechsel ins Menü nur noch beim
+  Login (vom Lade-/Auth-Screen), damit Profil-Updates die Einstellungen nicht
+  verlassen; Konto-Overlay schließt + Konto-Karte versteckt sich beim Abmelden.
+- Spieler-Badge ist jetzt ein Button (`.badge-id`, klingt mit); Pfeil-Navigation
+  und Esc decken das Konto-Overlay korrekt ab (Pfeile springen nicht ins Menü
+  dahinter). Avatare nutzen CSP-konform die Namens-Initiale (keine Remote-Bilder).
+- Version auf 0.6.0 (package.json, preload.js).
+
+### v0.5.1 — 2026-06-13
+- **Start immer im Vollbild:** `app.js` erzwingt beim Boot den Vollbildmodus
+  unabhängig vom gespeicherten Wert (`Settings.set('fullscreen', true)` +
+  `setFullscreen(true)`, UI nachgezogen). Zuvor öffnete ein gespeicherter
+  Fenstermodus das Spiel im Fenster mit sichtbarer Taskleiste. Fenstermodus
+  bleibt per Schalter/F11 erreichbar.
+- **„Spielen"-Button beruhigt (cleanerer Look):** Glanz-Sweep dezenter und
+  seltener (Opazität 0.35 → 0.18, Intervall 4,5 s → 7 s); Hover-Wackeln mit
+  Rotation (`partyWobble`) entfernt — jetzt sauberes, ruhiges Anheben;
+  Würfel-Icon schwebt sanft auf/ab statt zu rotieren (`diceBounce` ohne
+  Drehung, 2,4 s → 3,4 s).
+- Version auf 0.5.1 (package.json, preload.js).
 
 ### v0.5.0 — 2026-06-13
 - **Hauptmenü-Redesign:** Großer Logo-/Titelbereich mit Glow und Pop-In plus

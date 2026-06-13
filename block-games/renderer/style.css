@@ -560,7 +560,8 @@ body::before {
   pointer-events: none;
 }
 
-/* Glanz-Sweep, der über den Button wandert */
+/* Dezenter Glanz-Sweep: zieht selten und sanft über den Button (kein
+   ständiges Aufblitzen — bewusst zurückhaltend für einen cleanen Look). */
 .party-btn::after {
   content: '';
   position: absolute;
@@ -568,18 +569,19 @@ body::before {
   left: -80%;
   width: 50%;
   height: 100%;
-  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.18), transparent);
   transform: skewX(-20deg);
-  animation: shine 4.5s ease-in-out infinite;
+  animation: shine 7s ease-in-out infinite;
 }
 
 @keyframes shine {
-  0%, 60% { left: -80%; }
+  0%, 78% { left: -80%; }
   100% { left: 160%; }
 }
 
+/* Hover: sauberes, ruhiges Anheben (ohne Wackeln/Rotation) */
 .party-btn:hover {
-  animation: partyWobble 0.5s ease-in-out;
+  transform: translateY(-3px);
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.45),
     inset 0 -6px 0 rgba(0, 0, 0, 0.22),
@@ -587,26 +589,18 @@ body::before {
     0 24px 60px rgba(176, 109, 255, 0.45);
 }
 
-@keyframes partyWobble {
-  0%   { transform: translateY(0) rotate(0); }
-  30%  { transform: translateY(-4px) rotate(-0.8deg); }
-  60%  { transform: translateY(-4px) rotate(0.8deg); }
-  100% { transform: translateY(-3px) rotate(0); }
-}
-
-.party-btn:hover { transform: translateY(-3px); }
 .party-btn:active { transform: translateY(2px); }
 
-/* Würfel-Icon hüpft dezent (Bounce) */
+/* Würfel-Icon schwebt sanft (dezentes Auf-und-Ab, ohne Drehung) */
 .party-btn-icon {
   font-size: 3em;
   filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.3));
-  animation: diceBounce 2.4s ease-in-out infinite;
+  animation: diceBounce 3.4s ease-in-out infinite;
 }
 
 @keyframes diceBounce {
-  0%, 100% { transform: translateY(0) rotate(-6deg); }
-  50%      { transform: translateY(-8px) rotate(8deg); }
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
 }
 
 .party-btn-text { flex: 1; }
@@ -1186,6 +1180,219 @@ select:focus-visible,
 }
 
 .btn-danger:hover:not(:disabled) { box-shadow: 0 7px 0 #a32626; }
+
+/* Kompakter Button (Konto-/Freunde-Aktionen) */
+.btn-sm {
+  font-size: 0.8em;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: 9px;
+}
+
+/* ── Konto & Freunde ────────────────────────────────────────────────── */
+/* Klickbares Spieler-Badge (Avatar + Name) öffnet das Konto-Overlay. */
+.badge-id {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  border-radius: 999px;
+  transition: transform 0.12s;
+}
+.badge-id:hover { transform: translateY(-1px); }
+.badge-id:hover #menuUsername { color: var(--yellow); }
+
+.avatar-lg {
+  width: 56px;
+  height: 56px;
+  font-size: 1.5em;
+}
+
+/* Konto-Overlay: breitere, linksbündige Karte */
+.account-card {
+  width: min(440px, 94vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  padding: 22px 24px 20px;
+}
+
+.account-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.account-id { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.account-id strong {
+  font-size: 1.25em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account-id small { color: var(--blue); font-size: 0.82em; }
+.account-id small.muted { color: var(--text-dim); font-style: italic; }
+
+.account-close {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 1em;
+  align-self: flex-start;
+}
+
+.account-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 0 4px;
+}
+
+.friends-add { position: relative; margin-bottom: 14px; }
+#friendSearch {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background: var(--bg-deep);
+  color: var(--text);
+  font-size: 0.92em;
+  outline: none;
+  user-select: text;
+  transition: border-color 0.15s;
+}
+#friendSearch:focus { border-color: var(--blue); }
+
+.friend-results {
+  margin-top: 8px;
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.friends-title {
+  font-size: 0.78em;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin: 14px 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.count-chip {
+  background: var(--purple);
+  color: #fff;
+  font-size: 0.85em;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 1px 8px;
+  letter-spacing: 0;
+}
+
+.friend-list { display: flex; flex-direction: column; gap: 6px; }
+
+.friend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.friend-avatar {
+  width: 32px;
+  height: 32px;
+  font-size: 0.95em;
+}
+
+.friend-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  font-size: 0.92em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friend-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.friend-pending { color: var(--text-dim); font-size: 0.78em; font-style: italic; }
+
+.friend-empty {
+  color: var(--text-dim);
+  font-size: 0.85em;
+  padding: 6px 8px;
+}
+
+.account-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  margin-top: 4px;
+  border-top: 1px solid var(--line);
+}
+.btn-signout:hover { color: var(--red); }
+
+/* Konto bearbeiten (Einstellungs-Karte) */
+.account-forms {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+.account-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9em;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.account-form .hint { font-weight: 400; opacity: 0.7; font-size: 0.88em; }
+.account-field { display: flex; gap: 8px; margin-top: 2px; }
+.account-field input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background: var(--bg-deep);
+  color: var(--text);
+  font-size: 0.92em;
+  outline: none;
+  user-select: text;
+  transition: border-color 0.15s;
+}
+.account-field input:focus { border-color: var(--blue); }
+
+.account-msg {
+  margin-top: 14px;
+  font-weight: 600;
+  font-size: 0.88em;
+}
+.account-msg.ok { color: var(--green); }
+.account-msg.err { color: var(--red); }
+
+/* Schmalere Fenster: Konto-Formulare untereinander */
+@media (max-width: 720px) {
+  .account-forms { grid-template-columns: 1fr; }
+}
 
 /* ── Toast ──────────────────────────────────────────────────────────── */
 .toast {
