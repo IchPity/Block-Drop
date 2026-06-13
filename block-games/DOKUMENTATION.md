@@ -42,12 +42,12 @@ Hinweis: Node.js liegt portabel auf `D:\` (`D:\node.exe`).
 |---|---|
 | `main.js` | Electron-Hauptprozess: Fenster (Vollbild), F11-Toggle, kein App-Menü, IPC für Anzeige-Einstellungen + `app:quit` |
 | `preload.js` | Brücke Main↔Renderer: Version/Plattform, Anzeige-Steuerung (Vollbild, Fenstergröße, Display-Infos), `quitApp()` |
-| `renderer/index.html` | Alle Screens: Laden, Login/Registrierung, Hauptmenü, Einstellungen (**in Kategorie-Reitern**: Konto/Anzeige/Grafik/Audio), **Credits** + Beenden-Overlay + **Konto/Freunde-Overlay**; Bühnen-Hintergrund-Layer |
-| `renderer/app.js` | UI-Logik: Screen-Wechsel, Gast-Modus, Menü-Rendering, **Credits-Rendering**, Einstellungs-UI, **Konto/Freunde-Overlay + Konto-Bearbeitung**, Toast, Sound-Verdrahtung, Beenden-Dialog, Tastatur-Navigation, animierter Hintergrund (Blöcke/Würfel/Sterne) |
+| `renderer/index.html` | Alle Screens: Laden, Login/Registrierung, Hauptmenü, **Lobby** (4 Playercards + Slot-/Farb-Popups), Einstellungen (**in Kategorie-Reitern**: Konto/Anzeige/Grafik/Audio), **Credits** + Beenden-Overlay + **Konto/Freunde-Overlay**; Bühnen-Hintergrund-Layer |
+| `renderer/app.js` | UI-Logik: Screen-Wechsel, Gast-Modus, Menü-Rendering, **Lobby (Slots/Bots/Farben + 300 Bot-Namen)**, **Credits-Rendering**, Einstellungs-UI, **Konto/Freunde-Overlay + Konto-Bearbeitung**, Toast, Sound-Verdrahtung, Beenden-Dialog, Tastatur-Navigation, animierter Hintergrund (Blöcke/Würfel/Sterne) |
 | `renderer/settings.js` | Zentraler Einstellungs-Store (localStorage, onChange-Events, `effectiveVolume()`) |
 | `renderer/audio.js` | Sound-System `Sfx`: UI-Effekte per WebAudio synthetisiert (keine Audio-Dateien), Lautstärke aus dem Settings-Store |
 | `renderer/auth.js` | Supabase-Auth + **Freundes- und Konto-API** (gleiches Backend wie die Website) |
-| `renderer/style.css` | Arcade-Look: Farben, Animationen, Layout, unsichtbare Scrollbalken, Kompakt-Stufen, Credits-Styling, Bühnen-Hintergrund |
+| `renderer/style.css` | Arcade-Look: Farben (inkl. `--orange/--cyan/--pink`), Animationen, Layout, unsichtbare Scrollbalken, Kompakt-Stufen, **Lobby-/Playercard-/Popup-Styling**, Credits-Styling, Bühnen-Hintergrund |
 | `renderer/assets/` | Eigene lokale Assets: `block-icon.svg/.png/.ico` (Marken-Block), `cube.svg`/`star.svg` (Deko-Masken) |
 | `Block Games starten.bat` | Doppelklick-Start der App |
 
@@ -196,6 +196,63 @@ und die Haupt-Einstellungsseite immer synchron bleiben.
   Rolle ist ein Eintrag mehr. **Aktuell überall nur „Peter Scheikl".** Darunter
   steht klein „Made with Electron, JavaScript, HTML and CSS".
 
+### Lobby (Vorbereitungsscreen)
+
+- **„Spielen" führt jetzt zur Lobby** (nicht mehr zu einem Toast): Der
+  Hauptmenü-Button `#btnParty` ruft `openLobby()` (`app.js`) und öffnet den
+  eigenen Screen `#screen-lobby`. **Zurück:** der Footer-Button „← Zurück"
+  ODER **Esc** (solange kein Popup offen ist) → Hauptmenü.
+- **Vier große Playercards** nebeneinander (`renderLobby()` baut sie aus
+  `lobbyState`). Jede Karte zeigt Slot-Nummer (P1–P4), Avatar-Kreis mit Farbring
+  (Initiale, 🤖 für Bots, „+" für leere Slots), Name, Status-Badge
+  („Du/Freund/Bot/Leer"), die gewählte **Farbe als leuchtende Oberkante + Rahmen**
+  und Aktions-Buttons. Gleicher Arcade-/Bühnen-Look wie das Menü.
+- **Slot-Regeln** (`lobbyState.slots`, Typen `self`|`friend`|`bot`|`empty`):
+  - **P1 ist immer man selbst** (`self`): angemeldet der Username, sonst „Gast".
+    Nicht entfernbar — nur die **Farbe** ist änderbar.
+  - **P2–P4** sind frei: **Leer**, **Bot** oder **Freund**. Auswahl über ein
+    kleines Arcade-Popup über der Karte (`openSlotPicker()`), nicht per `alert()`.
+  - **Gast-Regel:** Ohne Konto sind nur **Leer/Bot** erlaubt. Die Freund-Option
+    ist sichtbar, löst aber den Toast „Melde dich an, um Freunde einzuladen."
+    aus. Alle Freundes-Funktionen sind über `isOnlineAllowed()` gegated.
+  - **Angemeldet:** „Freund auswählen" lädt über die bestehende
+    `Auth.getFriendOverview()` **nur akzeptierte** Freunde in dieselbe
+    Popup-Ansicht (`openFriendPicker()`). Keine Freunde → Empty-State
+    „Noch keine Freunde gefunden." Ein bereits in einem anderen Slot
+    eingeladener Freund ist deaktiviert/markiert (**keine Doppelauswahl**).
+    Keine neuen Supabase-Tabellen, **keine Realtime/Online-Einladungen** — die
+    Lobby ist eine rein **lokale** Konfiguration.
+- **Bot-System:** Jeder freie Slot lässt sich auf **Bot** stellen. Bots bekommen
+  einen zufälligen Namen aus dem Array **`BOT_NAMES` (300 kurze, lustige
+  Party-Namen)** via `getRandomBotName()` — in derselben Lobby möglichst ohne
+  Dopplung. Bot-Cards haben zusätzlich „🎲 Neuer Name" zum Neu-Würfeln.
+- **Farbauswahl** (`openColorPicker()`, feste Palette `LOBBY_COLORS`: Rot, Blau,
+  Grün, Gelb, Lila, Orange, Cyan, Pink). Popup mit Farbfeld **+ Name** je Farbe:
+  - Jeder aktive Slot hat eine Farbe (beim Aktivieren via `getNextFreeColor()`).
+  - **Von Menschen** (P1 + Freunde) belegte Farben sind für andere Menschen
+    **gesperrt** — deutlich mit **✕** überlagert und deaktiviert, aber sichtbar.
+    Die aktuell gewählte Farbe trägt ein **✓** + Glow.
+  - **Bots werden verdrängt:** Wählt ein Mensch eine Farbe, die gerade ein Bot
+    hat, wechselt der Bot automatisch auf die nächste freie Farbe
+    (`resolveColorConflicts()`, mehrere Bots ohne Dopplung). Beispiel: Bot P2
+    hat Rot, P1 wählt Rot → P1 bekommt Rot, P2 rückt z.B. auf Blau, UI
+    aktualisiert sofort. Ist **keine** freie Farbe mehr da → Toast
+    „Keine freie Farbe verfügbar."
+- **Lobby-Aktionen** (Footer): „← Zurück" (→ Menü), „↺ Lobby zurücksetzen"
+  (`resetLobby()` — Slots 2–4 auf Leer, P1 bleibt) und „Spiel starten". Letzteres
+  zeigt vorerst den Toast „Spielstart kommt als Nächstes." (noch kein Minigame)
+  und loggt die Lobby-Konfig **ohne sensible Daten** (nur Slot/Typ/Name/Farbe,
+  keine User-IDs) in die Konsole.
+- **Tastatur (ohne Maus):** Die Lobby ist in `setupKeyboard()` eingehängt
+  (geometrische `moveFocus()` über Cards + Footer). Offene Popups
+  (`#slotPicker` / `#colorPicker`) haben **Vorrang** im Container-Cascade — der
+  Fokus bleibt im Popup, springt nicht in die Lobby/das Menü dahinter. **Esc**
+  schließt erst ein offenes Popup, sonst geht es von der Lobby zurück ins Menü.
+  Enter/Leertaste lösen aus, alle Karten-/Popup-Elemente sind echte `<button>`.
+- **Responsiv & scrollfrei:** Eigene Regeln in den Kompakt-Stufen
+  (`@media max-height: 900px / 680px`) verkleinern Karten/Avatare; sieht in
+  Vollbild, 1280×800 und 960×640 gut aus, Scrollbalken bleiben unsichtbar.
+
 ### App-Icon
 
 - Eigenes Marken-Icon: ein eigenständiger **goldener Arcade-Power-Block mit
@@ -220,9 +277,10 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
   zum nächstgelegenen Element in Richtung der Taste (deckt auch das
   Karten-Grid und gemischte Bedienelemente ab). **Enter/Leertaste** löst aus.
   Abgedeckte Container: **Auth-Screen (Login/Registrierung)**, Hauptmenü,
-  **Einstellungen**, Credits, **Konto/Freunde-Overlay** und Beenden-Dialog
-  (offene Overlays haben Vorrang). Neue Screens werden in die
-  Container-Auswahl von `setupKeyboard()` eingehängt.
+  **Lobby** (+ Slot-/Farb-Popups mit Vorrang), **Einstellungen**, Credits,
+  **Konto/Freunde-Overlay** und Beenden-Dialog (offene Overlays/Popups haben
+  Vorrang). Neue Screens werden in die Container-Auswahl von `setupKeyboard()`
+  eingehängt.
 - **W/A/S/D** wirken wie ↑/←/↓/→ — **außer in Textfeldern**, dort tippen sie
   normal (sonst ließe sich kein Name mit „w" o.ä. eingeben). In Textfeldern
   navigiert man mit den echten Pfeiltasten (hoch/runter) bzw. **Tab**.
@@ -292,6 +350,36 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
   Klartext — gleicher Key wie die Website, RLS schützt die Daten.
 
 ## Änderungsprotokoll
+
+### v0.8.0 — 2026-06-14
+- **Neuer Lobby-Screen (`#screen-lobby`):** Der „Spielen"-Button führt jetzt
+  auf einen Vorbereitungsbildschirm statt auf einen Toast (`btnParty` →
+  `openLobby()`). Vier große Playercards im Arcade-Look mit Slot-Nummer,
+  Avatar-Farbring, Name, Status-Badge und gewählter Farbe als leuchtender
+  Oberkante. Details siehe Abschnitt „Lobby".
+- **Slots P1–P4:** P1 ist immer man selbst (nicht entfernbar, Farbe änderbar);
+  P2–P4 sind Leer/Bot/Freund. Auswahl über kleine, per Tastatur bedienbare
+  Arcade-Popups über der Karte (`#slotPicker` / `#colorPicker`), kein `alert()`.
+- **Gast-Regel eingehalten:** Ohne Konto nur Leer/Bot; Freund-Wahl löst den
+  Toast „Melde dich an, um Freunde einzuladen." aus (`isOnlineAllowed()`).
+  Angemeldet: nur **akzeptierte** Freunde aus `Auth.getFriendOverview()`,
+  keine Doppelauswahl, Empty-State bei keiner Freundesliste. Rein lokale
+  Konfiguration — keine neuen Supabase-Tabellen, keine Realtime.
+- **Bot-System:** Array `BOT_NAMES` mit **300** kurzen, lustigen Party-Namen;
+  `getRandomBotName()` wählt zufällig (in der Lobby möglichst ohne Dopplung),
+  „🎲 Neuer Name" auf Bot-Cards würfelt neu.
+- **Farbpalette `LOBBY_COLORS` (8 Farben):** neue CSS-Vars `--orange/--cyan/
+  --pink`. Menschlich belegte Farben sind mit **✕** gesperrt (sichtbar, aber
+  deaktiviert); die aktive Farbe trägt **✓** + Glow. Wählt ein Mensch die Farbe
+  eines Bots, weicht der Bot automatisch auf die nächste freie Farbe aus
+  (`resolveColorConflicts()`); keine freie Farbe → Toast.
+- **Aktionen:** „← Zurück", „↺ Lobby zurücksetzen" (`resetLobby()` — Slots 2–4
+  leeren, P1 bleibt) und „Spiel starten" (vorerst Toast „Spielstart kommt als
+  Nächstes." + Konsolen-Log der Konfig ohne sensible Daten).
+- **Tastatur:** Lobby + Popups in `setupKeyboard()` eingehängt (Container-Cascade
+  mit Popup-Vorrang, eigener Esc-Schritt). Komplett per Pfeile/WASD/Enter/Esc
+  bedienbar; responsiv (Kompakt-Stufen) und ohne sichtbare Scrollbalken.
+- Version auf 0.8.0 (package.json, preload.js).
 
 ### v0.7.1 — 2026-06-13
 - **„F11 = Vollbild"-Hinweis aus dem Hauptmenü-Footer entfernt:** Die

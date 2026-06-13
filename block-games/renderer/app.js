@@ -92,7 +92,7 @@ function spawnBackgroundBlocks() {
 // ── Sound-Verdrahtung ────────────────────────────────────────────────
 // UI-Sounds laufen zentral über Event-Delegation — neue Buttons/Karten
 // klingen damit automatisch, ohne dass jeder Listener Sfx.play() rufen muss.
-const SFX_SELECTOR = '.auth-tab, .settings-tab, .party-btn, .minigame-card, .badge-id, .btn';
+const SFX_SELECTOR = '.auth-tab, .settings-tab, .party-btn, .minigame-card, .badge-id, .btn, .lobby-mini-btn, .lobby-opt, .color-cell';
 
 function setupSfx() {
   document.addEventListener('click', (e) => {
@@ -438,7 +438,8 @@ function setupKeyboard() {
       // aus Einstellungen bzw. der Credits-Seite zurück ins Hauptmenü.
       if (quitOpen) closeQuitDialog();
       else if (accountOpen()) closeAccount();
-      else if (isActive('screen-settings') || isActive('screen-credits')) {
+      else if (lobbyPopupOpen()) { closeColorPicker(); closeSlotPicker(); }
+      else if (isActive('screen-settings') || isActive('screen-credits') || isActive('screen-lobby')) {
         showScreen('screen-menu');
       }
       return;
@@ -468,8 +469,11 @@ function setupKeyboard() {
     let container = null;
     if (quitOpen) container = document.getElementById('quitOverlay');
     else if (accountOpen()) container = document.getElementById('accountOverlay');
+    else if (colorPickerOpen()) container = document.getElementById('colorPicker');
+    else if (slotPickerOpen()) container = document.getElementById('slotPicker');
     else if (isActive('screen-auth')) container = document.getElementById('screen-auth');
     else if (isActive('screen-settings')) container = document.getElementById('screen-settings');
+    else if (isActive('screen-lobby')) container = document.getElementById('screen-lobby');
     else if (isActive('screen-menu')) container = document.getElementById('screen-menu');
     else if (isActive('screen-credits')) container = document.getElementById('screen-credits');
     if (!container) return;
@@ -666,6 +670,429 @@ function setupCredits() {
   });
   document.getElementById('btnCreditsBack').addEventListener('click', () => showScreen('screen-menu'));
   // Esc → zurück ins Menü übernimmt der zentrale Tastatur-Handler (setupKeyboard).
+}
+
+// ── Lobby (Vorbereitungsscreen vor einer Partie) ─────────────────────
+// Geöffnet über den „Spielen"-Button. Vier Playercards: P1 ist IMMER man
+// selbst (nicht entfernbar, nur Farbe änderbar), P2–P4 sind frei wählbar
+// (Leer / Bot / Freund). Freunde nur angemeldet — jede Freundes-Funktion
+// hängt an isOnlineAllowed(). Es ist eine rein LOKALE Konfiguration: kein
+// echtes Spiel, keine neuen Supabase-Tabellen, keine Realtime-Lobby.
+
+// Feste Farbpalette (id = State-Wert, var = CSS-Variable in style.css).
+const LOBBY_COLORS = [
+  { id: 'red',    name: 'Rot',    var: '--red'    },
+  { id: 'blue',   name: 'Blau',   var: '--blue'   },
+  { id: 'green',  name: 'Grün',   var: '--green'  },
+  { id: 'yellow', name: 'Gelb',   var: '--yellow' },
+  { id: 'purple', name: 'Lila',   var: '--purple' },
+  { id: 'orange', name: 'Orange', var: '--orange' },
+  { id: 'cyan',   name: 'Cyan',   var: '--cyan'   },
+  { id: 'pink',   name: 'Pink',   var: '--pink'   },
+];
+
+// 300 lustige, kurze Party-Bot-Namen. Beim Erstellen eines Bots wird zufällig
+// einer gewählt (getRandomBotName), innerhalb derselben Lobby möglichst ohne
+// Dopplung.
+const BOT_NAMES = [
+  'Blocki','WürfelWilli','PixelPaul','TurboTom','Botbert','GlitchGustav','MegaMax','SuperSusi','RetroRudi','NeonNina',
+  'DiscoDani','ZockerZoe','BlockBenno','WürfelWanda','TurboTina','GlitchGreta','MegaMia','RetroRobin','NeonNico','PixelPia',
+  'ByteBert','ChipCharly','LagLena','PingPit','BugBruno','KnopfKalle','JoystickJonas','ArcadeArne','CoinCarlo','BomboBea',
+  'FlipperFritz','PongPaula','BlobBob','GizmoGabi','RocketRolf','LaserLuis','CometCora','NovaNils','AstroAnna','CyberCem',
+  'DataDavid','RoboRita','MechMarvin','NanoNele','QuantumQuirin','VoltViktor','AmpereAmy','JouleJojo','WattWalter','OhmOskar',
+  'ZapZara','BoltBenny','SparkSina','FlashFynn','BlitzBjörn','ThunderThea','StormSteve','HagelHans','WolkeWim','RegenRosa',
+  'SunnySandra','MondMona','SternStefan','GalaxyGabe','OrbitOtto','MeteorMila','PlanetPeer','RaketeRosa','SaturnSami','MarsMaja',
+  'JellyJens','GummiGabi','BonbonBea','CandyCarl','LolliLena','ZuckerZeno','MarzipanMimi','KekseKlara','KuchenKurt','DonutDirk',
+  'WaffelWim','MuffinMo','BrezelBea','PizzaPit','PommesPaul','BurgerBert','NudelNele','SuppeSusi','SalatSami','TacoTom',
+  'KaffeeKai','TeeTina','KakaoKim','LimoLeo','SaftSven','ColaCora','EisEmil','SmoothieSophie','ShakeShawn','PunschPaula',
+  'FuchsFelix','HaseHugo','BärBenno','WolfWalter','LöweLeo','TigerTom','PandaPia','KoalaKira','ZebraZoe','GiraffeGabi',
+  'PinguPaul','RobbeRolf','WalWim','HaiHenry','KrakeKlara','QualleQuirin','KrabbeKira','SeesternSami','DelfinDani','OttoOtter',
+  'IgelIda','MausMoritz','RatteRita','HamsterHans','EichiEmma','DachsDirk','BiberBert','MaulwurfMax','FrettiFynn','MurmelMia',
+  'AdlerArne','EuleElla','FalkeFritz','RabeRudi','SpatzSina','MeiseMona','TaubeTilo','ReiherRosa','StorchSteve','SchwanSami',
+  'DracheDirk','EinhornElla','GnomGustav','TrollThea','FeeFynn','ElfEmil','OgerOtto','ZwergZeno','RieseRolf','KoboldKim',
+  'NinjaNils','PiratPit','RitterRudi','CowboyCarl','SamuraiSami','WikingerWim','GladiatorGabi','SpionSven','AgentArne','DetektivDani',
+  'MagierMax','HexeHanna','ZaubererZeno','PriesterPit','SchamaneSami','OrakelOtto','SeherSina','MystikMia','RuneRosa','AmulettArne',
+  'KapitänKalle','MatroseMo','SteuerSteve','AnkerAnni','MöweMona','LeuchtturmLeo','KompassClara','SegelSami','WelleWim','TiefseeTilo',
+  'KönigKurt','PrinzPit','PrinzessinPia','HerzogHugo','GrafGustav','BaronBenno','RitterRosa','EdelmannEmil','HofnarrHans','BurgfräuleinBea',
+  'RockerRudi','PunkPit','RapperRosa','DjDani','BassistBert','DrummerDirk','GitarreGabi','SängerSven','TänzerTom','BeatBenny',
+  'MaestroMax','ViolaVivi','CelloClara','FlöteFynn','TrompeteTilo','PaukePaul','HarfeHanna','OboeOtto','KlavierKim','OrgelOlga',
+  'SprinterSven','LäuferLeo','BoxerBert','TurnerTom','SchwimmerSami','RadlerRudi','KletterKira','SkaterSteve','SurferSophie','TaucherTilo',
+  'TorwartTom','StürmerSven','LiberoLeo','KapitänKira','SchiriSami','FanFynn','TrainerTina','MaskottMax','PokalPit','MedailleMia',
+  'ProfiPaul','RookieRosa','LegendeLeo','ChampionClara','MeisterMo','SiegerSami','UnderdogUwe','VeteranViktor','TalentTina','GenieGabi',
+  'KaktusKalle','TulpeTina','RoseRosa','GänseblümGabi','SonnenblumeSami','FarnFynn','MoosMo','PilzPit','EfeuEmil','BambusBenno',
+  'AhornArne','EicheEmma','BirkeBea','TanneTilo','PalmePia','KieferKurt','WeideWim','BucheBert','LindeLena','UlmeUwe',
+  'RubinRudi','SaphirSami','SmaragdEmil','DiamantDani','PerlePia','GoldGustav','SilberSina','BronzeBenno','KristallKira','OpalOtto',
+  'NebelNils','FrostFynn','TauTilo','ReifRosa','SchneeSven','GletscherGabi','LawineLeo','EiszapfenEmil','PolarPit','IglooIda',
+  'VulkanViktor','LavaLena','MagmaMax','AscheAnni','KraterKira','GeysirGustav','QuelleQuirin','SchluchtSami','CanyonCarl','DüneDani',
+  'KometKim','AsteroidArne','NebulaNele','PulsarPit','SupernovaSophie','KosmosKurt','GravitonGabi','PhotonPhil','NeutronNils','ProtonPaula',
+];
+
+// State: 4 Slots. Slot 1 (Index 0) ist immer man selbst.
+const lobbyState = {
+  slots: [
+    { id: 1, type: 'self',  name: '', color: 'red',  userId: null },
+    { id: 2, type: 'empty', name: '', color: null,   userId: null },
+    { id: 3, type: 'empty', name: '', color: null,   userId: null },
+    { id: 4, type: 'empty', name: '', color: null,   userId: null },
+  ],
+};
+
+let pickerSlot = -1; // Slot, dessen Popup gerade offen ist (-1 = keins)
+
+const colorById = (id) => LOBBY_COLORS.find(c => c.id === id) || null;
+const isActiveSlot = (s) => s.type !== 'empty';
+const slotPickerOpen  = () => !document.getElementById('slotPicker').hidden;
+const colorPickerOpen = () => !document.getElementById('colorPicker').hidden;
+const lobbyPopupOpen  = () => slotPickerOpen() || colorPickerOpen();
+
+// Erste Palettenfarbe, die kein aktiver Slot belegt (exceptIdx ausgenommen).
+function getNextFreeColor(exceptIdx = -1) {
+  const used = new Set(
+    lobbyState.slots
+      .filter((s, i) => i !== exceptIdx && isActiveSlot(s) && s.color)
+      .map(s => s.color)
+  );
+  const free = LOBBY_COLORS.find(c => !used.has(c.id));
+  return free ? free.id : null;
+}
+
+// Zufälliger Bot-Name, in der aktuellen Lobby möglichst ohne Dopplung.
+function getRandomBotName() {
+  const taken = new Set(lobbyState.slots.filter(s => s.type === 'bot').map(s => s.name));
+  for (let i = 0; i < 40; i++) {
+    const n = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+    if (!taken.has(n)) return n;
+  }
+  return BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+}
+
+// Lobby öffnen: Slot 1 mit dem aktuellen Spieler (bzw. „Gast") füllen.
+function openLobby() {
+  const self = lobbyState.slots[0];
+  self.type = 'self';
+  self.name = Auth.user ? Auth.username : 'Gast';
+  self.userId = Auth.userId;
+  if (!self.color) self.color = getNextFreeColor(0) || 'red';
+  renderLobby();
+  showScreen('screen-lobby');
+  const first = document.querySelector('#lobbyCards .lobby-mini-btn');
+  if (first) first.focus();
+}
+
+// Hilfs-Button für die Karten-Aktionen.
+function miniBtn(text, onClick) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'lobby-mini-btn';
+  b.textContent = text;
+  b.addEventListener('click', onClick);
+  return b;
+}
+
+// Baut die vier Playercards aus dem lobbyState neu auf. Namen kommen per
+// textContent in die Karte (Freund-Usernamen sind nicht vertrauenswürdig).
+function renderLobby() {
+  const wrap = document.getElementById('lobbyCards');
+  wrap.innerHTML = '';
+  lobbyState.slots.forEach((slot, i) => {
+    const col = colorById(slot.color);
+    const card = document.createElement('div');
+    card.className = 'lobby-card';
+    card.style.setProperty('--card-i', i);
+    if (col) card.style.setProperty('--slot', `var(${col.var})`);
+    card.classList.toggle('is-active', isActiveSlot(slot));
+    card.classList.toggle('is-empty', slot.type === 'empty');
+    card.classList.toggle('is-self', slot.type === 'self');
+
+    const no = document.createElement('span');
+    no.className = 'lobby-slot-no';
+    no.textContent = `P${slot.id}`;
+
+    const av = document.createElement('span');
+    av.className = 'lobby-avatar';
+    if (slot.type === 'bot') av.textContent = '🤖';
+    else if (slot.type === 'empty') av.textContent = '+';
+    else av.textContent = (slot.name || '?').charAt(0).toUpperCase();
+
+    const nm = document.createElement('span');
+    nm.className = 'lobby-name';
+    nm.textContent = slot.type === 'empty' ? 'Frei' : slot.name;
+
+    const st = document.createElement('span');
+    st.className = 'lobby-status';
+    st.textContent = { self: 'Du', friend: 'Freund', bot: 'Bot', empty: 'Leer' }[slot.type];
+
+    const actions = document.createElement('div');
+    actions.className = 'lobby-card-actions';
+    if (slot.type === 'empty') {
+      actions.appendChild(miniBtn('+ Platz wählen', () => openSlotPicker(i)));
+    } else {
+      if (slot.type !== 'self') actions.appendChild(miniBtn('Ändern', () => openSlotPicker(i)));
+      if (slot.type === 'bot') {
+        actions.appendChild(miniBtn('🎲 Neuer Name', () => {
+          lobbyState.slots[i].name = getRandomBotName();
+          renderLobby();
+          focusSlotCard(i);
+        }));
+      }
+      const cbtn = document.createElement('button');
+      cbtn.type = 'button';
+      cbtn.className = 'lobby-mini-btn';
+      cbtn.innerHTML = '<span class="lobby-color-dot"></span>Farbe';
+      cbtn.addEventListener('click', () => openColorPicker(i));
+      actions.appendChild(cbtn);
+    }
+
+    card.append(no, av, nm, st, actions);
+    wrap.appendChild(card);
+  });
+}
+
+// Fokus zurück auf den ersten Button der Karte i (nach Popup/Re-Render).
+function focusSlotCard(i) {
+  if (i < 0) return;
+  const card = document.querySelectorAll('#lobbyCards .lobby-card')[i];
+  const btn = card && card.querySelector('.lobby-mini-btn');
+  if (btn) btn.focus();
+}
+
+// Slots 2–4 zurück auf „Leer" (Slot 1 bleibt). Farben fallen frei.
+function resetLobby() {
+  lobbyState.slots.forEach((s, i) => {
+    if (i === 0) return;
+    s.type = 'empty'; s.name = ''; s.color = null; s.userId = null;
+  });
+  renderLobby();
+  focusSlotCard(0);
+}
+
+// ── Platz-Popup (Leer / Bot / Freund) ───────────────────────────────────
+// Positioniert das Popup über der jeweiligen Playercard und hält es im
+// Sichtbereich. Vorher sichtbar machen, damit offsetWidth/Height stimmen.
+function positionPopup(popupCard, slotIdx) {
+  const card = document.querySelectorAll('#lobbyCards .lobby-card')[slotIdx];
+  if (!card) return;
+  const r = card.getBoundingClientRect();
+  const pw = popupCard.offsetWidth;
+  const ph = popupCard.offsetHeight;
+  let left = r.left + r.width / 2 - pw / 2;
+  let top = r.top + 14; // leicht überlappend auf der Karte
+  left = Math.max(12, Math.min(left, window.innerWidth - pw - 12));
+  top = Math.max(12, Math.min(top, window.innerHeight - ph - 12));
+  popupCard.style.left = `${left}px`;
+  popupCard.style.top = `${top}px`;
+}
+
+function openSlotPicker(i) {
+  pickerSlot = i;
+  document.getElementById('slotPicker').hidden = false;
+  showSlotOptions(i);
+  Sfx.play('tab');
+}
+
+// Die drei Grund-Optionen (auch nach „Zurück" aus der Freundesliste).
+function showSlotOptions(i) {
+  document.getElementById('slotPickerTitle').textContent = `Platz P${i + 1}`;
+  const body = document.getElementById('slotPickerBody');
+  body.innerHTML = '';
+  body.appendChild(slotOpt('🚫 Leer lassen', '', () => { setSlotEmpty(i); closeSlotPicker(); }));
+  body.appendChild(slotOpt('🤖 Bot hinzufügen', 'Zufälliger Gegner', () => { setSlotBot(i); closeSlotPicker(); }));
+  body.appendChild(slotOpt(
+    '👥 Freund auswählen',
+    isOnlineAllowed() ? 'Aus deiner Freundesliste' : 'Nur angemeldet',
+    () => {
+      if (!isOnlineAllowed()) { showToast('Melde dich an, um Freunde einzuladen.'); return; }
+      openFriendPicker(i);
+    }
+  ));
+  positionPopup(document.getElementById('slotPickerCard'), i);
+  const first = body.querySelector('button');
+  if (first) first.focus();
+}
+
+function slotOpt(label, sub, onClick) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'lobby-opt';
+  if (sub) {
+    b.textContent = label;
+    const s = document.createElement('small');
+    s.textContent = sub;
+    b.appendChild(s);
+  } else {
+    b.textContent = label;
+  }
+  b.addEventListener('click', onClick);
+  return b;
+}
+
+// Freundesliste im selben Popup. Nur akzeptierte Freunde; bereits in einem
+// anderen Slot belegte Freunde sind deaktiviert (Doppelauswahl verhindern).
+async function openFriendPicker(i) {
+  const titleEl = document.getElementById('slotPickerTitle');
+  const body = document.getElementById('slotPickerBody');
+  titleEl.textContent = 'Freund wählen';
+  body.innerHTML = '<p class="lobby-empty-msg">Lade Freunde …</p>';
+  positionPopup(document.getElementById('slotPickerCard'), i);
+
+  const { friends } = await Auth.getFriendOverview();
+  // Popup könnte inzwischen geschlossen / der Slot gewechselt sein.
+  if (pickerSlot !== i || document.getElementById('slotPicker').hidden) return;
+
+  body.innerHTML = '';
+  body.appendChild(slotOpt('← Zurück', '', () => showSlotOptions(i)));
+
+  if (!friends.length) {
+    const msg = document.createElement('p');
+    msg.className = 'lobby-empty-msg';
+    msg.textContent = 'Noch keine Freunde gefunden.';
+    body.appendChild(msg);
+  } else {
+    const usedIds = new Set(
+      lobbyState.slots.filter(s => s.type === 'friend' && s.userId).map(s => s.userId)
+    );
+    friends.forEach(f => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'lobby-opt';
+      const already = usedIds.has(f.userId);
+      b.textContent = '👤 ' + f.username;
+      if (already) {
+        b.disabled = true;
+        const s = document.createElement('small');
+        s.textContent = '✓ schon in der Lobby';
+        b.appendChild(s);
+      } else {
+        b.addEventListener('click', () => { setSlotFriend(i, f); closeSlotPicker(); });
+      }
+      body.appendChild(b);
+    });
+  }
+  positionPopup(document.getElementById('slotPickerCard'), i);
+  const first = body.querySelector('button:not([disabled])');
+  if (first) first.focus();
+}
+
+function closeSlotPicker() {
+  const popup = document.getElementById('slotPicker');
+  if (popup.hidden) return;
+  popup.hidden = true;
+  focusSlotCard(pickerSlot);
+  pickerSlot = -1;
+}
+
+function setSlotEmpty(i) {
+  const s = lobbyState.slots[i];
+  s.type = 'empty'; s.name = ''; s.color = null; s.userId = null;
+  renderLobby();
+}
+
+function setSlotBot(i) {
+  const s = lobbyState.slots[i];
+  s.type = 'bot'; s.userId = null; s.name = getRandomBotName();
+  if (!s.color) s.color = getNextFreeColor(i);
+  renderLobby();
+}
+
+function setSlotFriend(i, friend) {
+  const s = lobbyState.slots[i];
+  s.type = 'friend'; s.userId = friend.userId; s.name = friend.username;
+  if (!s.color) s.color = getNextFreeColor(i);
+  renderLobby();
+}
+
+// ── Farb-Popup ───────────────────────────────────────────────────────────
+function openColorPicker(i) {
+  pickerSlot = i;
+  document.getElementById('colorPicker').hidden = false;
+  renderColorCells(i);
+  positionPopup(document.getElementById('colorPickerCard'), i);
+  const cur = document.querySelector('#colorPickerBody .is-current')
+    || document.querySelector('#colorPickerBody button:not([disabled])');
+  if (cur) cur.focus();
+  Sfx.play('tab');
+}
+
+function renderColorCells(i) {
+  const slot = lobbyState.slots[i];
+  const body = document.getElementById('colorPickerBody');
+  body.innerHTML = '';
+  // Von MENSCHEN (self/friend) belegte Farben sind für andere gesperrt (X).
+  const humanColors = new Set(
+    lobbyState.slots
+      .filter((s, idx) => idx !== i && (s.type === 'self' || s.type === 'friend') && s.color)
+      .map(s => s.color)
+  );
+  LOBBY_COLORS.forEach(c => {
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'color-cell';
+    cell.style.setProperty('--cc', `var(${c.var})`);
+    if (humanColors.has(c.id)) { cell.classList.add('is-locked'); cell.disabled = true; }
+    if (slot.color === c.id) cell.classList.add('is-current');
+    cell.innerHTML = '<span class="color-swatch"></span>';
+    const label = document.createElement('span');
+    label.className = 'color-name';
+    label.textContent = c.name;
+    cell.appendChild(label);
+    cell.addEventListener('click', () => { setSlotColor(i, c.id); closeColorPicker(); });
+    body.appendChild(cell);
+  });
+}
+
+function closeColorPicker() {
+  const popup = document.getElementById('colorPicker');
+  if (popup.hidden) return;
+  popup.hidden = true;
+  focusSlotCard(pickerSlot);
+  pickerSlot = -1;
+}
+
+// Farbe setzen + Konflikte auflösen. Menschlich belegte Farben sind im Picker
+// gesperrt; falls trotzdem aufgerufen, abbrechen mit Hinweis.
+function setSlotColor(i, colorId) {
+  const humanConflict = lobbyState.slots.some((s, idx) =>
+    idx !== i && (s.type === 'self' || s.type === 'friend') && s.color === colorId);
+  if (humanConflict) { showToast('Diese Farbe ist schon vergeben.'); return; }
+  lobbyState.slots[i].color = colorId;
+  resolveColorConflicts(i, colorId);
+  renderLobby();
+}
+
+// Bots, die jetzt dieselbe Farbe wie Slot i hätten, weichen auf die nächste
+// freie Farbe aus (mehrere Bots ohne Dopplung, da getNextFreeColor jeweils
+// den aktuellen Stand liest). Keine freie Farbe mehr → Hinweis-Toast.
+function resolveColorConflicts(changedIdx, colorId) {
+  lobbyState.slots.forEach((s, idx) => {
+    if (idx === changedIdx) return;
+    if (s.type === 'bot' && s.color === colorId) {
+      const free = getNextFreeColor(idx);
+      if (free) s.color = free;
+      else { s.color = null; showToast('Keine freie Farbe verfügbar.'); }
+    }
+  });
+}
+
+function setupLobby() {
+  document.getElementById('btnLobbyBack').addEventListener('click', () => showScreen('screen-menu'));
+  document.getElementById('btnLobbyReset').addEventListener('click', () => {
+    resetLobby();
+    showToast('Lobby zurückgesetzt.');
+  });
+  document.getElementById('btnLobbyStart').addEventListener('click', () => {
+    showToast('Spielstart kommt als Nächstes.');
+    // Lokale Lobby-Konfig zur Kontrolle loggen — bewusst ohne sensible Daten
+    // (keine User-IDs), nur Slot/Typ/Name/Farbe.
+    console.log('Lobby-Konfiguration:', lobbyState.slots.map(s =>
+      ({ slot: s.id, type: s.type, name: s.name, color: s.color })));
+  });
+  // Klick auf den abgedunkelten Backdrop schließt das jeweilige Popup.
+  document.getElementById('slotPicker').addEventListener('click', (e) => {
+    if (e.target.id === 'slotPicker') closeSlotPicker();
+  });
+  document.getElementById('colorPicker').addEventListener('click', (e) => {
+    if (e.target.id === 'colorPicker') closeColorPicker();
+  });
 }
 
 // ── Konto & Freunde ──────────────────────────────────────────────────
@@ -962,6 +1389,7 @@ async function boot() {
   setupAuthForms();
   setupQuit();
   setupCredits();
+  setupLobby();
   setupAccount();
   setupAccountSettings();
   setupSettingsTabs();
@@ -970,11 +1398,8 @@ async function boot() {
   document.getElementById('appVersion').textContent =
     `Block Games v${window.blockGames?.version || '?'}`;
 
-  document.getElementById('btnParty').addEventListener('click', () => {
-    showToast(isOnlineAllowed()
-      ? 'Der Party-Modus kommt bald! 🎲 (4 Spieler — freie Plätze füllt die KI)'
-      : 'Der Party-Modus kommt bald! 🎲 (Als Gast spielst du gegen 3 Bots)');
-  });
+  // „Spielen" führt jetzt auf den Lobby-Vorbereitungsscreen (statt Toast).
+  document.getElementById('btnParty').addEventListener('click', openLobby);
 
   // Auth-Änderungen steuern die Screens. Der Gast-Modus bleibt aktiv,
   // bis sich der Spieler anmeldet oder selbst zum Login zurückgeht.

@@ -16,6 +16,9 @@
   --green: #3ddc84;
   --blue: #4db5ff;
   --purple: #b06dff;
+  --orange: #ff944d;
+  --cyan: #36d6e7;
+  --pink: #ff6ec7;
   --radius: 18px;
   --font-display: Impact, 'Arial Black', 'Segoe UI', sans-serif;
 
@@ -1117,6 +1120,310 @@ body.reduced-fx .brand-star,
 body.reduced-fx .guest-banner-icon { animation: none; }
 body.reduced-fx .party-btn-go { transition: none; }
 
+/* ── Lobby (Vorbereitungsscreen) ─────────────────────────────────────────
+   Vier große Playercards in einer Reihe (P1 = man selbst), darunter die
+   Aktions-Buttons. Die je Slot gewählte Farbe steckt als --slot in der Karte
+   und färbt Oberkante, Avatar-Ring und Fokus-Glow. Leere Slots bleiben neutral.
+   Die kleinen Popups (Platz-/Farbwahl) werden per JS über der Karte platziert. */
+.lobby-wrap {
+  width: min(1120px, 94vw);
+  margin: auto; /* zentriert; scrollt als Fallback ohne sichtbaren Balken */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 22px 0 18px;
+}
+
+.lobby-header {
+  text-align: center;
+  margin-bottom: 22px;
+  animation: riseIn 0.4s ease-out both;
+}
+
+.lobby-sub {
+  margin-top: 4px;
+  color: var(--text-dim);
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.lobby-cards {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+/* Eine Playercard */
+.lobby-card {
+  --slot: var(--line); /* neutral, bis eine Farbe gewählt ist */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 14px 16px;
+  text-align: center;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 30%),
+    linear-gradient(160deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--line);
+  border-bottom: 4px solid var(--bg-deep); /* 3D-Sockel */
+  border-radius: var(--radius);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  transition: transform 0.16s ease, border-color 0.16s, box-shadow 0.16s;
+  animation: riseIn 0.45s ease-out calc(0.1s + var(--card-i, 0) * 0.07s) both;
+}
+
+.lobby-card:hover { transform: translateY(-4px); }
+
+/* Aktive Slots leuchten in ihrer Farbe (Oberkante + Rahmen + Glow) */
+.lobby-card.is-active {
+  border-color: color-mix(in srgb, var(--slot) 60%, var(--line));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 0 24px -8px var(--slot);
+}
+
+.lobby-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 5px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: var(--slot);
+  box-shadow: 0 0 16px var(--slot);
+  opacity: 0;
+  transition: opacity 0.16s;
+}
+.lobby-card.is-active::before { opacity: 1; }
+
+.lobby-slot-no {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 1px;
+  font-size: 1.1em;
+  color: var(--text-dim);
+}
+
+/* Avatar-Kreis mit Farbring (Initiale, Bot-Emoji oder „+") */
+.lobby-avatar {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 2em;
+  color: var(--text);
+  background: var(--bg-deep);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--slot) 70%, transparent),
+    inset 0 0 18px rgba(0, 0, 0, 0.5);
+}
+.lobby-card.is-empty .lobby-avatar {
+  box-shadow: inset 0 0 0 2px var(--line);
+  color: var(--text-dim);
+  font-size: 2.6em;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.lobby-name {
+  font-weight: 800;
+  font-size: 1.05em;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lobby-status {
+  font-size: 0.7em;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 3px 11px;
+  border-radius: 999px;
+  background: var(--bg-deep);
+  color: var(--text-dim);
+}
+.lobby-card.is-self .lobby-status {
+  background: linear-gradient(180deg, var(--yellow), #e0a91f);
+  color: #3d2c02;
+}
+
+/* Aktions-Hints/Buttons unten in der Karte */
+.lobby-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.lobby-mini-btn {
+  font: inherit;
+  font-size: 0.82em;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: border-color 0.14s, transform 0.14s;
+}
+.lobby-mini-btn:hover { border-color: var(--slot); transform: translateY(-1px); }
+
+.lobby-color-dot {
+  display: inline-block;
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: var(--slot);
+  vertical-align: -2px;
+  margin-right: 6px;
+  box-shadow: 0 0 8px var(--slot);
+}
+
+.lobby-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 26px;
+}
+
+/* Kompakter „Spiel starten"-Button (nutzt den Party-Button-Look) */
+.party-btn.party-btn-sm {
+  width: auto;
+  margin: 0;
+  padding: 12px 26px;
+  gap: 12px;
+}
+.party-btn.party-btn-sm .party-btn-text strong { font-size: 1.2em; }
+.party-btn.party-btn-sm .party-btn-icon { font-size: 1.5em; }
+.party-btn.party-btn-sm .party-btn-go { width: 34px; height: 34px; }
+
+/* ── Lobby-Popups (Platz- & Farbwahl, über der Playercard) ──────────────── */
+.lobby-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  background: rgba(13, 13, 30, 0.55);
+}
+
+.lobby-popup-card {
+  position: absolute;
+  width: 240px;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-bottom: 5px solid var(--bg-deep);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  animation: riseIn 0.18s ease-out both;
+}
+#colorPickerCard { width: 296px; }
+
+.lobby-popup-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 1px;
+  color: var(--yellow);
+  text-shadow: 2px 2px 0 var(--red);
+  font-size: 1.2em;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.lobby-popup-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.lobby-opt {
+  font: inherit;
+  text-align: left;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 0.14s, transform 0.14s;
+}
+.lobby-opt:hover:not(:disabled) { border-color: var(--blue); transform: translateY(-1px); }
+.lobby-opt:disabled { opacity: 0.42; cursor: not-allowed; }
+.lobby-opt small { display: block; color: var(--text-dim); font-weight: 500; font-size: 0.8em; }
+
+.lobby-empty-msg {
+  color: var(--text-dim);
+  text-align: center;
+  font-size: 0.85em;
+  padding: 12px 6px;
+}
+
+/* Farb-Grid (4×2) mit Sperr-X und Aktiv-Häkchen */
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.color-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  font: inherit;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.color-swatch {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: var(--cc);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 12px -2px var(--cc), inset 0 -3px 0 rgba(0, 0, 0, 0.3);
+  transition: transform 0.14s;
+}
+.color-cell:hover:not(:disabled) .color-swatch { transform: scale(1.08); }
+
+.color-name {
+  font-size: 0.72em;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.color-cell.is-current .color-swatch { outline: 3px solid var(--text); outline-offset: 2px; }
+.color-cell.is-current .color-name { color: var(--text); }
+.color-cell.is-current .color-swatch::after {
+  content: '✓';
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5em; font-weight: 900; color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.color-cell.is-locked { cursor: not-allowed; }
+.color-cell.is-locked .color-swatch { filter: saturate(0.55) brightness(0.65); }
+.color-cell.is-locked .color-swatch::after {
+  content: '✕';
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8em; font-weight: 900; color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
 /* ── Kompakt-Stufen ─────────────────────────────────────────────────────
    Inhalte schrumpfen bei flachen Fenstern, damit nichts scrollen muss.
    Erste Stufe bei 900px: deckt auch Vollbild auf 768p-/~830px-Monitoren ab,
@@ -1152,6 +1459,12 @@ body.reduced-fx .party-btn-go { transition: none; }
   .settings-tab { padding: 7px 16px; }
   .settings-panel { padding: 4px 20px; }
   .setting-row { padding: 7px 0; }
+  .lobby-wrap { padding: 14px 0 10px; }
+  .lobby-header { margin-bottom: 14px; }
+  .lobby-cards { gap: 12px; }
+  .lobby-card { padding: 16px 12px 12px; gap: 8px; }
+  .lobby-avatar { width: 60px; height: 60px; font-size: 1.7em; }
+  .lobby-footer { margin-top: 16px; }
 }
 
 @media (max-height: 680px) {
@@ -1179,6 +1492,13 @@ body.reduced-fx .party-btn-go { transition: none; }
   .credits-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
   .credit-card { padding: 12px 16px; }
   .settings-note { display: none; }
+  .lobby-cards { gap: 9px; }
+  .lobby-card { padding: 12px 9px 10px; gap: 6px; }
+  .lobby-avatar { width: 50px; height: 50px; font-size: 1.4em; }
+  .lobby-slot-no { font-size: 0.95em; }
+  .lobby-name { font-size: 0.95em; }
+  .lobby-mini-btn { padding: 6px 8px; font-size: 0.76em; }
+  .lobby-footer { margin-top: 12px; gap: 10px; }
 }
 
 /* ── Tastatur-Fokus ─────────────────────────────────────────────────────

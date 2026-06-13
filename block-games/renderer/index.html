@@ -155,6 +155,52 @@
     </div>
   </div>
 
+  <!-- ── Lobby (Vorbereitungsscreen, geöffnet vom „Spielen"-Button) ──────
+       Vier große Playercards: P1 ist immer man selbst, P2–P4 sind frei
+       (Leer/Bot/Freund). Karten + Popups (Platz-/Farbwahl) werden per JS
+       aus dem lobbyState gebaut (app.js → renderLobby). Komplett ohne Maus:
+       Pfeile/WASD bewegen den Fokus, Enter/Leertaste löst aus, Esc schließt
+       erst Popups, sonst zurück ins Menü (siehe setupKeyboard in app.js). -->
+  <div id="screen-lobby" class="screen">
+    <div class="lobby-wrap">
+      <header class="lobby-header">
+        <h1 class="game-logo small">LOBBY</h1>
+        <p class="lobby-sub">Wer spielt mit?</p>
+      </header>
+
+      <!-- 4 Playercards werden aus dem lobbyState erzeugt (app.js). -->
+      <div class="lobby-cards" id="lobbyCards"></div>
+
+      <footer class="lobby-footer">
+        <button class="btn btn-pill" id="btnLobbyBack">← Zurück</button>
+        <button class="btn btn-pill" id="btnLobbyReset">↺ Lobby zurücksetzen</button>
+        <button class="party-btn party-btn-sm" id="btnLobbyStart">
+          <span class="party-btn-icon" aria-hidden="true">🎲</span>
+          <span class="party-btn-text"><strong>Spiel starten</strong></span>
+          <span class="party-btn-go" aria-hidden="true">▶</span>
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Lobby-Popups: kleine Arcade-Fenster, die per JS über der jeweiligen
+       Playercard positioniert werden (app.js → openSlotPicker/openColorPicker).
+       Der abgedunkelte Vollbild-Backdrop fängt Klicks zum Schließen ab; der
+       Fokus bleibt bei offenem Popup im Popup (setupKeyboard). -->
+  <div id="slotPicker" class="lobby-popup" hidden>
+    <div class="lobby-popup-card" id="slotPickerCard">
+      <h3 class="lobby-popup-title" id="slotPickerTitle">Platz wählen</h3>
+      <div class="lobby-popup-body" id="slotPickerBody"></div>
+    </div>
+  </div>
+
+  <div id="colorPicker" class="lobby-popup" hidden>
+    <div class="lobby-popup-card" id="colorPickerCard">
+      <h3 class="lobby-popup-title">Farbe wählen</h3>
+      <div class="color-grid" id="colorPickerBody"></div>
+    </div>
+  </div>
+
   <!-- ── Einstellungen (vom Hauptmenü aus, ⚙️ oben rechts) ──────────────
        In Kategorie-Reiter aufgeteilt: oben wählt man den Bereich, darunter
        stehen dessen Optionen. Komplett ohne Maus bedienbar — Reiter und

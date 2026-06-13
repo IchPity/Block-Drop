@@ -7,9 +7,13 @@ am Ende in die Repo-Struktur integriert wird.
 > **Doku:** Architektur, Entscheidungen und Änderungsprotokoll stehen in
 > `DOKUMENTATION.md`. Diese Datei hier listet nur, was noch zu bauen ist.
 
-## Stand (2026-06-13)
+## Stand (2026-06-14)
 
 ✅ **Fertig:**
+- **Lobby-Vorbereitungsscreen** (v0.8.0): „Spielen" öffnet die Lobby mit 4
+  Playercards — P1 = man selbst, P2–P4 als Leer/Bot/Freund, feste 8-Farben-
+  Palette mit Sperr-/Verdrängungs-Logik, 300 zufällige Bot-Namen. Reine lokale
+  Konfiguration; „Spiel starten" zeigt vorerst nur einen Toast.
 - Electron-Grundgerüst (main.js, preload.js, Renderer)
 - Anmeldung/Registrierung **mit bestehenden Website-Konten** — gleiches
   Supabase-Backend wie die Website (Flow 1:1 aus `app/auth.js` übernommen:
@@ -30,6 +34,9 @@ am Ende in die Repo-Struktur integriert wird.
 ## Noch zu bauen
 
 ### Party-Modus (Kernfeature)
+- **Einstieg steht schon:** Die Lobby (v0.8.0) liefert die Partie-Konfiguration
+  (Spieler/Bots/Freunde + Farben). „Spiel starten" muss daraus später die
+  echte Partie erzeugen (aktuell nur Toast).
 - Brettspiel-Runden wie Mario Party: Würfeln → Feld-Events → nach jeder Runde ein Minigame
 - **Immer 4 Spieler pro Partie.** Fehlende menschliche Spieler werden durch
   KI-Gegner aufgefüllt (1 Mensch → 3 KIs usw.)
