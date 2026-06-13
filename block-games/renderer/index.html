@@ -9,8 +9,13 @@
 </head>
 <body>
 
-  <!-- Animierter Block-Hintergrund (wird per JS befüllt) -->
+  <!-- Bühnen-Hintergrund: bewegte Spotlights, schwebende Blöcke/Würfel,
+       funkelnde Sterne. Sterne & Würfel werden per JS befüllt. Alle Layer
+       sind rein dekorativ (aria-hidden) und werden bei "Animationen
+       reduzieren" abgeschaltet (style.css → body.reduced-fx). -->
+  <div id="stageLights" aria-hidden="true"></div>
   <div id="bgBlocks" aria-hidden="true"></div>
+  <div id="bgStars" aria-hidden="true"></div>
 
   <!-- ── Lade-Screen ──────────────────────────────────────────────────── -->
   <div id="screen-loading" class="screen active">
@@ -79,28 +84,38 @@
   <!-- ── Hauptmenü (Mario-Party-Stil) ─────────────────────────────────── -->
   <div id="screen-menu" class="screen">
     <header class="menu-header">
-      <h1 class="game-logo small">BLOCK<span>GAMES</span></h1>
+      <div class="menu-brand">
+        <h1 class="game-logo menu-logo">BLOCK<span>GAMES</span></h1>
+        <p class="brand-sub"><span class="brand-star">★</span> Party Arcade <span class="brand-star">★</span></p>
+      </div>
       <div class="player-badge">
         <div class="avatar" id="menuAvatar">?</div>
         <span id="menuUsername">…</span>
+        <button class="btn btn-ghost btn-gear" id="btnSettings" title="Einstellungen">⚙️</button>
         <button class="btn btn-ghost" id="btnAccount">Abmelden</button>
+        <button class="btn btn-ghost btn-gear btn-quit" id="btnQuit" title="Spiel beenden">⏻</button>
       </div>
     </header>
 
-    <!-- Hinweis-Band im Gast-Modus -->
+    <!-- Hinweis-Band im Gast-Modus (Optik aufgewertet, Funktion unverändert:
+         app.js blendet es per .hidden anhand des Gast-Status ein/aus) -->
     <div class="guest-banner" id="guestBanner" hidden>
-      <strong>Gast-Modus</strong> — du spielst nur gegen Bots.
-      Melde dich an, um online gegen andere zu spielen und Fortschritt zu speichern.
+      <span class="guest-banner-icon" aria-hidden="true">🤖</span>
+      <p class="guest-banner-text">
+        <strong>Gast-Modus</strong> — du spielst nur gegen Bots.
+        Melde dich an, um online gegen andere zu spielen und Fortschritt zu speichern.
+      </p>
     </div>
 
     <main class="menu-main">
       <!-- Hauptaktion: Party starten -->
       <button class="party-btn" id="btnParty">
-        <span class="party-btn-icon">🎲</span>
+        <span class="party-btn-icon" aria-hidden="true">🎲</span>
         <span class="party-btn-text">
-          <strong>Party starten</strong>
+          <strong>Spielen</strong>
           <small id="partyHint">Brettspiel-Modus · 4 Spieler · bald verfügbar</small>
         </span>
+        <span class="party-btn-go" aria-hidden="true">▶</span>
       </button>
 
       <!-- Minigame-Auswahl -->
@@ -111,14 +126,136 @@
     </main>
 
     <footer class="menu-footer">
+      <button class="btn btn-pill" id="btnCredits">
+        <span aria-hidden="true">★</span> Credits
+      </button>
       <span id="appVersion"></span>
     </footer>
+  </div>
+
+  <!-- ── Credits (vom Hauptmenü aus, „Credits"-Button; zurück per ←/Esc) ─── -->
+  <div id="screen-credits" class="screen">
+    <div class="credits-wrap">
+      <header class="credits-header">
+        <button class="btn btn-back" id="btnCreditsBack" title="Zurück zum Menü">←</button>
+        <div class="credits-title">
+          <h1 class="game-logo small">CREDITS</h1>
+          <p class="credits-sub">Block Games · Party Arcade</p>
+        </div>
+        <span class="credits-spacer" aria-hidden="true"></span>
+      </header>
+
+      <!-- Rollen-Karten werden aus der CREDITS-Liste in app.js erzeugt
+           (so bleibt die Seite leicht erweiterbar). -->
+      <div class="credits-grid" id="creditsGrid"></div>
+
+      <p class="credits-made">Made with Electron, JavaScript, HTML and CSS</p>
+    </div>
+  </div>
+
+  <!-- ── Einstellungen (vom Hauptmenü aus, ⚙️ oben rechts) ────────────── -->
+  <div id="screen-settings" class="screen">
+    <div class="settings-wrap">
+      <header class="settings-header">
+        <button class="btn btn-back" id="btnSettingsBack" title="Zurück zum Menü">←</button>
+        <h1 class="game-logo small">EINSTELLUNGEN</h1>
+        <button class="btn btn-ghost" id="btnSettingsReset">Zurücksetzen</button>
+      </header>
+
+      <div class="settings-grid">
+        <section class="settings-card">
+          <h2>🖥️ Anzeige</h2>
+          <div class="setting-row">
+            <div class="setting-label">
+              <strong>Vollbild</strong>
+              <small>F11 schaltet ebenfalls um</small>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="setFullscreen">
+              <span class="switch-knob"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label">
+              <strong>Fenstergröße</strong>
+              <small>gilt nur im Fenstermodus</small>
+            </div>
+            <select id="setResolution"></select>
+          </div>
+        </section>
+
+        <section class="settings-card">
+          <h2>✨ Grafik</h2>
+          <div class="setting-row">
+            <div class="setting-label">
+              <strong>FPS-Limit</strong>
+              <small>Bildrate in den Minigames</small>
+            </div>
+            <select id="setFps"></select>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label">
+              <strong>Animationen reduzieren</strong>
+              <small>weniger Effekte im Menü</small>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="setReducedFx">
+              <span class="switch-knob"></span>
+            </label>
+          </div>
+        </section>
+
+        <section class="settings-card wide">
+          <h2>🔊 Audio</h2>
+          <div class="setting-row">
+            <div class="setting-label"><strong>Gesamtlautstärke</strong></div>
+            <div class="range-wrap">
+              <input type="range" id="setVolMaster" min="0" max="100" step="5">
+              <span class="range-value" id="valVolMaster">80%</span>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label"><strong>Musik</strong></div>
+            <div class="range-wrap">
+              <input type="range" id="setVolMusic" min="0" max="100" step="5">
+              <span class="range-value" id="valVolMusic">70%</span>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label"><strong>Soundeffekte</strong></div>
+            <div class="range-wrap">
+              <input type="range" id="setVolSfx" min="0" max="100" step="5">
+              <span class="range-value" id="valVolSfx">80%</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <p class="settings-note">
+        In den Minigames öffnet später ein kleines Einstellungs-Fenster (Pause)
+        dieselben Regler — alles bleibt automatisch synchron.
+      </p>
+    </div>
+  </div>
+
+  <!-- Beenden-Bestätigung (öffnet der ⏻-Knopf im Hauptmenü) -->
+  <div id="quitOverlay" class="overlay" hidden>
+    <div class="overlay-card">
+      <h2>Spiel beenden?</h2>
+      <p>Block Games wird geschlossen.</p>
+      <div class="overlay-actions">
+        <button class="btn btn-back" id="btnQuitCancel">Abbrechen</button>
+        <button class="btn btn-danger" id="btnQuitConfirm">Beenden</button>
+      </div>
+    </div>
   </div>
 
   <!-- Toast für kurze Hinweise (statt alert) -->
   <div id="toast" class="toast" hidden></div>
 
   <script src="../node_modules/@supabase/supabase-js/dist/umd/supabase.js"></script>
+  <script src="settings.js"></script>
+  <script src="audio.js"></script>
   <script src="auth.js"></script>
   <script src="app.js"></script>
 </body>

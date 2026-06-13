@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Block Games — dekorativer 3D-Würfel für den Bühnen-Hintergrund.
+     Akzentfarbe per CSS überschreibbar (currentColor auf der Top-Fläche). -->
+<svg width="120" height="132" viewBox="0 0 120 132" xmlns="http://www.w3.org/2000/svg">
+  <!-- Oberseite -->
+  <path d="M60 4 L112 32 L60 60 L8 32 Z" fill="currentColor"/>
+  <!-- linke Seite -->
+  <path d="M8 32 L60 60 L60 124 L8 96 Z" fill="currentColor" fill-opacity="0.65"/>
+  <!-- rechte Seite -->
+  <path d="M112 32 L60 60 L60 124 L112 96 Z" fill="currentColor" fill-opacity="0.45"/>
+  <!-- Kanten -->
+  <path d="M60 4 L112 32 L60 60 L8 32 Z M8 32 L60 60 L60 124 M112 32 L60 60"
+        fill="none" stroke="#0d0d1e" stroke-opacity="0.45" stroke-width="3" stroke-linejoin="round"/>
+</svg>

@@ -18,6 +18,14 @@ am Ende in die Repo-Struktur integriert wird.
 - Vollbild-Start (F11 zum Umschalten), Doppelklick-Start per
   `Block Games starten.bat`
 - Hauptmenü im Mario-Party-Stil mit Party-Button und 6 Minigame-Platzhaltern
+- **Einstellungsseite** (⚙️ im Hauptmenü): Vollbild, Fenstergröße,
+  FPS-Limit, Animationen, Lautstärke — zentraler Store in
+  `renderer/settings.js`; UI scrollfrei, Scrollbalken app-weit unsichtbar
+- **Sound-System** (`renderer/audio.js`): UI-Sounds per WebAudio
+  synthetisiert (keine Audio-Dateien), Lautstärke live aus dem Settings-Store
+- **Beenden-Knopf** (⏻ im Hauptmenü) mit Bestätigungs-Dialog
+- **Tastatur-Navigation** im Hauptmenü (Pfeiltasten/Enter, Fokus-Ring);
+  Auth-Screen scrollfrei auch im Registrieren-Tab
 
 ## Noch zu bauen
 
@@ -40,6 +48,18 @@ am Ende in die Repo-Struktur integriert wird.
 
 Freischalten: in `renderer/app.js` im `MINIGAMES`-Array `available: true`
 setzen und eine `start`-Funktion geben.
+
+**Pflichten für jedes Minigame (Einstellungen):**
+- **Eigenes, kleineres Einstellungs-Fenster im Spiel** (z.B. Pause-Overlay,
+  v.a. Lautstärke) — es nutzt **denselben Store** (`renderer/settings.js`,
+  gleiche Keys + `onChange`), damit es mit der Haupt-Einstellungsseite
+  immer synchron bleibt. KEIN eigener zweiter Speicherort!
+- Lautstärke über `Settings.effectiveVolume('music'|'sfx')` (0–1,
+  Master eingerechnet) abspielen und live auf `Settings.onChange` reagieren.
+  Sound-Effekte am besten direkt über `Sfx.play()` (`renderer/audio.js`) —
+  das liest die Lautstärke automatisch bei jedem Abspielen.
+- Das FPS-Limit aus `Settings.get('fpsLimit')` respektieren
+  (0 = unbegrenzt), z.B. im requestAnimationFrame-Loop drosseln.
 
 ### Verteilung / Download über die Website
 - `electron-builder` einrichten → Windows-Installer (NSIS) bauen

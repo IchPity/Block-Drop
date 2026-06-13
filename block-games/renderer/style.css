@@ -18,9 +18,22 @@
   --purple: #b06dff;
   --radius: 18px;
   --font-display: Impact, 'Arial Black', 'Segoe UI', sans-serif;
+
+  /* Glanz-/Glow-Bausteine für den hochwertigeren Arcade-Look */
+  --gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0) 52%);
+  --glow-yellow: 0 0 28px rgba(255, 201, 60, 0.5);
+  --play-grad: linear-gradient(135deg, #ff8a5d, var(--red) 38%, var(--purple));
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* Scrollbalken sind app-weit unsichtbar: Das Layout passt sich per
+   Kompakt-Stufen (s. unten) an die Fenstergröße an, damit gar nicht erst
+   gescrollt werden muss. Wo bei Mini-Fenstern doch gescrollt wird
+   (Auth, Menü, Einstellungen als Fallback), bleibt der Balken weg —
+   Mausrad/Touch funktionieren weiterhin. */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; }
 
 /* `hidden`-Attribut muss auch gewinnen, wenn eine Klasse display setzt
    (sonst zeigt z.B. .auth-form mit display:flex beide Formulare zugleich) */
@@ -51,24 +64,71 @@ body::before {
   background-size: 26px 26px;
 }
 
-/* ── Animierter Hintergrund ─────────────────────────────────────────── */
-#bgBlocks {
+/* ── Animierter Bühnen-Hintergrund ──────────────────────────────────── */
+/* Bewegte Spotlights: zwei langsam wandernde Farbkegel über der Bühne. */
+#stageLights {
+  position: fixed;
+  inset: -10%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 50% at 22% 16%, rgba(77, 181, 255, 0.20), transparent 70%),
+    radial-gradient(34% 48% at 80% 20%, rgba(176, 109, 255, 0.18), transparent 70%);
+  filter: blur(8px);
+  animation: spotlightSweep 16s ease-in-out infinite alternate;
+}
+
+@keyframes spotlightSweep {
+  from { transform: translateX(-3%) scale(1); }
+  to   { transform: translateX(4%) scale(1.08); }
+}
+
+#bgBlocks,
+#bgStars {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
 }
 
+/* Schwebende 3D-Blöcke (Verlauf + Innenkante = leichte Tiefe) */
 .bg-block {
   position: absolute;
-  border-radius: 8px;
-  opacity: 0.08;
+  border-radius: 10px;
+  opacity: 0.1;
+  box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.35), inset 0 6px 0 rgba(255, 255, 255, 0.25);
+  animation: floatUp linear infinite;
+}
+
+/* Schwebende Würfel — cube.svg als Maske, Farbe über --c (3D-Schattierung
+   steckt als Alpha in der SVG). */
+.bg-cube {
+  position: absolute;
+  opacity: 0.16;
+  background-color: var(--c, var(--blue));
+  -webkit-mask: url('assets/cube.svg') center / contain no-repeat;
+          mask: url('assets/cube.svg') center / contain no-repeat;
   animation: floatUp linear infinite;
 }
 
 @keyframes floatUp {
-  from { transform: translateY(110vh) rotate(0deg); }
-  to   { transform: translateY(-20vh) rotate(360deg); }
+  from { transform: translateY(112vh) rotate(0deg); }
+  to   { transform: translateY(-22vh) rotate(360deg); }
+}
+
+/* Funkelnde Sterne (star.svg als Maske), pulsierende Helligkeit */
+.bg-star {
+  position: absolute;
+  background-color: var(--c, var(--yellow));
+  -webkit-mask: url('assets/star.svg') center / contain no-repeat;
+          mask: url('assets/star.svg') center / contain no-repeat;
+  opacity: 0;
+  animation: twinkle ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.5); }
+  50%      { opacity: 0.5; transform: scale(1); }
 }
 
 /* ── Screens ────────────────────────────────────────────────────────── */
@@ -128,7 +188,8 @@ body::before {
   -webkit-text-stroke: 2px var(--bg-deep);
   text-shadow:
     4px 4px 0 var(--red),
-    8px 8px 0 rgba(0, 0, 0, 0.4);
+    8px 8px 0 rgba(0, 0, 0, 0.4),
+    0 0 26px rgba(255, 201, 60, 0.35);
   transform: rotate(-2deg);
 }
 
@@ -139,6 +200,55 @@ body::before {
   -webkit-text-stroke: 1px var(--bg-deep);
   text-shadow: 2px 2px 0 var(--red), 4px 4px 0 rgba(0, 0, 0, 0.35);
   transform: rotate(-1.5deg);
+}
+
+/* Großer Titel-/Logo-Bereich im Hauptmenü-Header */
+.menu-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: riseIn 0.4s ease-out both;
+}
+
+.game-logo.menu-logo {
+  font-size: 2.9em;
+  -webkit-text-stroke: 1.5px var(--bg-deep);
+  text-shadow:
+    3px 3px 0 var(--red),
+    6px 6px 0 rgba(0, 0, 0, 0.35),
+    0 0 30px rgba(255, 201, 60, 0.4);
+  transform: rotate(-2deg);
+  animation: logoPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes logoPop {
+  from { opacity: 0; transform: rotate(-2deg) scale(0.7); }
+  to   { opacity: 1; transform: rotate(-2deg) scale(1); }
+}
+
+.brand-sub {
+  align-self: flex-start;
+  margin-left: 4px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: rgba(255, 201, 60, 0.12);
+  border: 1px solid rgba(255, 201, 60, 0.4);
+  color: var(--yellow);
+  font-weight: 800;
+  font-size: 0.72em;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.brand-star {
+  display: inline-block;
+  animation: twinkleStar 2.4s ease-in-out infinite;
+}
+.brand-star:last-child { animation-delay: 1.2s; }
+
+@keyframes twinkleStar {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50%      { opacity: 1; transform: scale(1.15); }
 }
 
 /* ── Auth ───────────────────────────────────────────────────────────── */
@@ -158,7 +268,7 @@ body::before {
 }
 
 .auth-tagline {
-  margin: 14px 0 28px;
+  margin: 12px 0 20px;
   color: var(--text-dim);
   font-weight: 600;
   letter-spacing: 4px;
@@ -168,7 +278,7 @@ body::before {
 
 .auth-card {
   background: var(--bg-card);
-  padding: 36px 44px 30px;
+  padding: 28px 40px 24px;
   border-radius: var(--radius);
   border: 1px solid var(--line);
   border-bottom: 5px solid var(--bg-deep); /* 3D-Sockel */
@@ -182,7 +292,7 @@ body::before {
   background: var(--bg-deep);
   border-radius: 12px;
   padding: 4px;
-  margin-bottom: 24px;
+  margin-bottom: 18px;
 }
 
 .auth-tab {
@@ -200,7 +310,7 @@ body::before {
 
 .auth-tab.active { background: var(--bg-card-2); color: var(--text); }
 
-.auth-form { display: flex; flex-direction: column; gap: 16px; text-align: left; }
+.auth-form { display: flex; flex-direction: column; gap: 13px; text-align: left; }
 
 .auth-form label {
   display: flex;
@@ -214,7 +324,7 @@ body::before {
 .auth-form .hint { font-weight: 400; opacity: 0.7; }
 
 .auth-form input {
-  padding: 12px 14px;
+  padding: 11px 14px;
   border-radius: 10px;
   border: 2px solid transparent;
   background: var(--bg-deep);
@@ -238,7 +348,7 @@ body::before {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 22px 0 14px;
+  margin: 16px 0 12px;
   color: var(--text-dim);
   font-size: 0.8em;
   text-transform: uppercase;
@@ -253,7 +363,7 @@ body::before {
   background: var(--line);
 }
 
-.auth-note { margin-top: 20px; color: var(--text-dim); font-size: 0.8em; }
+.auth-note { margin-top: 14px; color: var(--text-dim); font-size: 0.8em; }
 
 /* ── Buttons ────────────────────────────────────────────────────────── */
 .btn {
@@ -309,6 +419,12 @@ body::before {
 
 .btn-ghost:hover { color: var(--red); }
 
+.btn-gear { font-size: 1.15em; padding: 8px 10px; }
+.btn-gear:hover { color: var(--yellow); transform: translateY(-2px) rotate(20deg); }
+
+/* Beenden-Knopf hebt sich rot ab (statt der Zahnrad-Drehung) */
+.btn-quit:hover { color: var(--red); transform: translateY(-2px) rotate(0); }
+
 /* ── Hauptmenü ──────────────────────────────────────────────────────── */
 #screen-menu { justify-content: flex-start; }
 
@@ -327,11 +443,12 @@ body::before {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--bg-card);
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 8px 12px 8px 8px;
   font-weight: 700;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 6px 18px rgba(0, 0, 0, 0.25);
 }
 
 /* Lange Usernamen abschneiden statt das Layout zu sprengen */
@@ -358,19 +475,44 @@ body::before {
 
 .avatar.guest { background: linear-gradient(135deg, #5a5a7d, #3a3a66); }
 
-/* Gast-Hinweisband (Warnband-Optik) */
+/* Gast-Hinweisband (Warnband-Optik, aufgewertet: Icon-Chip + Glanz) */
 .guest-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   width: min(900px, 94vw);
-  background: rgba(255, 201, 60, 0.10);
+  background:
+    linear-gradient(90deg, rgba(255, 201, 60, 0.16), rgba(255, 201, 60, 0.05) 60%);
   border: 1px solid rgba(255, 201, 60, 0.45);
-  border-left: 5px solid var(--yellow);
-  border-radius: 12px;
-  padding: 10px 18px;
+  border-left: 6px solid var(--yellow);
+  border-radius: 14px;
+  padding: 11px 18px;
   font-size: 0.88em;
   color: var(--text);
+  box-shadow: 0 8px 26px rgba(255, 201, 60, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   animation: riseIn 0.4s ease-out 0.05s both;
 }
 
+.guest-banner-icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25em;
+  border-radius: 11px;
+  background: rgba(255, 201, 60, 0.18);
+  border: 1px solid rgba(255, 201, 60, 0.5);
+  animation: guestBob 3s ease-in-out infinite;
+}
+
+@keyframes guestBob {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50%      { transform: translateY(-3px) rotate(3deg); }
+}
+
+.guest-banner-text { line-height: 1.35; }
 .guest-banner strong { color: var(--yellow); }
 
 .menu-main {
@@ -384,7 +526,7 @@ body::before {
   min-height: 0; /* sonst kann flex das Scrollen verhindern */
 }
 
-/* Großer Party-Button mit Glanz-Sweep */
+/* Großer „Spielen"-Button: glänzend, mit Glanz-Sweep, Hover-Wackeln & Bounce */
 .party-btn {
   position: relative;
   overflow: hidden;
@@ -395,16 +537,30 @@ body::before {
   border: none;
   border-radius: var(--radius);
   padding: 26px 34px;
-  margin: 18px 0 34px;
+  margin: 22px 0 34px;
   cursor: pointer;
-  background: linear-gradient(135deg, var(--red), var(--purple));
+  background: var(--play-grad);
   color: white;
   text-align: left;
-  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.3), 0 18px 50px rgba(176, 109, 255, 0.25);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -6px 0 rgba(0, 0, 0, 0.22),
+    0 8px 0 rgba(0, 0, 0, 0.3),
+    0 18px 50px rgba(176, 109, 255, 0.3);
   transition: transform 0.15s, box-shadow 0.15s;
   animation: riseIn 0.45s ease-out 0.1s both;
 }
 
+/* Gloss: glänzender Lichtbogen über der oberen Hälfte */
+.party-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--gloss);
+  pointer-events: none;
+}
+
+/* Glanz-Sweep, der über den Button wandert */
 .party-btn::after {
   content: '';
   position: absolute;
@@ -412,7 +568,7 @@ body::before {
   left: -80%;
   width: 50%;
   height: 100%;
-  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.35), transparent);
   transform: skewX(-20deg);
   animation: shine 4.5s ease-in-out infinite;
 }
@@ -422,20 +578,68 @@ body::before {
   100% { left: 160%; }
 }
 
-.party-btn:hover { transform: translateY(-3px) scale(1.01); }
+.party-btn:hover {
+  animation: partyWobble 0.5s ease-in-out;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -6px 0 rgba(0, 0, 0, 0.22),
+    0 12px 0 rgba(0, 0, 0, 0.3),
+    0 24px 60px rgba(176, 109, 255, 0.45);
+}
+
+@keyframes partyWobble {
+  0%   { transform: translateY(0) rotate(0); }
+  30%  { transform: translateY(-4px) rotate(-0.8deg); }
+  60%  { transform: translateY(-4px) rotate(0.8deg); }
+  100% { transform: translateY(-3px) rotate(0); }
+}
+
+.party-btn:hover { transform: translateY(-3px); }
 .party-btn:active { transform: translateY(2px); }
 
-.party-btn-icon { font-size: 3em; }
+/* Würfel-Icon hüpft dezent (Bounce) */
+.party-btn-icon {
+  font-size: 3em;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.3));
+  animation: diceBounce 2.4s ease-in-out infinite;
+}
+
+@keyframes diceBounce {
+  0%, 100% { transform: translateY(0) rotate(-6deg); }
+  50%      { transform: translateY(-8px) rotate(8deg); }
+}
+
+.party-btn-text { flex: 1; }
 
 .party-btn-text strong {
   display: block;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 2em;
+  font-size: 2.1em;
   letter-spacing: 2px;
   text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
 }
-.party-btn-text small { opacity: 0.85; font-size: 0.95em; }
+.party-btn-text small { opacity: 0.9; font-size: 0.95em; }
+
+/* Play-Pfeil rechts, gleitet beim Hover nach vorne */
+.party-btn-go {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1em;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3);
+  transition: transform 0.18s, background 0.18s;
+}
+
+.party-btn:hover .party-btn-go {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateX(6px) scale(1.08);
+}
 
 .section-title {
   width: 100%;
@@ -461,12 +665,19 @@ body::before {
   --accent: var(--blue);
   position: relative;
   overflow: hidden;
-  background: var(--bg-card);
+  /* Karten sind <button> (Tastatur-Fokus) — Button-Defaults neutralisieren */
+  font: inherit;
+  color: inherit;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 30%),
+    linear-gradient(160deg, var(--bg-card-2), var(--bg-card));
   border-radius: var(--radius);
-  padding: 24px 18px 20px;
+  padding: 26px 18px 20px;
   text-align: center;
   border: 1px solid var(--line);
-  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  border-bottom: 4px solid var(--bg-deep); /* 3D-Sockel */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  transition: transform 0.16s ease, border-color 0.16s, box-shadow 0.16s;
   animation: riseIn 0.45s ease-out calc(0.2s + var(--card-i, 0) * 0.06s) both;
 }
 
@@ -476,6 +687,7 @@ body::before {
 .minigame-card:nth-child(5n + 4) { --accent: var(--blue); }
 .minigame-card:nth-child(5n + 5) { --accent: var(--purple); }
 
+/* Akzent-Leiste oben mit weichem Schein */
 .minigame-card::before {
   content: '';
   position: absolute;
@@ -484,19 +696,39 @@ body::before {
   right: 0;
   height: 5px;
   background: var(--accent);
+  box-shadow: 0 0 16px var(--accent);
 }
 
 .minigame-card.available { cursor: pointer; }
 
-.minigame-card.available:hover {
-  transform: translateY(-4px) rotate(-0.5deg);
+/* Karte kommt beim Hover nach vorne (Lift + leichter Tilt + Akzent-Glow) */
+.minigame-card.available:hover,
+.minigame-card.available:focus-visible {
+  transform: translateY(-7px) scale(1.03) rotate(-0.6deg);
   border-color: var(--accent);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.45), 0 0 22px -4px var(--accent);
 }
 
-.minigame-card.locked { opacity: 0.55; }
+.minigame-card.locked { opacity: 0.5; cursor: default; }
 
-.minigame-icon { font-size: 2.6em; display: block; margin-bottom: 10px; }
+/* Icon sitzt in einer akzentfarbenen, leicht glänzenden Kachel */
+.minigame-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 12px;
+  font-size: 2em;
+  border-radius: 16px;
+  background:
+    var(--gloss),
+    color-mix(in srgb, var(--accent) 26%, var(--bg-deep));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+  transition: transform 0.16s;
+}
+
+.minigame-card.available:hover .minigame-icon { transform: scale(1.1) rotate(-4deg); }
 
 .minigame-card h3 { font-size: 1.05em; margin-bottom: 6px; }
 
@@ -509,19 +741,451 @@ body::before {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 1px;
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: 999px;
   background: var(--bg-deep);
   color: var(--text-dim);
 }
 
-.minigame-card.available .badge { background: var(--green); color: #06321b; }
+.minigame-card.available .badge {
+  background: linear-gradient(180deg, var(--green), #2bb86a);
+  color: #06321b;
+  box-shadow: 0 0 14px rgba(61, 220, 132, 0.45);
+}
 
 .menu-footer {
-  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 12px 14px;
   color: var(--text-dim);
   font-size: 0.75em;
+  animation: riseIn 0.45s ease-out 0.3s both;
 }
+
+/* Pillen-Button (Credits) — dezent glänzend, klar sichtbar */
+.btn-pill {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-bottom: 3px solid var(--bg-deep);
+  color: var(--text);
+  font-size: 0.95em;
+  padding: 9px 20px;
+  border-radius: 999px;
+}
+
+.btn-pill:hover {
+  border-color: var(--yellow);
+  color: var(--yellow);
+  box-shadow: var(--glow-yellow);
+}
+
+.btn-pill span { color: var(--yellow); }
+
+/* ── Credits ────────────────────────────────────────────────────────── */
+#screen-credits { justify-content: flex-start; }
+
+.credits-wrap {
+  width: min(880px, 94vw);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0 18px;
+  animation: riseIn 0.4s ease-out both;
+}
+
+.credits-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 8px;
+}
+
+.credits-title { flex: 1; text-align: center; }
+.credits-title .game-logo.small { font-size: 2.4em; }
+
+.credits-sub {
+  margin-top: 6px;
+  color: var(--text-dim);
+  font-weight: 700;
+  font-size: 0.8em;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+/* Spacer balanciert den ←-Button, damit der Titel mittig bleibt */
+.credits-spacer { width: 64px; flex-shrink: 0; }
+
+.credits-grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto; /* Fallback bei sehr flachen Fenstern — Balken global versteckt */
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  align-content: start;
+}
+
+.credit-card {
+  --accent: var(--blue);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 20px;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 40%),
+    linear-gradient(160deg, var(--bg-card-2), var(--bg-card));
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--accent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  animation: riseIn 0.4s ease-out calc(var(--card-i, 0) * 0.05s) both;
+}
+
+.credit-card:nth-child(5n + 1) { --accent: var(--red); }
+.credit-card:nth-child(5n + 2) { --accent: var(--yellow); }
+.credit-card:nth-child(5n + 3) { --accent: var(--green); }
+.credit-card:nth-child(5n + 4) { --accent: var(--blue); }
+.credit-card:nth-child(5n + 5) { --accent: var(--purple); }
+
+.credit-role {
+  font-size: 0.72em;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.credit-name { font-size: 1.15em; font-weight: 800; }
+
+.credits-made {
+  margin-top: 14px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.8em;
+  letter-spacing: 1px;
+}
+
+/* ── Einstellungen ──────────────────────────────────────────────────── */
+#screen-settings { justify-content: flex-start; }
+
+.settings-wrap {
+  width: min(860px, 94vw);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 0 16px;
+  animation: riseIn 0.4s ease-out both;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.settings-header .game-logo.small { flex: 1; }
+
+.btn-back {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 1.2em;
+  padding: 8px 18px;
+}
+
+.btn-back:hover { border-color: var(--blue); }
+
+.settings-grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto; /* Fallback bei sehr flachen Fenstern — Balken global versteckt */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-content: start;
+}
+
+.settings-card {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-bottom: 4px solid var(--bg-deep);
+  border-radius: var(--radius);
+  padding: 18px 24px;
+}
+
+.settings-card.wide { grid-column: 1 / -1; }
+
+.settings-card h2 {
+  font-size: 0.95em;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 10px 0;
+}
+
+.setting-row + .setting-row { border-top: 1px solid rgba(255, 255, 255, 0.05); }
+
+.setting-label strong { display: block; font-size: 0.95em; }
+.setting-label small { color: var(--text-dim); font-size: 0.78em; }
+
+.settings-card select {
+  background: var(--bg-deep);
+  color: var(--text);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 0.9em;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+}
+
+.settings-card select:focus { border-color: var(--blue); }
+.settings-card select:disabled { opacity: 0.4; cursor: default; }
+
+/* Kippschalter */
+.switch {
+  position: relative;
+  width: 52px;
+  height: 28px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.switch input { opacity: 0; width: 0; height: 0; }
+
+.switch-knob {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.switch-knob::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: transform 0.15s, background 0.15s;
+}
+
+.switch input:checked + .switch-knob {
+  background: rgba(61, 220, 132, 0.22);
+  border-color: var(--green);
+}
+
+.switch input:checked + .switch-knob::before {
+  transform: translateX(23px);
+  background: var(--green);
+}
+
+/* Lautstärke-Regler */
+.range-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  max-width: 340px;
+}
+
+.range-wrap input[type="range"] {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-deep);
+  outline: none;
+  cursor: pointer;
+}
+
+.range-wrap input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--blue);
+  border: 3px solid var(--bg);
+  box-shadow: 0 0 0 1px var(--line);
+  transition: transform 0.12s;
+}
+
+.range-wrap input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+.range-value {
+  width: 44px;
+  text-align: right;
+  font-weight: 700;
+  font-size: 0.85em;
+  color: var(--text-dim);
+}
+
+.settings-note {
+  margin-top: 12px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.78em;
+}
+
+@media (max-width: 760px) {
+  .settings-grid { grid-template-columns: 1fr; }
+}
+
+/* "Animationen reduzieren": alle dauerhaften Ambient-Animationen aus
+   (Hintergrund-Layer, Glanz-Sweep, Hüpfen/Funkeln/Wackeln). Kurze
+   Einblendungen beim Screen-Wechsel bleiben. */
+body.reduced-fx #bgBlocks,
+body.reduced-fx #bgStars,
+body.reduced-fx #stageLights { display: none; }
+body.reduced-fx .party-btn::after { display: none; }
+body.reduced-fx .party-btn-icon,
+body.reduced-fx .party-btn:hover,
+body.reduced-fx .brand-star,
+body.reduced-fx .guest-banner-icon { animation: none; }
+body.reduced-fx .party-btn-go { transition: none; }
+
+/* ── Kompakt-Stufen ─────────────────────────────────────────────────────
+   Inhalte schrumpfen bei flachen Fenstern, damit nichts scrollen muss.
+   Erste Stufe bei 900px: deckt auch Vollbild auf 768p-/~830px-Monitoren ab,
+   wo das (etwas größere) v0.5.0-Menü sonst minimal überlaufen würde. */
+@media (max-height: 900px) {
+  .game-logo { font-size: 3.2em; }
+  #screen-auth { padding: 20px 16px; }
+  .auth-tagline { margin: 8px 0 14px; }
+  .auth-card { padding: 20px 30px 16px; }
+  .auth-tabs { margin-bottom: 14px; }
+  .auth-form { gap: 10px; }
+  .auth-form input { padding: 9px 12px; }
+  .auth-card .btn-primary { padding: 11px 22px; }
+  .auth-divider { margin: 12px 0 8px; }
+  .auth-note { margin-top: 10px; }
+  .menu-header { padding: 14px 30px 8px; }
+  .game-logo.menu-logo { font-size: 2.2em; }
+  .brand-sub { font-size: 0.66em; padding: 2px 10px; }
+  .party-btn { padding: 18px 28px; margin: 14px 0 22px; }
+  .party-btn-icon { font-size: 2.3em; }
+  .party-btn-text strong { font-size: 1.55em; }
+  .party-btn-go { width: 40px; height: 40px; }
+  .section-title { margin-bottom: 10px; }
+  .minigame-card { padding: 16px 14px 14px; }
+  .minigame-icon { width: 50px; height: 50px; font-size: 1.6em; margin-bottom: 8px; }
+  .minigame-card p { min-height: 0; }
+  .menu-footer { padding: 6px 8px 10px; }
+  .credits-wrap { padding: 16px 0 12px; }
+  .credits-title .game-logo.small { font-size: 1.9em; }
+  .settings-wrap { padding: 14px 0 10px; }
+  .settings-header { margin-bottom: 12px; }
+  .settings-card { padding: 12px 20px; }
+  .setting-row { padding: 7px 0; }
+}
+
+@media (max-height: 680px) {
+  .game-logo { font-size: 2.5em; }
+  #screen-auth { padding: 16px; }
+  .auth-tagline { display: none; }
+  .auth-card { padding: 16px 26px 14px; }
+  .auth-tabs { margin-bottom: 10px; }
+  .auth-tab { padding: 7px; }
+  .auth-form { gap: 8px; }
+  .auth-form input { padding: 7px 11px; }
+  .auth-card .btn-primary { padding: 9px 20px; font-size: 1em; }
+  .auth-divider { margin: 9px 0 7px; }
+  .btn-guest { padding: 9px 20px; }
+  .btn-guest small { display: none; }
+  .auth-note { display: none; }
+  .guest-banner { font-size: 0.78em; padding: 7px 14px; }
+  .guest-banner-icon { width: 32px; height: 32px; }
+  .game-logo.menu-logo { font-size: 1.8em; }
+  .brand-sub { display: none; }
+  .party-btn { margin: 10px 0 18px; padding: 14px 24px; }
+  .minigame-grid { gap: 10px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  .minigame-icon { width: 44px; height: 44px; font-size: 1.4em; margin-bottom: 6px; }
+  .minigame-card p { display: none; }
+  .credits-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+  .credit-card { padding: 12px 16px; }
+  .settings-note { display: none; }
+}
+
+/* ── Tastatur-Fokus ─────────────────────────────────────────────────────
+   Sichtbarer Fokus-Ring nur bei Tastatur-Bedienung (:focus-visible) —
+   Maus-Klicks erzeugen keinen Ring. */
+:focus { outline: none; }
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+.switch:has(input:focus-visible) {
+  outline: 3px solid var(--yellow);
+  outline-offset: 3px;
+}
+
+/* ── Overlay (Beenden-Bestätigung u.ä.) ─────────────────────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 13, 30, 0.72);
+}
+
+.overlay-card {
+  width: min(400px, 90vw);
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-bottom: 5px solid var(--bg-deep);
+  border-radius: var(--radius);
+  padding: 28px 36px 26px;
+  text-align: center;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+  animation: riseIn 0.22s ease-out both;
+}
+
+.overlay-card h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.7em;
+  letter-spacing: 2px;
+  color: var(--yellow);
+  text-shadow: 2px 2px 0 var(--red);
+  margin-bottom: 10px;
+}
+
+.overlay-card p { color: var(--text-dim); font-size: 0.9em; }
+
+.overlay-actions {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin-top: 22px;
+}
+
+.btn-danger {
+  background: linear-gradient(180deg, var(--red), #e04444);
+  color: #3d0606;
+  box-shadow: 0 5px 0 #a32626;
+}
+
+.btn-danger:hover:not(:disabled) { box-shadow: 0 7px 0 #a32626; }
 
 /* ── Toast ──────────────────────────────────────────────────────────── */
 .toast {

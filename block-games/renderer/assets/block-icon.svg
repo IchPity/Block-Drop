@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Block Games — Marken-Icon: eigenständiger goldener Arcade-Power-Block mit "B".
+     Bewusst KEIN Mario-?-Block: abgerundete Form, eigene Studs, Stern-Akzent.
+     Bearbeitbare Quelle; PNG/ICO werden hieraus abgeleitet. -->
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0"   stop-color="#ffe680"/>
+      <stop offset="0.48" stop-color="#ffc93c"/>
+      <stop offset="1"   stop-color="#eda012"/>
+    </linearGradient>
+    <linearGradient id="bface" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a3500"/>
+      <stop offset="1" stop-color="#1d1500"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="42%" r="60%">
+      <stop offset="0"   stop-color="#ffd75e" stop-opacity="0.55"/>
+      <stop offset="1"   stop-color="#ffd75e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- weicher Glow hinter dem Block -->
+  <circle cx="128" cy="120" r="120" fill="url(#glow)"/>
+
+  <!-- Block-Körper mit dicker dunkler Kontur -->
+  <rect x="36" y="36" width="184" height="184" rx="42"
+        fill="url(#gold)" stroke="#241a02" stroke-width="13"/>
+
+  <!-- innerer Bevel / oberes Highlight -->
+  <rect x="58" y="56" width="140" height="40" rx="20" fill="#fff4c6" opacity="0.55"/>
+  <rect x="54" y="54" width="148" height="148" rx="30" fill="none"
+        stroke="#ffffff" stroke-opacity="0.18" stroke-width="3"/>
+
+  <!-- Eck-Studs -->
+  <circle cx="66" cy="66"   r="8" fill="#fff4c6" opacity="0.85"/>
+  <circle cx="190" cy="66"  r="8" fill="#fff4c6" opacity="0.45"/>
+  <circle cx="66" cy="190"  r="8" fill="#9c6f0c" opacity="0.65"/>
+  <circle cx="190" cy="190" r="8" fill="#9c6f0c" opacity="0.65"/>
+
+  <!-- großes "B" -->
+  <text x="129" y="183" text-anchor="middle"
+        font-family="Impact, 'Arial Black', sans-serif" font-size="156"
+        fill="url(#bface)" stroke="#1d1500" stroke-width="3">B</text>
+
+  <!-- Stern-Akzent oben rechts -->
+  <path d="M183 78 l7 16 17 2 -13 12 4 17 -15 -9 -15 9 4 -17 -13 -12 17 -2 z"
+        fill="#fff4c6" opacity="0.9" stroke="#241a02" stroke-width="2"/>
+</svg>
