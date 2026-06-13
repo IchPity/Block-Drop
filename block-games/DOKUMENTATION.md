@@ -10,6 +10,12 @@ Code wird hier dokumentiert.**
   bleibt der Code in `block-games/` immer im Klartext lesbar.
 - **Alles dokumentieren.** Neue Features, Entscheidungen und Änderungen kommen
   in diese Datei (Abschnitt „Änderungsprotokoll").
+- **Alles ohne Maus bedienbar (verbindlich).** Jeder Screen und jedes Overlay
+  muss sich vollständig per Tastatur steuern lassen — **Pfeiltasten ODER WASD**
+  für die Navigation, **Enter/Leertaste** zum Auslösen, **Esc** zum Zurück/
+  Schließen. Das gilt auch für Login/Registrierung, Einstellungen und alle
+  künftigen Menüs/Minigames. Wer einen neuen Screen baut, hängt ihn in die
+  Container-Auswahl von `setupKeyboard()` (`renderer/app.js`) ein.
 - Geplante Features und offene Punkte stehen in `ROADMAP.md`.
 
 ## App starten
@@ -36,7 +42,7 @@ Hinweis: Node.js liegt portabel auf `D:\` (`D:\node.exe`).
 |---|---|
 | `main.js` | Electron-Hauptprozess: Fenster (Vollbild), F11-Toggle, kein App-Menü, IPC für Anzeige-Einstellungen + `app:quit` |
 | `preload.js` | Brücke Main↔Renderer: Version/Plattform, Anzeige-Steuerung (Vollbild, Fenstergröße, Display-Infos), `quitApp()` |
-| `renderer/index.html` | Alle Screens: Laden, Login/Registrierung, Hauptmenü, Einstellungen (inkl. **Konto bearbeiten**), **Credits** + Beenden-Overlay + **Konto/Freunde-Overlay**; Bühnen-Hintergrund-Layer |
+| `renderer/index.html` | Alle Screens: Laden, Login/Registrierung, Hauptmenü, Einstellungen (**in Kategorie-Reitern**: Konto/Anzeige/Grafik/Audio), **Credits** + Beenden-Overlay + **Konto/Freunde-Overlay**; Bühnen-Hintergrund-Layer |
 | `renderer/app.js` | UI-Logik: Screen-Wechsel, Gast-Modus, Menü-Rendering, **Credits-Rendering**, Einstellungs-UI, **Konto/Freunde-Overlay + Konto-Bearbeitung**, Toast, Sound-Verdrahtung, Beenden-Dialog, Tastatur-Navigation, animierter Hintergrund (Blöcke/Würfel/Sterne) |
 | `renderer/settings.js` | Zentraler Einstellungs-Store (localStorage, onChange-Events, `effectiveVolume()`) |
 | `renderer/audio.js` | Sound-System `Sfx`: UI-Effekte per WebAudio synthetisiert (keine Audio-Dateien), Lautstärke aus dem Settings-Store |
@@ -80,6 +86,17 @@ Erreichbar über das **⚙️-Zahnrad oben rechts im Hauptmenü** (zurück per
 „←"-Button oder **Esc**). Alle Werte liegen im zentralen Store
 `renderer/settings.js` (localStorage-Key `blockgames.settings`) und
 überleben Neustarts.
+
+**Aufbau in Kategorie-Reitern:** Oben wählt man den Bereich (**Konto ·
+Anzeige · Grafik · Audio**), darunter erscheinen nur die Optionen dieser
+Kategorie. Es ist immer genau ein Panel sichtbar (`.settings-tab` /
+`.settings-panel` in `index.html`; `activateSettingsTab()` / `openSettings()`
+in `app.js`). Der **Konto-Reiter erscheint nur angemeldet**
+(`syncAccountCard()` blendet Reiter + Panel ein/aus und fällt sonst auf
+„Anzeige" zurück). Einstiegspunkte: das ⚙️-Zahnrad öffnet **Anzeige**, der
+Knopf „Konto bearbeiten" im Konto-Overlay öffnet direkt den **Konto**-Reiter.
+Reiter und Optionen sind komplett **ohne Maus** bedienbar (siehe
+„Tastatur-Bedienung").
 
 | Bereich | Einstellung | Verhalten |
 |---|---|---|
@@ -196,19 +213,35 @@ und die Haupt-Einstellungsseite immer synchron bleiben.
 
 ### Tastatur-Bedienung
 
-- **Pfeiltasten** springen im Hauptmenü (und im Beenden-Dialog) zum
-  nächstgelegenen Button in Pfeilrichtung (geometrische Navigation, deckt
-  auch das Karten-Grid ab); **Enter/Leertaste** löst aus. Die
-  Minigame-Karten sind dafür echte `<button>` (gesperrte sind `disabled`
-  und werden übersprungen).
+**Grundsatz: Die ganze App ist ohne Maus bedienbar** (siehe Grundregeln).
+Zentraler Handler `setupKeyboard()` in `app.js`.
+
+- **Navigation per Pfeiltasten ODER WASD:** Der Fokus springt geometrisch
+  zum nächstgelegenen Element in Richtung der Taste (deckt auch das
+  Karten-Grid und gemischte Bedienelemente ab). **Enter/Leertaste** löst aus.
+  Abgedeckte Container: **Auth-Screen (Login/Registrierung)**, Hauptmenü,
+  **Einstellungen**, Credits, **Konto/Freunde-Overlay** und Beenden-Dialog
+  (offene Overlays haben Vorrang). Neue Screens werden in die
+  Container-Auswahl von `setupKeyboard()` eingehängt.
+- **W/A/S/D** wirken wie ↑/←/↓/→ — **außer in Textfeldern**, dort tippen sie
+  normal (sonst ließe sich kein Name mit „w" o.ä. eingeben). In Textfeldern
+  navigiert man mit den echten Pfeiltasten (hoch/runter) bzw. **Tab**.
+  Tastenkombis (Strg/Alt/⌘ + Taste) werden nie als Navigation gedeutet.
+- **Bedienelemente:** Hoch/Runter springt immer zwischen den Zeilen. Die
+  **waagerechte** Pfeilbewegung behält ihre native Aufgabe — **←/→ verstellt
+  Regler, wechselt die Auswahl (Select) und bewegt den Text-Cursor**;
+  **Leertaste** schaltet Schalter (Checkbox). So ist jede Option erreichbar
+  und änderbar, ohne die Maus.
+- **Login/Registrierung:** Der Cursor steht beim Öffnen direkt im ersten Feld
+  (`showAuth()`). Der Fokus auf einen Reiter (per Pfeil/WASD) schaltet das
+  Formular sofort um (`focus`-Aktivierung wie bei den Einstellungs-Reitern).
+- **Einstellungen:** Die Kategorie-Reiter werden per ←/→ (bzw. A/D)
+  angesteuert; der Fokus auf einen Reiter aktiviert ihn direkt
+  (`activateSettingsTab()`).
 - Fokus-Ring nur bei Tastatur-Bedienung (`:focus-visible`, gelber Rahmen) —
   Mausklicks erzeugen keinen Ring.
-- **Esc**: schließt den Beenden-Dialog bzw. führt von den Einstellungen
-  **oder der Credits-Seite** zurück ins Menü (zentraler Handler
-  `setupKeyboard()` in `app.js`). Die Pfeil-Navigation deckt auch die
-  Credits-Seite ab.
-- In Eingabefeldern, Slidern und Selects behalten die Pfeiltasten ihre
-  normale Funktion.
+- **Esc**: schließt das offene Overlay (Beenden / Konto) bzw. führt von den
+  Einstellungen **oder der Credits-Seite** zurück ins Menü.
 
 ### UI / Design
 - Arcade-Party-Look: Impact-Schriftzug mit Versatz-Schatten **und Glow**,
@@ -248,6 +281,29 @@ und die Haupt-Einstellungsseite immer synchron bleiben.
   Klartext — gleicher Key wie die Website, RLS schützt die Daten.
 
 ## Änderungsprotokoll
+
+### v0.7.0 — 2026-06-13
+- **Einstellungen in Kategorie-Reiter aufgeteilt:** Oben wählbar (Konto ·
+  Anzeige · Grafik · Audio), darunter nur die Optionen der aktiven Kategorie
+  (`.settings-tabs`/`.settings-panel` in `index.html`; `activateSettingsTab()`,
+  `setupSettingsTabs()`, `openSettings()` in `app.js`). Der Konto-Reiter
+  erscheint nur angemeldet (`syncAccountCard()` ein-/ausblenden, sonst Rückfall
+  auf „Anzeige"). Zahnrad öffnet „Anzeige", „Konto bearbeiten" öffnet „Konto".
+  Frühere Karten-Raster-Optik (`.settings-grid`/`.settings-card`) ersetzt.
+- **Login/Registrierung komplett per Tastatur:** Auth-Screen in die
+  Pfeil-/WASD-Navigation aufgenommen; Cursor startet im ersten Feld
+  (`showAuth()`); Fokus auf einen Reiter schaltet das Formular sofort um.
+- **Navigation per Pfeiltasten ODER WASD** (zentrale `DIR_KEYS`-Map). W/A/S/D
+  navigieren überall außer in Textfeldern (dort tippen sie); Tastenkombis
+  (Strg/Alt/⌘) werden ignoriert.
+- **`moveFocus()` deckt jetzt alle Bedienelemente ab** (nicht nur Buttons):
+  Hoch/Runter springt zwischen Zeilen, ←/→ bleibt native (Regler/Select/Text-
+  Cursor), Leertaste schaltet Schalter. Auch das **Konto/Freunde-Overlay** ist
+  jetzt per Pfeil/WASD bedienbar.
+- **Grundsatz „alles ohne Maus" verbindlich festgehalten** (Grundregeln +
+  Abschnitt „Tastatur-Bedienung"): jeder neue Screen muss vollständig per
+  Tastatur steuerbar sein und in `setupKeyboard()` eingehängt werden.
+- Version auf 0.7.0 (package.json, preload.js).
 
 ### v0.6.0 — 2026-06-13
 - **Konto & Freunde:** Neues Overlay (`#accountOverlay`), geöffnet per Klick

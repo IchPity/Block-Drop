@@ -894,33 +894,50 @@ body::before {
 
 .btn-back:hover { border-color: var(--blue); }
 
-.settings-grid {
+/* Kategorie-Reiter (oben) — gleiche Optik wie die Auth-Reiter, nur breiter. */
+.settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  background: var(--bg-deep);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 16px;
+}
+
+.settings-tab {
+  padding: 9px 20px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-weight: 700;
+  font-size: 0.95em;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.settings-tab:hover { color: var(--text); }
+.settings-tab.active { background: var(--bg-card-2); color: var(--text); }
+
+/* Panel-Bereich: nur das aktive Panel ist sichtbar (app.js setzt [hidden]). */
+.settings-panels {
   flex: 1;
   min-height: 0;
   overflow-y: auto; /* Fallback bei sehr flachen Fenstern — Balken global versteckt */
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  align-content: start;
 }
 
-.settings-card {
+.settings-panel {
   background: var(--bg-card);
   border: 1px solid var(--line);
   border-bottom: 4px solid var(--bg-deep);
   border-radius: var(--radius);
-  padding: 18px 24px;
+  padding: 12px 24px;
+  animation: riseIn 0.25s ease-out both;
 }
 
-.settings-card.wide { grid-column: 1 / -1; }
-
-.settings-card h2 {
-  font-size: 0.95em;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  color: var(--text-dim);
-  margin-bottom: 10px;
-}
+.settings-panel#panel-account { padding: 18px 24px; }
 
 .setting-row {
   display: flex;
@@ -935,7 +952,7 @@ body::before {
 .setting-label strong { display: block; font-size: 0.95em; }
 .setting-label small { color: var(--text-dim); font-size: 0.78em; }
 
-.settings-card select {
+.settings-panel select {
   background: var(--bg-deep);
   color: var(--text);
   border: 2px solid var(--line);
@@ -947,8 +964,8 @@ body::before {
   cursor: pointer;
 }
 
-.settings-card select:focus { border-color: var(--blue); }
-.settings-card select:disabled { opacity: 0.4; cursor: default; }
+.settings-panel select:focus { border-color: var(--blue); }
+.settings-panel select:disabled { opacity: 0.4; cursor: default; }
 
 /* Kippschalter */
 .switch {
@@ -1041,7 +1058,7 @@ body::before {
 }
 
 @media (max-width: 760px) {
-  .settings-grid { grid-template-columns: 1fr; }
+  .settings-tab { padding: 9px 14px; }
 }
 
 /* "Animationen reduzieren": alle dauerhaften Ambient-Animationen aus
@@ -1088,7 +1105,9 @@ body.reduced-fx .party-btn-go { transition: none; }
   .credits-title .game-logo.small { font-size: 1.9em; }
   .settings-wrap { padding: 14px 0 10px; }
   .settings-header { margin-bottom: 12px; }
-  .settings-card { padding: 12px 20px; }
+  .settings-tabs { margin-bottom: 12px; }
+  .settings-tab { padding: 7px 16px; }
+  .settings-panel { padding: 4px 20px; }
   .setting-row { padding: 7px 0; }
 }
 

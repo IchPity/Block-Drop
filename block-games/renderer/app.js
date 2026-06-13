@@ -92,13 +92,14 @@ function spawnBackgroundBlocks() {
 // ── Sound-Verdrahtung ────────────────────────────────────────────────
 // UI-Sounds laufen zentral über Event-Delegation — neue Buttons/Karten
 // klingen damit automatisch, ohne dass jeder Listener Sfx.play() rufen muss.
-const SFX_SELECTOR = '.auth-tab, .party-btn, .minigame-card.available, .badge-id, .btn';
+const SFX_SELECTOR = '.auth-tab, .settings-tab, .party-btn, .minigame-card.available, .badge-id, .btn';
 
 function setupSfx() {
   document.addEventListener('click', (e) => {
     const el = e.target.closest(SFX_SELECTOR);
     if (!el || el.disabled) return;
-    Sfx.play(el.classList.contains('auth-tab') ? 'tab' : 'click');
+    const isTab = el.classList.contains('auth-tab') || el.classList.contains('settings-tab');
+    Sfx.play(isTab ? 'tab' : 'click');
   });
 
   // Hover nur beim Betreten des Elements (nicht bei jedem Kind-Wechsel)
@@ -140,6 +141,22 @@ function setupAuthTabs() {
 
   tabLogin.addEventListener('click', () => activate(true));
   tabRegister.addEventListener('click', () => activate(false));
+  // Tastatur: Fokus auf einen Reiter (per Pfeil/WASD) schaltet ihn sofort um —
+  // wie ein echtes Reiter-Menü, ganz ohne Maus.
+  tabLogin.addEventListener('focus', () => activate(true));
+  tabRegister.addEventListener('focus', () => activate(false));
+}
+
+// Auth-Screen zeigen, immer mit dem Login-Reiter, und den Cursor gleich ins
+// erste Feld setzen, damit man sofort (auch ohne Maus) lostippen kann.
+function showAuth() {
+  document.getElementById('tabLogin').classList.add('active');
+  document.getElementById('tabRegister').classList.remove('active');
+  document.getElementById('formLogin').hidden = false;
+  document.getElementById('formRegister').hidden = true;
+  showAuthError('');
+  showScreen('screen-auth');
+  document.getElementById('loginId').focus();
 }
 
 function setupAuthForms() {
@@ -190,7 +207,7 @@ function setupAuthForms() {
     if (guestMode) {
       guestMode = false;
       showAuthError('');
-      showScreen('screen-auth');
+      showAuth();
     } else {
       Auth.signOut();
     }
@@ -215,6 +232,46 @@ const FPS_OPTIONS = [
 
 function applyReducedFx() {
   document.body.classList.toggle('reduced-fx', Settings.get('reducedFx'));
+}
+
+// ── Einstellungs-Reiter ──────────────────────────────────────────────
+// Die Einstellungen sind in Kategorien aufgeteilt (Konto/Anzeige/Grafik/
+// Audio), die oben als Reiter gewählt werden; darunter erscheinen nur die
+// Optionen der aktiven Kategorie. Reiter UND Optionen sind per Maus wie per
+// Pfeiltasten/WASD bedienbar.
+function activateSettingsTab(tab) {
+  if (!tab || tab.hidden) return;
+  document.querySelectorAll('.settings-tab').forEach(t => {
+    const on = t === tab;
+    t.classList.toggle('active', on);
+    t.setAttribute('aria-selected', String(on));
+    const panel = document.getElementById(t.dataset.panel);
+    if (panel) {
+      panel.hidden = !on;
+      panel.classList.toggle('active', on);
+    }
+  });
+}
+
+function setupSettingsTabs() {
+  document.querySelectorAll('.settings-tab').forEach(tab => {
+    tab.addEventListener('click', () => activateSettingsTab(tab));
+    // Fokus per Pfeil/WASD schaltet die Kategorie direkt um.
+    tab.addEventListener('focus', () => activateSettingsTab(tab));
+  });
+}
+
+// Einstellungen öffnen und einen Start-Reiter wählen. `tabId` ist optional;
+// ist der gewünschte Reiter ausgeblendet (z.B. Konto im Gast-Modus), fällt
+// die Auswahl auf „Anzeige" zurück. Der aktive Reiter bekommt den Fokus,
+// damit man sofort per Tastatur weiterblättern kann.
+function openSettings(tabId) {
+  syncAccountCard(); // Konto-Reiter/Panel je nach Login ein-/ausblenden
+  const wanted = tabId && document.getElementById(tabId);
+  const target = (wanted && !wanted.hidden) ? wanted : document.getElementById('stabDisplay');
+  activateSettingsTab(target);
+  showScreen('screen-settings');
+  target.focus();
 }
 
 async function setupSettings() {
@@ -316,10 +373,8 @@ async function setupSettings() {
     showToast('Einstellungen zurückgesetzt.');
   });
 
-  document.getElementById('btnSettings').addEventListener('click', () => {
-    syncAccountCard();
-    showScreen('screen-settings');
-  });
+  // Zahnrad → allgemeine Einstellungen (Anzeige zuerst).
+  document.getElementById('btnSettings').addEventListener('click', () => openSettings('stabDisplay'));
   document.getElementById('btnSettingsBack').addEventListener('click', () => showScreen('screen-menu'));
   // Esc → zurück ins Menü übernimmt der zentrale Tastatur-Handler (setupKeyboard).
 
@@ -357,10 +412,22 @@ function setupQuit() {
   });
 }
 
-// ── Tastatur: Esc + Pfeil-Navigation ─────────────────────────────────
-// Das Menü ist komplett ohne Maus bedienbar: Pfeiltasten springen zum
-// nächstgelegenen Button in Pfeilrichtung, Enter/Leertaste löst aus
-// (Button-Standard). Den Fokus-Ring zeichnet :focus-visible (style.css).
+// ── Tastatur: Esc + Pfeil-/WASD-Navigation ───────────────────────────
+// GRUNDSATZ: Die ganze App ist komplett ohne Maus bedienbar — JEDER Screen
+// und JEDES Overlay (Login/Registrierung, Hauptmenü, Einstellungen, Credits,
+// Konto/Freunde, Beenden) lässt sich per Pfeiltasten ODER WASD ansteuern,
+// Enter/Leertaste löst aus. Wer neue Screens baut, hängt sie hier in die
+// Container-Auswahl ein. Den Fokus-Ring zeichnet :focus-visible (style.css).
+//
+// Richtungstasten: Pfeile immer; W/A/S/D nur, wenn NICHT in einem Textfeld
+// getippt wird (sonst könnte man keinen Namen mit „w" o.ä. eingeben).
+const DIR_KEYS = {
+  ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+  w: 'up', a: 'left', s: 'down', d: 'right',
+  W: 'up', A: 'left', S: 'down', D: 'right',
+};
+const WASD = new Set(['w', 'a', 's', 'd', 'W', 'A', 'S', 'D']);
+
 function setupKeyboard() {
   document.addEventListener('keydown', (e) => {
     const quitOpen = !document.getElementById('quitOverlay').hidden;
@@ -377,30 +444,45 @@ function setupKeyboard() {
       return;
     }
 
-    if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
-    // In Eingabefeldern/Slidern/Selects behalten die Pfeile ihre normale Aufgabe
-    if (e.target.matches('input, select, textarea')) return;
-    // Das Konto-Overlay nutzt normale Tab-Navigation — Pfeile dürfen nicht
-    // zu den Buttons im Menü dahinter springen.
-    if (accountOpen()) return;
+    // Tastenkombis (Strg+W, Alt+←, …) NICHT als Navigation deuten.
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
 
-    // Pfeil-Navigation gilt im Beenden-Dialog, im Hauptmenü und auf Credits
+    const dir = DIR_KEYS[e.key];
+    if (!dir) return;
+    // In einem Textfeld dürfen W/A/S/D nur tippen, nicht navigieren.
+    const inText = e.target.matches('input:not([type=range]):not([type=checkbox]), textarea');
+    if (inText && WASD.has(e.key)) return;
+
+    // Container der aktuellen Ansicht (offene Overlays haben Vorrang).
     let container = null;
     if (quitOpen) container = document.getElementById('quitOverlay');
+    else if (accountOpen()) container = document.getElementById('accountOverlay');
+    else if (isActive('screen-auth')) container = document.getElementById('screen-auth');
+    else if (isActive('screen-settings')) container = document.getElementById('screen-settings');
     else if (isActive('screen-menu')) container = document.getElementById('screen-menu');
     else if (isActive('screen-credits')) container = document.getElementById('screen-credits');
     if (!container) return;
 
+    // Auf Bedienelementen (Textfeld, Regler, Auswahl, Schalter) bleibt die
+    // WAAGERECHTE Pfeilbewegung ihre native Aufgabe: Cursor im Text, Regler
+    // verstellen, Auswahl wechseln. Hoch/Runter springt immer zwischen Zeilen.
+    if ((dir === 'left' || dir === 'right') && e.target.matches('input, select, textarea')) return;
+
     e.preventDefault();
-    moveFocus(container, e.key);
+    moveFocus(container, dir);
   });
 }
 
+// Alles, was per Tastatur fokussierbar ist (nicht nur Buttons): Schalter,
+// Regler, Auswahlfelder und Eingaben gehören zur Navigation dazu.
+const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), a[href]';
+
 // Geometrische Fokus-Navigation: springt zum nächstgelegenen sichtbaren
-// Button in Pfeilrichtung (funktioniert dadurch auch im Karten-Grid).
-function moveFocus(container, key) {
-  const items = [...container.querySelectorAll('button:not([disabled])')]
-    .filter(el => el.offsetParent !== null);
+// Element in Richtung `dir` ('up'|'down'|'left'|'right'). Funktioniert dadurch
+// auch im Karten-Grid und über gemischte Bedienelemente hinweg.
+function moveFocus(container, dir) {
+  const items = [...container.querySelectorAll(FOCUSABLE)]
+    .filter(el => el.offsetParent !== null || el === document.activeElement);
   if (!items.length) return;
 
   const current = document.activeElement;
@@ -418,10 +500,10 @@ function moveFocus(container, key) {
     const dx = r.left + r.width / 2 - cx;
     const dy = r.top + r.height / 2 - cy;
     let fwd, side;
-    if (key === 'ArrowRight')     { fwd = dx;  side = Math.abs(dy); }
-    else if (key === 'ArrowLeft') { fwd = -dx; side = Math.abs(dy); }
-    else if (key === 'ArrowDown') { fwd = dy;  side = Math.abs(dx); }
-    else                          { fwd = -dy; side = Math.abs(dx); }
+    if (dir === 'right')     { fwd = dx;  side = Math.abs(dy); }
+    else if (dir === 'left') { fwd = -dx; side = Math.abs(dy); }
+    else if (dir === 'down') { fwd = dy;  side = Math.abs(dx); }
+    else                     { fwd = -dy; side = Math.abs(dx); }
     if (fwd <= 4) return;             // nur Elemente in Pfeilrichtung
     const score = fwd + side * 2.5;   // seitlicher Versatz zählt stärker
     if (score < bestScore) { bestScore = score; best = el; }
@@ -678,8 +760,7 @@ function setupAccount() {
 
   document.getElementById('btnAccountSettings').addEventListener('click', () => {
     closeAccount();
-    syncAccountCard();
-    showScreen('screen-settings');
+    openSettings('stabAccount'); // „Konto bearbeiten" → direkt zum Konto-Reiter
   });
 
   // Freund-Suche (entprellt).
@@ -728,10 +809,18 @@ function setupAccount() {
 // Die Karte ist nur für angemeldete Nutzer sichtbar und wird beim Öffnen
 // der Einstellungen mit den aktuellen Werten gefüllt.
 function syncAccountCard() {
-  const card = document.getElementById('accountSettingsCard');
   const loggedIn = isOnlineAllowed();
-  card.hidden = !loggedIn;
-  if (!loggedIn) return;
+  const tab = document.getElementById('stabAccount');
+  tab.hidden = !loggedIn;
+
+  if (!loggedIn) {
+    // Konto-Reiter weg → war er aktiv, auf „Anzeige" zurückfallen.
+    document.getElementById('panel-account').hidden = true;
+    if (tab.classList.contains('active')) {
+      activateSettingsTab(document.getElementById('stabDisplay'));
+    }
+    return;
+  }
   document.getElementById('accName').value = Auth.username;
   document.getElementById('accMail').value = Auth.contactEmail;
   document.getElementById('accPw').value = '';
@@ -799,6 +888,7 @@ async function boot() {
   setupCredits();
   setupAccount();
   setupAccountSettings();
+  setupSettingsTabs();
   setupKeyboard();
   await setupSettings();
   document.getElementById('appVersion').textContent =
@@ -830,7 +920,7 @@ async function boot() {
       // in den Einstellungen verstecken.
       if (accountOpen()) closeAccount();
       syncAccountCard();
-      if (!guestMode) showScreen('screen-auth');
+      if (!guestMode) showAuth();
     }
   });
 
@@ -839,7 +929,7 @@ async function boot() {
     renderMenu();
     showScreen('screen-menu');
   } else {
-    showScreen('screen-auth');
+    showAuth();
   }
 }
 

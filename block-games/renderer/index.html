@@ -155,7 +155,10 @@
     </div>
   </div>
 
-  <!-- ── Einstellungen (vom Hauptmenü aus, ⚙️ oben rechts) ────────────── -->
+  <!-- ── Einstellungen (vom Hauptmenü aus, ⚙️ oben rechts) ──────────────
+       In Kategorie-Reiter aufgeteilt: oben wählt man den Bereich, darunter
+       stehen dessen Optionen. Komplett ohne Maus bedienbar — Reiter und
+       Optionen per Pfeiltasten/WASD (siehe setupKeyboard in app.js). -->
   <div id="screen-settings" class="screen">
     <div class="settings-wrap">
       <header class="settings-header">
@@ -164,11 +167,19 @@
         <button class="btn btn-ghost" id="btnSettingsReset">Zurücksetzen</button>
       </header>
 
-      <div class="settings-grid">
+      <!-- Kategorie-Reiter. Der Konto-Reiter erscheint nur angemeldet
+           (app.js → syncAccountCard). Auswahl per Klick ODER Pfeil/WASD. -->
+      <div class="settings-tabs" role="tablist" aria-label="Einstellungs-Kategorien">
+        <button class="settings-tab" id="stabAccount" data-panel="panel-account" role="tab" aria-selected="false" hidden>👤 Konto</button>
+        <button class="settings-tab active" id="stabDisplay" data-panel="panel-display" role="tab" aria-selected="true">🖥️ Anzeige</button>
+        <button class="settings-tab" id="stabGraphics" data-panel="panel-graphics" role="tab" aria-selected="false">✨ Grafik</button>
+        <button class="settings-tab" id="stabAudio" data-panel="panel-audio" role="tab" aria-selected="false">🔊 Audio</button>
+      </div>
+
+      <div class="settings-panels">
         <!-- Konto bearbeiten — nur sichtbar, wenn angemeldet (app.js).
              Name = Username/Login-Schlüssel, E-Mail ist optionale Kontaktadresse. -->
-        <section class="settings-card wide" id="accountSettingsCard" hidden>
-          <h2>👤 Konto</h2>
+        <section class="settings-panel" id="panel-account" role="tabpanel" aria-labelledby="stabAccount" hidden>
           <div class="account-forms">
             <form class="account-form" id="formName">
               <label>Anzeigename
@@ -199,12 +210,12 @@
           <p id="accountMsg" class="account-msg" hidden></p>
         </section>
 
-        <section class="settings-card">
-          <h2>🖥️ Anzeige</h2>
+        <!-- Anzeige -->
+        <section class="settings-panel active" id="panel-display" role="tabpanel" aria-labelledby="stabDisplay">
           <div class="setting-row">
             <div class="setting-label">
               <strong>Vollbild</strong>
-              <small>F11 schaltet ebenfalls um</small>
+              <small>F11 schaltet ebenfalls um · Leertaste schaltet den Schalter</small>
             </div>
             <label class="switch">
               <input type="checkbox" id="setFullscreen">
@@ -214,25 +225,25 @@
           <div class="setting-row">
             <div class="setting-label">
               <strong>Fenstergröße</strong>
-              <small>gilt nur im Fenstermodus</small>
+              <small>gilt nur im Fenstermodus · ←/→ ändert die Auswahl</small>
             </div>
             <select id="setResolution"></select>
           </div>
         </section>
 
-        <section class="settings-card">
-          <h2>✨ Grafik</h2>
+        <!-- Grafik -->
+        <section class="settings-panel" id="panel-graphics" role="tabpanel" aria-labelledby="stabGraphics" hidden>
           <div class="setting-row">
             <div class="setting-label">
               <strong>FPS-Limit</strong>
-              <small>Bildrate in den Minigames</small>
+              <small>Bildrate in den Minigames · ←/→ ändert die Auswahl</small>
             </div>
             <select id="setFps"></select>
           </div>
           <div class="setting-row">
             <div class="setting-label">
               <strong>Animationen reduzieren</strong>
-              <small>weniger Effekte im Menü</small>
+              <small>weniger Effekte im Menü · Leertaste schaltet den Schalter</small>
             </div>
             <label class="switch">
               <input type="checkbox" id="setReducedFx">
@@ -241,10 +252,13 @@
           </div>
         </section>
 
-        <section class="settings-card wide">
-          <h2>🔊 Audio</h2>
+        <!-- Audio -->
+        <section class="settings-panel" id="panel-audio" role="tabpanel" aria-labelledby="stabAudio" hidden>
           <div class="setting-row">
-            <div class="setting-label"><strong>Gesamtlautstärke</strong></div>
+            <div class="setting-label">
+              <strong>Gesamtlautstärke</strong>
+              <small>←/→ regelt die Lautstärke</small>
+            </div>
             <div class="range-wrap">
               <input type="range" id="setVolMaster" min="0" max="100" step="5">
               <span class="range-value" id="valVolMaster">80%</span>
@@ -268,8 +282,9 @@
       </div>
 
       <p class="settings-note">
-        In den Minigames öffnet später ein kleines Einstellungs-Fenster (Pause)
-        dieselben Regler — alles bleibt automatisch synchron.
+        Alles ist ohne Maus bedienbar: Reiter &amp; Optionen per Pfeiltasten/WASD,
+        ←/→ ändert Auswahl &amp; Regler, Leertaste schaltet Schalter, Esc geht zurück.
+        In den Minigames öffnet später dasselbe Menü als Pause-Overlay.
       </p>
     </div>
   </div>
