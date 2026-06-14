@@ -10,6 +10,12 @@ am Ende in die Repo-Struktur integriert wird.
 ## Stand (2026-06-14)
 
 ✅ **Fertig:**
+- **Erstes Minigame „Block Bomb"** (v0.10.0): Bomben-Weitergabe / Last-Man-Standing
+  auf 3D-Blockwelt (Three.js, lokal vendored). Ablauf Map-Voting → 3-2-1-Countdown →
+  Runde → Ergebnis. 3 Maps (Bomb Arena, Sky Platforms, Factory Panic), Bot-KI
+  (verfolgen/fliehen, Mittel/Schwer, fair), Lobby-Farben als echte Figurenfarben,
+  HUD + Pause + tastaturbedienbares Einladungsfenster (online vorbereitet).
+  Steuerungs-Abstraktion (Mensch/Bot/Remote) für späteres Online-Spiel.
 - **Feste Tastatur-Navigation** (v0.9.0): Hauptmenü und Lobby laufen über eine
   navId-Tabelle (`NAV_MENU` + dynamisches `buildLobbyNav()` in `app.js`) statt
   über die DOM-Reihenfolge — deterministisch, am Rand bleibt der Fokus stehen.
@@ -58,18 +64,36 @@ am Ende in die Repo-Struktur integriert wird.
   `medium`); die Minigame-KI muss diese Grade später per Fehlerquote/Tempo
   umsetzen.
 
-### Minigames (aktuell Platzhalter im Menü)
-| ID | Name | Idee |
-|----|------|------|
-| block-rush | Block Rush | Blöcke schneller stapeln als die Gegner |
-| coin-grab | Coin Grab | In begrenzter Zeit Münzen einsammeln |
-| memory-clash | Memory Clash | Sequenzen merken, wer zuerst patzt fliegt |
-| speed-tap | Speed Tap | Reaktionsduell |
-| bomb-pass | Bomb Pass | Heiße Kartoffel mit Bombe |
-| quiz-blocks | Quiz Blocks | Quizfragen, schnellste richtige Antwort gewinnt |
+### Minigames
+| ID | Name | Idee | Status |
+|----|------|------|--------|
+| block-bomb | Block Bomb | Bombe weitergeben, wer hochgeht fliegt raus | ✅ v0.10.0 |
+| block-rush | Block Rush | Blöcke schneller stapeln als die Gegner | Platzhalter |
+| coin-grab | Coin Grab | In begrenzter Zeit Münzen einsammeln | Platzhalter |
+| memory-clash | Memory Clash | Sequenzen merken, wer zuerst patzt fliegt | Platzhalter |
+| speed-tap | Speed Tap | Reaktionsduell | Platzhalter |
+| quiz-blocks | Quiz Blocks | Quizfragen, schnellste richtige Antwort gewinnt | Platzhalter |
 
 Freischalten: in `renderer/app.js` im `MINIGAMES`-Array `available: true`
-setzen und eine `start`-Funktion geben.
+setzen und eine `start`-Funktion geben. Block Bomb (`renderer/block-bomb/`) dient
+als Vorlage für Aufbau, Map-Voting und die Steuerungs-Abstraktion.
+
+**Konventionen für jedes Minigame (ab Block Bomb gesetzt):**
+- **Lobby-Farben = echte Spielerfarben** im Spiel (über `buildMatchConfig()` +
+  `colorHex()` in `app.js`). Nicht nur Deko in der Lobby.
+- **3 eigene, hochwertige Maps** pro Modus, mit **Map-Voting** vor dem Start
+  (echte Spieler wählen, Bots zufällig, Mehrheit gewinnt, Gleichstand zufällig).
+- **Steuerungs-Abstraktion** (`controllers.js`-Muster): Spielkern liest nur
+  Bewegungs-Intents, damit lokal/Bot/Online austauschbar sind.
+
+### Online-Spiel über verschiedene Netzwerke (Langfristziel)
+- Spieler aus unterschiedlichen Netzwerken sollen zusammen spielen können, voll
+  tastaturbedienbar. Die **Steuerungs-Abstraktion** (`RemoteController` in
+  `block-bomb/controllers.js`) ist dafür vorbereitet — es fehlt der Netz-Layer
+  (Kandidat: Supabase Realtime), der Intents synchronisiert.
+- **Einladungsfenster** (`#inviteOverlay` in `index.html`, Logik in `app.js`):
+  UI + Tastatur + Warteschlange stehen; echte Lobby-Anbindung folgt, gekoppelt an
+  `isOnlineAllowed()`.
 
 **Pflichten für jedes Minigame (Einstellungen):**
 - **Eigenes, kleineres Einstellungs-Fenster im Spiel** (z.B. Pause-Overlay,

@@ -45,13 +45,65 @@ Hinweis: Node.js liegt portabel auf `D:\` (`D:\node.exe`).
 | `renderer/index.html` | Alle Screens: Laden, Login/Registrierung, Hauptmenü, **Lobby** (4 Playercards + Slot-/Farb-Popups), Einstellungen (**in Kategorie-Reitern**: Konto/Anzeige/Grafik/Audio), **Credits** + Beenden-Overlay + **Konto/Freunde-Overlay**; Bühnen-Hintergrund-Layer |
 | `renderer/app.js` | UI-Logik: Screen-Wechsel, Gast-Modus, Menü-Rendering, **Lobby (Slots/Bots/Farben + 300 Bot-Namen)**, **Credits-Rendering**, Einstellungs-UI, **Konto/Freunde-Overlay + Konto-Bearbeitung**, **Login-Vorschläge zuletzt angemeldeter Nutzer (`RecentUsers`)**, Toast, Sound-Verdrahtung, Beenden-Dialog (**mit optionalem Abmelden**), **feste navId-Tastatur-Navigation (`NAV_MENU`/`buildLobbyNav`) + Fokus-Gedächtnis**, animierter Hintergrund (Blöcke/Würfel/Sterne) |
 | `renderer/settings.js` | Zentraler Einstellungs-Store (localStorage, onChange-Events, `effectiveVolume()`) |
-| `renderer/audio.js` | Sound-System `Sfx`: UI-Effekte per WebAudio synthetisiert (keine Audio-Dateien), Lautstärke aus dem Settings-Store |
+| `renderer/audio.js` | Sound-System `Sfx`: UI- + **Block-Bomb-Effekte** (`bombTick/bombPass/bombExplode/count/go`) per WebAudio synthetisiert (keine Audio-Dateien), Lautstärke aus dem Settings-Store |
 | `renderer/auth.js` | Supabase-Auth + **Freundes- und Konto-API** (gleiches Backend wie die Website) |
 | `renderer/style.css` | Arcade-Look: Farben (inkl. `--orange/--cyan/--pink`), Animationen, Layout, unsichtbare Scrollbalken, Kompakt-Stufen, **Lobby-/Playercard-/Popup-Styling**, Credits-Styling, Bühnen-Hintergrund |
+| `renderer/block-bomb.css` | Optik des Minigames **Block Bomb**: Canvas-Bühne, HUD (Timer/Namensschilder/Meldungen), Map-Voting, Countdown, Pause-/Ergebnis-Overlay |
+| `renderer/block-bomb/` | **Block-Bomb-Spielkern** (ES-Module): `main.js` (Szene/Renderer/Schleife/Runden + HUD), `maps.js` (3 Maps), `characters.js` (blockige 3D-Figur), `bomb.js` (Bombe), `bots.js` (KI), `controllers.js` (Steuerungs-Abstraktion Mensch/Bot/Remote) |
+| `renderer/vendor/three.module.js` | Lokal eingebundenes **Three.js (r160)** für die 3D-Darstellung (kein CDN — CSP `default-src 'self'`, offline-fähig) |
 | `renderer/assets/` | Eigene lokale Assets: `block-icon.svg/.png/.ico` (Marken-Block), `cube.svg`/`star.svg` (Deko-Masken) |
 | `Block Games starten.bat` | Doppelklick-Start der App |
 
 ## Verhalten & Entscheidungen
+
+### Block Bomb (Minigame)
+
+Erstes spielbares Minigame: ein hektisches Party-Spiel auf einer 3D-Blockwelt.
+Ein zufälliger Spieler startet mit der Bombe und muss durch **Berührung** einen
+anderen Spieler antippen, um sie weiterzugeben. Läuft der Timer ab, **explodiert**
+der aktuelle Träger und scheidet aus — **Last-Man-Standing**, der letzte Überlebende
+gewinnt.
+
+- **Ablauf nach „Spiel starten":** Map-Voting → 3-2-1-GO-Countdown → Runde → Ergebnis.
+  Gesteuert in `app.js` (Abschnitt „Block Bomb"): `startBlockBomb` → `openMapVote` →
+  `castMapVote` → `runCountdown` → `startBombRound` → `showBombResult`. Der Lobby-Knopf
+  „Spiel starten" ruft jetzt `startBlockBomb()` (statt nur einen Toast).
+- **Rendering:** Three.js (lokal in `renderer/vendor/`, kein CDN — CSP-konform/offline).
+  Der Spielkern (`block-bomb/main.js`) wird als ES-Modul geladen und registriert
+  `window.BlockBomb` (`start/pause/resume/stop/isRunning`). Settings werden respektiert:
+  `fpsLimit` (Schleifen-Drossel) und `reducedFx` (weniger Partikel/Glow/Schatten).
+- **Spielerfarben aus der Lobby:** `buildMatchConfig()` übersetzt `lobbyState.slots` in
+  eine entkoppelte Spielerliste; die Lobby-Farbe wird über `colorHex()` (liest die
+  CSS-Variable, bleibt theme-synchron) zur echten Figurenfarbe im Spiel. **Diese Regel
+  gilt für ALLE Minigames.** Das Spiel selbst kennt die Lobby NICHT — derselbe Einstieg
+  trägt später Online-Lobbys.
+- **Steuerungs-Abstraktion (online-tauglich):** Jede Figur hängt an einem Controller
+  (`controllers.js`), der pro Frame nur einen Bewegungs-Intent `{x,z}` liefert:
+  `LocalHumanController` (WASD/Pfeile), `BotController` (KI), `RemoteController` (Stub
+  fürs spätere Online-Spiel über verschiedene Netzwerke). Der Spielkern liest nur
+  Intents — lokal↔remote ist später ein reiner Controller-Tausch, kein Umbau.
+- **3 Maps** (`maps.js`): **Bomb Arena** (runde Arena, leuchtender Rand, Säulen),
+  **Sky Platforms** (schwebende Plattformen, Absturz = raus), **Factory Panic**
+  (Förderbänder schieben, Kisten als Hindernisse, blinkende Warnlichter). **Jeder
+  Modus bekommt 3 Maps** (Projekt-Konvention). Vor dem Start gibt es **Map-Voting**:
+  echte Spieler wählen, Bots zufällig, Mehrheit gewinnt, Gleichstand → zufällig.
+- **Bots** (`bots.js`): Mit Bombe verfolgen sie den nächsten Spieler, ohne Bombe fliehen
+  sie vom Träger und meiden Rand/Abgrund. Fairness statt Perfektion: Reaktions-
+  verzögerung, weiches Richtungs-Jitter, gelegentliche Fehlentscheidungen; gleiches
+  Tempo wie Menschen. **Mittel** = träge/ungenau, **Schwer** = schneller/gezielter
+  (kein „leicht", s. Bot-Regel). Bei wenig Restzeit reagieren beide aggressiver.
+- **HUD:** Namensschilder über den Köpfen (3D→2D projiziert), markierter Bombenträger
+  (roter Glow + 💣), Bomben-Timer, verbleibende Spieler, kurze Meldungen
+  („… hat die Bombe!", „Bombe weitergegeben!", „… ist explodiert!", „… gewinnt!").
+- **Tastatur überall:** WASD/Pfeile bewegen P1; Esc öffnet die Pause (`#bombPause`,
+  Weiter/Zum Menü). Map-Voting, Pause, Ergebnis und Einladungsfenster sind komplett
+  ohne Maus bedienbar. Die Bewegungstasten kollidieren nicht mit der Menü-Navigation,
+  weil der globale Handler in `setupKeyboard()` für den Spielscreen früh aussteigt.
+- **Online-Einladung (vorbereitet):** `#inviteOverlay` zeigt „Du wurdest … eingeladen.
+  Von: [Name]" mit **Annehmen/Ablehnen**, Enter bestätigt, Esc lehnt ab, mehrere
+  Einladungen als Warteschlange. Noch ohne echte Netz-Anbindung — Test-Auslöser
+  `window.BombInvite.test('Name')`; die echte Online-Logik hängt später an
+  `isOnlineAllowed()`.
 
 ### Vollbild
 Die App startet **immer im Vollbild** — wie andere Videospiele, ohne sichtbare
@@ -397,6 +449,39 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
   Klartext — gleicher Key wie die Website, RLS schützt die Daten.
 
 ## Änderungsprotokoll
+
+### v0.10.0 — 2026-06-14
+- **Neues Minigame „Block Bomb":** Erstes spielbares Minigame (Bomben-Weitergabe,
+  Last-Man-Standing) auf einer Three.js-3D-Blockwelt. Der Lobby-Platzhalter
+  `bomb-pass`/`Bomb Pass` wurde zu `block-bomb`/`Block Bomb` umgebaut (`MINIGAMES`,
+  `available: true`); `NAV_MENU` entsprechend von `main_bombPass` auf `main_blockBomb`
+  umbenannt.
+- **Ablauf nach „Spiel starten":** Der Lobby-Start-Knopf ruft `startBlockBomb()` statt
+  eines Toasts. Ablauf: Map-Voting (`#bombMapVote`) → 3-2-1-GO-Countdown
+  (`#bombCountdown`) → Runde (`#screen-block-bomb`) → Ergebnis (`#bombResult`).
+  Map-Voting: echte Spieler wählen, Bots zufällig, Mehrheit gewinnt, Gleichstand
+  zufällig.
+- **Spielkern als ES-Modul** (`renderer/block-bomb/`): `main.js` (Szene/Renderer/
+  Spielschleife mit FPS-Limit + `reducedFx`, Runden-/Bomben-Mechanik, HUD),
+  `maps.js` (3 Maps: Bomb Arena, Sky Platforms, Factory Panic), `characters.js`
+  (blockige 3D-Figur mit Lauf-/Trag-/Explosionsanimation), `bomb.js` (Bombe mit
+  Glut/Funken/Timer), `bots.js` (Verfolgen/Fliehen, Mittel/Schwer, fair),
+  `controllers.js` (Steuerungs-Abstraktion Mensch/Bot/Remote). Registriert
+  `window.BlockBomb` (`start/pause/resume/stop/isRunning`).
+- **Three.js (r160) lokal vendored** (`renderer/vendor/three.module.js`) — kein CDN
+  (CSP `default-src 'self'`), offline-fähig. In `index.html` als
+  `<script type="module">` eingebunden, plus `block-bomb.css`.
+- **Lobby-Farben → echte Spielerfarben:** `buildMatchConfig()` + `colorHex()` in
+  `app.js` übergeben die in der Lobby gewählten Farben entkoppelt an das Spiel
+  (gilt künftig für alle Minigames).
+- **Sound:** `audio.js` um `bombTick/bombPass/bombExplode/count/go` erweitert
+  (WebAudio-synthetisiert, Lautstärke über `Settings.effectiveVolume`).
+- **Online-Einladungsfenster vorbereitet:** `#inviteOverlay` (Annehmen/Ablehnen,
+  Enter/Esc, Warteschlange), tastaturbedienbar, noch ohne Netz-Anbindung
+  (Test-Auslöser `window.BombInvite.test`).
+- **Tastatur:** `setupKeyboard()` um Esc-Behandlung für Spiel/Voting/Pause/Ergebnis/
+  Einladung und um die Navigations-Container der neuen Overlays erweitert.
+- Version auf 0.10.0 (package.json, preload.js).
 
 ### v0.9.1 — 2026-06-14
 - **Abmelden im Beenden-Dialog als dritter Button:** Der bisherige Schalter
