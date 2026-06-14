@@ -9,13 +9,14 @@
 // ── Minigame-Katalog ─────────────────────────────────────────────────
 // Platzhalter: `available: false` = ausgegraut mit "Bald"-Badge.
 // Sobald ein Minigame fertig ist, hier freischalten und `start` setzen.
+// `nav` = feste Navigations-ID für die Tastatur-Steuerung (siehe NAV_MAP).
 const MINIGAMES = [
-  { id: 'block-rush',   icon: '🧱', name: 'Block Rush',   desc: 'Staple schneller als die Gegner', available: false },
-  { id: 'coin-grab',    icon: '🪙', name: 'Coin Grab',    desc: 'Sammle die meisten Münzen',       available: false },
-  { id: 'memory-clash', icon: '🧠', name: 'Memory Clash', desc: 'Wer merkt sich mehr?',            available: false },
-  { id: 'speed-tap',    icon: '⚡', name: 'Speed Tap',    desc: 'Reaktion entscheidet',            available: false },
-  { id: 'bomb-pass',    icon: '💣', name: 'Bomb Pass',    desc: 'Halte die Bombe nicht zuletzt',   available: false },
-  { id: 'quiz-blocks',  icon: '❓', name: 'Quiz Blocks',  desc: 'Wissen schlägt Würfelglück',      available: false },
+  { id: 'block-rush',   nav: 'main_blockRush',   icon: '🧱', name: 'Block Rush',   desc: 'Staple schneller als die Gegner', available: false },
+  { id: 'coin-grab',    nav: 'main_coinGrab',    icon: '🪙', name: 'Coin Grab',    desc: 'Sammle die meisten Münzen',       available: false },
+  { id: 'memory-clash', nav: 'main_memoryClash', icon: '🧠', name: 'Memory Clash', desc: 'Wer merkt sich mehr?',            available: false },
+  { id: 'speed-tap',    nav: 'main_speedTap',    icon: '⚡', name: 'Speed Tap',    desc: 'Reaktion entscheidet',            available: false },
+  { id: 'bomb-pass',    nav: 'main_bombPass',    icon: '💣', name: 'Bomb Pass',    desc: 'Halte die Bombe nicht zuletzt',   available: false },
+  { id: 'quiz-blocks',  nav: 'main_quizBlocks',  icon: '❓', name: 'Quiz Blocks',  desc: 'Wissen schlägt Würfelglück',      available: false },
 ];
 
 // ── Gast-Modus ───────────────────────────────────────────────────────
@@ -125,6 +126,85 @@ function showAuthError(msg) {
   if (msg) Sfx.play('error');
 }
 
+// ── Zuletzt angemeldete Nutzer ───────────────────────────────────────
+// Merkt sich (rein lokal) die Namen, mit denen man sich angemeldet hat, und
+// bietet sie auf dem Login-Reiter als Vorschläge an. Gespeichert wird NUR der
+// eingegebene Login-Name + ein Zeitstempel — niemals ein Passwort. Einträge,
+// die 7 Tage nicht mehr für einen Login genutzt wurden, verschwinden beim
+// Laden automatisch. Klick auf einen Vorschlag füllt das Namensfeld, das ✕
+// entfernt ihn.
+const RecentUsers = (() => {
+  const KEY = 'blockgames.recentUsers';
+  const MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 Tage in Millisekunden
+  const MAX = 5;                            // höchstens 5 Vorschläge
+
+  function load() {
+    let list = [];
+    try { list = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { /* kaputt → leer */ }
+    if (!Array.isArray(list)) list = [];
+    const now = Date.now();
+    return list.filter(e => e && e.name && (now - (e.ts || 0)) < MAX_AGE);
+  }
+
+  function save(list) {
+    localStorage.setItem(KEY, JSON.stringify(list.slice(0, MAX)));
+  }
+
+  // Nach erfolgreichem Login/Registrierung: Name nach vorne, Zeit auffrischen
+  // (so verlängert jede Anmeldung die 7-Tage-Frist).
+  function remember(name) {
+    const clean = String(name || '').trim();
+    if (!clean) return;
+    const list = load().filter(e => e.name.toLowerCase() !== clean.toLowerCase());
+    list.unshift({ name: clean, ts: Date.now() });
+    save(list);
+  }
+
+  function forget(name) {
+    save(load().filter(e => e.name.toLowerCase() !== String(name).toLowerCase()));
+  }
+
+  return { remember, forget, list: load };
+})();
+
+// Vorschläge auf dem Login-Reiter aufbauen (oder den Block verstecken).
+function renderRecentUsers() {
+  const wrap = document.getElementById('recentUsers');
+  const listEl = document.getElementById('recentUsersList');
+  const entries = RecentUsers.list();
+  listEl.innerHTML = '';
+  if (!entries.length) { wrap.hidden = true; return; }
+  entries.forEach(e => {
+    const chip = document.createElement('div');
+    chip.className = 'recent-chip';
+
+    const pick = document.createElement('button');
+    pick.type = 'button';
+    pick.className = 'recent-chip-name';
+    pick.textContent = e.name;
+    pick.title = `Als „${e.name}" anmelden`;
+    pick.addEventListener('click', () => {
+      document.getElementById('loginId').value = e.name;
+      document.getElementById('loginPw').focus();
+    });
+
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'recent-chip-del';
+    del.textContent = '✕';
+    del.title = 'Vorschlag entfernen';
+    del.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      RecentUsers.forget(e.name);
+      renderRecentUsers();
+    });
+
+    chip.append(pick, del);
+    listEl.appendChild(chip);
+  });
+  wrap.hidden = false;
+}
+
 function setupAuthTabs() {
   const tabLogin = document.getElementById('tabLogin');
   const tabRegister = document.getElementById('tabRegister');
@@ -155,6 +235,7 @@ function showAuth() {
   document.getElementById('formLogin').hidden = false;
   document.getElementById('formRegister').hidden = true;
   showAuthError('');
+  renderRecentUsers();
   showScreen('screen-auth');
   document.getElementById('loginId').focus();
 }
@@ -164,14 +245,15 @@ function setupAuthForms() {
     e.preventDefault();
     showAuthError('');
     const btn = document.getElementById('btnLogin');
+    const loginId = document.getElementById('loginId').value;
     btn.disabled = true;
     const { error } = await Auth.signIn(
-      document.getElementById('loginId').value,
+      loginId,
       document.getElementById('loginPw').value
     );
     btn.disabled = false;
     if (error) showAuthError(error.message || 'Anmeldung fehlgeschlagen.');
-    else Sfx.play('success');
+    else { RecentUsers.remember(loginId); Sfx.play('success'); }
     // Erfolg: onAuthStateChange wechselt automatisch ins Menü.
   });
 
@@ -192,14 +274,14 @@ function setupAuthForms() {
     );
     btn.disabled = false;
     if (error) showAuthError(error.message || 'Registrierung fehlgeschlagen.');
-    else Sfx.play('success');
+    else { RecentUsers.remember(username); Sfx.play('success'); }
   });
 
   // Login überspringen → Gast-Modus (nur Bots).
   document.getElementById('btnGuest').addEventListener('click', () => {
     guestMode = true;
     renderMenu();
-    showScreen('screen-menu');
+    goToMenu();
   });
 
   // Im Menü: Gast → zurück zum Login; eingeloggt → abmelden.
@@ -375,7 +457,7 @@ async function setupSettings() {
 
   // Zahnrad → allgemeine Einstellungen (Anzeige zuerst).
   document.getElementById('btnSettings').addEventListener('click', () => openSettings('stabDisplay'));
-  document.getElementById('btnSettingsBack').addEventListener('click', () => showScreen('screen-menu'));
+  document.getElementById('btnSettingsBack').addEventListener('click', goToMenu);
   // Esc → zurück ins Menü übernimmt der zentrale Tastatur-Handler (setupKeyboard).
 
   // Start IMMER im Vollbild — wie bei anderen Videospielen, ohne Taskleiste.
@@ -392,7 +474,15 @@ async function setupSettings() {
 }
 
 // ── Beenden (⏻ im Hauptmenü, mit Bestätigung) ────────────────────────
+// Beim Beenden fragt der Dialog zusätzlich, ob man sich auch abmelden möchte
+// (nur angemeldet sichtbar). Ohne Abmelden bleibt die Session erhalten und der
+// nächste Start landet direkt im Menü; mit Abmelden erscheint wieder der Login.
 function openQuitDialog() {
+  const row = document.getElementById('quitLogoutRow');
+  const chk = document.getElementById('quitLogout');
+  // Abmelde-Option nur, wenn wirklich ein Konto angemeldet ist (kein Gast).
+  row.hidden = !isOnlineAllowed();
+  chk.checked = false;
   document.getElementById('quitOverlay').hidden = false;
   document.getElementById('btnQuitCancel').focus();
 }
@@ -405,7 +495,14 @@ function closeQuitDialog() {
 function setupQuit() {
   document.getElementById('btnQuit').addEventListener('click', openQuitDialog);
   document.getElementById('btnQuitCancel').addEventListener('click', closeQuitDialog);
-  document.getElementById('btnQuitConfirm').addEventListener('click', () => window.blockGames.quitApp());
+  document.getElementById('btnQuitConfirm').addEventListener('click', async () => {
+    // Wunsch „auch abmelden": vor dem Beenden die Session beenden, damit der
+    // nächste Start wieder den Login zeigt.
+    if (isOnlineAllowed() && document.getElementById('quitLogout').checked) {
+      await Auth.signOut();
+    }
+    window.blockGames.quitApp();
+  });
   // Klick auf den abgedunkelten Hintergrund bricht ebenfalls ab
   document.getElementById('quitOverlay').addEventListener('click', (e) => {
     if (e.target.id === 'quitOverlay') closeQuitDialog();
@@ -428,7 +525,95 @@ const DIR_KEYS = {
 };
 const WASD = new Set(['w', 'a', 's', 'd', 'W', 'A', 'S', 'D']);
 
+// ── Feste Navigations-Tabelle (navIds statt DOM-Reihenfolge) ─────────────
+// GRUNDSATZ (s. Wunsch): Die Navigation läuft NICHT zufällig über die
+// DOM-Reihenfolge, sondern über feste navIds (data-nav am Element) und diese
+// klare Tabelle. Pro Richtung steht die navId des Ziels. Fehlt ein Eintrag
+// (oder ist das Ziel gerade nicht sichtbar), bleibt der Fokus stehen — er
+// springt nie „ins Leere". Werte (Tabelle-Eintrag = Funktion) verstellen eine
+// Option statt zu navigieren. Dynamische Screens (Lobby) liefern ihre Tabelle
+// zur Laufzeit über buildLobbyNav(); die Einstellungen nutzen weiterhin den
+// eigenen, deterministischen Reiter-/Options-Handler (handleSettingsKey).
+const NAV_MENU = {
+  // Topbar oben rechts: Profil → Zahnrad → Anmelden → Power. ↓ führt immer
+  // auf „Spielen". An den Rändern (links von Profil, rechts von Power) bleibt
+  // der Fokus stehen (kein Eintrag).
+  main_profile:  { right: 'main_settings', down: 'main_play' },
+  main_settings: { left: 'main_profile',  right: 'main_account', down: 'main_play' },
+  main_account:  { left: 'main_settings', right: 'main_power',   down: 'main_play' },
+  main_power:    { left: 'main_account',   down: 'main_play' },
+  // Hauptaktion „Spielen"
+  main_play:     { up: 'main_settings', down: 'main_blockRush' },
+  // Minigame-Karten, Reihe 1: Block Rush · Coin Grab · Memory Clash · Speed Tap
+  main_blockRush:   { up: 'main_play', down: 'main_bombPass',  right: 'main_coinGrab' },
+  main_coinGrab:    { up: 'main_play', down: 'main_quizBlocks', left: 'main_blockRush',  right: 'main_memoryClash' },
+  main_memoryClash: { up: 'main_play', down: 'main_quizBlocks', left: 'main_coinGrab',   right: 'main_speedTap' },
+  main_speedTap:    { up: 'main_play', down: 'main_quizBlocks', left: 'main_memoryClash' },
+  // Reihe 2: Bomb Pass · Quiz Blocks. ↓ führt zum Credits-Knopf — sonst wäre
+  // er nur per Tab erreichbar (kleine, bewusste Abweichung von „bleibt stehen").
+  main_bombPass:    { up: 'main_blockRush', right: 'main_quizBlocks', down: 'main_credits' },
+  main_quizBlocks:  { up: 'main_coinGrab',  left: 'main_bombPass',    down: 'main_credits' },
+  // Credits-Knopf in der Fußzeile
+  main_credits:     { up: 'main_quizBlocks' },
+};
+
+// Wird in buildLobbyNav() bei jedem renderLobby() neu erzeugt (dynamisch, weil
+// die Karten je nach Slot-Typ unterschiedliche Knöpfe haben).
+let lobbyNav = {};
+
+// Aktive dynamische Tabelle (zurzeit nur die Lobby).
+function getDynamicNav() {
+  return document.getElementById('screen-lobby').classList.contains('active') ? lobbyNav : null;
+}
+
+// Ziel für (navId, Richtung): navId-String, Wert-Funktion oder undefined (=bleibt).
+function navResolve(navId, dir) {
+  const dyn = getDynamicNav();
+  const table = (dyn && dyn[navId]) || NAV_MENU[navId];
+  return table ? table[dir] : undefined;
+}
+
+// Element zu einer navId fokussieren (nur wenn sichtbar & aktiv). Gibt das
+// Element zurück oder null.
+function focusByNav(navId) {
+  if (!navId) return null;
+  const el = document.querySelector(`[data-nav="${navId}"]`);
+  if (el && el.offsetParent !== null && !el.disabled) { el.focus(); return el; }
+  return null;
+}
+
+// Zuletzt fokussiertes Hauptmenü-Element merken, damit man beim Zurückkehren
+// (aus Einstellungen/Lobby/Credits) wieder dort landet. Start: „Spielen".
+let menuFocusNav = 'main_play';
+
+function goToMenu() {
+  showScreen('screen-menu');
+  if (!focusByNav(menuFocusNav)) focusByNav('main_play');
+}
+
+// Kleines Eingabe-Delay GEGEN gedrückt gehaltene Tasten: Eine bewusste
+// Einzel-Eingabe (e.repeat == false) wird IMMER ausgeführt; nur die
+// Auto-Wiederholung einer festgehaltenen Taste wird auf NAV_DELAY gedrosselt,
+// damit der Fokus bei einem Tastendruck nicht gleich mehrere Felder weiter
+// springt. Gibt true zurück, wenn diese (wiederholte) Bewegung übersprungen
+// werden soll.
+const NAV_DELAY = 90; // ms zwischen Auto-Wiederholungen
+let lastNavTime = 0;
+function navThrottled(e) {
+  const now = Date.now();
+  if (!e.repeat) { lastNavTime = now; return false; } // echte Eingabe → immer durch
+  if (now - lastNavTime < NAV_DELAY) return true;     // gehaltene Taste → drosseln
+  lastNavTime = now;
+  return false;
+}
+
 function setupKeyboard() {
+  // Zuletzt fokussiertes Hauptmenü-Element mitschreiben (für goToMenu()).
+  document.getElementById('screen-menu').addEventListener('focusin', (e) => {
+    const nav = e.target.dataset && e.target.dataset.nav;
+    if (nav && nav.startsWith('main_')) menuFocusNav = nav;
+  });
+
   document.addEventListener('keydown', (e) => {
     const quitOpen = !document.getElementById('quitOverlay').hidden;
     const isActive = (id) => document.getElementById(id).classList.contains('active');
@@ -440,7 +625,7 @@ function setupKeyboard() {
       else if (accountOpen()) closeAccount();
       else if (lobbyPopupOpen()) { closeColorPicker(); closeSlotPicker(); }
       else if (isActive('screen-settings') || isActive('screen-credits') || isActive('screen-lobby')) {
-        showScreen('screen-menu');
+        goToMenu();
       }
       return;
     }
@@ -486,13 +671,32 @@ function setupKeyboard() {
       if (dir === 'left' || dir === 'right') return;
     }
 
+    // Feste navId-Navigation (Hauptmenü + Lobby) hat Vorrang vor der
+    // geometrischen. Ein Element mit data-nav, für das eine Tabelle existiert,
+    // wird vollständig hier geführt — fehlt für die Richtung ein Eintrag,
+    // bleibt der Fokus stehen (springt nie ins Leere). Elemente OHNE data-nav
+    // (Auth/Konto/Credits/Beenden/Popups) fallen weiter auf moveFocus zurück.
+    const navId = e.target.dataset && e.target.dataset.nav;
+    const dyn = getDynamicNav();
+    if (navId && (NAV_MENU[navId] || (dyn && dyn[navId]))) {
+      e.preventDefault();
+      const target = navResolve(navId, dir);
+      if (typeof target === 'function') {            // Wert verstellen (z.B. Bot-Grad)
+        if (!navThrottled(e)) target(e.target);
+      } else if (typeof target === 'string') {       // zu navId springen
+        if (!navThrottled(e) && focusByNav(target)) Sfx.play('hover');
+      }
+      // target === undefined → Fokus bleibt stehen
+      return;
+    }
+
     // Auf Bedienelementen (Textfeld, Regler, Auswahl, Schalter) bleibt die
     // WAAGERECHTE Pfeilbewegung ihre native Aufgabe: Cursor im Text, Regler
     // verstellen, Auswahl wechseln. Hoch/Runter springt immer zwischen Zeilen.
     if ((dir === 'left' || dir === 'right') && e.target.matches('input, select, textarea')) return;
 
     e.preventDefault();
-    moveFocus(container, dir);
+    if (!navThrottled(e)) moveFocus(container, dir);
   });
 }
 
@@ -555,6 +759,15 @@ function handleSettingsKey(e, dir) {
 // Geometrische Fokus-Navigation: springt zum nächstgelegenen sichtbaren
 // Element in Richtung `dir` ('up'|'down'|'left'|'right'). Funktioniert dadurch
 // auch im Karten-Grid und über gemischte Bedienelemente hinweg.
+//
+// WICHTIG (deterministisch, kein 50/50): Es wird zuerst die NÄCHSTE Reihe bzw.
+// Spalte in Pfeilrichtung gewählt (kleinstes `fwd` = Abstand IN Richtung), und
+// erst innerhalb dieser „Bande" entscheidet die geringste seitliche Abweichung.
+// Beispiel Hauptmenü: ↓ von den Buttons oben rechts landet zuverlässig auf dem
+// breiten „Spielen"-Button (nächste Reihe) statt auf einer zufällig besser
+// ausgerichteten Minigame-Karte zwei Reihen tiefer; ↓ vom „Spielen"-Button
+// trifft immer dieselbe mittlere Karte (Gleichstand → DOM-Reihenfolge), ←/→
+// die linke bzw. rechte Karte darunter.
 function moveFocus(container, dir) {
   const items = [...container.querySelectorAll(FOCUSABLE)]
     .filter(el => el.offsetParent !== null || el === document.activeElement);
@@ -566,9 +779,11 @@ function moveFocus(container, dir) {
   const c = current.getBoundingClientRect();
   const cx = c.left + c.width / 2;
   const cy = c.top + c.height / 2;
-  let best = null;
-  let bestScore = Infinity;
+  const vertical = dir === 'up' || dir === 'down';
 
+  // Alle Kandidaten in Pfeilrichtung mit Abstand (fwd) und seitlichem
+  // Versatz (side) sammeln.
+  const cands = [];
   items.forEach(el => {
     if (el === current) return;
     const r = el.getBoundingClientRect();
@@ -580,11 +795,23 @@ function moveFocus(container, dir) {
     else if (dir === 'down') { fwd = dy;  side = Math.abs(dx); }
     else                     { fwd = -dy; side = Math.abs(dx); }
     if (fwd <= 4) return;             // nur Elemente in Pfeilrichtung
-    const score = fwd + side * 2.5;   // seitlicher Versatz zählt stärker
-    if (score < bestScore) { bestScore = score; best = el; }
+    cands.push({ el, fwd, side });
   });
+  if (!cands.length) return;
 
-  if (best) { best.focus(); Sfx.play('hover'); }
+  // Bande um die nächste Reihe/Spalte: Kandidaten, deren fwd nur wenig über dem
+  // Minimum liegt (Toleranz ~ halbe Größe des aktuellen Elements). So gehören
+  // alle Karten EINER Reihe zusammen, die nächste Reihe aber nicht mehr.
+  const minFwd = Math.min(...cands.map(k => k.fwd));
+  const tol = Math.max(12, (vertical ? c.height : c.width) * 0.5);
+  const inBand = cands.filter(k => k.fwd <= minFwd + tol);
+
+  // Innerhalb der Bande: geringster Seitenversatz, dann geringster Abstand,
+  // dann DOM-Reihenfolge (stabiler Sort) → vollständig deterministisch.
+  inBand.sort((a, b) => (a.side - b.side) || (a.fwd - b.fwd));
+
+  inBand[0].el.focus();
+  Sfx.play('hover');
 }
 
 // ── Hauptmenü ────────────────────────────────────────────────────────
@@ -613,6 +840,7 @@ function renderMenu() {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = `minigame-card ${game.available ? 'available' : 'locked'}`;
+    card.dataset.nav = game.nav; // feste Navigations-ID für die Tastatur
     card.style.setProperty('--card-i', i);
     card.innerHTML = `
       <span class="minigame-icon">${game.icon}</span>
@@ -668,7 +896,7 @@ function setupCredits() {
     // Fokus auf "Zurück" — der Ring erscheint nur bei Tastatur-Bedienung.
     document.getElementById('btnCreditsBack').focus();
   });
-  document.getElementById('btnCreditsBack').addEventListener('click', () => showScreen('screen-menu'));
+  document.getElementById('btnCreditsBack').addEventListener('click', goToMenu);
   // Esc → zurück ins Menü übernimmt der zentrale Tastatur-Handler (setupKeyboard).
 }
 
@@ -678,6 +906,18 @@ function setupCredits() {
 // (Leer / Bot / Freund). Freunde nur angemeldet — jede Freundes-Funktion
 // hängt an isOnlineAllowed(). Es ist eine rein LOKALE Konfiguration: kein
 // echtes Spiel, keine neuen Supabase-Tabellen, keine Realtime-Lobby.
+
+// Bot-Schwierigkeitsgrade (id = State-Wert, name = Anzeige). Bewusst nur
+// MITTEL und SCHWER — leichte Bots gibt es absichtlich nicht (siehe ROADMAP/
+// Doku: es soll immer mindestens mittlere und schwere Gegner geben). Default
+// für neue Bots ist 'medium'. Die Bot-KI selbst kommt erst mit den Minigames;
+// hier wird vorerst nur der gewählte Grad im lobbyState gehalten.
+const BOT_DIFFICULTIES = [
+  { id: 'medium', name: 'Mittel' },
+  { id: 'hard',   name: 'Schwer' },
+];
+const difficultyName = (id) =>
+  (BOT_DIFFICULTIES.find(d => d.id === id) || BOT_DIFFICULTIES[0]).name;
 
 // Feste Farbpalette (id = State-Wert, var = CSS-Variable in style.css).
 const LOBBY_COLORS = [
@@ -730,10 +970,10 @@ const BOT_NAMES = [
 // State: 4 Slots. Slot 1 (Index 0) ist immer man selbst.
 const lobbyState = {
   slots: [
-    { id: 1, type: 'self',  name: '', color: 'red',  userId: null },
-    { id: 2, type: 'empty', name: '', color: null,   userId: null },
-    { id: 3, type: 'empty', name: '', color: null,   userId: null },
-    { id: 4, type: 'empty', name: '', color: null,   userId: null },
+    { id: 1, type: 'self',  name: '', color: 'red',  userId: null, difficulty: null },
+    { id: 2, type: 'empty', name: '', color: null,   userId: null, difficulty: null },
+    { id: 3, type: 'empty', name: '', color: null,   userId: null, difficulty: null },
+    { id: 4, type: 'empty', name: '', color: null,   userId: null, difficulty: null },
   ],
 };
 
@@ -756,6 +996,29 @@ function getNextFreeColor(exceptIdx = -1) {
   return free ? free.id : null;
 }
 
+// ZUFÄLLIGE freie Farbe — für Bots: ihre Farbe ist nicht einstellbar, sondern
+// immer zufällig. Bevorzugt eine von keinem aktiven Slot belegte Farbe; ist
+// keine mehr frei, wenigstens eine, die kein MENSCH (self/friend) hat; sonst
+// irgendeine. So kollidieren Bots nicht mit den fest gewählten Spielerfarben.
+function getRandomFreeColor(exceptIdx = -1) {
+  const usedByActive = new Set(
+    lobbyState.slots
+      .filter((s, i) => i !== exceptIdx && isActiveSlot(s) && s.color)
+      .map(s => s.color)
+  );
+  let pool = LOBBY_COLORS.filter(c => !usedByActive.has(c.id));
+  if (!pool.length) {
+    const usedByHuman = new Set(
+      lobbyState.slots
+        .filter((s, i) => i !== exceptIdx && (s.type === 'self' || s.type === 'friend') && s.color)
+        .map(s => s.color)
+    );
+    pool = LOBBY_COLORS.filter(c => !usedByHuman.has(c.id));
+  }
+  if (!pool.length) pool = LOBBY_COLORS;
+  return pool[Math.floor(Math.random() * pool.length)].id;
+}
+
 // Zufälliger Bot-Name, in der aktuellen Lobby möglichst ohne Dopplung.
 function getRandomBotName() {
   const taken = new Set(lobbyState.slots.filter(s => s.type === 'bot').map(s => s.name));
@@ -775,16 +1038,17 @@ function openLobby() {
   if (!self.color) self.color = getNextFreeColor(0) || 'red';
   renderLobby();
   showScreen('screen-lobby');
-  const first = document.querySelector('#lobbyCards .lobby-mini-btn');
-  if (first) first.focus();
+  // Start-Fokus laut Vorgabe: P1 → Farbe.
+  if (!focusByNav('lobby_p1_color')) focusSlotCard(0);
 }
 
-// Hilfs-Button für die Karten-Aktionen.
-function miniBtn(text, onClick) {
+// Hilfs-Button für die Karten-Aktionen. `nav` = feste Navigations-ID (data-nav).
+function miniBtn(text, onClick, nav) {
   const b = document.createElement('button');
   b.type = 'button';
   b.className = 'lobby-mini-btn';
   b.textContent = text;
+  if (nav) b.dataset.nav = nav;
   b.addEventListener('click', onClick);
   return b;
 }
@@ -820,32 +1084,85 @@ function renderLobby() {
 
     const st = document.createElement('span');
     st.className = 'lobby-status';
-    st.textContent = { self: 'Du', friend: 'Freund', bot: 'Bot', empty: 'Leer' }[slot.type];
+    // Bots zeigen ihren Schwierigkeitsgrad direkt im Status-Badge an.
+    st.textContent = slot.type === 'bot'
+      ? `Bot · ${difficultyName(slot.difficulty)}`
+      : { self: 'Du', friend: 'Freund', empty: 'Leer' }[slot.type];
 
+    // navId-Präfix der Karte: lobby_p1 … lobby_p4 (feste Tastatur-Navigation).
+    const p = `lobby_p${slot.id}`;
     const actions = document.createElement('div');
     actions.className = 'lobby-card-actions';
     if (slot.type === 'empty') {
-      actions.appendChild(miniBtn('+ Platz wählen', () => openSlotPicker(i)));
+      actions.appendChild(miniBtn('+ Platz wählen', () => openSlotPicker(i), `${p}_choose`));
     } else {
-      if (slot.type !== 'self') actions.appendChild(miniBtn('Ändern', () => openSlotPicker(i)));
+      if (slot.type !== 'self') actions.appendChild(miniBtn('Ändern', () => openSlotPicker(i), `${p}_change`));
       if (slot.type === 'bot') {
         actions.appendChild(miniBtn('🎲 Neuer Name', () => {
           lobbyState.slots[i].name = getRandomBotName();
           renderLobby();
           focusSlotCard(i);
-        }));
+        }, `${p}_newName`));
+        // Bots bekommen KEINE Farbwahl (Farbe ist immer zufällig) — stattdessen
+        // ist die Schwierigkeit einstellbar (Mittel ↔ Schwer).
+        actions.appendChild(miniBtn(`⚙️ ${difficultyName(slot.difficulty)}`, () => cycleBotDifficulty(i), `${p}_difficulty`));
+      } else {
+        // self / friend (Menschen) → Farbe frei wählbar
+        const cbtn = document.createElement('button');
+        cbtn.type = 'button';
+        cbtn.className = 'lobby-mini-btn';
+        cbtn.dataset.nav = `${p}_color`;
+        cbtn.innerHTML = '<span class="lobby-color-dot"></span>Farbe';
+        cbtn.addEventListener('click', () => openColorPicker(i));
+        actions.appendChild(cbtn);
       }
-      const cbtn = document.createElement('button');
-      cbtn.type = 'button';
-      cbtn.className = 'lobby-mini-btn';
-      cbtn.innerHTML = '<span class="lobby-color-dot"></span>Farbe';
-      cbtn.addEventListener('click', () => openColorPicker(i));
-      actions.appendChild(cbtn);
     }
 
     card.append(no, av, nm, st, actions);
     wrap.appendChild(card);
   });
+  buildLobbyNav(); // Navigations-Tabelle passend zu den aktuellen Karten neu bauen
+}
+
+// Baut die dynamische Navigations-Tabelle der Lobby aus den gerade
+// gerenderten Karten. Pro Karte stapeln sich die Knöpfe senkrecht (↑/↓ wechselt
+// innerhalb der Karte); ←/→ springt zur Nachbarkarte (jeweils deren oberster
+// Knopf). Am unteren Ende einer Karte führt ↓ in die Fußzeile, deren Knopf
+// unter der jeweiligen Spalte „endet". Der Bot-Grad-Knopf verstellt mit ←/→
+// die Schwierigkeit statt zu navigieren.
+function buildLobbyNav() {
+  const map = {};
+  const cards = [...document.querySelectorAll('#lobbyCards .lobby-card')];
+  const btns = cards.map(card =>
+    [...card.querySelectorAll('.lobby-mini-btn')].map(b => b.dataset.nav).filter(Boolean)
+  );
+  const top  = (ci) => btns[ci] && btns[ci][0];
+  const last = (ci) => btns[ci] && btns[ci][btns[ci].length - 1];
+  // Welcher Fußzeilen-Knopf liegt „unter" Spalte 0…3:
+  const footerDown = ['lobby_back', 'lobby_reset', 'lobby_start', 'lobby_start'];
+
+  btns.forEach((list, ci) => {
+    list.forEach((nav, bi) => {
+      const entry = {};
+      if (bi > 0) entry.up = list[bi - 1];                 // oberster Knopf → bleibt
+      entry.down = bi < list.length - 1 ? list[bi + 1] : footerDown[ci];
+      if (ci > 0) entry.left = top(ci - 1);                // sonst (Spalte 0) → bleibt
+      if (ci < 3) entry.right = top(ci + 1);              // sonst (Spalte 3) → bleibt
+      // Schwierigkeit: ←/→ verstellt den Grad (kein Karten-Wechsel).
+      if (nav.endsWith('_difficulty')) {
+        entry.left  = () => adjustBotDifficulty(ci, -1);
+        entry.right = () => adjustBotDifficulty(ci, +1);
+      }
+      map[nav] = entry;
+    });
+  });
+
+  // Fußzeile: ↑ führt zum untersten Knopf der zugehörigen Spalte.
+  map.lobby_back  = { up: last(0), right: 'lobby_reset' };
+  map.lobby_reset = { up: last(1), left: 'lobby_back', right: 'lobby_start' };
+  map.lobby_start = { up: last(2), left: 'lobby_reset' };
+
+  lobbyNav = map;
 }
 
 // Fokus zurück auf den ersten Button der Karte i (nach Popup/Re-Render).
@@ -860,7 +1177,7 @@ function focusSlotCard(i) {
 function resetLobby() {
   lobbyState.slots.forEach((s, i) => {
     if (i === 0) return;
-    s.type = 'empty'; s.name = ''; s.color = null; s.userId = null;
+    s.type = 'empty'; s.name = ''; s.color = null; s.userId = null; s.difficulty = null;
   });
   renderLobby();
   focusSlotCard(0);
@@ -983,15 +1300,44 @@ function closeSlotPicker() {
 
 function setSlotEmpty(i) {
   const s = lobbyState.slots[i];
-  s.type = 'empty'; s.name = ''; s.color = null; s.userId = null;
+  s.type = 'empty'; s.name = ''; s.color = null; s.userId = null; s.difficulty = null;
   renderLobby();
 }
 
 function setSlotBot(i) {
   const s = lobbyState.slots[i];
   s.type = 'bot'; s.userId = null; s.name = getRandomBotName();
-  if (!s.color) s.color = getNextFreeColor(i);
+  if (!s.difficulty) s.difficulty = 'medium';
+  // Bot-Farbe ist nicht wählbar → immer zufällig (kollidiert nicht mit Menschen).
+  s.color = getRandomFreeColor(i);
   renderLobby();
+}
+
+// Schwierigkeit eines Bots umschalten (Mittel ↔ Schwer, zyklisch). Für Klick/
+// Enter/Leertaste auf dem ⚙️-Knopf. Der Fokus bleibt danach auf dem Grad-Knopf.
+function cycleBotDifficulty(i) {
+  const s = lobbyState.slots[i];
+  if (s.type !== 'bot') return;
+  const order = BOT_DIFFICULTIES.map(d => d.id);
+  s.difficulty = order[(order.indexOf(s.difficulty) + 1) % order.length];
+  renderLobby();
+  if (!focusByNav(`lobby_p${s.id}_difficulty`)) focusSlotCard(i);
+  Sfx.play('tab');
+}
+
+// Schwierigkeit per ←/→ verstellen (delta -1/+1), OHNE Umlauf — am Rand bleibt
+// der Grad stehen (es gibt bewusst nur Mittel/Schwer, kein „Leicht").
+function adjustBotDifficulty(i, delta) {
+  const s = lobbyState.slots[i];
+  if (s.type !== 'bot') return;
+  const order = BOT_DIFFICULTIES.map(d => d.id);
+  const idx = order.indexOf(s.difficulty);
+  const next = Math.min(order.length - 1, Math.max(0, idx + delta));
+  if (next === idx) return; // am Rand → bleibt
+  s.difficulty = order[next];
+  renderLobby();
+  if (!focusByNav(`lobby_p${s.id}_difficulty`)) focusSlotCard(i);
+  Sfx.play('tab');
 }
 
 function setSlotFriend(i, friend) {
@@ -1066,7 +1412,8 @@ function resolveColorConflicts(changedIdx, colorId) {
   lobbyState.slots.forEach((s, idx) => {
     if (idx === changedIdx) return;
     if (s.type === 'bot' && s.color === colorId) {
-      const free = getNextFreeColor(idx);
+      // Bot weicht auf eine zufällige freie Farbe aus (Bot-Farben sind zufällig).
+      const free = getRandomFreeColor(idx);
       if (free) s.color = free;
       else { s.color = null; showToast('Keine freie Farbe verfügbar.'); }
     }
@@ -1074,7 +1421,7 @@ function resolveColorConflicts(changedIdx, colorId) {
 }
 
 function setupLobby() {
-  document.getElementById('btnLobbyBack').addEventListener('click', () => showScreen('screen-menu'));
+  document.getElementById('btnLobbyBack').addEventListener('click', goToMenu);
   document.getElementById('btnLobbyReset').addEventListener('click', () => {
     resetLobby();
     showToast('Lobby zurückgesetzt.');
@@ -1411,7 +1758,7 @@ async function boot() {
       // Updates (Name/E-Mail/Passwort) feuern denselben Event — dabei darf
       // die aktuelle Seite (z.B. die Einstellungen) NICHT verlassen werden.
       const isActive = (id) => document.getElementById(id).classList.contains('active');
-      if (isActive('screen-auth') || isActive('screen-loading')) showScreen('screen-menu');
+      if (isActive('screen-auth') || isActive('screen-loading')) goToMenu();
       // Konto-Overlay-Kopf nachziehen (z.B. Name geändert); die Konto-Karte
       // in den Einstellungen wird bewusst NICHT neu gefüllt, damit die
       // Erfolgsmeldung und laufende Eingaben nicht überschrieben werden.
@@ -1428,7 +1775,7 @@ async function boot() {
   const user = await Auth.init();
   if (user) {
     renderMenu();
-    showScreen('screen-menu');
+    goToMenu();
   } else {
     showAuth();
   }

@@ -44,6 +44,14 @@
 
         <!-- Login -->
         <form id="formLogin" class="auth-form">
+          <!-- Zuletzt angemeldete Nutzer (Vorschläge). Werden per JS aus dem
+               lokalen Speicher gefüllt (app.js → RecentUsers); Klick füllt den
+               Namen ins Feld, das ✕ entfernt den Vorschlag. Einträge, die 7 Tage
+               nicht für einen Login genutzt wurden, verschwinden automatisch. -->
+          <div id="recentUsers" class="recent-users" hidden>
+            <span class="recent-users-label">Zuletzt angemeldet</span>
+            <div class="recent-users-list" id="recentUsersList"></div>
+          </div>
           <label>Username oder E-Mail
             <input type="text" id="loginId" autocomplete="username" required>
           </label>
@@ -89,13 +97,13 @@
         <p class="brand-sub"><span class="brand-star">★</span> Party Arcade <span class="brand-star">★</span></p>
       </div>
       <div class="player-badge">
-        <button class="badge-id" id="btnAccountPanel" title="Konto & Freunde">
+        <button class="badge-id" id="btnAccountPanel" title="Konto & Freunde" data-nav="main_profile">
           <span class="avatar" id="menuAvatar">?</span>
           <span id="menuUsername">…</span>
         </button>
-        <button class="btn btn-ghost btn-gear" id="btnSettings" title="Einstellungen">⚙️</button>
-        <button class="btn btn-ghost" id="btnAccount">Abmelden</button>
-        <button class="btn btn-ghost btn-gear btn-quit" id="btnQuit" title="Spiel beenden">⏻</button>
+        <button class="btn btn-ghost btn-gear" id="btnSettings" title="Einstellungen" data-nav="main_settings">⚙️</button>
+        <button class="btn btn-ghost" id="btnAccount" data-nav="main_account">Abmelden</button>
+        <button class="btn btn-ghost btn-gear btn-quit" id="btnQuit" title="Spiel beenden" data-nav="main_power">⏻</button>
       </div>
     </header>
 
@@ -111,7 +119,7 @@
 
     <main class="menu-main">
       <!-- Hauptaktion: Party starten -->
-      <button class="party-btn" id="btnParty">
+      <button class="party-btn" id="btnParty" data-nav="main_play">
         <span class="party-btn-icon" aria-hidden="true">🎲</span>
         <span class="party-btn-text">
           <strong>Spielen</strong>
@@ -128,7 +136,7 @@
     </main>
 
     <footer class="menu-footer">
-      <button class="btn btn-pill" id="btnCredits">
+      <button class="btn btn-pill" id="btnCredits" data-nav="main_credits">
         <span aria-hidden="true">★</span> Credits
       </button>
       <span id="appVersion"></span>
@@ -172,9 +180,9 @@
       <div class="lobby-cards" id="lobbyCards"></div>
 
       <footer class="lobby-footer">
-        <button class="btn btn-pill" id="btnLobbyBack">← Zurück</button>
-        <button class="btn btn-pill" id="btnLobbyReset">↺ Lobby zurücksetzen</button>
-        <button class="party-btn party-btn-sm" id="btnLobbyStart">
+        <button class="btn btn-pill" id="btnLobbyBack" data-nav="lobby_back">← Zurück</button>
+        <button class="btn btn-pill" id="btnLobbyReset" data-nav="lobby_reset">↺ Lobby zurücksetzen</button>
+        <button class="party-btn party-btn-sm" id="btnLobbyStart" data-nav="lobby_start">
           <span class="party-btn-icon" aria-hidden="true">🎲</span>
           <span class="party-btn-text"><strong>Spiel starten</strong></span>
           <span class="party-btn-go" aria-hidden="true">▶</span>
@@ -381,6 +389,16 @@
     <div class="overlay-card">
       <h2>Spiel beenden?</h2>
       <p>Möchtest du uns denn etwa wirklich verlassen?</p>
+      <!-- Nur angemeldet sichtbar (app.js → openQuitDialog): zusätzlich zum
+           Beenden auch abmelden, damit beim nächsten Start wieder der Login
+           erscheint. -->
+      <label class="quit-logout" id="quitLogoutRow" hidden>
+        <span class="switch">
+          <input type="checkbox" id="quitLogout">
+          <span class="switch-knob"></span>
+        </span>
+        <span class="quit-logout-text">Auch abmelden</span>
+      </label>
       <div class="overlay-actions">
         <button class="btn btn-back" id="btnQuitCancel">Abbrechen</button>
         <button class="btn btn-danger" id="btnQuitConfirm">Beenden</button>

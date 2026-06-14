@@ -347,6 +347,56 @@ body::before {
   font-size: 0.9em;
 }
 
+/* ── Zuletzt angemeldete Nutzer (Login-Vorschläge) ──────────────────── */
+.recent-users { display: flex; flex-direction: column; gap: 7px; }
+
+.recent-users-label {
+  font-size: 0.78em;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.recent-users-list { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Ein Vorschlag = Name-Knopf + ✕-Knopf in einer Pille. */
+.recent-chip {
+  display: inline-flex;
+  align-items: stretch;
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.recent-chip-name {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.86em;
+  padding: 6px 6px 6px 13px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.recent-chip-name:hover { color: var(--yellow); }
+
+.recent-chip-del {
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.78em;
+  padding: 6px 11px 6px 6px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.recent-chip-del:hover { color: var(--red); }
+
 .auth-divider {
   display: flex;
   align-items: center;
@@ -1503,7 +1553,9 @@ body.reduced-fx .party-btn-go { transition: none; }
 
 /* ── Tastatur-Fokus ─────────────────────────────────────────────────────
    Sichtbarer Fokus-Ring nur bei Tastatur-Bedienung (:focus-visible) —
-   Maus-Klicks erzeugen keinen Ring. */
+   Maus-Klicks erzeugen keinen Ring. Das fokussierte Element bekommt einen
+   kräftigen gelben Rahmen + Glow; kleine Knöpfe skalieren zusätzlich leicht
+   (große Karten/Play-Buttons bringen ihren eigenen Effekt mit). */
 :focus { outline: none; }
 button:focus-visible,
 input:focus-visible,
@@ -1511,6 +1563,12 @@ select:focus-visible,
 .switch:has(input:focus-visible) {
   outline: 3px solid var(--yellow);
   outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgba(255, 201, 60, 0.22), 0 0 24px -2px var(--yellow);
+}
+
+button:focus-visible:not(.minigame-card):not(.party-btn) {
+  transform: scale(1.06);
+  transition: transform 0.12s ease-out;
 }
 
 /* ── Overlay (Beenden-Bestätigung u.ä.) ─────────────────────────────── */
@@ -1547,6 +1605,21 @@ select:focus-visible,
 }
 
 .overlay-card p { color: var(--text-dim); font-size: 0.9em; }
+
+/* „Auch abmelden"-Schalter im Beenden-Dialog (nur angemeldet sichtbar). */
+.quit-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  cursor: pointer;
+}
+
+.quit-logout-text {
+  font-size: 0.9em;
+  font-weight: 600;
+  color: var(--text);
+}
 
 .overlay-actions {
   display: flex;
@@ -1734,10 +1807,11 @@ select:focus-visible,
 }
 .btn-signout:hover { color: var(--red); }
 
-/* Konto bearbeiten (Einstellungs-Karte) */
+/* Konto bearbeiten (Einstellungs-Karte): Optionen untereinander (eine Spalte),
+   nicht mehr nebeneinander — so liest sich Name/E-Mail/Passwort wie eine Liste. */
 .account-forms {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 16px;
 }
 .account-form label {
@@ -1772,11 +1846,6 @@ select:focus-visible,
 }
 .account-msg.ok { color: var(--green); }
 .account-msg.err { color: var(--red); }
-
-/* Schmalere Fenster: Konto-Formulare untereinander */
-@media (max-width: 720px) {
-  .account-forms { grid-template-columns: 1fr; }
-}
 
 /* ── Toast ──────────────────────────────────────────────────────────── */
 .toast {

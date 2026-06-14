@@ -43,7 +43,7 @@ Hinweis: Node.js liegt portabel auf `D:\` (`D:\node.exe`).
 | `main.js` | Electron-Hauptprozess: Fenster (Vollbild), F11-Toggle, kein App-Menü, IPC für Anzeige-Einstellungen + `app:quit` |
 | `preload.js` | Brücke Main↔Renderer: Version/Plattform, Anzeige-Steuerung (Vollbild, Fenstergröße, Display-Infos), `quitApp()` |
 | `renderer/index.html` | Alle Screens: Laden, Login/Registrierung, Hauptmenü, **Lobby** (4 Playercards + Slot-/Farb-Popups), Einstellungen (**in Kategorie-Reitern**: Konto/Anzeige/Grafik/Audio), **Credits** + Beenden-Overlay + **Konto/Freunde-Overlay**; Bühnen-Hintergrund-Layer |
-| `renderer/app.js` | UI-Logik: Screen-Wechsel, Gast-Modus, Menü-Rendering, **Lobby (Slots/Bots/Farben + 300 Bot-Namen)**, **Credits-Rendering**, Einstellungs-UI, **Konto/Freunde-Overlay + Konto-Bearbeitung**, Toast, Sound-Verdrahtung, Beenden-Dialog, Tastatur-Navigation, animierter Hintergrund (Blöcke/Würfel/Sterne) |
+| `renderer/app.js` | UI-Logik: Screen-Wechsel, Gast-Modus, Menü-Rendering, **Lobby (Slots/Bots/Farben + 300 Bot-Namen)**, **Credits-Rendering**, Einstellungs-UI, **Konto/Freunde-Overlay + Konto-Bearbeitung**, **Login-Vorschläge zuletzt angemeldeter Nutzer (`RecentUsers`)**, Toast, Sound-Verdrahtung, Beenden-Dialog (**mit optionalem Abmelden**), **feste navId-Tastatur-Navigation (`NAV_MENU`/`buildLobbyNav`) + Fokus-Gedächtnis**, animierter Hintergrund (Blöcke/Würfel/Sterne) |
 | `renderer/settings.js` | Zentraler Einstellungs-Store (localStorage, onChange-Events, `effectiveVolume()`) |
 | `renderer/audio.js` | Sound-System `Sfx`: UI-Effekte per WebAudio synthetisiert (keine Audio-Dateien), Lautstärke aus dem Settings-Store |
 | `renderer/auth.js` | Supabase-Auth + **Freundes- und Konto-API** (gleiches Backend wie die Website) |
@@ -72,6 +72,13 @@ das Fenster auf 1280×800 zurück (min. 960×640).
   Fallback-RPC `resolve_login_email`; Flow 1:1 aus `app/auth.js`).
 - Der Login ist **überspringbar**: Button „Als Gast spielen" auf dem
   Auth-Screen.
+- **Zuletzt angemeldete Nutzer (`RecentUsers`):** Nach erfolgreichem Login/
+  Registrierung wird der Login-Name + Zeitstempel **rein lokal** gespeichert
+  (`localStorage`-Schlüssel `blockgames.recentUsers`, **nie ein Passwort**). Auf
+  dem Login-Reiter erscheinen die Namen als Vorschläge (`#recentUsers`,
+  `renderRecentUsers()`): Klick füllt das Namensfeld und springt ins Passwort,
+  das ✕ entfernt einen Vorschlag. Einträge, die **7 Tage** nicht für einen Login
+  genutzt wurden, werden beim Laden automatisch entfernt (max. 5 Vorschläge).
 - **Gast-Regel: Ohne Konto nur Partien gegen Bots.** Kein Online-Spiel,
   kein gespeicherter Fortschritt. Im Menü weist ein gelbes Hinweisband
   darauf hin; der Button oben rechts heißt dann „Anmelden" statt „Abmelden".
@@ -144,6 +151,11 @@ und die Haupt-Einstellungsseite immer synchron bleiben.
   („Spiel beenden?"); „Beenden" ruft per IPC `app:quit` → `app.quit()`.
   Abbrechen, Esc oder Klick auf den abgedunkelten Hintergrund schließen nur
   den Dialog. Nötig, weil die App im Vollbild ohne Menüleiste läuft.
+- **Optionales Abmelden beim Beenden:** Angemeldeten Nutzern zeigt der Dialog
+  zusätzlich den Schalter **„Auch abmelden"** (`#quitLogoutRow`, im Gast-Modus
+  ausgeblendet, gesteuert über `isOnlineAllowed()` in `openQuitDialog()`). Ist er
+  aktiv, läuft vor dem Beenden `Auth.signOut()` — die Session wird beendet, sodass
+  der nächste Start wieder den Login zeigt (sonst bleibt man angemeldet).
 
 ### Konto & Freunde
 
@@ -226,9 +238,19 @@ und die Haupt-Einstellungsseite immer synchron bleiben.
   einen zufälligen Namen aus dem Array **`BOT_NAMES` (300 kurze, lustige
   Party-Namen)** via `getRandomBotName()` — in derselben Lobby möglichst ohne
   Dopplung. Bot-Cards haben zusätzlich „🎲 Neuer Name" zum Neu-Würfeln.
+  - **Schwierigkeit statt Farbe:** Bots haben **keine Farbwahl** — ihre Farbe ist
+    **immer zufällig** (`getRandomFreeColor()`, bevorzugt eine freie, sonst eine
+    nicht von Menschen belegte Farbe). Stattdessen ist die **Schwierigkeit**
+    einstellbar: ein „⚙️"-Button schaltet zwischen **Mittel** und **Schwer** um
+    (`cycleBotDifficulty()`), der Status-Badge zeigt den Grad an („Bot · Mittel").
+    Bewusst **nur Mittel/Schwer**, keine leichten Bots (`BOT_DIFFICULTIES`,
+    Default `medium`). Die Bot-KI selbst kommt erst mit den Minigames; vorerst
+    wird nur der gewählte Grad im `lobbyState` (`slot.difficulty`) gehalten.
 - **Farbauswahl** (`openColorPicker()`, feste Palette `LOBBY_COLORS`: Rot, Blau,
-  Grün, Gelb, Lila, Orange, Cyan, Pink). Popup mit Farbfeld **+ Name** je Farbe:
-  - Jeder aktive Slot hat eine Farbe (beim Aktivieren via `getNextFreeColor()`).
+  Grün, Gelb, Lila, Orange, Cyan, Pink). Nur für **Menschen** (P1 + Freunde) —
+  Bots erscheinen nicht im Picker. Popup mit Farbfeld **+ Name** je Farbe:
+  - Jeder aktive Slot hat eine Farbe (Menschen via `getNextFreeColor()`, Bots
+    zufällig via `getRandomFreeColor()`).
   - **Von Menschen** (P1 + Freunde) belegte Farben sind für andere Menschen
     **gesperrt** — deutlich mit **✕** überlagert und deaktiviert, aber sichtbar.
     Die aktuell gewählte Farbe trägt ein **✓** + Glow.
@@ -243,12 +265,16 @@ und die Haupt-Einstellungsseite immer synchron bleiben.
   zeigt vorerst den Toast „Spielstart kommt als Nächstes." (noch kein Minigame)
   und loggt die Lobby-Konfig **ohne sensible Daten** (nur Slot/Typ/Name/Farbe,
   keine User-IDs) in die Konsole.
-- **Tastatur (ohne Maus):** Die Lobby ist in `setupKeyboard()` eingehängt
-  (geometrische `moveFocus()` über Cards + Footer). Offene Popups
-  (`#slotPicker` / `#colorPicker`) haben **Vorrang** im Container-Cascade — der
-  Fokus bleibt im Popup, springt nicht in die Lobby/das Menü dahinter. **Esc**
-  schließt erst ein offenes Popup, sonst geht es von der Lobby zurück ins Menü.
-  Enter/Leertaste lösen aus, alle Karten-/Popup-Elemente sind echte `<button>`.
+- **Tastatur (ohne Maus):** Die Lobby ist in `setupKeyboard()` eingehängt und
+  navigiert über **feste navIds** (`buildLobbyNav()`, bei jedem `renderLobby()`
+  neu erzeugt): ↑/↓ wechselt innerhalb einer Karte, ←/→ zur Nachbarkarte,
+  unten führt ↓ in die Fußzeile; der Bot-Grad-Knopf verstellt mit ←/→ die
+  Schwierigkeit (`adjustBotDifficulty()`). Die **Popups** (`#slotPicker` /
+  `#colorPicker`) haben **Vorrang** im Container-Cascade und nutzen die
+  geometrische `moveFocus()` — der Fokus bleibt im Popup, springt nicht in die
+  Lobby/das Menü dahinter. **Esc** schließt erst ein offenes Popup, sonst geht es
+  von der Lobby zurück ins Menü. Enter/Leertaste lösen aus, alle Karten-/Popup-
+  Elemente sind echte `<button>`.
 - **Responsiv & scrollfrei:** Eigene Regeln in den Kompakt-Stufen
   (`@media max-height: 900px / 680px`) verkleinern Karten/Avatare; sieht in
   Vollbild, 1280×800 und 960×640 gut aus, Scrollbalken bleiben unsichtbar.
@@ -273,14 +299,31 @@ und die Haupt-Einstellungsseite immer synchron bleiben.
 **Grundsatz: Die ganze App ist ohne Maus bedienbar** (siehe Grundregeln).
 Zentraler Handler `setupKeyboard()` in `app.js`.
 
-- **Navigation per Pfeiltasten ODER WASD:** Der Fokus springt geometrisch
-  zum nächstgelegenen Element in Richtung der Taste (deckt auch das
-  Karten-Grid und gemischte Bedienelemente ab). **Enter/Leertaste** löst aus.
-  Abgedeckte Container: **Auth-Screen (Login/Registrierung)**, Hauptmenü,
-  **Lobby** (+ Slot-/Farb-Popups mit Vorrang), **Einstellungen**, Credits,
-  **Konto/Freunde-Overlay** und Beenden-Dialog (offene Overlays/Popups haben
-  Vorrang). Neue Screens werden in die Container-Auswahl von `setupKeyboard()`
-  eingehängt.
+- **Navigation per Pfeiltasten ODER WASD**, **Enter/Leertaste** löst aus,
+  **Esc** geht zurück. Es ist **immer genau ein Element fokussiert**; an einem
+  Rand, an dem es in die gedrückte Richtung kein Ziel gibt, **bleibt der Fokus
+  stehen** (springt nie ins Leere).
+- **Feste navId-Navigation (Hauptmenü + Lobby):** Diese beiden Screens laufen
+  **nicht** über die DOM-Reihenfolge/Geometrie, sondern über eine feste Tabelle.
+  Jedes Element trägt eine `data-nav`-ID (z.B. `main_play`, `main_coinGrab`,
+  `lobby_p1_color`, `lobby_p2_difficulty`); `NAV_MENU` (statisch) bzw.
+  `buildLobbyNav()` (dynamisch, weil die Karten je nach Slot-Typ andere Knöpfe
+  haben) sagen pro Richtung das Ziel. Werte-Knöpfe (z.B. der Bot-Grad) verstellen
+  mit ←/→ den Wert statt zu navigieren. **Start-Fokus:** Hauptmenü → „Spielen",
+  Lobby → „P1 · Farbe". Das Hauptmenü **merkt sich das zuletzt fokussierte
+  Element** (`menuFocusNav`) und stellt es beim Zurückkehren wieder her
+  (`goToMenu()`).
+- **Geometrische Navigation (`moveFocus()`) als Fallback** für Screens ohne
+  navIds: **Auth-Screen (Login/Registrierung)**, **Lobby-Popups** (Slot-/Farbwahl,
+  mit Vorrang), Credits, **Konto/Freunde-Overlay** und Beenden-Dialog. Sie wählt
+  zuerst die **nächste Reihe/Spalte** in Pfeilrichtung („Bande" ≈ halbe
+  Elementgröße) und erst darin die geringste seitliche Abweichung (Gleichstand →
+  DOM-Reihenfolge). Offene Overlays/Popups haben Vorrang; neue Screens werden in
+  die Container-Auswahl von `setupKeyboard()` eingehängt.
+- **Eingabe-Delay (`navThrottled()`):** Eine bewusste Einzel-Eingabe wird immer
+  ausgeführt; nur die Auto-Wiederholung einer **festgehaltenen** Taste wird auf
+  90 ms gedrosselt (kein „Durchrutschen" des Fokus). **Sound** beim Fokuswechsel
+  (`Sfx.play('hover')`).
 - **W/A/S/D** wirken wie ↑/←/↓/→ — **außer in Textfeldern**, dort tippen sie
   normal (sonst ließe sich kein Name mit „w" o.ä. eingeben). In Textfeldern
   navigiert man mit den echten Pfeiltasten (hoch/runter) bzw. **Tab**.
@@ -307,8 +350,10 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
     + gelbe Schrift auf der Zeile (`.setting-row:focus-within`), beim Lautstärke-
     Regler zusätzlich gelber, vergrößerter Griff. Der aktive Reiter selbst trägt
     gelbe Schrift + gelbe Unterkante.
-- Fokus-Ring nur bei Tastatur-Bedienung (`:focus-visible`, gelber Rahmen) —
-  Mausklicks erzeugen keinen Ring.
+- Sichtbarer Fokus nur bei Tastatur-Bedienung (`:focus-visible`): kräftiger
+  gelber Rahmen **+ Glow** und leichtes **Skalieren** des fokussierten Elements
+  (große Karten/Play-Buttons behalten ihren eigenen Effekt). Mausklicks erzeugen
+  keinen Ring.
 - **Esc**: schließt das offene Overlay (Beenden / Konto) bzw. führt von den
   Einstellungen **oder der Credits-Seite** zurück ins Menü.
 
@@ -350,6 +395,62 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
   Klartext — gleicher Key wie die Website, RLS schützt die Daten.
 
 ## Änderungsprotokoll
+
+### v0.9.0 — 2026-06-14
+- **Feste Tastatur-Navigation über navIds (`NAV_MENU` + `buildLobbyNav()` in
+  `app.js`):** Hauptmenü und Lobby navigieren nicht mehr über die
+  DOM-Reihenfolge/Geometrie, sondern über eine feste Tabelle. Jedes Element
+  trägt eine `data-nav`-ID (z.B. `main_play`, `main_coinGrab`, `lobby_p1_color`,
+  `lobby_p2_difficulty`); pro Richtung steht das Ziel fest. Fehlt für eine
+  Richtung ein Eintrag, **bleibt der Fokus stehen** (springt nie ins Leere).
+  Die übrigen Screens (Auth, Konto, Credits, Beenden, Lobby-Popups) sowie die
+  Einstellungen nutzen weiter die geometrische bzw. die eigene deterministische
+  Navigation (`moveFocus()` / `handleSettingsKey()`).
+- **Lobby-Tabelle dynamisch:** Da die Karten je nach Slot-Typ unterschiedliche
+  Knöpfe haben, wird die Lobby-Navigation bei jedem `renderLobby()` neu aus den
+  vorhandenen Knöpfen gebaut: ↑/↓ wechselt innerhalb einer Karte, ←/→ springt zur
+  Nachbarkarte (deren oberster Knopf), am unteren Kartenrand führt ↓ in die
+  Fußzeile (Zurück/Zurücksetzen/Spiel starten). Der Bot-Grad-Knopf verstellt mit
+  ←/→ die Schwierigkeit (`adjustBotDifficulty()`, ohne Umlauf), Enter/Leertaste
+  schaltet zyklisch (`cycleBotDifficulty()`).
+- **Sichtbarer Fokus aufgewertet:** kräftiger gelber Ring **+ Glow** und ein
+  leichtes Skalieren des fokussierten Elements (große Karten/Play-Buttons
+  behalten ihren eigenen Effekt). Sound beim Fokuswechsel (`Sfx.play('hover')`).
+- **Eingabe-Delay (`navThrottled()`):** Eine bewusste Einzel-Eingabe wird immer
+  ausgeführt; nur die Auto-Wiederholung einer **festgehaltenen** Taste wird
+  gedrosselt (90 ms), damit der Fokus pro Druck nur ein Feld weiterspringt.
+- **Fokus-Gedächtnis fürs Hauptmenü:** Das zuletzt fokussierte Menü-Element wird
+  gemerkt (`menuFocusNav`); beim Zurückkehren aus Einstellungen/Lobby/Credits
+  (zentral über `goToMenu()`) landet der Fokus wieder dort. Start-Fokus: „Spielen".
+- **Zuletzt angemeldete Nutzer (`RecentUsers` in `app.js`):** Erfolgreiche
+  Logins/Registrierungen merken sich (rein lokal, `localStorage`) den
+  Login-Namen + Zeitstempel — **nie ein Passwort**. Auf dem Login-Reiter
+  erscheinen sie als Vorschläge (`#recentUsers`): Klick füllt das Namensfeld, das
+  ✕ entfernt einen Vorschlag, und Einträge, die **7 Tage** nicht für einen Login
+  genutzt wurden, verschwinden beim Laden automatisch (max. 5 Vorschläge).
+- **Beenden mit optionalem Abmelden:** Der Beenden-Dialog zeigt angemeldeten
+  Nutzern zusätzlich den Schalter „Auch abmelden" (`#quitLogoutRow`, im
+  Gast-Modus ausgeblendet). Ist er aktiv, wird vor dem Beenden `Auth.signOut()`
+  ausgeführt, sodass der nächste Start wieder den Login zeigt.
+- Version auf 0.9.0 (package.json, preload.js).
+
+### v0.8.1 — 2026-06-14
+- **Tastatur-Navigation deterministisch (`moveFocus()` in `app.js`):** Die
+  geometrische Fokus-Suche wählt jetzt zuerst die nächste Reihe/Spalte in
+  Pfeilrichtung („Bande") und erst darin die geringste seitliche Abweichung
+  (Gleichstand → DOM-Reihenfolge). Behebt im Hauptmenü das zufällige Springen:
+  **↓ von den Buttons oben rechts → „Spielen"**, **↓ von „Spielen" → immer
+  dieselbe mittlere Karte**, **←/→ von „Spielen" → linke bzw. rechte Karte**.
+  Gilt für alle geometrisch navigierten Screens (Menü, Lobby, Auth …).
+- **Bots: Schwierigkeit statt Farbe.** Bot-Slots haben keine Farbwahl mehr —
+  ihre Farbe ist immer zufällig (`getRandomFreeColor()`). Stattdessen gibt es
+  einen „⚙️"-Button, der zwischen **Mittel** und **Schwer** umschaltet
+  (`cycleBotDifficulty()`, `BOT_DIFFICULTIES`); der Grad steht im Status-Badge
+  („Bot · Mittel"). Bewusst keine leichten Bots. `slot.difficulty` im
+  `lobbyState`; Farb-Picker wird nur noch für Menschen (P1 + Freunde) geöffnet.
+- **Konto-Einstellungen untereinander:** Die Formulare Anzeigename/E-Mail/
+  Passwort im Reiter „Konto" stehen jetzt in **einer Spalte** untereinander
+  statt dreispaltig nebeneinander (`.account-forms` → `grid-template-columns: 1fr`).
 
 ### v0.8.0 — 2026-06-14
 - **Neuer Lobby-Screen (`#screen-lobby`):** Der „Spielen"-Button führt jetzt

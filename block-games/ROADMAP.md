@@ -10,6 +10,15 @@ am Ende in die Repo-Struktur integriert wird.
 ## Stand (2026-06-14)
 
 ✅ **Fertig:**
+- **Feste Tastatur-Navigation** (v0.9.0): Hauptmenü und Lobby laufen über eine
+  navId-Tabelle (`NAV_MENU` + dynamisches `buildLobbyNav()` in `app.js`) statt
+  über die DOM-Reihenfolge — deterministisch, am Rand bleibt der Fokus stehen.
+  Sichtbarer Fokus (Glow + Skalierung), Sound beim Wechsel, Eingabe-Delay gegen
+  gedrückt gehaltene Tasten, Hauptmenü merkt sich das zuletzt fokussierte Element.
+- **Zuletzt angemeldete Nutzer** (v0.9.0): Login-Vorschläge (lokal, `RecentUsers`),
+  einzeln löschbar, automatisch nach 7 Tagen ohne Login entfernt.
+- **Beenden mit optionalem Abmelden** (v0.9.0): Der Beenden-Dialog fragt
+  angemeldete Nutzer zusätzlich, ob auch abgemeldet werden soll.
 - **Lobby-Vorbereitungsscreen** (v0.8.0): „Spielen" öffnet die Lobby mit 4
   Playercards — P1 = man selbst, P2–P4 als Leer/Bot/Freund, feste 8-Farben-
   Palette mit Sperr-/Verdrängungs-Logik, 300 zufällige Bot-Namen. Reine lokale
@@ -28,7 +37,8 @@ am Ende in die Repo-Struktur integriert wird.
 - **Sound-System** (`renderer/audio.js`): UI-Sounds per WebAudio
   synthetisiert (keine Audio-Dateien), Lautstärke live aus dem Settings-Store
 - **Beenden-Knopf** (⏻ im Hauptmenü) mit Bestätigungs-Dialog
-- **Tastatur-Navigation** im Hauptmenü (Pfeiltasten/Enter, Fokus-Ring);
+- **Tastatur-Navigation** überall (Pfeiltasten/WASD/Enter/Leertaste/Esc,
+  Fokus-Glow); Menü + Lobby über feste navIds, restliche Screens geometrisch;
   Auth-Screen scrollfrei auch im Registrieren-Tab
 
 ## Noch zu bauen
@@ -42,6 +52,11 @@ am Ende in die Repo-Struktur integriert wird.
   KI-Gegner aufgefüllt (1 Mensch → 3 KIs usw.)
 - KI braucht pro Minigame eine eigene einfache Spiellogik (reagieren mit
   zufälliger menschenähnlicher Verzögerung, Fehlerquote je Schwierigkeit)
+- **Bot-Schwierigkeit (festgelegt):** Es soll **immer mindestens „Mittel" und
+  „Schwer"** geben — **keine leichten Bots**. In der Lobby ist der Grad pro Bot
+  einstellbar (`BOT_DIFFICULTIES` in `app.js`, `slot.difficulty`, Default
+  `medium`); die Minigame-KI muss diese Grade später per Fehlerquote/Tempo
+  umsetzen.
 
 ### Minigames (aktuell Platzhalter im Menü)
 | ID | Name | Idee |
