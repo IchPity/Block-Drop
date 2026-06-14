@@ -151,11 +151,13 @@ und die Haupt-Einstellungsseite immer synchron bleiben.
   („Spiel beenden?"); „Beenden" ruft per IPC `app:quit` → `app.quit()`.
   Abbrechen, Esc oder Klick auf den abgedunkelten Hintergrund schließen nur
   den Dialog. Nötig, weil die App im Vollbild ohne Menüleiste läuft.
-- **Optionales Abmelden beim Beenden:** Angemeldeten Nutzern zeigt der Dialog
-  zusätzlich den Schalter **„Auch abmelden"** (`#quitLogoutRow`, im Gast-Modus
-  ausgeblendet, gesteuert über `isOnlineAllowed()` in `openQuitDialog()`). Ist er
-  aktiv, läuft vor dem Beenden `Auth.signOut()` — die Session wird beendet, sodass
-  der nächste Start wieder den Login zeigt (sonst bleibt man angemeldet).
+- **Abmelden beim Beenden (dritter Button):** Angemeldeten Nutzern zeigt der
+  Dialog einen mittleren Button **„Abmelden & Beenden"** (`#btnQuitLogout`, im
+  Gast-Modus per `hidden` ausgeblendet, gesteuert über `isOnlineAllowed()` in
+  `openQuitDialog()`). Er läuft `Auth.signOut()` und beendet danach — die Session
+  wird beendet, sodass der nächste Start wieder den Login zeigt. Der rechte
+  „Beenden"-Button hält die Session (nächster Start direkt im Menü). Reihenfolge
+  im Dialog: **Abbrechen · Abmelden & Beenden · Beenden**.
 
 ### Konto & Freunde
 
@@ -395,6 +397,17 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
   Klartext — gleicher Key wie die Website, RLS schützt die Daten.
 
 ## Änderungsprotokoll
+
+### v0.9.1 — 2026-06-14
+- **Abmelden im Beenden-Dialog als dritter Button:** Der bisherige Schalter
+  „Auch abmelden" (`#quitLogoutRow` + `#quitLogout`) ist entfallen. Stattdessen
+  zeigt der Dialog angemeldeten Nutzern einen mittleren Button
+  „Abmelden & Beenden" (`#btnQuitLogout`, im Gast-Modus `hidden`). Buttonreihe:
+  Abbrechen · Abmelden & Beenden · Beenden. Der mittlere Button ruft
+  `Auth.signOut()` und beendet danach; „Beenden" hält die Session unverändert.
+  Betrifft `index.html`, `app.js` (`openQuitDialog`/`setupQuit`) und `style.css`
+  (`.quit-logout`/`.quit-logout-text` entfernt, `.btn-quit-logout` ergänzt).
+- Version auf 0.9.1 (package.json, preload.js).
 
 ### v0.9.0 — 2026-06-14
 - **Feste Tastatur-Navigation über navIds (`NAV_MENU` + `buildLobbyNav()` in

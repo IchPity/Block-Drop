@@ -478,11 +478,8 @@ async function setupSettings() {
 // (nur angemeldet sichtbar). Ohne Abmelden bleibt die Session erhalten und der
 // nächste Start landet direkt im Menü; mit Abmelden erscheint wieder der Login.
 function openQuitDialog() {
-  const row = document.getElementById('quitLogoutRow');
-  const chk = document.getElementById('quitLogout');
-  // Abmelde-Option nur, wenn wirklich ein Konto angemeldet ist (kein Gast).
-  row.hidden = !isOnlineAllowed();
-  chk.checked = false;
+  // „Abmelden & Beenden" nur, wenn wirklich ein Konto angemeldet ist (kein Gast).
+  document.getElementById('btnQuitLogout').hidden = !isOnlineAllowed();
   document.getElementById('quitOverlay').hidden = false;
   document.getElementById('btnQuitCancel').focus();
 }
@@ -495,12 +492,14 @@ function closeQuitDialog() {
 function setupQuit() {
   document.getElementById('btnQuit').addEventListener('click', openQuitDialog);
   document.getElementById('btnQuitCancel').addEventListener('click', closeQuitDialog);
-  document.getElementById('btnQuitConfirm').addEventListener('click', async () => {
-    // Wunsch „auch abmelden": vor dem Beenden die Session beenden, damit der
-    // nächste Start wieder den Login zeigt.
-    if (isOnlineAllowed() && document.getElementById('quitLogout').checked) {
-      await Auth.signOut();
-    }
+  // „Abmelden & Beenden": erst die Session beenden, damit der nächste Start
+  // wieder den Login zeigt, dann das Spiel schließen.
+  document.getElementById('btnQuitLogout').addEventListener('click', async () => {
+    if (isOnlineAllowed()) await Auth.signOut();
+    window.blockGames.quitApp();
+  });
+  // „Beenden": Session bleibt erhalten, der nächste Start landet direkt im Menü.
+  document.getElementById('btnQuitConfirm').addEventListener('click', () => {
     window.blockGames.quitApp();
   });
   // Klick auf den abgedunkelten Hintergrund bricht ebenfalls ab

@@ -1606,20 +1606,11 @@ button:focus-visible:not(.minigame-card):not(.party-btn) {
 
 .overlay-card p { color: var(--text-dim); font-size: 0.9em; }
 
-/* „Auch abmelden"-Schalter im Beenden-Dialog (nur angemeldet sichtbar). */
-.quit-logout {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 18px;
-  cursor: pointer;
-}
-
-.quit-logout-text {
-  font-size: 0.9em;
-  font-weight: 600;
-  color: var(--text);
-}
+/* „Abmelden & Beenden" — mittlerer Button im Beenden-Dialog (nur angemeldet
+   sichtbar). Gelb-akzentuiert, damit er sich von „Abbrechen" (neutral) und
+   „Beenden" (rot) klar abhebt. */
+.btn-quit-logout { color: var(--yellow); }
+.btn-quit-logout:hover { border-color: var(--yellow); }
 
 .overlay-actions {
   display: flex;

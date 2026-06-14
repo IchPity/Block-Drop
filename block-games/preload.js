@@ -4,7 +4,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('blockGames', {
-  version: '0.9.0',
+  version: '0.9.1',
   platform: process.platform,
 
   // App beenden (Bestätigungs-Dialog macht der Renderer)

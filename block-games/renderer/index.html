@@ -389,18 +389,14 @@
     <div class="overlay-card">
       <h2>Spiel beenden?</h2>
       <p>Möchtest du uns denn etwa wirklich verlassen?</p>
-      <!-- Nur angemeldet sichtbar (app.js → openQuitDialog): zusätzlich zum
-           Beenden auch abmelden, damit beim nächsten Start wieder der Login
-           erscheint. -->
-      <label class="quit-logout" id="quitLogoutRow" hidden>
-        <span class="switch">
-          <input type="checkbox" id="quitLogout">
-          <span class="switch-knob"></span>
-        </span>
-        <span class="quit-logout-text">Auch abmelden</span>
-      </label>
+      <!-- Drei Aktionen: Abbrechen · (nur angemeldet) Abmelden & Beenden ·
+           Beenden. Der mittlere Button (app.js → openQuitDialog blendet ihn
+           nur für angemeldete Konten ein) beendet das Spiel UND meldet ab,
+           damit beim nächsten Start wieder der Login erscheint. „Beenden"
+           allein hält die Session, der nächste Start landet direkt im Menü. -->
       <div class="overlay-actions">
         <button class="btn btn-back" id="btnQuitCancel">Abbrechen</button>
+        <button class="btn btn-back btn-quit-logout" id="btnQuitLogout" hidden>Abmelden &amp; Beenden</button>
         <button class="btn btn-danger" id="btnQuitConfirm">Beenden</button>
       </div>
     </div>
