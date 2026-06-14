@@ -15,7 +15,7 @@ const MINIGAMES = [
   { id: 'coin-grab',    nav: 'main_coinGrab',    icon: '🪙', name: 'Coin Grab',    desc: 'Sammle die meisten Münzen',       available: false },
   { id: 'memory-clash', nav: 'main_memoryClash', icon: '🧠', name: 'Memory Clash', desc: 'Wer merkt sich mehr?',            available: false },
   { id: 'speed-tap',    nav: 'main_speedTap',    icon: '⚡', name: 'Speed Tap',    desc: 'Reaktion entscheidet',            available: false },
-  { id: 'bomb-pass',    nav: 'main_bombPass',    icon: '💣', name: 'Bomb Pass',    desc: 'Halte die Bombe nicht zuletzt',   available: false },
+  { id: 'block-bomb',   nav: 'main_blockBomb',   icon: '💣', name: 'Block Bomb',   desc: 'Berühr die anderen – wer mit der Bombe hochgeht, fliegt raus', available: true, start: startBlockBomb },
   { id: 'quiz-blocks',  nav: 'main_quizBlocks',  icon: '❓', name: 'Quiz Blocks',  desc: 'Wissen schlägt Würfelglück',      available: false },
 ];
 
@@ -544,14 +544,14 @@ const NAV_MENU = {
   // Hauptaktion „Spielen"
   main_play:     { up: 'main_settings', down: 'main_blockRush' },
   // Minigame-Karten, Reihe 1: Block Rush · Coin Grab · Memory Clash · Speed Tap
-  main_blockRush:   { up: 'main_play', down: 'main_bombPass',  right: 'main_coinGrab' },
+  main_blockRush:   { up: 'main_play', down: 'main_blockBomb', right: 'main_coinGrab' },
   main_coinGrab:    { up: 'main_play', down: 'main_quizBlocks', left: 'main_blockRush',  right: 'main_memoryClash' },
   main_memoryClash: { up: 'main_play', down: 'main_quizBlocks', left: 'main_coinGrab',   right: 'main_speedTap' },
   main_speedTap:    { up: 'main_play', down: 'main_quizBlocks', left: 'main_memoryClash' },
   // Reihe 2: Bomb Pass · Quiz Blocks. ↓ führt zum Credits-Knopf — sonst wäre
   // er nur per Tab erreichbar (kleine, bewusste Abweichung von „bleibt stehen").
-  main_bombPass:    { up: 'main_blockRush', right: 'main_quizBlocks', down: 'main_credits' },
-  main_quizBlocks:  { up: 'main_coinGrab',  left: 'main_bombPass',    down: 'main_credits' },
+  main_blockBomb:   { up: 'main_blockRush', right: 'main_quizBlocks', down: 'main_credits' },
+  main_quizBlocks:  { up: 'main_coinGrab',  left: 'main_blockBomb',   down: 'main_credits' },
   // Credits-Knopf in der Fußzeile
   main_credits:     { up: 'main_quizBlocks' },
 };
@@ -618,6 +618,12 @@ function setupKeyboard() {
     const isActive = (id) => document.getElementById(id).classList.contains('active');
 
     if (e.key === 'Escape') {
+      // Block Bomb / Einladung haben Vorrang vor dem übrigen Esc-Verhalten.
+      if (inviteOpen()) { declineInvite(); return; }                 // Einladung ablehnen
+      if (bombVoteOpen()) { cancelBombFlow(); return; }              // Voting → zurück zur Lobby
+      if (bombResultOpen()) { return; }                              // Ergebnis nur per Knopf
+      if (bombPauseOpen()) { resumeBomb(); return; }                 // Pause → weiter
+      if (isActive('screen-block-bomb')) { pauseBomb(); return; }    // im Spiel → Pause
       // Esc schließt erst offene Overlays (Beenden / Konto), sonst führt es
       // aus Einstellungen bzw. der Credits-Seite zurück ins Hauptmenü.
       if (quitOpen) closeQuitDialog();
@@ -651,7 +657,11 @@ function setupKeyboard() {
 
     // Container der aktuellen Ansicht (offene Overlays haben Vorrang).
     let container = null;
-    if (quitOpen) container = document.getElementById('quitOverlay');
+    if (inviteOpen()) container = document.getElementById('inviteOverlay');
+    else if (bombVoteOpen()) container = document.getElementById('bombMapVote');
+    else if (bombPauseOpen()) container = document.getElementById('bombPause');
+    else if (bombResultOpen()) container = document.getElementById('bombResult');
+    else if (quitOpen) container = document.getElementById('quitOverlay');
     else if (accountOpen()) container = document.getElementById('accountOverlay');
     else if (colorPickerOpen()) container = document.getElementById('colorPicker');
     else if (slotPickerOpen()) container = document.getElementById('slotPicker');
@@ -1426,11 +1436,9 @@ function setupLobby() {
     showToast('Lobby zurückgesetzt.');
   });
   document.getElementById('btnLobbyStart').addEventListener('click', () => {
-    showToast('Spielstart kommt als Nächstes.');
-    // Lokale Lobby-Konfig zur Kontrolle loggen — bewusst ohne sensible Daten
-    // (keine User-IDs), nur Slot/Typ/Name/Farbe.
-    console.log('Lobby-Konfiguration:', lobbyState.slots.map(s =>
-      ({ slot: s.id, type: s.type, name: s.name, color: s.color })));
+    // Block Bomb ist das erste fertige Minigame: Start führt in den Ablauf
+    // Map-Voting → Countdown → Runde (statt nur einen Toast zu zeigen).
+    startBlockBomb();
   });
   // Klick auf den abgedunkelten Backdrop schließt das jeweilige Popup.
   document.getElementById('slotPicker').addEventListener('click', (e) => {
@@ -1727,6 +1735,238 @@ function setupAccountSettings() {
   });
 }
 
+// ══ Block Bomb — Ablauf (Map-Voting → Countdown → Runde → Ergebnis) ══════
+//
+// Der eigentliche 3D-Spielkern lebt im ES-Modul renderer/block-bomb/main.js
+// und registriert window.BlockBomb. Dieser Abschnitt steuert nur den DROM-
+// HERUM: Map-Auswahl, Countdown, Pause/Ergebnis-Overlays und die Einladung.
+// Er reicht dem Spielkern eine ENTKOPPELTE matchConfig (kein Lobby-Zugriff im
+// Spiel) — derselbe Einstieg trägt später Online-Lobbys.
+
+// Map-Metadaten für die Voting-Ansicht (Geometrie liegt in maps.js).
+const BOMB_MAP_META = [
+  { id: 'arena',   name: 'Bomb Arena',    desc: 'Runde Arena mit leuchtendem Rand und Säulen zum Ausweichen.' },
+  { id: 'sky',     name: 'Sky Platforms', desc: 'Schwebende Plattformen über dem Abgrund — Vorsicht am Rand!' },
+  { id: 'factory', name: 'Factory Panic', desc: 'Förderbänder, Kisten und blinkende Warnlichter.' },
+];
+
+// CSS-Variable einer Lobby-Farbe → echter Hex-Wert (bleibt synchron zum Theme).
+function colorHex(id) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--' + (id || 'cyan')).trim();
+  return v || '#36d6e7';
+}
+
+// lobbyState.slots → entkoppelte Spielerliste fürs Minigame. WICHTIG: Die in
+// der Lobby gewählten Farben werden hier zur echten Spielerfarbe im Spiel
+// (gilt für ALLE Minigames). „friend" = (späterer) Online-Spieler → remote.
+function buildMatchConfig() {
+  return lobbyState.slots.filter(isActiveSlot).map(s => ({
+    id: s.id,
+    name: s.name || ('P' + s.id),
+    colorId: s.color,
+    colorHex: colorHex(s.color),
+    type: s.type === 'self' ? 'human' : s.type === 'friend' ? 'remote' : 'bot',
+    difficulty: s.difficulty || 'medium',
+    isLocal: s.type === 'self',
+  }));
+}
+
+// Overlay-Status-Helfer (für setupKeyboard).
+const inviteOpen      = () => !document.getElementById('inviteOverlay').hidden;
+const bombVoteOpen    = () => !document.getElementById('bombMapVote').hidden;
+const bombPauseOpen   = () => !document.getElementById('bombPause').hidden;
+const bombResultOpen  = () => !document.getElementById('bombResult').hidden;
+
+let bombPlayers = [];
+let bombMapId = 'arena';
+let bombVoteLocked = false;
+
+// Einstieg aus der Lobby (oder „Nochmal").
+function startBlockBomb() {
+  if (!window.BlockBomb) { showToast('Block Bomb lädt noch — gleich nochmal.'); return; }
+  bombPlayers = buildMatchConfig();
+  if (bombPlayers.length < 2) {
+    showToast('Mindestens 2 Spieler — füge Bots hinzu.');
+    return;
+  }
+  openMapVote();
+}
+
+// ── Map-Voting ──────────────────────────────────────────────────────────
+function openMapVote() {
+  bombVoteLocked = false;
+  const grid = document.getElementById('bombMapGrid');
+  grid.innerHTML = '';
+  BOMB_MAP_META.forEach((m, i) => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'bomb-map-card';
+    card.dataset.map = m.id;
+    card.innerHTML = `
+      <div class="bomb-map-thumb ${m.id}"></div>
+      <h3>${m.name}</h3>
+      <p>${m.desc}</p>
+      <div class="bomb-map-votes" data-votes="${m.id}"></div>`;
+    card.addEventListener('click', () => castMapVote(m.id));
+    grid.appendChild(card);
+  });
+  document.getElementById('bombVoteSub').textContent =
+    bombPlayers.length > 1 ? 'Wähle deine Map — die Bots stimmen mit ab.' : 'Wähle deine Map.';
+  document.getElementById('bombMapVote').hidden = false;
+  // Erstes Karten-Element fokussieren (Tastatur).
+  const first = grid.querySelector('.bomb-map-card');
+  if (first) first.focus();
+}
+
+// Der lokale Mensch wählt; Bots (+ vorerst Remote) wählen zufällig; Mehrheit
+// gewinnt, Gleichstand → zufällig unter den Bestplatzierten.
+function castMapVote(humanChoice) {
+  if (bombVoteLocked) return;
+  bombVoteLocked = true;
+
+  const tally = {}; // mapId → Liste der Wähler-Farben (für die Punkte-Anzeige)
+  for (const p of bombPlayers) {
+    const choice = p.type === 'human'
+      ? humanChoice
+      : BOMB_MAP_META[Math.floor(Math.random() * BOMB_MAP_META.length)].id;
+    (tally[choice] || (tally[choice] = [])).push(p.colorHex);
+  }
+  // Punkte je Karte zeichnen
+  for (const m of BOMB_MAP_META) {
+    const box = document.querySelector(`[data-votes="${m.id}"]`);
+    const voters = tally[m.id] || [];
+    box.innerHTML = voters.map(c => `<span class="bomb-vote-dot" style="--c:${c}"></span>`).join('');
+  }
+  // Gewinner bestimmen
+  let max = 0;
+  for (const k in tally) max = Math.max(max, tally[k].length);
+  const winners = Object.keys(tally).filter(k => tally[k].length === max);
+  bombMapId = winners[Math.floor(Math.random() * winners.length)];
+
+  const winCard = document.querySelector(`.bomb-map-card[data-map="${bombMapId}"]`);
+  if (winCard) winCard.classList.add('selected');
+  Sfx.play('success');
+
+  setTimeout(() => {
+    document.getElementById('bombMapVote').hidden = true;
+    runCountdown();
+  }, 1300);
+}
+
+function cancelBombFlow() {
+  document.getElementById('bombMapVote').hidden = true;
+  document.getElementById('bombCountdown').hidden = true;
+  showScreen('screen-lobby');
+  focusByNav('lobby_start');
+}
+
+// ── 3 · 2 · 1 · GO! ──────────────────────────────────────────────────────
+function runCountdown() {
+  const overlay = document.getElementById('bombCountdown');
+  const el = document.getElementById('bombCountNum');
+  overlay.hidden = false;
+  const seq = ['3', '2', '1', 'GO!'];
+  let i = 0;
+  (function tick() {
+    el.textContent = seq[i];
+    el.classList.remove('pop', 'go'); void el.offsetWidth; el.classList.add('pop');
+    if (seq[i] === 'GO!') { el.classList.add('go'); Sfx.play('go'); }
+    else Sfx.play('count');
+    i++;
+    if (i < seq.length) setTimeout(tick, 800);
+    else setTimeout(() => { overlay.hidden = true; startBombRound(); }, 700);
+  })();
+}
+
+// ── Runde starten (übergibt an den 3D-Kern) ──────────────────────────────
+function startBombRound() {
+  showScreen('screen-block-bomb');
+  const host = document.getElementById('bombStage');
+  window.BlockBomb.start({
+    host,
+    players: bombPlayers,
+    mapId: bombMapId,
+    fpsLimit: () => Settings.get('fpsLimit'),
+    reducedFx: () => Settings.get('reducedFx'),
+    sfx: (name) => Sfx.play(name),
+    onResult: showBombResult,
+    onExit: quitBombToMenu,
+  });
+}
+
+// ── Pause (Esc im Spiel) ─────────────────────────────────────────────────
+function pauseBomb() {
+  if (!window.BlockBomb || !window.BlockBomb.isRunning()) return;
+  window.BlockBomb.pause();
+  document.getElementById('bombPause').hidden = false;
+  document.getElementById('btnBombResume').focus();
+}
+function resumeBomb() {
+  document.getElementById('bombPause').hidden = true;
+  if (window.BlockBomb) window.BlockBomb.resume();
+}
+function quitBombToMenu() {
+  document.getElementById('bombPause').hidden = true;
+  document.getElementById('bombResult').hidden = true;
+  if (window.BlockBomb) window.BlockBomb.stop();
+  goToMenu();
+}
+
+// ── Ergebnis ─────────────────────────────────────────────────────────────
+function showBombResult(winner) {
+  document.getElementById('bombResultTitle').textContent =
+    winner ? `${winner.name} gewinnt!` : 'Unentschieden!';
+  document.getElementById('bombResult').hidden = false;
+  document.getElementById('btnBombAgain').focus();
+}
+
+// ── Online-Einladung (UI vorbereitet, noch ohne echte Netz-Anbindung) ─────
+// Mehrere Einladungen werden als Warteschlange nacheinander gezeigt. Auslösen
+// zum Testen über window.BombInvite.test('Name'). Die echte Online-Anbindung
+// (Lobby beitreten) hängt später an isOnlineAllowed().
+const inviteQueue = [];
+function showInvite(fromName) {
+  inviteQueue.push(fromName || 'Ein Freund');
+  if (inviteQueue.length === 1) renderInvite();
+}
+function renderInvite() {
+  const from = inviteQueue[0];
+  document.getElementById('inviteText').textContent =
+    `Du wurdest von ${from} zu einer Block Games Lobby eingeladen.`;
+  document.getElementById('inviteOverlay').hidden = false;
+  document.getElementById('btnInviteAccept').focus();
+}
+function nextInvite() {
+  inviteQueue.shift();
+  if (inviteQueue.length) renderInvite();
+  else document.getElementById('inviteOverlay').hidden = true;
+}
+function acceptInvite() {
+  showToast(isOnlineAllowed() ? 'Einladung angenommen — Online-Lobby folgt.' : 'Melde dich an, um online zu spielen.');
+  nextInvite();
+}
+function declineInvite() { nextInvite(); }
+
+function setupBlockBomb() {
+  document.getElementById('btnBombResume').addEventListener('click', resumeBomb);
+  document.getElementById('btnBombQuit').addEventListener('click', quitBombToMenu);
+  document.getElementById('btnBombAgain').addEventListener('click', () => {
+    document.getElementById('bombResult').hidden = true;
+    if (window.BlockBomb) window.BlockBomb.stop();
+    openMapVote();
+  });
+  document.getElementById('btnBombToLobby').addEventListener('click', () => {
+    document.getElementById('bombResult').hidden = true;
+    if (window.BlockBomb) window.BlockBomb.stop();
+    showScreen('screen-lobby');
+    focusByNav('lobby_start');
+  });
+  document.getElementById('btnInviteAccept').addEventListener('click', acceptInvite);
+  document.getElementById('btnInviteDecline').addEventListener('click', declineInvite);
+  // Test-Auslöser fürs Einladungsfenster (bis die echte Online-Anbindung steht).
+  window.BombInvite = { test: (name) => showInvite(name) };
+}
+
 // ── Start ────────────────────────────────────────────────────────────
 async function boot() {
   spawnBackgroundBlocks();
@@ -1739,6 +1979,7 @@ async function boot() {
   setupAccount();
   setupAccountSettings();
   setupSettingsTabs();
+  setupBlockBomb();
   setupKeyboard();
   await setupSettings();
   document.getElementById('appVersion').textContent =
