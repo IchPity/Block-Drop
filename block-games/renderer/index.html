@@ -6,6 +6,7 @@
         content="default-src 'self'; connect-src https://yjyvqidjqksvagyxrwyf.supabase.co wss://yjyvqidjqksvagyxrwyf.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
   <title>Block Games</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="block-bomb.css">
 </head>
 <body>
 
@@ -402,6 +403,68 @@
     </div>
   </div>
 
+  <!-- ══ Block Bomb (Minigame) ═══════════════════════════════════════════
+       Vollbild-Spielscreen. main.js (ES-Modul) hängt Canvas + HUD in
+       #bombStage ein. Der Ablauf (Map-Voting → Countdown → Runde → Ergebnis)
+       wird von app.js gesteuert (Abschnitt „Block Bomb"). -->
+  <div id="screen-block-bomb" class="screen">
+    <div id="bombStage" class="bomb-stage"></div>
+  </div>
+
+  <!-- Map-Voting: 3 Maps des Modus. Echte Spieler wählen, Bots zufällig,
+       Mehrheit gewinnt, Gleichstand → zufällig. Komplett tastaturbedienbar. -->
+  <div id="bombMapVote" class="overlay bomb-overlay" hidden>
+    <div class="overlay-card bomb-vote-card">
+      <h2>Map wählen</h2>
+      <p class="bomb-vote-sub" id="bombVoteSub">Stimmt für eine Arena ab</p>
+      <div class="bomb-map-grid" id="bombMapGrid"></div>
+      <p class="bomb-vote-hint">Pfeile/WASD wählen · Enter bestätigt · Esc zurück</p>
+    </div>
+  </div>
+
+  <!-- 3 · 2 · 1 · GO! -->
+  <div id="bombCountdown" class="overlay bomb-countdown" hidden>
+    <div class="bomb-count-num" id="bombCountNum">3</div>
+  </div>
+
+  <!-- Pause (Esc im Spiel) -->
+  <div id="bombPause" class="overlay bomb-overlay" hidden>
+    <div class="overlay-card">
+      <h2>Pause</h2>
+      <div class="overlay-actions">
+        <button class="btn btn-primary" id="btnBombResume" data-nav="bomb_resume">Weiter</button>
+        <button class="btn btn-back" id="btnBombQuit" data-nav="bomb_quit">Zum Menü</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ergebnis am Rundenende -->
+  <div id="bombResult" class="overlay bomb-overlay" hidden>
+    <div class="overlay-card bomb-result-card">
+      <div class="bomb-result-crown" aria-hidden="true">👑</div>
+      <h2 id="bombResultTitle">P1 gewinnt!</h2>
+      <div class="overlay-actions">
+        <button class="btn btn-primary" id="btnBombAgain" data-nav="bomb_again">Nochmal</button>
+        <button class="btn btn-back" id="btnBombToLobby" data-nav="bomb_lobby">Zur Lobby</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Einladungsfenster (für späteres Online-Spiel vorbereitet, noch OHNE
+       echte Netz-Anbindung — auslösbar über die Test-Funktion BombInvite.test()).
+       Enter bestätigt den fokussierten Knopf, Esc lehnt ab. Mehrere Einladungen
+       werden als Warteschlange nacheinander gezeigt (app.js → Einladungs-Logik). -->
+  <div id="inviteOverlay" class="overlay" hidden>
+    <div class="overlay-card invite-card">
+      <h2>Block Games Einladung</h2>
+      <p id="inviteText">Du wurdest zu einer Block Games Lobby eingeladen.</p>
+      <div class="overlay-actions">
+        <button class="btn btn-primary" id="btnInviteAccept" data-nav="invite_accept">Annehmen</button>
+        <button class="btn btn-back" id="btnInviteDecline" data-nav="invite_decline">Ablehnen</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast für kurze Hinweise (statt alert) -->
   <div id="toast" class="toast" hidden></div>
 
@@ -410,5 +473,8 @@
   <script src="audio.js"></script>
   <script src="auth.js"></script>
   <script src="app.js"></script>
+  <!-- Block-Bomb-Spielkern als ES-Modul (lädt Three.js aus vendor/).
+       Registriert window.BlockBomb; läuft deferred nach app.js. -->
+  <script type="module" src="block-bomb/main.js"></script>
 </body>
 </html>
