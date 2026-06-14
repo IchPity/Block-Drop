@@ -161,6 +161,13 @@ function buildSky() {
     return { x: dx / l, z: dz / l };
   }
 
+  function clearanceOnPlate(x, z, p) {
+    const halfW = p.w / 2 + margin, halfD = p.d / 2 + margin;
+    const lx = x - p.x, lz = z - p.z;
+    if (Math.abs(lx) > halfW || Math.abs(lz) > halfD) return null;
+    return { clearance: Math.min(halfW - Math.abs(lx), halfD - Math.abs(lz)), lx, lz, halfW, halfD };
+  }
+
   const spawns = [
     { x: -2.5, z: -2.5 }, { x: 2.5, z: -2.5 }, { x: -2.5, z: 2.5 }, { x: 2.5, z: 2.5 },
   ];
@@ -172,16 +179,19 @@ function buildSky() {
       return { x, z, fell: !onPlate(x, z) };
     },
     steerToSafety(x, z) {
-      // Wenn die Figur nah an einer Kante ist, Richtung Plattformmitte ziehen.
-      const safeNow = onPlate(x, z);
-      const lookAhead = 1.6;
-      const dir = nearestPlateDir(x, z);
-      // Prüfen, ob ein Schritt in jede Achsenrichtung noch sicher wäre.
-      if (!safeNow || !onPlate(x + Math.sign(dir.x) * lookAhead, z)
-                   || !onPlate(x, z + Math.sign(dir.z) * lookAhead)) {
-        return dir;
+      const threshold = 1.4;
+      let best = null;
+      for (const p of plates) {
+        const c = clearanceOnPlate(x, z, p);
+        if (c && (!best || c.clearance > best.clearance)) best = c;
       }
-      return { x: 0, z: 0 };
+      if (!best) return nearestPlateDir(x, z);
+      if (best.clearance >= threshold) return { x: 0, z: 0 };
+      const t = (threshold - best.clearance) / threshold;
+      let sx = 0, sz = 0;
+      if (best.halfW - Math.abs(best.lx) < threshold) sx = -Math.sign(best.lx) * t;
+      if (best.halfD - Math.abs(best.lz) < threshold) sz = -Math.sign(best.lz) * t;
+      return { x: sx, z: sz };
     },
     conveyor() { return { x: 0, z: 0 }; },
     update() {},

@@ -29,7 +29,7 @@
 import * as THREE from '../vendor/three.module.js';
 import { BlockCharacter } from './characters.js';
 import { Bomb } from './bomb.js';
-import { buildMap } from './maps.js';
+import { buildMap, BOMB_MAPS } from './maps.js';
 import { LocalHumanController, BotController, RemoteController } from './controllers.js';
 
 const SPEED = 6.4;        // Basistempo (gleich für alle — Fairness)
@@ -47,6 +47,10 @@ class BlockBombGame {
     this.last = 0;
     this.tickAcc = 0;
     this.shake = 0;
+    this.introActive = true;
+    this.introT = 0;
+    this.introDuration = 2.2;
+    this.introEl = null;
 
     this._initThree();
     this._initMap();
@@ -68,6 +72,12 @@ class BlockBombGame {
     const h = this.host.clientHeight || window.innerHeight;
     this.camera = new THREE.PerspectiveCamera(52, w / h, 0.1, 120);
     this.camBase = new THREE.Vector3(0, 18, 18);
+    const overviewScale = 1.9;
+    this.camOverview = new THREE.Vector3(
+      this.camBase.x * overviewScale,
+      this.camBase.y * overviewScale + 6,
+      this.camBase.z * overviewScale,
+    );
     this.camera.position.copy(this.camBase);
     this.camera.lookAt(0, 1, 0);
 
@@ -199,7 +209,48 @@ class BlockBombGame {
     this.running = true;
     this.last = performance.now();
     this._resize();
+    this._startIntro();
     this.raf = requestAnimationFrame((t) => this._loop(t));
+  }
+
+  _startIntro() {
+    this.introActive = true;
+    this.introT = 0;
+    this.camera.position.copy(this.camOverview);
+    this.camera.lookAt(0, 1, 0);
+    this._showMapIntro();
+  }
+
+  _updateIntro(dt) {
+    this.introT += dt;
+    const t = Math.min(1, this.introT / this.introDuration);
+    const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+    this.camera.position.lerpVectors(this.camOverview, this.camBase, eased);
+    this.camera.lookAt(0, 1, 0);
+    if (t >= 1) {
+      this.introActive = false;
+      this.camera.position.copy(this.camBase);
+      this._hideMapIntro();
+    }
+  }
+
+  _showMapIntro() {
+    const meta = BOMB_MAPS.find(m => m.id === this.config.mapId);
+    const el = document.createElement('div');
+    el.className = 'bomb-map-intro-name';
+    el.textContent = meta ? meta.name : '';
+    this.host.appendChild(el);
+    this.introEl = el;
+    requestAnimationFrame(() => el.classList.add('show'));
+  }
+
+  _hideMapIntro() {
+    if (!this.introEl) return;
+    const el = this.introEl;
+    el.classList.remove('show');
+    el.classList.add('hide');
+    setTimeout(() => el.remove(), 600);
+    this.introEl = null;
   }
 
   pause() {
@@ -221,7 +272,11 @@ class BlockBombGame {
     this.last = now;
     const dt = Math.min(0.05, elapsed / 1000);
 
-    if (!this.paused && this.running) this._step(dt);
+    if (this.introActive) {
+      this._updateIntro(dt);
+    } else if (!this.paused && this.running) {
+      this._step(dt);
+    }
     this._animate(dt);
     this.renderer.render(this.scene, this.camera);
     this._updateLabels();
@@ -380,7 +435,7 @@ class BlockBombGame {
         this.camBase.z + (Math.random() * 2 - 1) * s,
       );
       this.camera.lookAt(0, 1, 0);
-    } else if (this.camera.position.distanceToSquared(this.camBase) > 1e-4) {
+    } else if (!this.introActive && this.camera.position.distanceToSquared(this.camBase) > 1e-4) {
       this.camera.position.copy(this.camBase);
       this.camera.lookAt(0, 1, 0);
     }
@@ -398,6 +453,11 @@ class BlockBombGame {
       const sy = (-v.y * 0.5 + 0.5) * h;
       el.style.transform = `translate(-50%,-100%) translate(${sx}px,${sy}px)`;
       el.classList.toggle('holder', p.isHolder);
+      if (p.debug) {
+        el.textContent = `${p.name} [${p.debug.state}${p.debug.stuck ? '!' : ''}]`;
+      } else if (el.textContent !== p.name) {
+        el.textContent = p.name;
+      }
     }
   }
 
@@ -408,6 +468,8 @@ class BlockBombGame {
       timeLeft: this.timeLeft,
       map: this.map,
       obstacles: this.map.obstacles || [],
+      radius: PLAYER_R,
+      speed: SPEED,
     };
   }
 
@@ -430,6 +492,7 @@ class BlockBombGame {
     if (this.bomb) this.bomb.dispose();
     for (const p of this.players) p.char.dispose();
     if (this.renderer) { this.renderer.dispose(); }
+    if (this.introEl) { this.introEl = null; }
     if (this.host) this.host.innerHTML = '';
   }
 }

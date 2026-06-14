@@ -49,7 +49,8 @@ Hinweis: Node.js liegt portabel auf `D:\` (`D:\node.exe`).
 | `renderer/auth.js` | Supabase-Auth + **Freundes- und Konto-API** (gleiches Backend wie die Website) |
 | `renderer/style.css` | Arcade-Look: Farben (inkl. `--orange/--cyan/--pink`), Animationen, Layout, unsichtbare Scrollbalken, Kompakt-Stufen, **Lobby-/Playercard-/Popup-Styling**, Credits-Styling, Bühnen-Hintergrund |
 | `renderer/block-bomb.css` | Optik des Minigames **Block Bomb**: Canvas-Bühne, HUD (Timer/Namensschilder/Meldungen), Map-Voting, Countdown, Pause-/Ergebnis-Overlay |
-| `renderer/block-bomb/` | **Block-Bomb-Spielkern** (ES-Module): `main.js` (Szene/Renderer/Schleife/Runden + HUD), `maps.js` (3 Maps), `characters.js` (blockige 3D-Figur), `bomb.js` (Bombe), `bots.js` (KI), `controllers.js` (Steuerungs-Abstraktion Mensch/Bot/Remote) |
+| `renderer/game/bots/botAI.js` | **Generische, wiederverwendbare Bot-KI** (für alle Minigames): Zustandsautomaten (CHASE/FLEE/WANDER/STUCK_RECOVERY), Anti-Stuck-Erkennung, Wand-/Ecken-Vermeidung, Steering, optionaler Debug-Modus |
+| `renderer/block-bomb/` | **Block-Bomb-Spielkern** (ES-Module): `main.js` (Szene/Renderer/Schleife/Runden + HUD + Map-Intro), `maps.js` (3 Maps), `characters.js` (blockige 3D-Figur), `bomb.js` (Bombe), `bots.js` (per-Game Adapter für `botAI.js`), `controllers.js` (Steuerungs-Abstraktion Mensch/Bot/Remote) |
 | `renderer/vendor/three.module.js` | Lokal eingebundenes **Three.js (r160)** für die 3D-Darstellung (kein CDN — CSP `default-src 'self'`, offline-fähig) |
 | `renderer/assets/` | Eigene lokale Assets: `block-icon.svg/.png/.ico` (Marken-Block), `cube.svg`/`star.svg` (Deko-Masken) |
 | `Block Games starten.bat` | Doppelklick-Start der App |
@@ -449,6 +450,48 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
   Klartext — gleicher Key wie die Website, RLS schützt die Daten.
 
 ## Änderungsprotokoll
+
+### v0.11.0 — 2026-06-14
+- **Wiederverwendbare Bot-KI (State-System):** Neues Modul `renderer/game/bots/botAI.js`
+  (erstes Verzeichnis in `renderer/game/` für zukünftige Minigames) mit generischem
+  Zustandsautomaten (`CHASE`/`FLEE`/`WANDER`/`STUCK_RECOVERY`), Anti-Stuck-Erkennung,
+  Wand-/Ecken-Vermeidung, Steering (weiche Richtungslernp mit `turnSpeed`), und
+  optionalem Debug-Modus (`DEBUG_BOTS`). Entfernt die alte reaktions-basierte Jitter aus
+  Bots (jx/jz/driftJitter) → nur noch Wander-State nutzt Jitter.
+- **`renderer/block-bomb/bots.js` → dünner Adapter:** Delegiert Bewegungs-KI an
+  `botAI.js`; behält Block-Bomb-spezifische Logik (Zielwahl mit wrongTargetChance,
+  Holder/Non-Holder-Mode, Panik). Neue PROFILES mit `turnSpeed`, `stuckLimit`,
+  `wanderJitterAmp/Drift`, `fleeRadius` — Non-Holder fliehen nur, wenn Träger näher als
+  `fleeRadius`, sonst `WANDER`.
+- **Map-Vorstellung (Kamera-Intro):** Vor Rundenstart kurzer Kamera-Flug von Übersicht
+  zu Spielposition (2.2s, easeOutCubic), mit Map-Namen-Overlay (aus `BOMB_MAPS`).
+  Spiel-Timer/Bewegung pausiert während Intro, nur Kamera+Rendering+Charakter-Anim
+  laufen. Dom-Overlay (`.bomb-map-intro-name`) mit Ein-/Ausblend-Animationen.
+- **`renderer/block-bomb/main.js` erweitert:** Neue Felder `introActive/introT/
+  introDuration/camOverview/introEl`, Funktionen `_startIntro()`/`_updateIntro()`/
+  `_showMapIntro()`/`_hideMapIntro()`; `_loop()` gatet `_step()` während Intro;
+  `_animate()` um `!this.introActive &&` ergänzt, damit Kamera-Snap nicht das Intro
+  stört; `_world()` um `radius`/`speed` ergänzt (für `botAI.js`'s Stuck-Detection).
+  `_updateLabels()` zeigt opt. `p.debug` (State/Stuck) an.
+- **`renderer/block-bomb.css`:** `.bomb-map-intro-name` mit Transform/Opacity-Animation,
+  `.show`/`.hide`-Klassen.
+- Version auf 0.11.0 (package.json, preload.js).
+
+### v0.10.1 — 2026-06-14
+- **Bot-KI — Ecken-Stecken & Abgrund-Stürze behoben:**
+  - **Sky Platforms (Bug 1):** `steerToSafety()` in `maps.js` neu: Statt kaputtem
+    Look-Ahead jetzt Abstands-Gradient. Findet die Plattform mit größtem
+    Abstand zum nächsten Rand (`clearance`), zieht Bot sanft Richtung Mitte,
+    sobald clearance unter ~1,4 fällt. Verhindert zuverlässig Abstürze in
+    den Abgrund — auch bei schnellen Bewegungen über Brücken.
+  - **Bots in Ecken (Bug 2):** `think()` in `bots.js` neu: Statt naive Summation
+    von Wunschrichtung + Hindernisse + Rand wird jetzt ein Gefahren-Vektor
+    berechnet; zeigt Wunsch in die Gefahr, wird nur die tangentiale Komponente
+    behalten (Wand-Gleiten statt Festkleben). Bots entkommen sicherer aus
+    Nischen und Ecken, wenn sie eingekeilt sind.
+  - Beide Änderungen sind geometrisch + physikalisch (keine neuen Konstanten),
+    `SPEED`, Schwierigkeit und Fairness unverändert.
+- Version auf 0.10.1 (package.json, preload.js).
 
 ### v0.10.0 — 2026-06-14
 - **Neues Minigame „Block Bomb":** Erstes spielbares Minigame (Bomben-Weitergabe,
