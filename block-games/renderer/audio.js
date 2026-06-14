@@ -41,6 +41,21 @@ const Sfx = (() => {
     success: [['triangle', 523,  523, 0,    0.09, 0.35],   // C5-E5-G5-Arpeggio
               ['triangle', 659,  659, 0.09, 0.09, 0.35],
               ['triangle', 784,  784, 0.18, 0.18, 0.35]],
+
+    // ── Block Bomb ──────────────────────────────────────────────────────
+    // Zünder-Tick (kurzer trockener Klick — wird je nach Restzeit häufiger
+    // abgespielt, die Beschleunigung steuert der Spielkern).
+    bombTick:    [['square',   880,  880, 0, 0.03, 0.22]],
+    // Weitergabe: schneller Aufwärts-Whoosh.
+    bombPass:    [['triangle', 300, 900, 0, 0.12, 0.32]],
+    // Explosion: tiefer Sägezahn-Abfall, mehrschichtig (knalliger).
+    bombExplode: [['sawtooth', 220,  40, 0, 0.45, 0.4],
+                  ['square',   140,  30, 0, 0.4,  0.3],
+                  ['sawtooth', 90,   20, 0, 0.55, 0.25]],
+    // Countdown-Piep (3·2·1) und das helle „GO!".
+    count:       [['square',   520, 520, 0, 0.12, 0.3]],
+    go:          [['triangle', 660, 990, 0, 0.18, 0.4],
+                  ['triangle', 990, 990, 0.1, 0.18, 0.35]],
   };
 
   function play(name, channel = 'sfx') {
