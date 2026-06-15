@@ -1,20 +1,30 @@
 // Wiederverwendbare, generische Bot-KI für Party-Spiele.
 //
-// Eigentümer dieses Moduls: Zustandsmaschine (CHASE/FLEE/WANDER/STUCK_RECOVERY),
-// Anti-Stuck-Erkennung, Wand-/Ecken-Vermeidung, Steering (weiche Richtungslernp),
-// Jitter (nur in WANDER). Per-Spiel-Adapter (z.B. bots.js) entscheidet WAS der Bot
-// tun soll (chase/flee/wander + Ziel); dieses Modul entscheidet WIE er es sicher tut.
+// Eigentümer dieses Moduls: Zustandsmaschine (IDLE/ROAM/CHASE/FLEE/PASS_BOMB/AVOID_EDGE/UNSTUCK),
+// Edge-Lookahead, Anti-Stuck-Erkennung mit Eskalation (Teleport), Wand-/Ecken-Vermeidung,
+// Steering, Jitter (nur Fallback-WANDER ohne Waypoints).
+// Per-Spiel-Adapter (z.B. bots.js) entscheidet WAS der Bot tun soll; dieses Modul
+// entscheidet WIE er es sicher tut.
 
 'use strict';
 
+import { pickWaypoint, nearestWaypoint, isAtWaypoint } from './waypoints.js';
+
 export const BotState = Object.freeze({
+  IDLE: 'idle',
+  ROAM: 'roam',
   CHASE: 'chase',
   FLEE: 'flee',
-  WANDER: 'wander',
-  STUCK_RECOVERY: 'stuck_recovery',
+  PASS_BOMB: 'pass_bomb',
+  AVOID_EDGE: 'avoid_edge',
+  UNSTUCK: 'unstuck',
 });
 
-export const DEBUG_BOTS = false;
+export let DEBUG_BOTS = false;
+
+export function setDebugBots(v) {
+  DEBUG_BOTS = v;
+}
 
 function norm(x, z) {
   const l = Math.hypot(x, z);
@@ -52,12 +62,16 @@ const DIRS_8 = [
 
 export function createBotMover(profile) {
   const mover = {
-    state: BotState.WANDER,
+    state: BotState.IDLE,
     velocity: { x: 0, z: 0 },
     lastPos: null,
     stuckTimer: 0,
+    repeatedStuckCount: 0,
+    goodMovementTimer: 0,
     recoveryTimer: 0,
     recoveryDir: null,
+    idleTimer: 0.15 + Math.random() * 0.15,
+    currentWaypoint: null,
     wanderTimer: 0,
     wanderDir: { x: 1, z: 0 },
     jx: 0,
@@ -132,7 +146,9 @@ export function createBotMover(profile) {
     return desired;
   }
 
-  function updateWander(dt) {
+  function updateWander(mover, profile, dt = 0.016) {
+    if (!mover.wanderTimer) mover.wanderTimer = 0.6 + Math.random() * 0.8;
+    if (!mover.wanderDir) mover.wanderDir = { x: 1, z: 0 };
     mover.wanderTimer -= dt;
     if (mover.wanderTimer <= 0) {
       mover.wanderTimer = 0.6 + Math.random() * 0.8;
@@ -142,7 +158,7 @@ export function createBotMover(profile) {
     return { x: mover.wanderDir.x, z: mover.wanderDir.z };
   }
 
-  function driftJitter(dt) {
+  function driftJitter(mover, profile, dt) {
     mover.jx += (Math.random() * 2 - 1) * profile.wanderJitterDrift * 0.1;
     mover.jz += (Math.random() * 2 - 1) * profile.wanderJitterDrift * 0.1;
     const a = profile.wanderJitterAmp;
@@ -150,7 +166,7 @@ export function createBotMover(profile) {
     mover.jz = Math.max(-a, Math.min(a, mover.jz));
   }
 
-  function steerBot(desired, dt) {
+  function steerBot(desired, dt, profile) {
     const dn = norm(desired.x, desired.z);
     const t = Math.min(1, profile.turnSpeed * dt);
     mover.velocity.x += (dn.x - mover.velocity.x) * t;
@@ -161,7 +177,111 @@ export function createBotMover(profile) {
     switch (mode) {
       case 'chase': return BotState.CHASE;
       case 'flee': return BotState.FLEE;
-      default: return BotState.WANDER;
+      case 'pass': return BotState.PASS_BOMB;
+      case 'roam': return BotState.ROAM;
+      case 'wander': return BotState.ROAM; // Legacy alias
+      default: return BotState.ROAM;
+    }
+  }
+
+  function checkEdgeAhead(self, world, velocity) {
+    const l = Math.hypot(velocity.x, velocity.z);
+    if (l < 1e-3) return false;
+    const dir = { x: velocity.x / l, z: velocity.z / l };
+    const r = world.radius ?? 0.55;
+    const lookDist = r * 2.5;
+    const probeX = self.x + dir.x * lookDist;
+    const probeZ = self.z + dir.z * lookDist;
+    const res = world.map.resolve(probeX, probeZ, r);
+    if (res.fell) return true;
+    const edge = world.map.steerToSafety ? world.map.steerToSafety(probeX, probeZ) : { x: 0, z: 0 };
+    return Math.hypot(edge.x, edge.z) > 0.6;
+  }
+
+  function computeRoamDesired(self, world, mover, profile) {
+    if (world.map.waypoints?.length) {
+      // Waypoint-driven ROAM
+      if (!mover.currentWaypoint || isAtWaypoint(self, mover.currentWaypoint)) {
+        mover.currentWaypoint = pickWaypoint(self, world, {
+          excludeId: mover.currentWaypoint?.id,
+          avoidTags: ['edge-risk'],
+          randomness: profile.waypointRandomness ?? 0.25,
+          avoidDirection: mover.avoidDirection,
+        });
+      }
+      if (mover.currentWaypoint) {
+        const dx = mover.currentWaypoint.x - self.x;
+        const dz = mover.currentWaypoint.z - self.z;
+        return norm(dx, dz);
+      }
+    }
+    // Fallback: old WANDER behavior (updateWander + driftJitter handled outside)
+    const d = updateWander(mover, profile);
+    return { x: d.x, z: d.z };
+  }
+
+  function computeFleeDesired(self, world, decision, mover, profile) {
+    if (!decision.targetPos) return updateWander(mover, profile);
+    let desired = norm(self.x - decision.targetPos.x, self.z - decision.targetPos.z);
+    // Blend in safe waypoint if available
+    if (world.map.waypoints?.length) {
+      const safeWp = nearestWaypoint(self, world, { preferTags: ['safe'] });
+      if (safeWp) {
+        const dToTarget = Math.hypot(safeWp.x - decision.targetPos.x, safeWp.z - decision.targetPos.z);
+        const dFromTarget = Math.hypot(self.x - decision.targetPos.x, self.z - decision.targetPos.z);
+        if (dToTarget > dFromTarget * 0.8) {
+          // Safe waypoint is further from target → bias toward it
+          const toSafe = norm(safeWp.x - self.x, safeWp.z - self.z);
+          desired.x = desired.x * 0.6 + toSafe.x * 0.4;
+          desired.z = desired.z * 0.6 + toSafe.z * 0.4;
+          desired = norm(desired.x, desired.z);
+        }
+      }
+    }
+    return desired;
+  }
+
+  function computeAvoidEdgeDesired(self, world, mover) {
+    if (world.map.steerToSafety) {
+      const edge = world.map.steerToSafety(self.x, self.z);
+      const l = Math.hypot(edge.x, edge.z);
+      if (l > 1e-3) return norm(edge.x, edge.z);
+    }
+    // Fallback: toward nearest safe waypoint
+    if (world.map.waypoints?.length) {
+      const safeWp = nearestWaypoint(self, world, { preferTags: ['safe'] });
+      if (safeWp) {
+        return norm(safeWp.x - self.x, safeWp.z - self.z);
+      }
+    }
+    // Last resort: reverse velocity
+    return norm(-mover.velocity.x, -mover.velocity.z);
+  }
+
+  function computeDesiredForState(state, self, world, decision, mover, profile) {
+    switch (state) {
+      case BotState.IDLE:
+        return { x: 0, z: 0 };
+      case BotState.ROAM:
+        return computeRoamDesired(self, world, mover, profile);
+      case BotState.CHASE:
+        if (decision.targetPos) {
+          return norm(decision.targetPos.x - self.x, decision.targetPos.z - self.z);
+        }
+        return computeRoamDesired(self, world, mover, profile);
+      case BotState.PASS_BOMB:
+        if (decision.targetPos) {
+          return norm(decision.targetPos.x - self.x, decision.targetPos.z - self.z);
+        }
+        return computeRoamDesired(self, world, mover, profile);
+      case BotState.FLEE:
+        return computeFleeDesired(self, world, decision, mover, profile);
+      case BotState.AVOID_EDGE:
+        return computeAvoidEdgeDesired(self, world, mover);
+      case BotState.UNSTUCK:
+        return mover.recoveryDir || getRandomFreeDirection(self, world);
+      default:
+        return { x: 0, z: 0 };
     }
   }
 
@@ -183,57 +303,99 @@ export function createBotMover(profile) {
   function update(self, world, dt, decision) {
     detectStuck(self, world, dt);
 
-    if (mover.state === BotState.STUCK_RECOVERY) {
+    // Track good movement for stuck-count reset
+    if (mover.stuckTimer === 0) {
+      mover.goodMovementTimer += dt;
+      if (mover.goodMovementTimer >= 2.0) {
+        mover.repeatedStuckCount = 0;
+        mover.goodMovementTimer = 0;
+      }
+    } else {
+      mover.goodMovementTimer = 0;
+    }
+
+    // State transitions — priority order
+    if (mover.state === BotState.UNSTUCK) {
+      // In recovery, count down
       mover.recoveryTimer -= dt;
       if (mover.recoveryTimer <= 0) {
+        // Recovery period ended
+        if (mover.repeatedStuckCount >= (profile.hardStuckThreshold ?? 3)) {
+          // Hard stuck → teleport to safe waypoint
+          const safeWp = nearestWaypoint(self, world, { preferTags: ['safe'] });
+          if (safeWp) {
+            self.x = safeWp.x;
+            self.z = safeWp.z;
+          }
+          mover.repeatedStuckCount = 0;
+          mover.stuckTimer = 0;
+        }
         mover.state = decisionToState(decision.mode);
         mover.stuckTimer = 0;
       }
     } else if (mover.stuckTimer >= profile.stuckLimit) {
-      mover.state = BotState.STUCK_RECOVERY;
+      // Stuck detected → enter UNSTUCK
+      mover.state = BotState.UNSTUCK;
       mover.recoveryTimer = profile.recoveryTime;
       mover.recoveryDir = getRandomFreeDirection(self, world);
+      mover.repeatedStuckCount += 1;
       mover.stuckTimer = 0;
     } else {
-      mover.state = decisionToState(decision.mode);
+      // Check edge ahead (preemptive)
+      const edgeAhead = checkEdgeAhead(self, world, mover.velocity);
+      if (edgeAhead && mover.state !== BotState.UNSTUCK) {
+        mover.state = BotState.AVOID_EDGE;
+      } else if (mover.idleTimer > 0) {
+        mover.state = BotState.IDLE;
+      } else {
+        mover.state = decisionToState(decision.mode);
+      }
     }
 
-    let desired = { x: 0, z: 0 };
-    if (mover.state === BotState.STUCK_RECOVERY) {
-      desired = mover.recoveryDir || getRandomFreeDirection(self, world);
-    } else if (mover.state === BotState.CHASE && decision.targetPos) {
-      const t = decision.targetPos;
-      desired = norm(t.x - self.x, t.z - self.z);
-    } else if (mover.state === BotState.FLEE && decision.targetPos) {
-      const t = decision.targetPos;
-      desired = norm(self.x - t.x, self.z - t.z);
-    } else { // WANDER
-      desired = updateWander(dt);
+    // Countdown idle timer
+    if (mover.idleTimer > 0) {
+      mover.idleTimer -= dt;
     }
 
+    // Compute desired direction
+    let desired = computeDesiredForState(mover.state, self, world, decision, mover, profile);
+
+    // Danger (obstacle/edge repulsion)
     const danger = computeDanger(self, world, profile);
     desired = applyWallGliding(desired, danger);
-    desired.x += danger.x;
-    desired.z += danger.z;
 
+    // For PASS_BOMB, reduce danger contribution (more committed approach)
+    const dangerScale = (mover.state === BotState.PASS_BOMB)
+      ? (profile.passBombDangerScale ?? 0.6)
+      : 1.0;
+    desired.x += danger.x * dangerScale;
+    desired.z += danger.z * dangerScale;
+
+    // Collision avoidance
     if (wouldCollide(self, world, desired)) {
       desired = avoidWalls(self, world, desired);
     }
 
-    if (mover.state === BotState.WANDER) {
+    // Jitter only in ROAM with fallback wander (no waypoints)
+    if (mover.state === BotState.ROAM && !world.map.waypoints?.length) {
       desired.x += mover.jx;
       desired.z += mover.jz;
-      driftJitter(dt);
+      driftJitter(mover, profile, dt);
     }
 
-    steerBot(desired, dt);
+    // Steering (smooth velocity interpolation)
+    steerBot(desired, dt, profile);
 
+    // Debug population
     if (DEBUG_BOTS) {
       self.debug = {
         state: mover.state,
         mode: decision.mode,
         target: decision.targetPos,
         stuck: mover.stuckTimer >= profile.stuckLimit * 0.6,
+        edgeAhead: checkEdgeAhead(self, world, mover.velocity),
+        waypoint: mover.currentWaypoint ? { id: mover.currentWaypoint.id, x: mover.currentWaypoint.x, z: mover.currentWaypoint.z } : null,
+        repeatedStuckCount: mover.repeatedStuckCount,
         desired: { x: desired.x, z: desired.z },
         actual: { x: mover.velocity.x, z: mover.velocity.z },
       };
@@ -243,5 +405,5 @@ export function createBotMover(profile) {
     return norm(mover.velocity.x, mover.velocity.z);
   }
 
-  return { update };
+  return { update, setDebugBots };
 }
