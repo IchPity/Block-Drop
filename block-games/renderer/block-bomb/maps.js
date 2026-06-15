@@ -98,8 +98,20 @@ function buildArena() {
 
   const spawns = ringSpawns(6.5);
 
+  const waypoints = [
+    { id: 'center', x: 0,    z: 0,    tags: ['center','safe'] },
+    { id: 'n',      x: 0,    z: -9.5, tags: ['safe'] },
+    { id: 's',      x: 0,    z: 9.7,  tags: ['safe'] },
+    { id: 'e',      x: 9.5,  z: 0,    tags: ['safe'] },
+    { id: 'w',      x: -9.5, z: 0,    tags: ['safe'] },
+    { id: 'ne',     x: 6.5,  z: -6.5, tags: ['safe'] },
+    { id: 'nw',     x: -6.5, z: -6.5, tags: ['safe'] },
+    { id: 'se',     x: 6.5,  z: 6.5,  tags: ['safe'] },
+    { id: 'sw',     x: -6.5, z: 6.5,  tags: ['safe'] },
+  ];
+
   return {
-    group, groundY, spawns, obstacles,
+    group, groundY, spawns, obstacles, waypoints,
     resolve(x, z, r) {
       const p = pushOutOfObstacles(x, z, r, obstacles);
       const d = Math.hypot(p.x, p.z);
@@ -172,8 +184,20 @@ function buildSky() {
     { x: -2.5, z: -2.5 }, { x: 2.5, z: -2.5 }, { x: -2.5, z: 2.5 }, { x: 2.5, z: 2.5 },
   ];
 
+  const waypoints = [
+    { id: 'center',    x: 0,    z: 0,  tags: ['center','safe'] },
+    { id: 'nw-plate',  x: -11,  z: -8, tags: ['safe','corner'] },
+    { id: 'ne-plate',  x: 11,   z: -8, tags: ['safe','corner'] },
+    { id: 'sw-plate',  x: -11,  z: 8,  tags: ['safe','corner'] },
+    { id: 'se-plate',  x: 11,   z: 8,  tags: ['safe','corner'] },
+    { id: 'bridge-nw', x: -6.5, z: -4, tags: ['bridge'] },
+    { id: 'bridge-ne', x: 6.5,  z: -4, tags: ['bridge'] },
+    { id: 'bridge-sw', x: -6.5, z: 4,  tags: ['bridge'] },
+    { id: 'bridge-se', x: 6.5,  z: 4,  tags: ['bridge'] },
+  ];
+
   return {
-    group, groundY, spawns, obstacles: [],
+    group, groundY, spawns, obstacles: [], waypoints,
     resolve(x, z) {
       // Kein Wegschieben — wer die Plattform verlässt, stürzt (fell=true).
       return { x, z, fell: !onPlate(x, z) };
@@ -250,9 +274,21 @@ function buildFactory() {
     { x: -7, z: -2 }, { x: 7, z: -2 }, { x: -7, z: 2 }, { x: 7, z: 2 },
   ];
 
+  const waypoints = [
+    { id: 'center',     x: 0,  z: -3, tags: ['center','safe'] },
+    { id: 'n-mid',      x: 0,  z: -6, tags: ['safe'] },
+    { id: 's-mid',      x: 0,  z: 6,  tags: ['safe'] },
+    { id: 'w-mid',      x: -9, z: 0,  tags: ['safe'] },
+    { id: 'e-mid',      x: 9,  z: 0,  tags: ['safe'] },
+    { id: 'nw-corner',  x: -9, z: -6, tags: ['safe','corner'] },
+    { id: 'ne-corner',  x: 9,  z: -6, tags: ['safe','corner'] },
+    { id: 'sw-corner',  x: -9, z: 6,  tags: ['safe','corner'] },
+    { id: 'se-corner',  x: 9,  z: 6,  tags: ['safe','corner'] },
+  ];
+
   let t = 0;
   return {
-    group, groundY, spawns, obstacles,
+    group, groundY, spawns, obstacles, waypoints,
     resolve(x, z, r) {
       const p = pushOutOfObstacles(x, z, r, obstacles);
       p.x = Math.max(-HW + 0.6 + r, Math.min(HW - 0.6 - r, p.x));
