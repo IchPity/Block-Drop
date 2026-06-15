@@ -69,6 +69,18 @@ gewinnt.
   Gesteuert in `app.js` (Abschnitt „Block Bomb"): `startBlockBomb` → `openMapVote` →
   `castMapVote` → `runCountdown` → `startBombRound` → `showBombResult`. Der Lobby-Knopf
   „Spiel starten" ruft jetzt `startBlockBomb()` (statt nur einen Toast).
+- **Tutorial-Schnellstart aus dem „Games"-Bereich:** Klick auf die Minigame-Karte im
+  Hauptmenü startet das Spiel als **Tutorial** — sofort eine Runde **ohne Lobby, ohne
+  Bot-Auswahl und ohne Map-Voting**: `startBlockBombTutorial` → `runCountdown` →
+  `startBombRound`. Es spielen **immer 3 Bots** (`buildTutorialPlayers()`), die Map
+  wird **zufällig** gewählt (`bombMapId` aus `BOMB_MAP_META`). Die Bots laufen auf dem
+  **einfachsten Grad `'easy'`** — bewusste Ausnahme zur Bot-Regel „immer Mittel/Schwer",
+  damit man das Spiel in Ruhe lernen kann. Eigene Farbe und Bot-Farben/-Namen sind
+  zufällig & ohne Dopplung. Das Flag `bombIsTutorial` unterscheidet danach die
+  Ergebnis-Knöpfe: „Nochmal" startet eine neue Tutorial-Runde (neue Random-Map), der
+  zweite Knopf heißt „Zum Menü" und führt ins Hauptmenü (statt „Zur Lobby"). Der
+  Lobby-/Party-Weg (`btnParty` → `openLobby` → volle Bot-/Farb-/Map-Wahl) bleibt
+  unverändert daneben bestehen.
 - **Rendering:** Three.js (lokal in `renderer/vendor/`, kein CDN — CSP-konform/offline).
   Der Spielkern (`block-bomb/main.js`) wird als ES-Modul geladen und registriert
   `window.BlockBomb` (`start/pause/resume/stop/isRunning`). Settings werden respektiert:
@@ -450,6 +462,22 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
   Klartext — gleicher Key wie die Website, RLS schützt die Daten.
 
 ## Änderungsprotokoll
+
+### v0.12.0 — 2026-06-15
+- **Tutorial-Schnellstart aus dem „Games"-Bereich:** Klick auf eine Minigame-Karte im
+  Hauptmenü startet die Runde jetzt sofort als Tutorial — **ohne Lobby, ohne Bot-Auswahl
+  und ohne Map-Voting**. Es spielen **immer 3 Bots** auf dem einfachsten Grad `'easy'`
+  (bewusste Ausnahme zur Bot-Regel „immer Mittel/Schwer", damit man das Spiel in Ruhe
+  lernt), die Map wird zufällig gewählt.
+- **`renderer/app.js`:** Neue Funktionen `buildTutorialPlayers()` (man selbst + 3 Bots,
+  zufällige Farben/Namen ohne Dopplung, Format wie `buildMatchConfig()`) und
+  `startBlockBombTutorial()` (setzt `bombPlayers` + zufällige `bombMapId` und springt
+  direkt in `runCountdown()`). Die Minigame-Karte „Block Bomb" ruft jetzt
+  `startBlockBombTutorial` statt `startBlockBomb`. Neues Flag `bombIsTutorial` steuert die
+  Ergebnis-Knöpfe: „Nochmal" startet eine neue Tutorial-Runde (neue Random-Map), der
+  zweite Knopf heißt „Zum Menü" und führt ins Hauptmenü. `startBlockBomb()` setzt das
+  Flag zurück (`false`), sodass der Lobby-/Party-Weg unverändert bleibt.
+- Version auf 0.12.0 (package.json, preload.js).
 
 ### v0.11.0 — 2026-06-14
 - **Wiederverwendbare Bot-KI (State-System):** Neues Modul `renderer/game/bots/botAI.js`
