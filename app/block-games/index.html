@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Block Games — Bald verfügbar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red:  #e94560;
+      --gold: #f0c000;
+      --blue: #3b82f6;
+      --bg:   #060818;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      min-height: 100vh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #eee;
+      overflow-x: hidden;
+    }
+
+    /* ── Animated Background ───────────────────────────────────── */
+    .orb {
+      position: fixed; border-radius: 50%;
+      filter: blur(100px); pointer-events: none; z-index: 0;
+      will-change: transform; transform: translateZ(0); backface-visibility: hidden;
+    }
+    .orb-1 { width: 720px; height: 720px; background: #e94560; opacity: 0.07; top: -280px; left: -240px;
+      animation: orbFloat1 24s ease-in-out infinite alternate; }
+    .orb-2 { width: 600px; height: 600px; background: #3050e0; opacity: 0.06; bottom: -220px; right: -220px;
+      animation: orbFloat2 30s ease-in-out infinite alternate; }
+    .orb-3 { width: 480px; height: 480px; background: #8030c8; opacity: 0.05; top: 45%; left: 50%;
+      animation: orbFloat3 20s ease-in-out infinite alternate; }
+    @keyframes orbFloat1 { from { transform: translate(0,0) scale(1); } to { transform: translate(100px,90px) scale(1.18); } }
+    @keyframes orbFloat2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-90px,-110px) scale(1.22); } }
+    @keyframes orbFloat3 { from { transform: translate(-50%,-50%) scale(1); } to { transform: translate(-55%,-44%) scale(1.14); } }
+
+    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image: radial-gradient(rgba(255,255,255,0.013) 1px, transparent 1px); background-size: 30px 30px; }
+    .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 35%, rgba(5,5,14,0.75) 100%); }
+
+    /* ── Nav Bar ──────────────────────────────────────────────── */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 32px; background: rgba(6,8,24,0.7);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-logo { font-size: 15px; font-weight: 900; letter-spacing: -0.5px; color: #fff; }
+    .nav-logo span { color: var(--red); }
+    .nav-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: transparent; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
+      padding: 7px 16px; color: rgba(255,255,255,0.45);
+      font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+      cursor: pointer; text-decoration: none; transition: all 0.2s;
+    }
+    .nav-btn:hover { color: rgba(255,255,255,0.8); border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.04); }
+
+    /* ── Layout ───────────────────────────────────────────────── */
+    .container { position: relative; z-index: 1; max-width: 880px; margin: 0 auto; padding: 0 36px; }
+
+    .hero { padding: 150px 0 40px; text-align: center;
+      opacity: 0; transform: translateY(24px); animation: fadeUp 0.75s 0.1s both; }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 22px;
+    }
+    .eyebrow::before, .eyebrow::after {
+      content: ''; display: block; width: 18px; height: 2px; background: var(--gold); border-radius: 1px; opacity: 0.6;
+    }
+    .hero h1 { font-size: 76px; font-weight: 900; letter-spacing: -4px; color: #fff; line-height: 0.95; margin-bottom: 8px; }
+    .hero h1 em { font-style: normal; color: var(--red); }
+    .soon-pill {
+      display: inline-flex; align-items: center; gap: 8px; margin: 14px 0 26px;
+      background: rgba(240,192,0,0.10); border: 1px solid rgba(240,192,0,0.35);
+      border-radius: 999px; padding: 8px 18px;
+      font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--gold);
+    }
+    .soon-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold);
+      box-shadow: 0 0 10px var(--gold); animation: pulse 1.8s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
+    .hero-sub { font-size: 16px; font-weight: 400; color: rgba(255,255,255,0.42); line-height: 1.7;
+      max-width: 540px; margin: 0 auto; }
+
+    /* ── Explainer Card ───────────────────────────────────────── */
+    .explainer {
+      background: rgba(17,17,38,0.7); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 22px; padding: 32px 34px; margin: 8px 0 0;
+      opacity: 0; transform: translateY(20px); animation: fadeUp 0.8s 0.25s both;
+    }
+    .explainer h2 { font-size: 14px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+      color: rgba(255,255,255,0.55); margin-bottom: 18px; }
+    .explainer p { font-size: 14.5px; color: rgba(255,255,255,0.5); line-height: 1.75; margin-bottom: 14px; }
+    .explainer p:last-child { margin-bottom: 0; }
+    .explainer strong { color: rgba(255,255,255,0.85); font-weight: 700; }
+
+    /* ── Feature mini-grid ────────────────────────────────────── */
+    .feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 22px 0 0;
+      opacity: 0; transform: translateY(20px); animation: fadeUp 0.8s 0.4s both; }
+    .feat {
+      background: rgba(17,17,38,0.6); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px; padding: 20px 18px; text-align: center;
+    }
+    .feat .ic { font-size: 26px; margin-bottom: 10px; }
+    .feat h3 { font-size: 13px; font-weight: 800; color: #fff; letter-spacing: -0.2px; margin-bottom: 5px; }
+    .feat p { font-size: 11.5px; color: rgba(255,255,255,0.35); line-height: 1.55; }
+
+    /* ── Status / progress ────────────────────────────────────── */
+    .status { margin: 28px 0 0; opacity: 0; transform: translateY(20px); animation: fadeUp 0.8s 0.5s both; }
+    .status-label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+    .status-label .l { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+    .status-label .v { font-size: 12px; font-weight: 800; color: var(--gold); }
+    .bar { height: 8px; border-radius: 99px; background: rgba(255,255,255,0.06); overflow: hidden; }
+    .bar > span { display: block; height: 100%; width: 0;
+      background: linear-gradient(90deg, var(--red), var(--gold));
+      border-radius: 99px; animation: fill 1.4s 0.7s cubic-bezier(0.22,1,0.36,1) both; }
+    @keyframes fill { to { width: 45%; } }
+
+    .back-row { display: flex; justify-content: center; padding: 40px 0 80px;
+      opacity: 0; animation: fadeUp 0.8s 0.6s both; }
+    .back-cta {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: var(--red); border: none; border-radius: 14px; padding: 14px 28px;
+      color: #fff; font-family: inherit; font-size: 14px; font-weight: 800; text-decoration: none;
+      box-shadow: 0 0 32px rgba(233,69,96,0.4), 0 8px 24px rgba(0,0,0,0.4); transition: all 0.22s;
+    }
+    .back-cta:hover { background: #f05672; transform: translateY(-2px); box-shadow: 0 0 48px rgba(233,69,96,0.6); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    footer { position: relative; z-index: 1; border-top: 1px solid rgba(255,255,255,0.04);
+      padding: 28px 0; text-align: center; }
+    footer span { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.12); }
+
+    @media (max-width: 700px) {
+      .container { padding: 0 20px; }
+      .hero { padding: 120px 0 32px; }
+      .hero h1 { font-size: 52px; letter-spacing: -2px; }
+      .feat-grid { grid-template-columns: 1fr; }
+      .explainer { padding: 26px 22px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .orb { animation: none !important; }
+      .hero, .explainer, .feat-grid, .status, .back-row, .bar > span, .soon-pill .dot {
+        animation: none !important; opacity: 1 !important; transform: none !important; }
+      .bar > span { width: 45%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Animated background -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+<div class="dot-grid"></div>
+<div class="vignette"></div>
+
+<!-- Nav Bar -->
+<nav class="navbar">
+  <div class="nav-logo">ARC<span>A</span>DE</div>
+  <a href="/" class="nav-btn">← Zurück zum Arcade</a>
+</nav>
+
+<div class="container">
+
+  <section class="hero">
+    <div class="eyebrow">In Entwicklung</div>
+    <h1>BLOCK <em>GAMES</em></h1>
+    <div class="soon-pill"><span class="dot"></span> Bald verfügbar</div>
+    <p class="hero-sub">Wir bauen gerade unser ganz eigenes Videospiel — von Grund auf, exklusiv für diese Seite.</p>
+  </section>
+
+  <div class="explainer">
+    <h2>Was hier entsteht</h2>
+    <p>
+      <strong>Block Games</strong> ist kein zugekauftes Mini-Game und kein Klon. Es ist ein
+      <strong>seiteneigenes Videospiel</strong>, das wir gerade selbst entwickeln — eigene Engine,
+      eigene Welten, eigener Look.
+    </p>
+    <p>
+      Aktuell stecken wir mitten im Bau: Spielmechanik, Grafik und Online-Funktionen entstehen Stück für Stück.
+      Sobald die erste spielbare Version steht, landet sie <strong>direkt hier im Arcade</strong> — kein Download,
+      kein Account-Zwang, einfach im Browser starten.
+    </p>
+    <p>
+      Bis dahin: Augen offen halten. Es lohnt sich. 👀
+    </p>
+  </div>
+
+  <div class="feat-grid">
+    <div class="feat">
+      <div class="ic">🛠️</div>
+      <h3>Eigenbau</h3>
+      <p>Komplett selbst entwickelt — keine fertige Vorlage, alles handgemacht.</p>
+    </div>
+    <div class="feat">
+      <div class="ic">🌐</div>
+      <h3>Im Browser</h3>
+      <p>Direkt spielbar, ohne Installation. Genau wie der Rest des Arcades.</p>
+    </div>
+    <div class="feat">
+      <div class="ic">🎮</div>
+      <h3>Eigenes Spiel</h3>
+      <p>Eigene Mechanik, eigene Welt — ein Spiel, das es nur hier gibt.</p>
+    </div>
+  </div>
+
+  <div class="status">
+    <div class="status-label">
+      <span class="l">Entwicklung</span>
+      <span class="v">In Arbeit</span>
+    </div>
+    <div class="bar"><span></span></div>
+  </div>
+
+  <div class="back-row">
+    <a href="/" class="back-cta">Zurück zu den Spielen →</a>
+  </div>
+
+</div>
+
+<footer><span>Arcade · Block Games · Coming Soon</span></footer>
+
+</body>
+</html>
