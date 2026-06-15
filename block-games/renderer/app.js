@@ -15,7 +15,7 @@ const MINIGAMES = [
   { id: 'coin-grab',    nav: 'main_coinGrab',    icon: '🪙', name: 'Coin Grab',    desc: 'Sammle die meisten Münzen',       available: false },
   { id: 'memory-clash', nav: 'main_memoryClash', icon: '🧠', name: 'Memory Clash', desc: 'Wer merkt sich mehr?',            available: false },
   { id: 'speed-tap',    nav: 'main_speedTap',    icon: '⚡', name: 'Speed Tap',    desc: 'Reaktion entscheidet',            available: false },
-  { id: 'block-bomb',   nav: 'main_blockBomb',   icon: '💣', name: 'Block Bomb',   desc: 'Berühr die anderen – wer mit der Bombe hochgeht, fliegt raus', available: true, start: startBlockBomb },
+  { id: 'block-bomb',   nav: 'main_blockBomb',   icon: '💣', name: 'Block Bomb',   desc: 'Berühr die anderen – wer mit der Bombe hochgeht, fliegt raus', available: true, start: startBlockBombTutorial },
   { id: 'quiz-blocks',  nav: 'main_quizBlocks',  icon: '❓', name: 'Quiz Blocks',  desc: 'Wissen schlägt Würfelglück',      available: false },
 ];
 
@@ -1780,16 +1780,83 @@ const bombResultOpen  = () => !document.getElementById('bombResult').hidden;
 let bombPlayers = [];
 let bombMapId = 'arena';
 let bombVoteLocked = false;
+// true = Runde wurde als Tutorial aus dem „Games"-Bereich gestartet (Schnell-
+// start ohne Lobby/Voting). Steuert das Verhalten der Ergebnis-Knöpfe.
+let bombIsTutorial = false;
 
 // Einstieg aus der Lobby (oder „Nochmal").
 function startBlockBomb() {
   if (!window.BlockBomb) { showToast('Block Bomb lädt noch — gleich nochmal.'); return; }
+  bombIsTutorial = false;
   bombPlayers = buildMatchConfig();
   if (bombPlayers.length < 2) {
     showToast('Mindestens 2 Spieler — füge Bots hinzu.');
     return;
   }
   openMapVote();
+}
+
+// ── Tutorial-Schnellstart (aus dem „Games"-Bereich des Hauptmenüs) ────────
+// Klick auf eine Minigame-Karte startet das Spiel als Tutorial: SOFORT eine
+// Runde — ohne Lobby, ohne Bot-Auswahl und ohne Map-Voting. Es spielen IMMER
+// 3 Bots auf dem EINFACHSTEN Grad ('easy'), die Map wird zufällig gewählt.
+// Das ist die bewusste Ausnahme zur Bot-Regel „immer Mittel/Schwer": im
+// Tutorial soll man das Spiel in Ruhe gegen schwache Gegner lernen können.
+const TUTORIAL_BOT_COUNT = 3;
+const TUTORIAL_DIFFICULTY = 'easy';
+
+// Baut die Spielerliste fürs Tutorial: man selbst + 3 Bots. Farben werden
+// (auch die eigene) zufällig und ohne Dopplung vergeben, Bot-Namen ebenso.
+// Liefert dasselbe Format wie buildMatchConfig().
+function buildTutorialPlayers() {
+  const usedColors = new Set();
+  const pickColor = () => {
+    const pool = LOBBY_COLORS.filter(c => !usedColors.has(c.id));
+    const src = pool.length ? pool : LOBBY_COLORS;
+    const c = src[Math.floor(Math.random() * src.length)];
+    usedColors.add(c.id);
+    return c.id;
+  };
+  const usedNames = new Set();
+  const pickBotName = () => {
+    for (let i = 0; i < 40; i++) {
+      const n = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+      if (!usedNames.has(n)) { usedNames.add(n); return n; }
+    }
+    return BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+  };
+
+  const selfColor = pickColor();
+  const players = [{
+    id: 1,
+    name: Auth.user ? Auth.username : 'Gast',
+    colorId: selfColor,
+    colorHex: colorHex(selfColor),
+    type: 'human',
+    difficulty: 'medium',
+    isLocal: true,
+  }];
+  for (let i = 0; i < TUTORIAL_BOT_COUNT; i++) {
+    const colorId = pickColor();
+    players.push({
+      id: i + 2,
+      name: pickBotName(),
+      colorId,
+      colorHex: colorHex(colorId),
+      type: 'bot',
+      difficulty: TUTORIAL_DIFFICULTY,
+      isLocal: false,
+    });
+  }
+  return players;
+}
+
+function startBlockBombTutorial() {
+  if (!window.BlockBomb) { showToast('Block Bomb lädt noch — gleich nochmal.'); return; }
+  bombIsTutorial = true;
+  bombPlayers = buildTutorialPlayers();
+  bombMapId = BOMB_MAP_META[Math.floor(Math.random() * BOMB_MAP_META.length)].id;
+  runCountdown(); // direkt in den Countdown — kein Voting
 }
 
 // ── Map-Voting ──────────────────────────────────────────────────────────
@@ -1916,6 +1983,9 @@ function quitBombToMenu() {
 function showBombResult(winner) {
   document.getElementById('bombResultTitle').textContent =
     winner ? `${winner.name} gewinnt!` : 'Unentschieden!';
+  // Zweiter Knopf führt im Tutorial ins Menü, in der Lobby-Partie zur Lobby.
+  document.getElementById('btnBombToLobby').textContent =
+    bombIsTutorial ? 'Zum Menü' : 'Zur Lobby';
   document.getElementById('bombResult').hidden = false;
   document.getElementById('btnBombAgain').focus();
 }
@@ -1953,11 +2023,16 @@ function setupBlockBomb() {
   document.getElementById('btnBombAgain').addEventListener('click', () => {
     document.getElementById('bombResult').hidden = true;
     if (window.BlockBomb) window.BlockBomb.stop();
-    openMapVote();
+    // Tutorial: gleich die nächste Schnellstart-Runde (neue Random-Map),
+    // sonst zurück ins Map-Voting der Lobby-Partie.
+    if (bombIsTutorial) startBlockBombTutorial();
+    else openMapVote();
   });
   document.getElementById('btnBombToLobby').addEventListener('click', () => {
     document.getElementById('bombResult').hidden = true;
     if (window.BlockBomb) window.BlockBomb.stop();
+    // Tutorial hat keine Lobby → zurück ins Hauptmenü.
+    if (bombIsTutorial) { goToMenu(); return; }
     showScreen('screen-lobby');
     focusByNav('lobby_start');
   });
