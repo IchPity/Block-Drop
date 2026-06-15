@@ -31,6 +31,7 @@ import { BlockCharacter } from './characters.js';
 import { Bomb } from './bomb.js';
 import { buildMap, BOMB_MAPS } from './maps.js';
 import { LocalHumanController, BotController, RemoteController } from './controllers.js';
+import { setDebugBots } from '../game/bots/botAI.js';
 
 const SPEED = 6.4;        // Basistempo (gleich für alle — Fairness)
 const PLAYER_R = 0.55;    // Kollisionsradius
@@ -51,6 +52,9 @@ class BlockBombGame {
     this.introT = 0;
     this.introDuration = 2.2;
     this.introEl = null;
+    this.debugBots = false;
+    this.debugGroup = null;
+    this.debugLines = [];
 
     this._initThree();
     this._initMap();
@@ -58,6 +62,7 @@ class BlockBombGame {
     this._initHud();   // vor _initBomb: _assignBomb() nutzt das HUD (_message)
     this._initBomb();
     this._onResize = () => this._resize();
+    this._onKeyDown = (e) => this._handleKeyDown(e);
     window.addEventListener('resize', this._onResize);
   }
 
@@ -105,6 +110,11 @@ class BlockBombGame {
     const rim = new THREE.DirectionalLight(0x4db5ff, 0.4);
     rim.position.set(-10, 8, -12);
     this.scene.add(rim);
+
+    // Debug group for waypoints + bot-target lines (initially hidden)
+    this.debugGroup = new THREE.Group();
+    this.debugGroup.visible = false;
+    this.scene.add(this.debugGroup);
   }
 
   _initMap() {
@@ -210,6 +220,7 @@ class BlockBombGame {
     this.last = performance.now();
     this._resize();
     this._startIntro();
+    window.addEventListener('keydown', this._onKeyDown);
     this.raf = requestAnimationFrame((t) => this._loop(t));
   }
 
@@ -278,6 +289,9 @@ class BlockBombGame {
       this._step(dt);
     }
     this._animate(dt);
+    if (this.debugBots) {
+      this._updateDebugViz();
+    }
     this.renderer.render(this.scene, this.camera);
     this._updateLabels();
   }
@@ -454,9 +468,74 @@ class BlockBombGame {
       el.style.transform = `translate(-50%,-100%) translate(${sx}px,${sy}px)`;
       el.classList.toggle('holder', p.isHolder);
       if (p.debug) {
-        el.textContent = `${p.name} [${p.debug.state}${p.debug.stuck ? '!' : ''}]`;
+        const flags = (p.debug.stuck ? '!' : '') + (p.debug.edgeAhead ? 'E' : '');
+        el.textContent = `${p.name} [${p.debug.state}${flags}]`;
       } else if (el.textContent !== p.name) {
         el.textContent = p.name;
+      }
+    }
+  }
+
+  _handleKeyDown(e) {
+    if (e.key === 'F9' || e.code === 'F9') {
+      this.debugBots = !this.debugBots;
+      setDebugBots(this.debugBots);
+      if (this.debugBots) {
+        this._initDebugViz();
+      } else {
+        this._clearDebugViz();
+      }
+      this.debugGroup.visible = this.debugBots;
+    }
+  }
+
+  _initDebugViz() {
+    // Create waypoint markers
+    if (this.map.waypoints?.length) {
+      for (const wp of this.map.waypoints) {
+        let color = 0x22cc22; // safe = green
+        if (wp.tags?.includes('corner')) color = 0xffcc00; // yellow
+        if (wp.tags?.includes('bridge')) color = 0xff9900; // orange
+        const geo = new THREE.CircleGeometry(0.3, 12);
+        const mat = new THREE.MeshBasicMaterial({ color });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.position.set(wp.x, this.map.groundY + 0.02, wp.z);
+        this.debugGroup.add(mesh);
+      }
+    }
+    // Pre-allocate line objects for bot-to-waypoint visualization
+    for (let i = 0; i < this.players.filter(p => p.controller.constructor.name === 'BotController').length; i++) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+      const mat = new THREE.LineBasicMaterial({ color: 0x4488ff, linewidth: 2 });
+      const line = new THREE.Line(geo, mat);
+      this.debugGroup.add(line);
+      this.debugLines.push({ line, geo });
+    }
+  }
+
+  _clearDebugViz() {
+    if (this.debugGroup) {
+      while (this.debugGroup.children.length) {
+        const child = this.debugGroup.children[0];
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) child.material.dispose();
+        this.debugGroup.remove(child);
+      }
+    }
+    this.debugLines = [];
+  }
+
+  _updateDebugViz() {
+    if (!this.debugBots || !this.debugGroup.visible) return;
+    let lineIdx = 0;
+    for (const p of this.players) {
+      if (p.debug?.waypoint && lineIdx < this.debugLines.length) {
+        const positions = [p.x, this.map.groundY + 0.1, p.z, p.debug.waypoint.x, this.map.groundY + 0.1, p.debug.waypoint.z];
+        this.debugLines[lineIdx].geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3));
+        this.debugLines[lineIdx].geo.attributes.position.needsUpdate = true;
+        lineIdx++;
       }
     }
   }
@@ -488,6 +567,8 @@ class BlockBombGame {
     this.ended = true;
     if (this.raf) cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this._onResize);
+    window.removeEventListener('keydown', this._onKeyDown);
+    this._clearDebugViz();
     for (const p of this.players) if (p.controller.detach) p.controller.detach();
     if (this.bomb) this.bomb.dispose();
     for (const p of this.players) p.char.dispose();
@@ -509,4 +590,15 @@ window.BlockBomb = {
   resume() { if (current) current.resume(); },
   stop() { if (current) { current.destroy(); current = null; } },
   isRunning() { return !!current && current.running; },
+  getPlayers() {
+    if (!current) return [];
+    return current.players.map(p => ({
+      id: p.id,
+      x: p.x,
+      z: p.z,
+      alive: p.alive,
+      isHolder: p.isHolder,
+      state: p.debug?.state,
+    }));
+  },
 };
