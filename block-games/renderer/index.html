@@ -7,6 +7,7 @@
   <title>Block Games</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="block-bomb.css">
+  <link rel="stylesheet" href="laser-lines.css">
 </head>
 <body>
 
@@ -403,49 +404,69 @@
     </div>
   </div>
 
-  <!-- ══ Block Bomb (Minigame) ═══════════════════════════════════════════
-       Vollbild-Spielscreen. main.js (ES-Modul) hängt Canvas + HUD in
-       #bombStage ein. Der Ablauf (Map-Voting → Countdown → Runde → Ergebnis)
-       wird von app.js gesteuert (Abschnitt „Block Bomb"). -->
+  <!-- ══ Minigame-Spielscreens ═══════════════════════════════════════════
+       Vollbild-Spielscreens. Der jeweilige Spielkern (ES-Modul) hängt Canvas +
+       HUD in seinen Stage-Container. Der Ablauf (Map-Voting → Countdown → Runde
+       → Ergebnis/Ranking) ist generisch und wird von app.js gesteuert. -->
   <div id="screen-block-bomb" class="screen">
     <div id="bombStage" class="bomb-stage"></div>
   </div>
+  <div id="screen-laser-lines" class="screen">
+    <div id="laserStage" class="laser-stage"></div>
+  </div>
 
-  <!-- Map-Voting: 3 Maps des Modus. Echte Spieler wählen, Bots zufällig,
-       Mehrheit gewinnt, Gleichstand → zufällig. Komplett tastaturbedienbar. -->
-  <div id="bombMapVote" class="overlay bomb-overlay" hidden>
-    <div class="overlay-card bomb-vote-card">
+  <!-- Generisches Map-Voting: 3 Maps des aktuellen Spiels. Echte Spieler wählen,
+       Bots zufällig, Mehrheit gewinnt, Gleichstand → zufällig. Tastaturbedienbar. -->
+  <div id="mgMapVote" class="overlay" hidden>
+    <div class="overlay-card mg-vote-card">
       <h2>Map wählen</h2>
-      <p class="bomb-vote-sub" id="bombVoteSub">Stimmt für eine Arena ab</p>
-      <div class="bomb-map-grid" id="bombMapGrid"></div>
-      <p class="bomb-vote-hint">Pfeile/WASD wählen · Enter bestätigt · Esc zurück</p>
+      <p class="mg-vote-progress" id="mgVoteProgress"></p>
+      <p class="mg-vote-sub" id="mgVoteSub">Stimmt für eine Map ab</p>
+      <div class="mg-map-grid" id="mgMapGrid"></div>
+      <p class="mg-vote-hint">Pfeile/WASD wählen · Enter bestätigt · Esc zurück</p>
     </div>
   </div>
 
   <!-- 3 · 2 · 1 · GO! -->
-  <div id="bombCountdown" class="overlay bomb-countdown" hidden>
-    <div class="bomb-count-num" id="bombCountNum">3</div>
+  <div id="mgCountdown" class="overlay mg-countdown" hidden>
+    <div class="mg-count-num" id="mgCountNum">3</div>
   </div>
 
   <!-- Pause (Esc im Spiel) -->
-  <div id="bombPause" class="overlay bomb-overlay" hidden>
+  <div id="mgPause" class="overlay" hidden>
     <div class="overlay-card">
       <h2>Pause</h2>
       <div class="overlay-actions">
-        <button class="btn btn-primary" id="btnBombResume" data-nav="bomb_resume">Weiter</button>
-        <button class="btn btn-back" id="btnBombQuit" data-nav="bomb_quit">Zum Menü</button>
+        <button class="btn btn-primary" id="btnMgResume" data-nav="mg_resume">Weiter</button>
+        <button class="btn btn-back" id="btnMgQuit" data-nav="mg_quit">Zum Menü</button>
       </div>
     </div>
   </div>
 
-  <!-- Ergebnis am Rundenende -->
-  <div id="bombResult" class="overlay bomb-overlay" hidden>
-    <div class="overlay-card bomb-result-card">
-      <div class="bomb-result-crown" aria-hidden="true">👑</div>
-      <h2 id="bombResultTitle">P1 gewinnt!</h2>
+  <!-- Ergebnis einer Tutorial-Runde (Einzelspiel) -->
+  <div id="mgResult" class="overlay" hidden>
+    <div class="overlay-card mg-result-card">
+      <div class="mg-result-crown" aria-hidden="true">👑</div>
+      <h2 id="mgResultTitle">P1 gewinnt!</h2>
       <div class="overlay-actions">
-        <button class="btn btn-primary" id="btnBombAgain" data-nav="bomb_again">Nochmal</button>
-        <button class="btn btn-back" id="btnBombToLobby" data-nav="bomb_lobby">Zur Lobby</button>
+        <button class="btn btn-primary" id="btnMgAgain" data-nav="mg_again">Nochmal</button>
+        <button class="btn btn-back" id="btnMgSecondary" data-nav="mg_secondary">Zum Menü</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zwischen-/Gesamt-Ranking der Party-Serie (über alle Minspiele) -->
+  <div id="mgRanking" class="overlay" hidden>
+    <div class="overlay-card mg-ranking-card">
+      <h2 id="mgRankTitle">Zwischenstand</h2>
+      <div class="mg-rank-list" id="mgRankList"></div>
+      <div class="overlay-actions" id="mgRankInterim">
+        <button class="btn btn-primary" id="btnMgNext" data-nav="mg_next">Weiter ▶</button>
+      </div>
+      <div class="overlay-actions" id="mgRankFinal" hidden>
+        <button class="btn btn-primary" id="btnMgRankAgain" data-nav="mg_rankAgain">Nochmal</button>
+        <button class="btn btn-back" id="btnMgRankLobby" data-nav="mg_rankLobby">Zur Lobby</button>
+        <button class="btn btn-back" id="btnMgRankMenu" data-nav="mg_rankMenu">Zum Menü</button>
       </div>
     </div>
   </div>
@@ -473,8 +494,10 @@
   <script src="audio.js"></script>
   <script src="auth.js"></script>
   <script src="app.js"></script>
-  <!-- Block-Bomb-Spielkern als ES-Modul (lädt Three.js aus vendor/).
-       Registriert window.BlockBomb; läuft deferred nach app.js. -->
+  <!-- Minigame-Spielkerne als ES-Module (laden Three.js aus vendor/).
+       Registrieren window.BlockBomb bzw. window.LaserLines; laufen deferred
+       nach app.js. -->
   <script type="module" src="block-bomb/main.js"></script>
+  <script type="module" src="laser-lines/main.js"></script>
 </body>
 </html>

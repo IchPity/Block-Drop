@@ -11,11 +11,11 @@
 // Sobald ein Minigame fertig ist, hier freischalten und `start` setzen.
 // `nav` = feste Navigations-ID für die Tastatur-Steuerung (siehe NAV_MAP).
 const MINIGAMES = [
-  { id: 'block-rush',   nav: 'main_blockRush',   icon: '🧱', name: 'Block Rush',   desc: 'Staple schneller als die Gegner', available: false },
+  { id: 'laser-lines',  nav: 'main_laserLines',  icon: '🔺', name: 'Laser Lines',  desc: 'Weiche den Lasern aus!',          available: true,  start: () => startTutorial('laser-lines') },
   { id: 'coin-grab',    nav: 'main_coinGrab',    icon: '🪙', name: 'Coin Grab',    desc: 'Sammle die meisten Münzen',       available: false },
   { id: 'memory-clash', nav: 'main_memoryClash', icon: '🧠', name: 'Memory Clash', desc: 'Wer merkt sich mehr?',            available: false },
   { id: 'speed-tap',    nav: 'main_speedTap',    icon: '⚡', name: 'Speed Tap',    desc: 'Reaktion entscheidet',            available: false },
-  { id: 'block-bomb',   nav: 'main_blockBomb',   icon: '💣', name: 'Block Bomb',   desc: 'Berühr die anderen – wer mit der Bombe hochgeht, fliegt raus', available: true, start: startBlockBombTutorial },
+  { id: 'block-bomb',   nav: 'main_blockBomb',   icon: '💣', name: 'Block Bomb',   desc: 'Berühr die anderen – wer mit der Bombe hochgeht, fliegt raus', available: true, start: () => startTutorial('block-bomb') },
   { id: 'quiz-blocks',  nav: 'main_quizBlocks',  icon: '❓', name: 'Quiz Blocks',  desc: 'Wissen schlägt Würfelglück',      available: false },
 ];
 
@@ -542,15 +542,15 @@ const NAV_MENU = {
   main_account:  { left: 'main_settings', right: 'main_power',   down: 'main_play' },
   main_power:    { left: 'main_account',   down: 'main_play' },
   // Hauptaktion „Spielen"
-  main_play:     { up: 'main_settings', down: 'main_blockRush' },
-  // Minigame-Karten, Reihe 1: Block Rush · Coin Grab · Memory Clash · Speed Tap
-  main_blockRush:   { up: 'main_play', down: 'main_blockBomb', right: 'main_coinGrab' },
-  main_coinGrab:    { up: 'main_play', down: 'main_quizBlocks', left: 'main_blockRush',  right: 'main_memoryClash' },
+  main_play:     { up: 'main_settings', down: 'main_laserLines' },
+  // Minigame-Karten, Reihe 1: Laser Lines · Coin Grab · Memory Clash · Speed Tap
+  main_laserLines:  { up: 'main_play', down: 'main_blockBomb', right: 'main_coinGrab' },
+  main_coinGrab:    { up: 'main_play', down: 'main_quizBlocks', left: 'main_laserLines', right: 'main_memoryClash' },
   main_memoryClash: { up: 'main_play', down: 'main_quizBlocks', left: 'main_coinGrab',   right: 'main_speedTap' },
   main_speedTap:    { up: 'main_play', down: 'main_quizBlocks', left: 'main_memoryClash' },
   // Reihe 2: Bomb Pass · Quiz Blocks. ↓ führt zum Credits-Knopf — sonst wäre
   // er nur per Tab erreichbar (kleine, bewusste Abweichung von „bleibt stehen").
-  main_blockBomb:   { up: 'main_blockRush', right: 'main_quizBlocks', down: 'main_credits' },
+  main_blockBomb:   { up: 'main_laserLines', right: 'main_quizBlocks', down: 'main_credits' },
   main_quizBlocks:  { up: 'main_coinGrab',  left: 'main_blockBomb',   down: 'main_credits' },
   // Credits-Knopf in der Fußzeile
   main_credits:     { up: 'main_quizBlocks' },
@@ -618,12 +618,13 @@ function setupKeyboard() {
     const isActive = (id) => document.getElementById(id).classList.contains('active');
 
     if (e.key === 'Escape') {
-      // Block Bomb / Einladung haben Vorrang vor dem übrigen Esc-Verhalten.
+      // Minigame-Flow / Einladung haben Vorrang vor dem übrigen Esc-Verhalten.
       if (inviteOpen()) { declineInvite(); return; }                 // Einladung ablehnen
-      if (bombVoteOpen()) { cancelBombFlow(); return; }              // Voting → zurück zur Lobby
-      if (bombResultOpen()) { return; }                              // Ergebnis nur per Knopf
-      if (bombPauseOpen()) { resumeBomb(); return; }                 // Pause → weiter
-      if (isActive('screen-block-bomb')) { pauseBomb(); return; }    // im Spiel → Pause
+      if (mgVoteOpen()) { cancelMgFlow(); return; }                  // Voting → zurück (Lobby/Menü)
+      if (mgRankingOpen()) { return; }                               // Ranking nur per Knopf
+      if (mgResultOpen()) { return; }                                // Ergebnis nur per Knopf
+      if (mgPauseOpen()) { resumeGame(); return; }                   // Pause → weiter
+      if (isActive('screen-block-bomb') || isActive('screen-laser-lines')) { pauseGame(); return; } // im Spiel → Pause
       // Esc schließt erst offene Overlays (Beenden / Konto), sonst führt es
       // aus Einstellungen bzw. der Credits-Seite zurück ins Hauptmenü.
       if (quitOpen) closeQuitDialog();
@@ -658,9 +659,10 @@ function setupKeyboard() {
     // Container der aktuellen Ansicht (offene Overlays haben Vorrang).
     let container = null;
     if (inviteOpen()) container = document.getElementById('inviteOverlay');
-    else if (bombVoteOpen()) container = document.getElementById('bombMapVote');
-    else if (bombPauseOpen()) container = document.getElementById('bombPause');
-    else if (bombResultOpen()) container = document.getElementById('bombResult');
+    else if (mgVoteOpen()) container = document.getElementById('mgMapVote');
+    else if (mgPauseOpen()) container = document.getElementById('mgPause');
+    else if (mgResultOpen()) container = document.getElementById('mgResult');
+    else if (mgRankingOpen()) container = document.getElementById('mgRanking');
     else if (quitOpen) container = document.getElementById('quitOverlay');
     else if (accountOpen()) container = document.getElementById('accountOverlay');
     else if (colorPickerOpen()) container = document.getElementById('colorPicker');
@@ -1128,8 +1130,22 @@ function renderLobby() {
     }
 
     card.append(no, av, nm, st, actions);
+
+    // Krone des letzten Gesamtsiegers der Serie (verschwindet bei Reset bzw.
+    // wenn der Slot frei wird).
+    if (lobbyCrownSlotId === slot.id && slot.type !== 'empty') {
+      const crown = document.createElement('span');
+      crown.className = 'lobby-crown';
+      crown.textContent = '👑';
+      crown.title = 'Letzter Gesamtsieger';
+      card.appendChild(crown);
+    }
+
     wrap.appendChild(card);
   });
+  // Krone löschen, falls ihr Slot inzwischen leer ist.
+  const crownSlot = lobbyState.slots.find(s => s.id === lobbyCrownSlotId);
+  if (lobbyCrownSlotId != null && (!crownSlot || crownSlot.type === 'empty')) lobbyCrownSlotId = null;
   buildLobbyNav(); // Navigations-Tabelle passend zu den aktuellen Karten neu bauen
 }
 
@@ -1188,6 +1204,7 @@ function resetLobby() {
     if (i === 0) return;
     s.type = 'empty'; s.name = ''; s.color = null; s.userId = null; s.difficulty = null;
   });
+  lobbyCrownSlotId = null; // Krone des letzten Gesamtsiegers entfernen
   renderLobby();
   focusSlotCard(0);
 }
@@ -1436,9 +1453,9 @@ function setupLobby() {
     showToast('Lobby zurückgesetzt.');
   });
   document.getElementById('btnLobbyStart').addEventListener('click', () => {
-    // Block Bomb ist das erste fertige Minigame: Start führt in den Ablauf
-    // Map-Voting → Countdown → Runde (statt nur einen Toast zu zeigen).
-    startBlockBomb();
+    // „Spiel starten" startet die Party-Serie: ALLE verfügbaren Minigames in
+    // zufälliger Reihenfolge, danach Gesamt-Ranking, dann Krone in der Lobby.
+    startSeries();
   });
   // Klick auf den abgedunkelten Backdrop schließt das jeweilige Popup.
   document.getElementById('slotPicker').addEventListener('click', (e) => {
@@ -1750,6 +1767,36 @@ const BOMB_MAP_META = [
   { id: 'factory', name: 'Factory Panic', desc: 'Förderbänder, Kisten und blinkende Warnlichter.' },
 ];
 
+// Map-Metadaten von Laser Lines (Geometrie liegt in laser-lines/maps.js).
+const LASER_MAP_META = [
+  { id: 'spin', name: 'Spin Arena',   desc: 'Runde Arena — rotierende Laser werden immer schneller.' },
+  { id: 'grid', name: 'Factory Grid', desc: 'Laser fahren nach kurzer Warnlinie quer durch. Kisten als Deckung.' },
+  { id: 'sky',  name: 'Sky Warning',  desc: 'Warnfelder, dann Laser — nicht von den Plattformen fallen!' },
+];
+
+// Minigame-Registry: bindet jedes spielbare Minigame entkoppelt an den
+// generischen Match-Flow. windowKey = globales Spiel-Objekt (window.BlockBomb /
+// window.LaserLines, beide mit start/pause/resume/stop/isRunning), mapMeta =
+// Maps fürs Voting, screenId/stageId = Vollbild-Spielscreen + Canvas-Host.
+const GAME_REGISTRY = {
+  'block-bomb': { id: 'block-bomb', name: 'Block Bomb', windowKey: 'BlockBomb',
+                  mapMeta: BOMB_MAP_META, screenId: 'screen-block-bomb', stageId: 'bombStage' },
+  'laser-lines': { id: 'laser-lines', name: 'Laser Lines', windowKey: 'LaserLines',
+                   mapMeta: LASER_MAP_META, screenId: 'screen-laser-lines', stageId: 'laserStage' },
+};
+// Alle spielbaren Spiele (für den Serien-Modus), in der MINIGAMES-Reihenfolge.
+function availableGames() {
+  return MINIGAMES.filter(g => g.available && GAME_REGISTRY[g.id]).map(g => GAME_REGISTRY[g.id]);
+}
+function shuffled(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 // CSS-Variable einer Lobby-Farbe → echter Hex-Wert (bleibt synchron zum Theme).
 function colorHex(id) {
   const v = getComputedStyle(document.documentElement).getPropertyValue('--' + (id || 'cyan')).trim();
@@ -1772,38 +1819,76 @@ function buildMatchConfig() {
 }
 
 // Overlay-Status-Helfer (für setupKeyboard).
-const inviteOpen      = () => !document.getElementById('inviteOverlay').hidden;
-const bombVoteOpen    = () => !document.getElementById('bombMapVote').hidden;
-const bombPauseOpen   = () => !document.getElementById('bombPause').hidden;
-const bombResultOpen  = () => !document.getElementById('bombResult').hidden;
+const inviteOpen     = () => !document.getElementById('inviteOverlay').hidden;
+const mgVoteOpen     = () => !document.getElementById('mgMapVote').hidden;
+const mgPauseOpen    = () => !document.getElementById('mgPause').hidden;
+const mgResultOpen   = () => !document.getElementById('mgResult').hidden;
+const mgRankingOpen  = () => !document.getElementById('mgRanking').hidden;
 
-let bombPlayers = [];
-let bombMapId = 'arena';
-let bombVoteLocked = false;
-// true = Runde wurde als Tutorial aus dem „Games"-Bereich gestartet (Schnell-
-// start ohne Lobby/Voting). Steuert das Verhalten der Ergebnis-Knöpfe.
-let bombIsTutorial = false;
+// ── Zustand des generischen Match-Flows ───────────────────────────────────
+let currentGame = null;     // Registry-Eintrag des gerade laufenden Spiels
+let currentPlayers = [];    // entkoppelte Spielerliste (aus Lobby oder Tutorial)
+let currentMapId = null;
+let voteLocked = false;
+// true = einzelne Tutorial-Runde aus dem „Games"-Bereich (kein Serien-Ranking).
+let isTutorial = false;
+// Serien-/Party-Modus
+let inSeries = false;
+let seriesQueue = [];       // [Registry-Einträge] in zufälliger Reihenfolge
+let seriesIndex = 0;
+let seriesStandings = {};   // playerId → { id, name, colorHex, points }
+let lastGameResult = null;  // letztes Spielergebnis (für Gleichstand-Tiebreak)
+let lobbyCrownSlotId = null; // Slot-Id des letzten Gesamtsiegers (Lobby-Krone)
 
-// Einstieg aus der Lobby (oder „Nochmal").
-function startBlockBomb() {
-  if (!window.BlockBomb) { showToast('Block Bomb lädt noch — gleich nochmal.'); return; }
-  bombIsTutorial = false;
-  bombPlayers = buildMatchConfig();
-  if (bombPlayers.length < 2) {
+// ── Serien-/Party-Modus (Einstieg aus der Lobby) ──────────────────────────
+// „Spiel starten" spielt ALLE verfügbaren Minigames in zufälliger Reihenfolge
+// hintereinander, wertet platzierungsbasiert über alle Spiele und zeigt am
+// Ende ein Gesamt-Ranking. Der Gesamtsieger bekommt danach die Lobby-Krone.
+function startSeries() {
+  currentPlayers = buildMatchConfig();
+  if (currentPlayers.length < 2) {
     showToast('Mindestens 2 Spieler — füge Bots hinzu.');
     return;
   }
+  const games = availableGames();
+  if (!games.length) { showToast('Kein Minigame verfügbar.'); return; }
+  isTutorial = false;
+  inSeries = true;
+  seriesQueue = shuffled(games);
+  seriesIndex = 0;
+  seriesStandings = {};
+  for (const p of currentPlayers) {
+    seriesStandings[p.id] = { id: p.id, name: p.name, colorHex: p.colorHex, points: 0 };
+  }
+  startSeriesGame();
+}
+
+function startSeriesGame() {
+  currentGame = seriesQueue[seriesIndex];
+  if (!window[currentGame.windowKey]) { showToast(currentGame.name + ' lädt noch — gleich nochmal.'); return; }
   openMapVote();
 }
 
 // ── Tutorial-Schnellstart (aus dem „Games"-Bereich des Hauptmenüs) ────────
-// Klick auf eine Minigame-Karte startet das Spiel als Tutorial: SOFORT eine
-// Runde — ohne Lobby, ohne Bot-Auswahl und ohne Map-Voting. Es spielen IMMER
-// 3 Bots auf dem EINFACHSTEN Grad ('easy'), die Map wird zufällig gewählt.
-// Das ist die bewusste Ausnahme zur Bot-Regel „immer Mittel/Schwer": im
-// Tutorial soll man das Spiel in Ruhe gegen schwache Gegner lernen können.
+// Klick auf eine Minigame-Karte startet DIESES Spiel als Tutorial: SOFORT eine
+// einzelne Runde — ohne Lobby, ohne Bot-Auswahl, ohne Map-Voting, ohne Serien-
+// Ranking. Es spielen IMMER 3 Bots auf dem EINFACHSTEN Grad ('easy'), die Map
+// wird zufällig gewählt. Bewusste Ausnahme zur Bot-Regel „immer Mittel/Schwer":
+// im Tutorial soll man das Spiel in Ruhe gegen schwache Gegner lernen können.
 const TUTORIAL_BOT_COUNT = 3;
 const TUTORIAL_DIFFICULTY = 'easy';
+
+function startTutorial(gameId) {
+  const game = GAME_REGISTRY[gameId];
+  if (!game) return;
+  if (!window[game.windowKey]) { showToast(game.name + ' lädt noch — gleich nochmal.'); return; }
+  isTutorial = true;
+  inSeries = false;
+  currentGame = game;
+  currentPlayers = buildTutorialPlayers();
+  currentMapId = game.mapMeta[Math.floor(Math.random() * game.mapMeta.length)].id;
+  runCountdown(); // direkt in den Countdown — kein Voting
+}
 
 // Baut die Spielerliste fürs Tutorial: man selbst + 3 Bots. Farben werden
 // (auch die eigene) zufällig und ohne Dopplung vergeben, Bot-Namen ebenso.
@@ -1851,86 +1936,88 @@ function buildTutorialPlayers() {
   return players;
 }
 
-function startBlockBombTutorial() {
-  if (!window.BlockBomb) { showToast('Block Bomb lädt noch — gleich nochmal.'); return; }
-  bombIsTutorial = true;
-  bombPlayers = buildTutorialPlayers();
-  bombMapId = BOMB_MAP_META[Math.floor(Math.random() * BOMB_MAP_META.length)].id;
-  runCountdown(); // direkt in den Countdown — kein Voting
+// Kleiner HTML-Escaper für Namen (Freund-/Self-Usernamen sind nicht
+// vertrauenswürdig) — fürs Ranking, das per innerHTML gebaut wird.
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// ── Map-Voting ──────────────────────────────────────────────────────────
+// ── Map-Voting (generisch, für currentGame) ───────────────────────────────
 function openMapVote() {
-  bombVoteLocked = false;
-  const grid = document.getElementById('bombMapGrid');
+  voteLocked = false;
+  const grid = document.getElementById('mgMapGrid');
   grid.innerHTML = '';
-  BOMB_MAP_META.forEach((m, i) => {
+  currentGame.mapMeta.forEach((m) => {
     const card = document.createElement('button');
     card.type = 'button';
-    card.className = 'bomb-map-card';
+    card.className = 'mg-map-card';
     card.dataset.map = m.id;
     card.innerHTML = `
-      <div class="bomb-map-thumb ${m.id}"></div>
-      <h3>${m.name}</h3>
-      <p>${m.desc}</p>
-      <div class="bomb-map-votes" data-votes="${m.id}"></div>`;
+      <div class="mg-map-thumb mg-thumb-${currentGame.id}-${m.id}"></div>
+      <h3>${escapeHtml(m.name)}</h3>
+      <p>${escapeHtml(m.desc)}</p>
+      <div class="mg-map-votes" data-votes="${m.id}"></div>`;
     card.addEventListener('click', () => castMapVote(m.id));
     grid.appendChild(card);
   });
-  document.getElementById('bombVoteSub').textContent =
-    bombPlayers.length > 1 ? 'Wähle deine Map — die Bots stimmen mit ab.' : 'Wähle deine Map.';
-  document.getElementById('bombMapVote').hidden = false;
-  // Erstes Karten-Element fokussieren (Tastatur).
-  const first = grid.querySelector('.bomb-map-card');
+  document.getElementById('mgVoteSub').textContent =
+    currentPlayers.length > 1 ? 'Wähle deine Map — die Bots stimmen mit ab.' : 'Wähle deine Map.';
+  const prog = document.getElementById('mgVoteProgress');
+  if (prog) prog.textContent = inSeries
+    ? `Spiel ${seriesIndex + 1}/${seriesQueue.length}: ${currentGame.name}`
+    : currentGame.name;
+  document.getElementById('mgMapVote').hidden = false;
+  const first = grid.querySelector('.mg-map-card');
   if (first) first.focus();
 }
 
 // Der lokale Mensch wählt; Bots (+ vorerst Remote) wählen zufällig; Mehrheit
 // gewinnt, Gleichstand → zufällig unter den Bestplatzierten.
 function castMapVote(humanChoice) {
-  if (bombVoteLocked) return;
-  bombVoteLocked = true;
+  if (voteLocked) return;
+  voteLocked = true;
+  const meta = currentGame.mapMeta;
 
   const tally = {}; // mapId → Liste der Wähler-Farben (für die Punkte-Anzeige)
-  for (const p of bombPlayers) {
+  for (const p of currentPlayers) {
     const choice = p.type === 'human'
       ? humanChoice
-      : BOMB_MAP_META[Math.floor(Math.random() * BOMB_MAP_META.length)].id;
+      : meta[Math.floor(Math.random() * meta.length)].id;
     (tally[choice] || (tally[choice] = [])).push(p.colorHex);
   }
-  // Punkte je Karte zeichnen
-  for (const m of BOMB_MAP_META) {
+  for (const m of meta) {
     const box = document.querySelector(`[data-votes="${m.id}"]`);
     const voters = tally[m.id] || [];
-    box.innerHTML = voters.map(c => `<span class="bomb-vote-dot" style="--c:${c}"></span>`).join('');
+    box.innerHTML = voters.map(c => `<span class="mg-vote-dot" style="--c:${c}"></span>`).join('');
   }
-  // Gewinner bestimmen
   let max = 0;
   for (const k in tally) max = Math.max(max, tally[k].length);
   const winners = Object.keys(tally).filter(k => tally[k].length === max);
-  bombMapId = winners[Math.floor(Math.random() * winners.length)];
+  currentMapId = winners[Math.floor(Math.random() * winners.length)];
 
-  const winCard = document.querySelector(`.bomb-map-card[data-map="${bombMapId}"]`);
+  const winCard = document.querySelector(`.mg-map-card[data-map="${currentMapId}"]`);
   if (winCard) winCard.classList.add('selected');
   Sfx.play('success');
 
   setTimeout(() => {
-    document.getElementById('bombMapVote').hidden = true;
+    document.getElementById('mgMapVote').hidden = true;
     runCountdown();
   }, 1300);
 }
 
-function cancelBombFlow() {
-  document.getElementById('bombMapVote').hidden = true;
-  document.getElementById('bombCountdown').hidden = true;
-  showScreen('screen-lobby');
-  focusByNav('lobby_start');
+// Esc im Map-Voting/Countdown: Serie abbrechen → Lobby, sonst Tutorial → Menü.
+function cancelMgFlow() {
+  document.getElementById('mgMapVote').hidden = true;
+  document.getElementById('mgCountdown').hidden = true;
+  if (inSeries) { inSeries = false; showScreen('screen-lobby'); focusByNav('lobby_start'); }
+  else goToMenu();
 }
 
 // ── 3 · 2 · 1 · GO! ──────────────────────────────────────────────────────
 function runCountdown() {
-  const overlay = document.getElementById('bombCountdown');
-  const el = document.getElementById('bombCountNum');
+  const overlay = document.getElementById('mgCountdown');
+  const el = document.getElementById('mgCountNum');
   overlay.hidden = false;
   const seq = ['3', '2', '1', 'GO!'];
   let i = 0;
@@ -1941,53 +2028,121 @@ function runCountdown() {
     else Sfx.play('count');
     i++;
     if (i < seq.length) setTimeout(tick, 800);
-    else setTimeout(() => { overlay.hidden = true; startBombRound(); }, 700);
+    else setTimeout(() => { overlay.hidden = true; startRound(); }, 700);
   })();
 }
 
-// ── Runde starten (übergibt an den 3D-Kern) ──────────────────────────────
-function startBombRound() {
-  showScreen('screen-block-bomb');
-  const host = document.getElementById('bombStage');
-  window.BlockBomb.start({
+// ── Runde starten (übergibt an den 3D-Kern des aktuellen Spiels) ──────────
+function startRound() {
+  showScreen(currentGame.screenId);
+  const host = document.getElementById(currentGame.stageId);
+  window[currentGame.windowKey].start({
     host,
-    players: bombPlayers,
-    mapId: bombMapId,
+    players: currentPlayers,
+    mapId: currentMapId,
     fpsLimit: () => Settings.get('fpsLimit'),
     reducedFx: () => Settings.get('reducedFx'),
     sfx: (name) => Sfx.play(name),
-    onResult: showBombResult,
-    onExit: quitBombToMenu,
+    onResult: onGameResult,
+    onExit: quitGameToMenu,
   });
 }
 
-// ── Pause (Esc im Spiel) ─────────────────────────────────────────────────
-function pauseBomb() {
-  if (!window.BlockBomb || !window.BlockBomb.isRunning()) return;
-  window.BlockBomb.pause();
-  document.getElementById('bombPause').hidden = false;
-  document.getElementById('btnBombResume').focus();
-}
-function resumeBomb() {
-  document.getElementById('bombPause').hidden = true;
-  if (window.BlockBomb) window.BlockBomb.resume();
-}
-function quitBombToMenu() {
-  document.getElementById('bombPause').hidden = true;
-  document.getElementById('bombResult').hidden = true;
-  if (window.BlockBomb) window.BlockBomb.stop();
-  goToMenu();
+// ── Ergebnis eines Spiels (generischer Vertrag { winner, placements }) ─────
+function onGameResult(result) {
+  lastGameResult = result;
+  // Voting-/Countdown-Overlays sind im normalen Ablauf längst zu; defensiv
+  // schließen, damit nie ein Overlay über Ranking/Ergebnis hängen bleibt.
+  document.getElementById('mgMapVote').hidden = true;
+  document.getElementById('mgCountdown').hidden = true;
+  if (inSeries) {
+    awardSeriesPoints(result);
+    if (window[currentGame.windowKey]) window[currentGame.windowKey].stop();
+    seriesIndex++;
+    showRanking(seriesIndex >= seriesQueue.length);
+  } else {
+    showSingleResult(result);
+  }
 }
 
-// ── Ergebnis ─────────────────────────────────────────────────────────────
-function showBombResult(winner) {
-  document.getElementById('bombResultTitle').textContent =
+// Platzierungspunkte: bei N Spielern bekommt der 1. N Punkte … der letzte 1.
+function awardSeriesPoints(result) {
+  const list = (result && result.placements && result.placements.length)
+    ? result.placements
+    : (result && result.winner ? [result.winner] : []);
+  const n = list.length;
+  list.forEach((pl, idx) => {
+    const s = seriesStandings[pl.id];
+    if (s) s.points += (n - idx);
+  });
+}
+
+// Zwischen- (isFinal=false) bzw. Gesamt-Ranking (isFinal=true) anzeigen.
+function showRanking(isFinal) {
+  const lastOrder = {};
+  if (lastGameResult && lastGameResult.placements) {
+    lastGameResult.placements.forEach((p, i) => { lastOrder[p.id] = i; });
+  }
+  const rows = Object.values(seriesStandings).slice().sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    const la = lastOrder[a.id] ?? 99, lb = lastOrder[b.id] ?? 99;
+    if (la !== lb) return la - lb;          // Gleichstand → besserer Platz zuletzt
+    return Math.random() - 0.5;             // sonst zufällig
+  });
+
+  document.getElementById('mgRankTitle').textContent = isFinal
+    ? '👑 Gesamtsieger'
+    : `Zwischenstand — nächstes Spiel: ${seriesQueue[seriesIndex].name}`;
+  document.getElementById('mgRankList').innerHTML = rows.map((r, i) => `
+    <div class="mg-rank-row ${isFinal && i === 0 ? 'winner' : ''}">
+      <span class="mg-rank-place">${i + 1}.</span>
+      <span class="mg-rank-dot" style="--c:${r.colorHex}"></span>
+      <span class="mg-rank-name">${isFinal && i === 0 ? '👑 ' : ''}${escapeHtml(r.name)}</span>
+      <span class="mg-rank-pts">${r.points} Pkt</span>
+    </div>`).join('');
+
+  document.getElementById('mgRankInterim').hidden = isFinal;
+  document.getElementById('mgRankFinal').hidden = !isFinal;
+  if (isFinal) {
+    inSeries = false;
+    lobbyCrownSlotId = rows[0] ? rows[0].id : null; // Krone für den Gesamtsieger
+    Sfx.play('success');
+  }
+  document.getElementById('mgRanking').hidden = false;
+  const btn = isFinal ? document.getElementById('btnMgRankLobby') : document.getElementById('btnMgNext');
+  if (btn) btn.focus();
+}
+
+// Ergebnis einer einzelnen Tutorial-Runde (kein Serien-Ranking).
+function showSingleResult(result) {
+  const winner = result && result.winner;
+  document.getElementById('mgResultTitle').textContent =
     winner ? `${winner.name} gewinnt!` : 'Unentschieden!';
-  // Zweiter Knopf führt im Tutorial ins Menü, in der Lobby-Partie zur Lobby.
-  document.getElementById('btnBombToLobby').textContent =
-    bombIsTutorial ? 'Zum Menü' : 'Zur Lobby';
-  document.getElementById('bombResult').hidden = false;
-  document.getElementById('btnBombAgain').focus();
+  document.getElementById('btnMgSecondary').textContent = 'Zum Menü';
+  document.getElementById('mgResult').hidden = false;
+  document.getElementById('btnMgAgain').focus();
+}
+
+// ── Pause (Esc im Spiel) ─────────────────────────────────────────────────
+function pauseGame() {
+  if (!currentGame) return;
+  const g = window[currentGame.windowKey];
+  if (!g || !g.isRunning()) return;
+  g.pause();
+  document.getElementById('mgPause').hidden = false;
+  document.getElementById('btnMgResume').focus();
+}
+function resumeGame() {
+  document.getElementById('mgPause').hidden = true;
+  if (currentGame && window[currentGame.windowKey]) window[currentGame.windowKey].resume();
+}
+function quitGameToMenu() {
+  document.getElementById('mgPause').hidden = true;
+  document.getElementById('mgResult').hidden = true;
+  document.getElementById('mgRanking').hidden = true;
+  if (currentGame && window[currentGame.windowKey]) window[currentGame.windowKey].stop();
+  inSeries = false;
+  goToMenu();
 }
 
 // ── Online-Einladung (UI vorbereitet, noch ohne echte Netz-Anbindung) ─────
@@ -2017,28 +2172,47 @@ function acceptInvite() {
 }
 function declineInvite() { nextInvite(); }
 
-function setupBlockBomb() {
-  document.getElementById('btnBombResume').addEventListener('click', resumeBomb);
-  document.getElementById('btnBombQuit').addEventListener('click', quitBombToMenu);
-  document.getElementById('btnBombAgain').addEventListener('click', () => {
-    document.getElementById('bombResult').hidden = true;
-    if (window.BlockBomb) window.BlockBomb.stop();
-    // Tutorial: gleich die nächste Schnellstart-Runde (neue Random-Map),
-    // sonst zurück ins Map-Voting der Lobby-Partie.
-    if (bombIsTutorial) startBlockBombTutorial();
-    else openMapVote();
+function setupGameFlow() {
+  // Pause-Overlay
+  document.getElementById('btnMgResume').addEventListener('click', resumeGame);
+  document.getElementById('btnMgQuit').addEventListener('click', quitGameToMenu);
+
+  // Ergebnis einer Tutorial-Runde
+  document.getElementById('btnMgAgain').addEventListener('click', () => {
+    document.getElementById('mgResult').hidden = true;
+    if (currentGame && window[currentGame.windowKey]) window[currentGame.windowKey].stop();
+    startTutorial(currentGame.id); // neue Schnellstart-Runde (neue Random-Map)
   });
-  document.getElementById('btnBombToLobby').addEventListener('click', () => {
-    document.getElementById('bombResult').hidden = true;
-    if (window.BlockBomb) window.BlockBomb.stop();
-    // Tutorial hat keine Lobby → zurück ins Hauptmenü.
-    if (bombIsTutorial) { goToMenu(); return; }
+  document.getElementById('btnMgSecondary').addEventListener('click', () => {
+    document.getElementById('mgResult').hidden = true;
+    if (currentGame && window[currentGame.windowKey]) window[currentGame.windowKey].stop();
+    goToMenu(); // Tutorial hat keine Lobby → zurück ins Hauptmenü
+  });
+
+  // Zwischen-Ranking → nächstes Spiel der Serie
+  document.getElementById('btnMgNext').addEventListener('click', () => {
+    document.getElementById('mgRanking').hidden = true;
+    startSeriesGame();
+  });
+  // Gesamt-Ranking
+  document.getElementById('btnMgRankAgain').addEventListener('click', () => {
+    document.getElementById('mgRanking').hidden = true;
+    startSeries(); // komplett neue Serie
+  });
+  document.getElementById('btnMgRankLobby').addEventListener('click', () => {
+    document.getElementById('mgRanking').hidden = true;
     showScreen('screen-lobby');
+    renderLobby(); // Krone des Gesamtsiegers anzeigen
     focusByNav('lobby_start');
   });
+  document.getElementById('btnMgRankMenu').addEventListener('click', () => {
+    document.getElementById('mgRanking').hidden = true;
+    goToMenu();
+  });
+
+  // Online-Einladung
   document.getElementById('btnInviteAccept').addEventListener('click', acceptInvite);
   document.getElementById('btnInviteDecline').addEventListener('click', declineInvite);
-  // Test-Auslöser fürs Einladungsfenster (bis die echte Online-Anbindung steht).
   window.BombInvite = { test: (name) => showInvite(name) };
 }
 
@@ -2054,7 +2228,7 @@ async function boot() {
   setupAccount();
   setupAccountSettings();
   setupSettingsTabs();
-  setupBlockBomb();
+  setupGameFlow();
   setupKeyboard();
   await setupSettings();
   document.getElementById('appVersion').textContent =

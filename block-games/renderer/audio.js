@@ -56,6 +56,27 @@ const Sfx = (() => {
     count:       [['square',   520, 520, 0, 0.12, 0.3]],
     go:          [['triangle', 660, 990, 0, 0.18, 0.4],
                   ['triangle', 990, 990, 0.1, 0.18, 0.35]],
+
+    // ── Laser Lines ─────────────────────────────────────────────────────
+    // Warnung vor Aktivierung: kurzer ansteigender „Aufladen"-Ton.
+    laserWarn:      [['sine',     420, 760, 0, 0.18, 0.20],
+                     ['triangle', 840, 840, 0, 0.05, 0.10]],
+    // Laser feuert: scharfer, heller Zap mit kurzem Abfall.
+    laserFire:      [['sawtooth', 1400, 320, 0, 0.14, 0.30],
+                     ['square',   900,  900, 0, 0.04, 0.18]],
+    // Treffer: harter, tiefer Aufprall.
+    laserHit:       [['square',   240, 70,  0, 0.18, 0.38],
+                     ['sawtooth', 160, 40,  0, 0.22, 0.26]],
+    // Ausscheiden: absteigendes „Power-Down".
+    laserEliminate: [['sawtooth', 520, 90,  0, 0.40, 0.32],
+                     ['triangle', 330, 70,  0.08, 0.36, 0.22]],
+    // Sieg: kleines aufsteigendes Arpeggio.
+    laserWin:       [['triangle', 523, 523, 0,    0.10, 0.34],
+                     ['triangle', 659, 659, 0.10, 0.10, 0.34],
+                     ['triangle', 784, 784, 0.20, 0.10, 0.34],
+                     ['triangle', 1047,1047,0.30, 0.20, 0.34]],
+    // Schwierigkeit steigt: kurzer Aufwärts-Sweep.
+    laserSpeedUp:   [['triangle', 600, 1100, 0, 0.16, 0.26]],
   };
 
   function play(name, channel = 'sfx') {

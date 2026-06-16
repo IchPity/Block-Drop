@@ -1862,3 +1862,101 @@ button:focus-visible:not(.minigame-card):not(.party-btn) {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* ══ Generischer Minigame-Flow (Map-Voting / Countdown / Ergebnis / Ranking) ══
+   Von ALLEN Minigames geteilt (Block Bomb, Laser Lines, …). Die Overlays nutzen
+   die vorhandenen .overlay/.overlay-card/.btn-Klassen; spielspezifisch sind nur
+   die Map-Thumbnails (.mg-thumb-<spiel>-<map> in der jeweiligen Spiel-CSS). */
+
+/* ── Map-Voting ── */
+.mg-vote-card { width: min(760px, 94vw) !important; }
+.mg-vote-progress { color: var(--yellow, #ffc93c); font-weight: 800; margin-bottom: 4px; }
+.mg-vote-sub { color: var(--text-dim, #9a9abd); margin-bottom: 16px; }
+.mg-vote-hint { color: var(--text-dim, #9a9abd); font-size: 0.82em; margin-top: 16px; }
+
+.mg-map-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 680px) { .mg-map-grid { grid-template-columns: 1fr; } }
+
+.mg-map-card {
+  position: relative;
+  background: var(--bg-card, #222241);
+  border: 2px solid var(--line, #3a3a66);
+  border-bottom: 4px solid var(--bg-deep, #0d0d1e);
+  border-radius: 16px;
+  padding: 16px 14px;
+  cursor: pointer; text-align: left;
+  color: var(--text, #f2f2fa);
+  transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+.mg-map-card:hover, .mg-map-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--yellow, #ffc93c);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  outline: none;
+}
+.mg-map-card.selected {
+  border-color: var(--green, #3ddc84);
+  box-shadow: 0 0 0 2px var(--green, #3ddc84) inset;
+}
+.mg-map-thumb {
+  height: 96px; border-radius: 10px; margin-bottom: 10px;
+  background-size: cover; background-position: center;
+}
+.mg-map-card h3 { font-size: 1.1em; margin-bottom: 4px; }
+.mg-map-card p { font-size: 0.8em; color: var(--text-dim, #9a9abd); }
+.mg-map-votes { position: absolute; top: 10px; right: 10px; display: flex; gap: 4px; }
+.mg-vote-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--c, #fff); border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* ── Countdown 3·2·1·GO ── */
+.mg-countdown { background: rgba(13, 13, 30, 0.55); }
+.mg-count-num {
+  font-family: var(--font-display, sans-serif);
+  font-size: 14vw; font-weight: 900; color: #fff;
+  text-shadow: 6px 6px 0 var(--red, #ff5d5d), 0 0 50px rgba(255, 201, 60, 0.6);
+}
+.mg-count-num.pop { animation: mgCount 0.6s ease-out; }
+@keyframes mgCount {
+  0%   { opacity: 0; transform: scale(2.2); }
+  30%  { opacity: 1; transform: scale(0.9); }
+  60%  { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+.mg-count-num.go { color: var(--green, #3ddc84); text-shadow: 6px 6px 0 var(--bg-deep), 0 0 60px rgba(61, 220, 132, 0.8); }
+
+/* ── Ergebnis (Einzel-/Tutorial-Runde) ── */
+.mg-result-crown { font-size: 3.4em; margin-bottom: 6px; animation: mgCount 0.6s ease-out; }
+
+/* ── Ranking (Party-Serie) ── */
+.mg-ranking-card { width: min(560px, 94vw) !important; }
+.mg-rank-list { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 18px; }
+.mg-rank-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 14px; border-radius: 12px;
+  background: var(--bg-card, #222241);
+  border: 2px solid var(--line, #3a3a66);
+  font-weight: 800;
+}
+.mg-rank-row.winner {
+  border-color: var(--yellow, #ffc93c);
+  box-shadow: 0 0 18px rgba(255, 201, 60, 0.45);
+}
+.mg-rank-place { width: 1.8em; color: var(--text-dim, #9a9abd); }
+.mg-rank-dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--c, #fff); border: 2px solid rgba(255, 255, 255, 0.35);
+}
+.mg-rank-name { flex: 1; text-align: left; color: var(--text, #f2f2fa); }
+.mg-rank-pts { color: var(--cyan, #36d6e7); font-weight: 900; }
+
+/* ── Lobby-Krone (letzter Gesamtsieger der Serie) ── */
+.lobby-crown {
+  position: absolute;
+  top: -14px; right: -10px;
+  font-size: 1.8em;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+  animation: mgCount 0.6s ease-out;
+  pointer-events: none;
+}

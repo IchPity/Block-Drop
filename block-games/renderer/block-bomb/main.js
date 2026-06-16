@@ -27,10 +27,11 @@
 'use strict';
 
 import * as THREE from '../vendor/three.module.js';
-import { BlockCharacter } from './characters.js';
+import { BlockCharacter } from '../game/characters.js';
 import { Bomb } from './bomb.js';
 import { buildMap, BOMB_MAPS } from './maps.js';
-import { LocalHumanController, BotController, RemoteController } from './controllers.js';
+import { LocalHumanController, BotController, RemoteController } from '../game/controllers.js';
+import { makeBotBrain } from './bots.js';
 import { setDebugBots } from '../game/bots/botAI.js';
 
 const SPEED = 6.4;        // Basistempo (gleich für alle — Fairness)
@@ -55,6 +56,9 @@ class BlockBombGame {
     this.debugBots = false;
     this.debugGroup = null;
     this.debugLines = [];
+    // Eliminierungs-Reihenfolge (zuerst rausgeflogen = zuerst in der Liste).
+    // Für die Platzierungen am Rundenende (Serien-Wertung in app.js).
+    this.eliminationOrder = [];
 
     this._initThree();
     this._initMap();
@@ -134,7 +138,7 @@ class BlockBombGame {
       let controller;
       if (p.isLocal && p.type === 'human') controller = new LocalHumanController();
       else if (p.type === 'remote') controller = new RemoteController(p.id);
-      else controller = new BotController(p.difficulty || 'medium');
+      else controller = new BotController(makeBotBrain(p.difficulty || 'medium'));
       if (controller.attach) controller.attach();
 
       return {
@@ -364,6 +368,7 @@ class BlockBombGame {
     if (!holder) return;
     holder.alive = false;
     holder.isHolder = false;
+    this.eliminationOrder.push(holder);
     holder.char.explode();
     this.config.sfx('bombExplode');
     this.shake = 0.6;
@@ -378,6 +383,7 @@ class BlockBombGame {
     p.alive = false;
     p.falling = true;
     p.fallT = 0;
+    this.eliminationOrder.push(p);
     const wasHolder = p.isHolder;
     p.isHolder = false;
     this.config.sfx('bombExplode');
@@ -424,8 +430,21 @@ class BlockBombGame {
       this._message('Unentschieden!');
     }
     setTimeout(() => {
-      this.config.onResult(winner ? { name: winner.name, colorHex: winner.colorHex } : null);
+      this.config.onResult(this._buildResult(winner));
     }, 1400);
+  }
+
+  // Ergebnis im generischen Format { winner, placements } (1.→letzter).
+  // placements: Sieger zuerst, dann die Eliminierten in UMGEKEHRTER Reihenfolge
+  // (zuletzt rausgeflogen = besserer Platz). winner bleibt abwärtskompatibel.
+  _buildResult(winner) {
+    const slim = (p) => p && { id: p.id, name: p.name, colorHex: p.colorHex };
+    const placements = [];
+    if (winner) placements.push(slim(winner));
+    for (let i = this.eliminationOrder.length - 1; i >= 0; i--) {
+      placements.push(slim(this.eliminationOrder[i]));
+    }
+    return { winner: winner ? slim(winner) : null, placements };
   }
 
   // ── reine Optik (läuft auch in der End-/Siegesphase) ────────────────

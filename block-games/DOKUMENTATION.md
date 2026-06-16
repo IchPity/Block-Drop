@@ -45,12 +45,15 @@ Hinweis: Node.js liegt portabel auf `D:\` (`D:\node.exe`).
 | `renderer/index.html` | Alle Screens: Laden, Login/Registrierung, Hauptmenü, **Lobby** (4 Playercards + Slot-/Farb-Popups), Einstellungen (**in Kategorie-Reitern**: Konto/Anzeige/Grafik/Audio), **Credits** + Beenden-Overlay + **Konto/Freunde-Overlay**; Bühnen-Hintergrund-Layer |
 | `renderer/app.js` | UI-Logik: Screen-Wechsel, Gast-Modus, Menü-Rendering, **Lobby (Slots/Bots/Farben + 300 Bot-Namen)**, **Credits-Rendering**, Einstellungs-UI, **Konto/Freunde-Overlay + Konto-Bearbeitung**, **Login-Vorschläge zuletzt angemeldeter Nutzer (`RecentUsers`)**, Toast, Sound-Verdrahtung, Beenden-Dialog (**mit optionalem Abmelden**), **feste navId-Tastatur-Navigation (`NAV_MENU`/`buildLobbyNav`) + Fokus-Gedächtnis**, animierter Hintergrund (Blöcke/Würfel/Sterne) |
 | `renderer/settings.js` | Zentraler Einstellungs-Store (localStorage, onChange-Events, `effectiveVolume()`) |
-| `renderer/audio.js` | Sound-System `Sfx`: UI- + **Block-Bomb-Effekte** (`bombTick/bombPass/bombExplode/count/go`) per WebAudio synthetisiert (keine Audio-Dateien), Lautstärke aus dem Settings-Store |
+| `renderer/audio.js` | Sound-System `Sfx`: UI- + **Block-Bomb-Effekte** (`bombTick/bombPass/bombExplode/count/go`) + **Laser-Lines-Effekte** (`laserWarn/laserFire/laserHit/laserEliminate/laserWin/laserSpeedUp`) per WebAudio synthetisiert (keine Audio-Dateien), Lautstärke aus dem Settings-Store |
 | `renderer/auth.js` | Supabase-Auth + **Freundes- und Konto-API** (gleiches Backend wie die Website) |
-| `renderer/style.css` | Arcade-Look: Farben (inkl. `--orange/--cyan/--pink`), Animationen, Layout, unsichtbare Scrollbalken, Kompakt-Stufen, **Lobby-/Playercard-/Popup-Styling**, Credits-Styling, Bühnen-Hintergrund |
-| `renderer/block-bomb.css` | Optik des Minigames **Block Bomb**: Canvas-Bühne, HUD (Timer/Namensschilder/Meldungen), Map-Voting, Countdown, Pause-/Ergebnis-Overlay |
-| `renderer/game/bots/botAI.js` | **Generische, wiederverwendbare Bot-KI** (für alle Minigames): Zustandsautomaten (CHASE/FLEE/WANDER/STUCK_RECOVERY), Anti-Stuck-Erkennung, Wand-/Ecken-Vermeidung, Steering, optionaler Debug-Modus |
-| `renderer/block-bomb/` | **Block-Bomb-Spielkern** (ES-Module): `main.js` (Szene/Renderer/Schleife/Runden + HUD + Map-Intro), `maps.js` (3 Maps), `characters.js` (blockige 3D-Figur), `bomb.js` (Bombe), `bots.js` (per-Game Adapter für `botAI.js`), `controllers.js` (Steuerungs-Abstraktion Mensch/Bot/Remote) |
+| `renderer/style.css` | Arcade-Look: Farben (inkl. `--orange/--cyan/--pink`), Animationen, Layout, unsichtbare Scrollbalken, Kompakt-Stufen, **Lobby-/Playercard-/Popup-Styling**, Credits-Styling, Bühnen-Hintergrund, **generischer Minigame-Flow (`.mg-*`: Map-Voting/Countdown/Ergebnis/Ranking) + Lobby-Krone** |
+| `renderer/block-bomb.css` | Optik **Block Bomb**: Canvas-Bühne + In-Game-HUD (Timer/Namensschilder/Meldungen, Map-Intro) + Block-Bomb-Map-Thumbnails (`.mg-thumb-block-bomb-*`). Die Voting-/Countdown-/Ergebnis-Overlays sind generisch (`.mg-*` in `style.css`) |
+| `renderer/laser-lines.css` | Optik **Laser Lines**: Canvas-Bühne + In-Game-HUD (Leben/Tempo/Warnbanner/Treffer-Vignette/Namensschilder, Map-Intro) + Laser-Map-Thumbnails (`.mg-thumb-laser-lines-*`) |
+| `renderer/game/` | **Spiel-agnostische, von ALLEN Minigames geteilte Bausteine**: `characters.js` (blockige 3D-Figur `BlockCharacter` + `setHolderGlow/flash/explode/setInvulnBlink/setEliminated`), `controllers.js` (`LocalHumanController`/`RemoteController` + generischer `BotController(brain)`), `bots/botAI.js`, `bots/waypoints.js` |
+| `renderer/game/bots/botAI.js` | **Generische, wiederverwendbare Bot-KI** (für alle Minigames): Zustandsautomaten (CHASE/FLEE/ROAM/AVOID_EDGE/UNSTUCK), Anti-Stuck-Erkennung, Wand-/Ecken-Vermeidung, Steering, optionaler Debug-Modus |
+| `renderer/block-bomb/` | **Block-Bomb-Spielkern** (ES-Module): `main.js` (Szene/Renderer/Schleife/Runden + HUD + Map-Intro + Platzierungen), `maps.js` (3 Maps), `bomb.js` (Bombe), `bots.js` (per-Game Adapter für `botAI.js`). Figur + Controller kommen aus `renderer/game/` |
+| `renderer/laser-lines/` | **Laser-Lines-Spielkern** (ES-Module): `main.js` (Szene/Schleife/Leben/Treffer/HUD, `window.LaserLines`), `maps.js` (3 Maps + `LASER_MAP_META` + Laser-Configs), `lasers.js` (Laser-System `warning→active→cooldown` + `LaserDirector`), `bots.js` (per-Game Adapter für `botAI.js`). Figur + Controller aus `renderer/game/` |
 | `renderer/vendor/three.module.js` | Lokal eingebundenes **Three.js (r160)** für die 3D-Darstellung (kein CDN — CSP `default-src 'self'`, offline-fähig) |
 | `renderer/assets/` | Eigene lokale Assets: `block-icon.svg/.png/.ico` (Marken-Block), `cube.svg`/`star.svg` (Deko-Masken) |
 | `Block Games starten.bat` | Doppelklick-Start der App |
@@ -65,18 +68,24 @@ anderen Spieler antippen, um sie weiterzugeben. Läuft der Timer ab, **explodier
 der aktuelle Träger und scheidet aus — **Last-Man-Standing**, der letzte Überlebende
 gewinnt.
 
-- **Ablauf nach „Spiel starten":** Map-Voting → 3-2-1-GO-Countdown → Runde → Ergebnis.
-  Gesteuert in `app.js` (Abschnitt „Block Bomb"): `startBlockBomb` → `openMapVote` →
-  `castMapVote` → `runCountdown` → `startBombRound` → `showBombResult`. Der Lobby-Knopf
-  „Spiel starten" ruft jetzt `startBlockBomb()` (statt nur einen Toast).
+> **Hinweis (ab v0.13.0):** Der Ablauf läuft nicht mehr über bomb-eigene
+> Funktionen, sondern über den **generischen Minigame-Flow** (Abschnitt
+> „Generischer Minigame-Flow" + „Party-Serie & Gesamt-Ranking"). Block Bomb ist
+> nur noch ein Registry-Eintrag (`GAME_REGISTRY['block-bomb']`); der untenstehende
+> Text beschreibt das Spielgefühl, die konkreten Funktionsnamen sind historisch.
+
+- **Ablauf nach „Spiel starten":** Map-Voting → 3-2-1-GO-Countdown → Runde → Ergebnis,
+  gesteuert vom generischen Flow (`openMapVote` → `castMapVote` → `runCountdown` →
+  `startRound` → `onGameResult`). Der Lobby-Knopf „Spiel starten" startet die
+  **Party-Serie** (`startSeries()`) über alle verfügbaren Minigames.
 - **Tutorial-Schnellstart aus dem „Games"-Bereich:** Klick auf die Minigame-Karte im
   Hauptmenü startet das Spiel als **Tutorial** — sofort eine Runde **ohne Lobby, ohne
-  Bot-Auswahl und ohne Map-Voting**: `startBlockBombTutorial` → `runCountdown` →
-  `startBombRound`. Es spielen **immer 3 Bots** (`buildTutorialPlayers()`), die Map
-  wird **zufällig** gewählt (`bombMapId` aus `BOMB_MAP_META`). Die Bots laufen auf dem
+  Bot-Auswahl und ohne Map-Voting**: `startTutorial('block-bomb')` → `runCountdown` →
+  `startRound`. Es spielen **immer 3 Bots** (`buildTutorialPlayers()`), die Map
+  wird **zufällig** gewählt. Die Bots laufen auf dem
   **einfachsten Grad `'easy'`** — bewusste Ausnahme zur Bot-Regel „immer Mittel/Schwer",
   damit man das Spiel in Ruhe lernen kann. Eigene Farbe und Bot-Farben/-Namen sind
-  zufällig & ohne Dopplung. Das Flag `bombIsTutorial` unterscheidet danach die
+  zufällig & ohne Dopplung. Das Flag `isTutorial` unterscheidet danach die
   Ergebnis-Knöpfe: „Nochmal" startet eine neue Tutorial-Runde (neue Random-Map), der
   zweite Knopf heißt „Zum Menü" und führt ins Hauptmenü (statt „Zur Lobby"). Der
   Lobby-/Party-Weg (`btnParty` → `openLobby` → volle Bot-/Farb-/Map-Wahl) bleibt
@@ -117,6 +126,98 @@ gewinnt.
   Einladungen als Warteschlange. Noch ohne echte Netz-Anbindung — Test-Auslöser
   `window.BombInvite.test('Name')`; die echte Online-Logik hängt später an
   `isOnlineAllowed()`.
+
+### Generischer Minigame-Flow (für ALLE Minigames)
+
+Seit v0.13.0 ist die Match-Orchestrierung in `app.js` **nicht mehr fest an Block
+Bomb gekoppelt**, sondern generisch — so teilen sich Block Bomb und Laser Lines
+(und künftige Spiele) denselben Ablauf und dieselben Overlays.
+
+- **Minigame-Registry (`GAME_REGISTRY`):** Jedes spielbare Minigame deklariert
+  entkoppelt `windowKey` (globales Spiel-Objekt `window.BlockBomb`/`window.LaserLines`
+  mit `start/pause/resume/stop/isRunning`), `mapMeta` (Maps fürs Voting), `screenId`
+  + `stageId` (Vollbild-Screen + Canvas-Host). Der Flow spricht das Spiel nur über
+  `window[windowKey]` an und kennt keine Spiel-Internas.
+- **Ein gemeinsames Overlay-Set (`#mg*`):** `#mgMapVote` (Voting), `#mgCountdown`
+  (3·2·1·GO), `#mgPause`, `#mgResult` (Einzel-/Tutorial-Ergebnis) und `#mgRanking`
+  (Serien-Zwischenstand/Gesamt-Ranking). Styling generisch als `.mg-*` in `style.css`;
+  spielspezifisch sind nur die Map-Thumbnails (`.mg-thumb-<spiel>-<map>` in der
+  jeweiligen Spiel-CSS).
+- **Generischer Ergebnis-Vertrag:** `onResult(result)` mit
+  `result = { winner, placements: [{id,name,colorHex}] }` (Reihenfolge 1.→letzter).
+  Block Bomb merkt sich dafür die Eliminierungs-Reihenfolge; Laser Lines sortiert die
+  Überlebenden nach Leben. Einzelspiele zeigen `winner`, die Serie wertet `placements`.
+- **Flow-Funktionen:** `openMapVote()`/`castMapVote()` (Mensch wählt, Bots/Remote
+  zufällig, Mehrheit, Gleichstand zufällig) → `runCountdown()` → `startRound()` →
+  `onGameResult()`. Pause/Weiter/Beenden laufen generisch über `pauseGame()`/
+  `resumeGame()`/`quitGameToMenu()`. Esc-Verhalten + Tastatur-Container in
+  `setupKeyboard()` sind auf die `#mg*`-Overlays + beide Spielscreens umgestellt.
+
+### Party-Serie & Gesamt-Ranking (Lobby „Spiel starten")
+
+Der große **„Spielen"**-Weg über die Lobby startet eine **Party-Serie** statt einer
+einzelnen Runde (`startSeries()` in `app.js`):
+
+- **Alle verfügbaren Minigames in zufälliger Reihenfolge** (`availableGames()` +
+  `shuffled()`): aktuell Block Bomb + Laser Lines.
+- Pro Spiel: **eigenes Map-Voting** → Countdown → Runde → **Zwischen-Ranking**
+  (`#mgRanking`, „Weiter"). Nach dem letzten Spiel: **Gesamt-Ranking** mit Krone.
+- **Platzierungspunkte:** Bei N Spielern bekommt der 1. **N** Punkte, der letzte **1**
+  (`awardSeriesPoints()`). Die Summe über alle Spiele (`seriesStandings`) entscheidet;
+  **Gleichstand → besserer Platz im letzten Spiel, sonst zufällig**.
+- **Gesamt-Ranking** (`showRanking(true)`): Plätze, Farben, Punkte; der Gesamtsieger
+  trägt eine 👑. Knöpfe: **Nochmal** (neue Serie), **Zur Lobby**, **Zum Menü**.
+- **Lobby-Krone:** Der Gesamtsieger-Slot wird in `lobbyCrownSlotId` gemerkt; `renderLobby()`
+  zeigt eine 👑 auf dessen Playercard. Sie **verschwindet bei „Lobby zurücksetzen"**
+  (`resetLobby()`) bzw. wenn ihr Slot leer wird.
+- Die entkoppelte Spielerliste kommt unverändert aus `buildMatchConfig()` (Lobby-Farben
+  + Bot-Schwierigkeit werden übernommen) — das Spiel kennt die Lobby NICHT.
+
+### Laser Lines (Minigame)
+
+Zweites spielbares Minigame: ein schnelles 3D-Party-Spiel, bei dem **Laserlinien**
+über die Map fahren oder rotieren. Wer getroffen wird, **verliert ein Leben**; bei 0
+Leben scheidet man aus — **Last-Man-Standing**, der letzte Überlebende gewinnt.
+
+- **Spielkern** (`renderer/laser-lines/main.js`, registriert `window.LaserLines`):
+  Three.js (lokal vendored), gleiche Steuerungs-Abstraktion + Figur wie Block Bomb
+  (`renderer/game/`), Map-Intro (Kamera-Flug), Settings respektiert (`fpsLimit`,
+  `reducedFx`).
+- **Leben/Treffer:** Start mit **3 Leben**. Treffer → −1 Leben, **1,5 s
+  Unverwundbarkeit** (Figur blinkt, `setInvulnBlink`), Treffer-Sound + **Screen-Shake**
+  + rote **Treffer-Vignette**. Bei 0 Leben: ausgegraut/abgesunken (`setEliminated`),
+  Eliminierungs-Sound, ausscheiden.
+- **Sieg/Ende:** letzter Lebender gewinnt. **Zeitlimit 60 s** als Fallback: leben dann
+  noch mehrere, gewinnt der mit den meisten Leben — Gleichstand → wer zuletzt getroffen
+  wurde, sonst zufällig. `onResult` liefert die vollständigen Platzierungen.
+- **3 Maps** (`maps.js`, `LASER_MAP_META`):
+  - **Spin Arena** (`spin`): runde Arena, rotierende Laser-Speichen aus der Mitte,
+    werden mit der Zeit schneller (gute Einsteiger-Map).
+  - **Factory Grid** (`grid`): Fabrikhalle, Laser fahren nach kurzer **Boden-Warnlinie**
+    achsenparallel quer durch; Kisten als Deckung.
+  - **Sky Warning** (`sky`): schwebende Plattformen, zufällige **Warnfelder**, danach
+    Laser über diese Felder. **Sturz = 1 Leben verlieren** (+ Unverwundbarkeit +
+    Rücksetzen auf eine sichere Plattform).
+- **Laser-System** (`lasers.js`): Zustände **warning → active → cooldown** (bzw.
+  „persistent" rotierende Speichen). Optik: rot/pinke leuchtende Linie + Glow,
+  Boden-Warnlinie, **Funken beim Aktivieren** (nur ohne `reducedFx`), Warn- + Feuer-Sound.
+  **Fairness:** keine Treffer ohne sichtbare Warnung; Tempo/Frequenz steigen langsam
+  (`LaserDirector`, Level aus der Rundenzeit, `laserSpeedUp` bei Level-Up). **Kollision:**
+  Abstand Punkt→Segment (lane/spoke) bzw. Punkt-in-Rechteck (zone), nur in `active`.
+- **HUD:** Spielname „Laser Lines", Rundentimer, **Leben je Spieler** (Herzen),
+  **Warnbanner** („⚠ Laser incoming!"), **Tempo/Level**, Namensschilder über den Köpfen.
+- **Bots** (`bots.js`, `makeLaserBotBrain`): dünner Adapter, der die Bewegung an
+  `botAI.js` delegiert (ohne dieses zu ändern). Laser-Verhalten wird auf die vorhandenen
+  Zustände abgebildet: **AVOID_LASER → FLEE** (Ziel = nächster Punkt auf dem bedrohenden
+  Laser), **SEEK_SAFE_ZONE/WANDER → ROAM**, **AVOID_EDGE/STUCK_RECOVERY** automatisch.
+  Schwierigkeit (easy/medium/hard) steuert Reaktionszeit + Fehlerrate; **kein Cheaten**
+  (Bots reagieren nur auf sichtbare Warnungen). Im Tutorial spielen die Bots auf `easy`.
+- **Tutorial-Schnellstart:** Klick auf die Minigame-Karte „Laser Lines" startet sofort
+  eine **einzelne** Runde (`startTutorial('laser-lines')`): P1 + 3 Easy-Bots, zufällige
+  Map, kein Voting, kein Serien-Ranking. Ergebnis-Knöpfe „Nochmal"/„Zum Menü".
+- **Steuerung:** WASD/Pfeile bewegen P1, Esc pausiert (`#mgPause`). Der globale
+  Tastatur-Handler steigt im Spielscreen früh aus, damit die Bewegung nicht mit der
+  Menü-Navigation kollidiert (wie bei Block Bomb).
 
 ### Vollbild
 Die App startet **immer im Vollbild** — wie andere Videospiele, ohne sichtbare
@@ -462,6 +563,47 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
   Klartext — gleicher Key wie die Website, RLS schützt die Daten.
 
 ## Änderungsprotokoll
+
+### v0.13.0 — 2026-06-16
+- **Neues Minigame „Laser Lines":** Schnelles 3D-Party-Spiel — Laserlinien fahren/
+  rotieren über die Map, Treffer kosten ein Leben (1,5 s Unverwundbarkeit + Blinken +
+  Treffer-Vignette/Screen-Shake), bei 0 Leben raus, Last-Man-Standing. Zeitlimit 60 s als
+  Fallback (meiste Leben gewinnt). Spielkern in `renderer/laser-lines/` (`main.js` →
+  `window.LaserLines`, `maps.js` + `LASER_MAP_META`, `lasers.js`, `bots.js`), Optik in
+  `renderer/laser-lines.css`. **3 Maps:** Spin Arena (rotierende Speichen, beschleunigen),
+  Factory Grid (achsenparallele Laser mit Boden-Warnlinie, Kisten als Deckung), Sky
+  Warning (Warnfelder → Laser; Sturz = 1 Leben + Rücksetzen).
+- **Laser-System** (`lasers.js`): Zustände `warning → active → cooldown` (+ persistente
+  Speichen), `LaserDirector` spawnt/ramped die Schwierigkeit; faire Warnphase (kein
+  Treffer ohne sichtbare Warnung), Glow + Funken (Funken nur ohne `reducedFx`), Kollision
+  per Punkt→Segment bzw. Punkt-in-Rechteck.
+- **Generischer Minigame-Flow:** Die Match-Orchestrierung in `app.js` ist nicht mehr fest
+  an Block Bomb gekoppelt, sondern läuft über eine **Registry** (`GAME_REGISTRY`,
+  `windowKey/mapMeta/screenId/stageId`) und **ein gemeinsames Overlay-Set** (`#mgMapVote`/
+  `#mgCountdown`/`#mgPause`/`#mgResult`/`#mgRanking`, Styling generisch als `.mg-*` in
+  `style.css`). Block Bomb wurde darauf migriert (verhält sich unverändert). Neuer
+  Ergebnis-Vertrag `onResult({ winner, placements })`.
+- **Party-Serie & Gesamt-Ranking:** „Spiel starten" in der Lobby spielt jetzt **alle
+  verfügbaren Minigames in zufälliger Reihenfolge** (`startSeries()`), mit Map-Voting +
+  Zwischen-Ranking je Spiel und **Platzierungspunkten** (1.=N … letzter=1). Am Ende ein
+  **Gesamt-Ranking**; der Gesamtsieger bekommt eine **Krone in der Lobby**
+  (`lobbyCrownSlotId`, verschwindet bei „Lobby zurücksetzen"). Gleichstand → besserer
+  Platz im letzten Spiel, sonst zufällig.
+- **Gemeinsame Schicht `renderer/game/`:** `BlockCharacter` (mit neuen generischen
+  Zuständen `setInvulnBlink`/`setEliminated`) und die Controller (`LocalHumanController`/
+  `RemoteController` + generischer `BotController(brain)`) aus `block-bomb/` hierher
+  gehoben; beide Spiele teilen sie (kein Duplikat). `block-bomb/characters.js` +
+  `block-bomb/controllers.js` entfallen.
+- **Tutorial-Schnellstart generalisiert:** Jede Minigame-Karte startet ihr Spiel als
+  einzelne Tutorial-Runde (`startTutorial(id)`, P1 + 3 Easy-Bots, zufällige Map). Die
+  „Bald"-Karte `block-rush` wurde zur spielbaren **Laser-Lines-Karte** umgebaut
+  (`main_laserLines`, Icon 🔺, „Weiche den Lasern aus!"); `NAV_MENU` angepasst.
+- **Sounds:** `audio.js` um `laserWarn/laserFire/laserHit/laserEliminate/laserWin/
+  laserSpeedUp` erweitert (WebAudio-synthetisiert, Lautstärke über `Settings.effectiveVolume`).
+- **Bots:** Laser-Lines-Adapter (`makeLaserBotBrain`) bildet Laser-Verhalten auf die
+  bestehenden `botAI.js`-Zustände ab (AVOID_LASER→FLEE, SEEK_SAFE_ZONE/WANDER→ROAM,
+  AVOID_EDGE/STUCK_RECOVERY automatisch) — **ohne `botAI.js` zu ändern**.
+- Version auf 0.13.0 (package.json, preload.js).
 
 ### v0.12.0 — 2026-06-15
 - **Tutorial-Schnellstart aus dem „Games"-Bereich:** Klick auf eine Minigame-Karte im

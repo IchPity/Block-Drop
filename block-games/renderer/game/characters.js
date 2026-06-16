@@ -1,15 +1,22 @@
-// Block Bomb — blockige 3D-Spielfigur.
+// Gemeinsame, spiel-agnostische blockige 3D-Spielfigur (für ALLE Minigames).
 //
 // Eine Figur ist eine THREE.Group aus Box-Meshes (Beine, Körper, Arme,
 // würfelförmiger Kopf mit Augen). Die Körperfarbe kommt aus der Lobby
 // (colorHex). Animationen:
 //   • Laufen      — Arme/Beine schwingen gegenläufig (Sinus auf Hüft-/Schulter-
 //                   Pivots), Tempo abhängig von der Laufgeschwindigkeit
-//   • Bombe tragen — Arme nach vorn-oben, leichtes „Hibbeln"
+//   • Tragen/Glow — emissiver Tint-Glow (z.B. Block-Bomb-Träger), setHolderGlow
 //   • Explosion   — Glieder fliegen mit Zufallsschwung auseinander und faden
+//   • Unverwundbar— periodisches Blinken (Laser Lines), setInvulnBlink
+//   • Ausgeschieden— ausgegraut/abgesunken (Laser Lines), setEliminated
 //
-// Die Figur weiß NICHTS über Spiellogik — sie wird von main.js positioniert
-// und über update() animiert.
+// Die Figur weiß NICHTS über Spiellogik — sie wird vom Spielkern positioniert
+// und über update() animiert. Verschiedene Minigames nutzen je nur die Methoden,
+// die sie brauchen (Block Bomb: setHolderGlow/explode; Laser Lines:
+// setInvulnBlink/setEliminated).
+//
+// Lag früher in renderer/block-bomb/characters.js; nach renderer/game/ gehoben,
+// damit beide Minigames dieselbe Figur teilen (statt Duplikat).
 
 'use strict';
 
@@ -32,6 +39,9 @@ export class BlockCharacter {
     this.exploding = false;
     this.explodeT = 0;
     this.parts = [];
+    this.invulnBlink = false;
+    this.blinkT = 0;
+    this.eliminated = false;
 
     const body = new THREE.Color(colorHex);
     const limbMat = new THREE.MeshStandardMaterial({
@@ -94,7 +104,7 @@ export class BlockCharacter {
     return pivot;
   }
 
-  // facing: Blickrichtung (rad) um Y; speed01: 0..1 Lauftempo; isHolder: Bombe.
+  // facing: Blickrichtung (rad) um Y; speed01: 0..1 Lauftempo; isHolder: Glow.
   update(dt, facing, speed01, isHolder) {
     if (this.exploding) { this._updateExplosion(dt); return; }
 
@@ -118,12 +128,18 @@ export class BlockCharacter {
       this.armR.rotation.x = swing * 0.8;
       this.group.position.y = this._baseY();
     }
+
+    // Unverwundbarkeits-Blinken (Laser Lines): Sichtbarkeit pulsiert.
+    if (this.invulnBlink) {
+      this.blinkT += dt;
+      this.group.visible = (Math.sin(this.blinkT * 22) > -0.3);
+    }
   }
 
   _baseY() { return this._groundY || 0; }
   setGroundY(y) { this._groundY = y; this.group.position.y = y; }
 
-  // Roter Träger-Glow an/aus (emissive hochfahren).
+  // Roter Träger-Glow an/aus (emissive hochfahren) — Block Bomb.
   setHolderGlow(on) {
     const k = on ? 1 : 0;
     this._mats[0].emissiveIntensity = this._baseEmissive.limb + k * 0.5;
@@ -131,13 +147,38 @@ export class BlockCharacter {
     this._mats[2].emissiveIntensity = this._baseEmissive.head + k * 0.6;
     const tint = on ? new THREE.Color(0xff3b30) : new THREE.Color(this.colorHex);
     this._mats[1].emissive.lerp(tint, on ? 0.55 : 0); // bei aus zurücksetzen
-    if (!on) this._mats.forEach((m, i) => m.emissive.set(this.colorHex));
+    if (!on) this._mats.forEach((m) => m.emissive.set(this.colorHex));
   }
 
-  // Kurzes Aufleuchten beim Bombenempfang.
+  // Unverwundbarkeit nach Treffer (Laser Lines): Figur blinkt.
+  setInvulnBlink(on) {
+    this.invulnBlink = on;
+    this.blinkT = 0;
+    if (!on && !this.eliminated) this.group.visible = true;
+  }
+
+  // Ausgeschieden (Laser Lines): grau, abgesunken, halbtransparent „Geist".
+  setEliminated(on) {
+    this.eliminated = on;
+    this.invulnBlink = false;
+    if (on) {
+      this.group.visible = true;
+      const grey = new THREE.Color(0x6a6a7a);
+      this._mats.forEach((m) => {
+        m.color.lerp(grey, 0.7);
+        m.emissive.set(0x000000);
+        m.emissiveIntensity = 0;
+        m.transparent = true;
+        m.opacity = 0.45;
+      });
+    }
+  }
+
+  // Kurzes Aufleuchten (z.B. Bombenempfang).
   flash() {
     this._mats.forEach(m => { m.emissiveIntensity = 1.0; });
     setTimeout(() => {
+      if (this.eliminated) return;
       this._mats[0].emissiveIntensity = this._baseEmissive.limb;
       this._mats[1].emissiveIntensity = this._baseEmissive.body;
       this._mats[2].emissiveIntensity = this._baseEmissive.head;

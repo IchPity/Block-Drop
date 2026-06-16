@@ -1,22 +1,25 @@
-// Block Bomb — Steuerungs-Abstraktion (Controller).
+// Gemeinsame Steuerungs-Abstraktion (Controller) für ALLE Minigames.
 //
 // KERNIDEE (online-tauglich von Anfang an): Jede Spielfigur wird von genau
 // einem Controller gesteuert. Ein Controller liefert pro Frame NUR einen
 // Bewegungs-Intent { x, z } (Richtung, Länge 0..1) — sonst nichts. Der
-// Spielkern (main.js) liest ausschließlich diese Intents und kennt die
-// Herkunft nicht. Dadurch ist „lokaler Mensch" ↔ „entfernter Spieler" später
-// ein reiner Controller-Tausch, ohne den Spielkern anzufassen.
+// Spielkern liest ausschließlich diese Intents und kennt die Herkunft nicht.
+// Dadurch ist „lokaler Mensch" ↔ „entfernter Spieler" später ein reiner
+// Controller-Tausch, ohne den Spielkern anzufassen.
 //
 // Drei Implementierungen:
 //   LocalHumanController  — gedrückte Tasten (WASD/Pfeile) des lokalen Spielers
-//   BotController         — KI (in bots.js gekapselt, hier nur eingehängt)
+//   BotController         — KI-Gehirn (per Konstruktor injiziert, je Spiel anders)
 //   RemoteController      — STUB für späteres Online-Spiel über Netzwerke
 //
 // Ein Intent ist immer { x, z } mit x,z ∈ [-1,1] und Länge ≤ 1.
+//
+// Lag früher in renderer/block-bomb/controllers.js; nach renderer/game/ gehoben.
+// Der BotController ist jetzt spiel-agnostisch: Er bekommt ein fertiges Brain
+// (z.B. aus block-bomb/bots.js oder laser-lines/bots.js) statt selbst eines zu
+// bauen — so teilen sich alle Spiele dieselben Mensch-/Remote-Controller.
 
 'use strict';
-
-import { makeBotBrain } from './bots.js';
 
 const ZERO = Object.freeze({ x: 0, z: 0 });
 
@@ -87,12 +90,13 @@ function mapKey(key) {
   }
 }
 
-// ── Bot: KI-Gehirn aus bots.js ───────────────────────────────────────────
-// Der Controller hält nur den Zustand des „Gehirns" (Reaktionsverzögerung,
-// aktuelles Ziel, Jitter). Die eigentliche Entscheidung liegt in bots.js.
+// ── Bot: KI-Gehirn (je Minigame injiziert) ───────────────────────────────
+// Der Controller hält nur das „Gehirn"; die eigentliche Entscheidung liegt im
+// per-Spiel-Adapter (z.B. block-bomb/bots.js, laser-lines/bots.js). Das Brain
+// muss eine think(self, world, dt) → {x,z}-Methode haben.
 export class BotController {
-  constructor(difficulty) {
-    this.brain = makeBotBrain(difficulty);
+  constructor(brain) {
+    this.brain = brain;
   }
   update(self, world, dt) {
     return this.brain.think(self, world, dt) || ZERO;
