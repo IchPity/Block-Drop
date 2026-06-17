@@ -137,6 +137,40 @@ export function nearestWaypoint(self, world, opts = {}) {
   return best;
 }
 
+// Wählt den "sichersten" Waypoint relativ zu einer Gefahr-Funktion
+// (z.B. world.laserDanger). Bewertet jeden Kandidaten nach Abstand zur
+// nächsten Gefahr (mehr Abstand = sicherer) minus etwas Reiseweg, damit
+// Bots nicht quer über die Karte zu einem minimal sichereren Punkt rennen.
+// Genutzt für proaktives "Safe-Zone-Seeking" im ROAM-Zustand.
+export function safestWaypoint(self, world, dangerFn, opts = {}) {
+  if (!world?.map?.waypoints?.length) return null;
+  const { avoidTags = ['edge-risk'] } = opts;
+
+  let candidates = world.map.waypoints;
+  if (avoidTags?.length) {
+    candidates = candidates.filter(wp =>
+      !avoidTags.some(tag => wp.tags?.includes(tag))
+    );
+  }
+  if (!candidates.length) return null;
+
+  let best = null;
+  for (const wp of candidates) {
+    const travel = distTo(self, wp);
+    // Wie weit ist die nächste Gefahr von diesem Waypoint entfernt?
+    let clearance = 99;
+    if (dangerFn) {
+      const dg = dangerFn(wp.x, wp.z);
+      if (dg && typeof dg.dist === 'number') {
+        clearance = dg.dist - (dg.active ? 2.0 : 0);
+      }
+    }
+    const score = clearance - travel * 0.15;
+    if (!best || score > best.score) best = { wp, score };
+  }
+  return best?.wp || null;
+}
+
 // ─── Internal helpers ────────────────────────────────────────────────
 
 function weightedPick(scored) {

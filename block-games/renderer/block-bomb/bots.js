@@ -13,6 +13,11 @@
 import { createBotMover } from '../game/bots/botAI.js';
 
 const PROFILES = {
+  // Neue Felder ggü. der alten Tabelle:
+  //   escapeSamples — Richtungen der Sampling-Flucht (3 grob … >8 + Laufrichtung)
+  //   herding       — Träger drängt Ziele zur Kante (Zielwahl + Anflugseite); 0 aus
+  //   anticipation  — Sekunden Vorhalt: Nicht-Träger fliehen vor der VORHERGESAGTEN
+  //                   Position des Trägers (leichter Vorteil nur für starke Bots)
   easy: {
     reactionInterval: 0.55,
     wrongTargetChance: 0.45,
@@ -30,6 +35,9 @@ const PROFILES = {
     interceptLead: 0,
     passBombDangerScale: 0.8,
     waypointRandomness: 0.5,
+    escapeSamples: 3,
+    herding: 0,
+    anticipation: 0,
   },
   medium: {
     reactionInterval: 0.34,
@@ -48,6 +56,9 @@ const PROFILES = {
     interceptLead: 0.3,
     passBombDangerScale: 0.6,
     waypointRandomness: 0.25,
+    escapeSamples: 8,
+    herding: 0.4,
+    anticipation: 0.15,
   },
   hard: {
     reactionInterval: 0.13,
@@ -66,6 +77,9 @@ const PROFILES = {
     interceptLead: 0.8,
     passBombDangerScale: 0.35,
     waypointRandomness: 0.08,
+    escapeSamples: 9,
+    herding: 1.0,
+    anticipation: 0.4,
   },
 };
 
@@ -98,15 +112,27 @@ function randomPersonality() {
   };
 }
 
-function computeInterceptTarget(self, target, lastSeenPos, ep) {
-  if (!lastSeenPos) return { x: target.x, z: target.z };
-  const vx = target.x - lastSeenPos.x;
-  const vz = target.z - lastSeenPos.z;
-  const lead = ep.interceptLead ?? 0.3;
-  return {
-    x: target.x + vx * lead,
-    z: target.z + vz * lead,
-  };
+function computeInterceptTarget(self, target, lastSeenPos, ep, world) {
+  let ax = target.x, az = target.z;
+  if (lastSeenPos) {
+    const vx = target.x - lastSeenPos.x;
+    const vz = target.z - lastSeenPos.z;
+    const lead = ep.interceptLead ?? 0.3;
+    ax += vx * lead;
+    az += vz * lead;
+  }
+  // Herding: von der "sicheren" Seite des Ziels anfliegen, damit das Ziel beim
+  // Wegfliehen Richtung Kante gedrängt wird (nur mittlere/schwere Bots).
+  const herd = ep.herding || 0;
+  if (herd > 0 && world?.map?.steerToSafety) {
+    const s = world.map.steerToSafety(target.x, target.z);
+    const sl = Math.hypot(s.x, s.z);
+    if (sl > 1e-3) {
+      ax += (s.x / sl) * herd * 1.2;
+      az += (s.z / sl) * herd * 1.2;
+    }
+  }
+  return { x: ax, z: az };
 }
 
 export function makeBotBrain(difficulty) {
@@ -132,19 +158,38 @@ export function makeBotBrain(difficulty) {
     mode: 'roam',
     lastSeenPos: new Map(),
     mistakeTimer: 0,
+    avoidDirection: null,
+    holderSample: null, // { id, x, z } vom Vorframe — für Träger-Geschwindigkeit
   };
+
+  // Bedrohungspunkte für die Sampling-Flucht: der (ggf. vorhergesagte) Träger
+  // mit vollem Gewicht plus nahe Mit-Nicht-Träger mit mildem Gewicht, damit die
+  // Bots sich verteilen statt zu verklumpen (schwerer als Gruppe zu fangen).
+  function buildThreatPoints(self, world, holderPos) {
+    const pts = [{ x: holderPos.x, z: holderPos.z, weight: 1 }];
+    for (const o of world.players) {
+      if (!o.alive || o.id === self.id || o.id === world.holderId) continue;
+      const d = Math.hypot(self.x - o.x, self.z - o.z);
+      if (d < 3.5) pts.push({ x: o.x, z: o.z, weight: 0.6 });
+    }
+    return pts;
+  }
 
   function pickTarget(self, world) {
     const others = world.players.filter(q => q.alive && q.id !== self.id);
     if (!others.length) return null;
 
-    // Reachability-aware scoring
+    // Reachability-aware scoring. edgeMag ~ Nähe zur Kante des Ziels.
+    // Ohne Herding (easy) werden Randziele gemieden (+), mit Herding (schwer)
+    // bevorzugt, weil sie leichter über die Kante zu drängen sind (−).
+    const herd = ep.herding || 0;
+    const edgeWeight = 4 - herd * 8;
     const scored = others.map(o => {
       const d = Math.hypot(self.x - o.x, self.z - o.z);
-      const edgePenalty = world.map.steerToSafety
-        ? Math.hypot(...Object.values(world.map.steerToSafety(o.x, o.z))) * 4
+      const edgeMag = world.map.steerToSafety
+        ? Math.hypot(...Object.values(world.map.steerToSafety(o.x, o.z)))
         : 0;
-      return { id: o.id, score: d + edgePenalty };
+      return { id: o.id, score: d + edgeMag * edgeWeight };
     });
 
     scored.sort((a, b) => a.score - b.score);
@@ -159,6 +204,19 @@ export function makeBotBrain(difficulty) {
     const panic = world.timeLeft <= ep.panicAt;
     state.react -= dt;
     const interval = panic ? ep.reactionInterval * 0.5 : ep.reactionInterval;
+
+    // Träger-Geschwindigkeit jeden Frame mitführen (für „nähert sich"-Erkennung
+    // und die vorhergesagte Fluchtposition).
+    const holderNow = world.players.find(q => q.id === world.holderId && q.alive);
+    let holderVel = { x: 0, z: 0 };
+    if (holderNow) {
+      if (state.holderSample && state.holderSample.id === holderNow.id) {
+        holderVel = { x: holderNow.x - state.holderSample.x, z: holderNow.z - state.holderSample.z };
+      }
+      state.holderSample = { id: holderNow.id, x: holderNow.x, z: holderNow.z };
+    } else {
+      state.holderSample = null;
+    }
 
     if (state.react <= 0) {
       state.react = interval;
@@ -182,26 +240,32 @@ export function makeBotBrain(difficulty) {
         }
       } else {
         // Non-holder logic
-        const holder = world.players.find(q => q.id === world.holderId && q.alive);
+        const holder = holderNow;
         if (holder) {
           const dHolder = Math.hypot(self.x - holder.x, self.z - holder.z);
-          if (panic || dHolder < ep.fleeRadius) {
+          // Nähert sich der Träger? Dann früher fliehen (größerer Radius).
+          const approaching =
+            holderVel.x * (self.x - holder.x) + holderVel.z * (self.z - holder.z) > 0;
+          const fleeR = approaching ? ep.fleeRadius * 1.4 : ep.fleeRadius;
+          if (panic || dHolder < fleeR) {
             state.targetId = world.holderId;
             state.mode = 'flee';
+            state.avoidDirection = null;
           } else if (dHolder < ep.preferredDistance * 1.5) {
             // In comfort buffer — roam away from holder
             state.mode = 'roam';
-            mover.avoidDirection = {
+            state.avoidDirection = {
               x: self.x - holder.x,
               z: self.z - holder.z,
             };
           } else {
             // Free roaming
             state.mode = 'roam';
-            mover.avoidDirection = null;
+            state.avoidDirection = null;
           }
         } else {
           state.mode = 'roam';
+          state.avoidDirection = null;
         }
       }
     }
@@ -209,12 +273,22 @@ export function makeBotBrain(difficulty) {
     // Resolve target and build decision
     let target = null;
     let targetPos = null;
+    let threatPoints = null;
     if (state.mode !== 'roam') {
       target = world.players.find(q => q.id === state.targetId && q.alive);
       if (target) {
         if (state.mode === 'pass') {
           const lastSeen = state.lastSeenPos.get(target.id);
-          targetPos = computeInterceptTarget(self, target, lastSeen, ep);
+          targetPos = computeInterceptTarget(self, target, lastSeen, ep, world);
+        } else if (state.mode === 'flee') {
+          // Vor der VORHERGESAGTEN Position des Trägers fliehen (Vorhalt nur bei
+          // starken Bots > 0). holderVel ist Bewegung/Frame → /dt = pro Sekunde.
+          const lead = (ep.anticipation || 0) / Math.max(dt, 1e-3);
+          targetPos = {
+            x: target.x + holderVel.x * lead,
+            z: target.z + holderVel.z * lead,
+          };
+          threatPoints = buildThreatPoints(self, world, targetPos);
         } else {
           targetPos = { x: target.x, z: target.z };
         }
@@ -227,8 +301,9 @@ export function makeBotBrain(difficulty) {
     const decision = {
       mode: state.mode,
       targetPos,
+      threatPoints,
       panic,
-      avoidDirection: mover.avoidDirection,
+      avoidDirection: state.avoidDirection,
     };
 
     return mover.update(self, world, dt, decision);

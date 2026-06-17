@@ -109,11 +109,20 @@ gewinnt.
   (Förderbänder schieben, Kisten als Hindernisse, blinkende Warnlichter). **Jeder
   Modus bekommt 3 Maps** (Projekt-Konvention). Vor dem Start gibt es **Map-Voting**:
   echte Spieler wählen, Bots zufällig, Mehrheit gewinnt, Gleichstand → zufällig.
-- **Bots** (`bots.js`): Mit Bombe verfolgen sie den nächsten Spieler, ohne Bombe fliehen
-  sie vom Träger und meiden Rand/Abgrund. Fairness statt Perfektion: Reaktions-
-  verzögerung, weiches Richtungs-Jitter, gelegentliche Fehlentscheidungen; gleiches
-  Tempo wie Menschen. **Mittel** = träge/ungenau, **Schwer** = schneller/gezielter
-  (kein „leicht", s. Bot-Regel). Bei wenig Restzeit reagieren beide aggressiver.
+- **Bots** (`bots.js`): Mit Bombe verfolgen sie den nächsten erreichbaren Spieler, ohne
+  Bombe fliehen sie vom Träger und meiden Rand/Abgrund. Fairness statt Perfektion:
+  Reaktionsverzögerung, weiches Richtungs-Jitter, gelegentliche Fehlentscheidungen;
+  gleiches Tempo wie Menschen. **Mittel** = träge/ungenau, **Schwer** = schneller/
+  gezielter (kein „leicht", s. Bot-Regel). Bei wenig Restzeit reagieren beide aggressiver.
+  - **Taktik (ab Mittel, voll bei Schwer):** *Offensiv* drängt der Träger Ziele zur
+    Kante — die Zielwahl bevorzugt randnahe (leicht zu cornernde) Gegner und der Anflug
+    erfolgt von der „sicheren" Seite (`herding`), sodass das Ziel beim Wegfliehen Richtung
+    Abgrund läuft. *Defensiv* nutzen Nicht-Träger eine **Sampling-Flucht** (`escapeSamples`,
+    in `botAI.js`): statt stur rückwärts wird die Richtung gewählt, die maximalen Abstand
+    zu allen Bedrohungen hat **und** nicht über die Kante/in eine Wand führt. Nahe
+    Mit-Flüchtende zählen als milde Bedrohung → die Bots **verteilen sich** statt zu
+    verklumpen. Schwere Bots fliehen zudem vor der **vorhergesagten** Träger-Position
+    (`anticipation`) und reagieren früher, wenn der Träger auf sie zuhält.
 - **HUD:** Namensschilder über den Köpfen (3D→2D projiziert), markierter Bombenträger
   (roter Glow + 💣), Bomben-Timer, verbleibende Spieler, kurze Meldungen
   („… hat die Bombe!", „Bombe weitergegeben!", „… ist explodiert!", „… gewinnt!").
@@ -207,11 +216,19 @@ Leben scheidet man aus — **Last-Man-Standing**, der letzte Überlebende gewinn
 - **HUD:** Spielname „Laser Lines", Rundentimer, **Leben je Spieler** (Herzen),
   **Warnbanner** („⚠ Laser incoming!"), **Tempo/Level**, Namensschilder über den Köpfen.
 - **Bots** (`bots.js`, `makeLaserBotBrain`): dünner Adapter, der die Bewegung an
-  `botAI.js` delegiert (ohne dieses zu ändern). Laser-Verhalten wird auf die vorhandenen
-  Zustände abgebildet: **AVOID_LASER → FLEE** (Ziel = nächster Punkt auf dem bedrohenden
-  Laser), **SEEK_SAFE_ZONE/WANDER → ROAM**, **AVOID_EDGE/STUCK_RECOVERY** automatisch.
-  Schwierigkeit (easy/medium/hard) steuert Reaktionszeit + Fehlerrate; **kein Cheaten**
-  (Bots reagieren nur auf sichtbare Warnungen). Im Tutorial spielen die Bots auf `easy`.
+  `botAI.js` delegiert. Laser-Verhalten wird auf die vorhandenen Zustände abgebildet:
+  **AVOID_LASER → FLEE**, **SEEK_SAFE_ZONE/WANDER → ROAM**, **AVOID_EDGE/STUCK_RECOVERY**
+  automatisch. Schwierigkeit (easy/medium/hard) steuert Reaktionszeit + Fehlerrate;
+  **kein Cheaten** (Bots reagieren nur auf sichtbare Warnungen). Im Tutorial spielen die
+  Bots auf `easy`.
+  - **Multi-Laser-Ausweichen (ab Mittel):** Statt stur vom nächsten Laser wegzulaufen,
+    probt die **Sampling-Flucht** (`escapeSamples`) mehrere Richtungen und wählt die mit
+    dem größten Abstand zu **allen** Lasern (über `world.laserDanger` an jedem Probe-Punkt)
+    — der Bot weicht **seitlich** aus statt in einen zweiten Laser zu laufen, und nie über
+    die Kante. **Safe-Zone-Seeking** (`seekSafe`): ist gerade keine Gefahr akut, steuert
+    der Bot proaktiv die laserfreieste Zone an (`safestWaypoint`). **Warn-Antizipation**
+    (`warnAnticipation`, stärkster Effekt bei Schwer): starke Bots verlassen einen Laser
+    schon in dessen sichtbarer **Warnphase**, bevor er feuert.
 - **Tutorial-Schnellstart:** Klick auf die Minigame-Karte „Laser Lines" startet sofort
   eine **einzelne** Runde (`startTutorial('laser-lines')`): P1 + 3 Easy-Bots, zufällige
   Map, kein Voting, kein Serien-Ranking. Ergebnis-Knöpfe „Nochmal"/„Zum Menü".
@@ -563,6 +580,30 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
   Klartext — gleicher Key wie die Website, RLS schützt die Daten.
 
 ## Änderungsprotokoll
+
+### v0.14.0 — 2026-06-17
+- **Intelligentere Bots (beide Minigames).** Die taktische Entscheidungsebene wurde
+  vertieft; Navigation/Fairness-Grundsätze (gleiches Tempo, nur sichtbare Infos,
+  Schwierigkeit über Reaktionszeit/Fehlerrate) bleiben. Neue Profilfelder gaten den
+  Effekt nach Schwierigkeit — **Easy bleibt absichtlich schwach**.
+- **Gemeinsamer Kern** (`renderer/game/bots/botAI.js`): Die FLEE-Bewegung nutzt jetzt eine
+  **Sampling-Fluchtrichtung** (`chooseEscapeDirection`) — sie probt mehrere Richtungen,
+  bewertet jede nach Abstand zu **allen** Bedrohungen am Probe-Punkt (`threatPoints` +
+  optionale `dangerFn`) und verwirft Richtungen über die Kante/in Wände. Dadurch weichen
+  Bots seitlich aus statt blind rückwärts. Adapter→Kern-Signale laufen jetzt sauber über
+  `decision` (`threatPoints`, `dangerFn`, `preferredWaypoint`, `avoidDirection`) — dabei
+  wurde die bislang wirkungslose `avoidDirection`-Verdrahtung repariert. Neuer Helper
+  `safestWaypoint` in `waypoints.js`.
+- **Laser Lines** (`bots.js`): **Multi-Laser-Ausweichen** über die neue Sampling-Flucht
+  (kein Hineinlaufen in den zweiten Laser mehr), **Safe-Zone-Seeking** im ROAM
+  (`seekSafe` → `safestWaypoint`) und **Warn-Antizipation** (`warnAnticipation`): starke
+  Bots verlassen einen Laser bereits in der sichtbaren Warnphase. Hard-`ignoreChance` auf 0.
+- **Block Bomb** (`bots.js`): *Offensiv* drängt der Träger Ziele zur Kante — randnahe Ziele
+  werden bevorzugt gewählt und von der sicheren Seite angeflogen (`herding`). *Defensiv*
+  fliehen Nicht-Träger kantenbewusst (Sampling-Flucht), **verteilen sich** (nahe
+  Mit-Flüchtende als milde Bedrohung) und starke Bots fliehen vor der **vorhergesagten**
+  Träger-Position (`anticipation`) bzw. reagieren früher, wenn der Träger zuhält.
+- Version auf 0.14.0 (package.json, preload.js).
 
 ### v0.13.0 — 2026-06-16
 - **Neues Minigame „Laser Lines":** Schnelles 3D-Party-Spiel — Laserlinien fahren/

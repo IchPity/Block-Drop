@@ -198,7 +198,19 @@ export function createBotMover(profile) {
     return Math.hypot(edge.x, edge.z) > 0.6;
   }
 
-  function computeRoamDesired(self, world, mover, profile) {
+  function computeRoamDesired(self, world, mover, profile, decision = {}) {
+    // Adapter-vorgegebenes Ziel (z.B. Safe-Zone-Seeking in Laser Lines):
+    // direkt ansteuern, bis erreicht — überschreibt die Zufalls-Waypoints.
+    if (decision.preferredWaypoint) {
+      if (isAtWaypoint(self, decision.preferredWaypoint)) {
+        mover.currentWaypoint = decision.preferredWaypoint;
+      } else {
+        return norm(
+          decision.preferredWaypoint.x - self.x,
+          decision.preferredWaypoint.z - self.z,
+        );
+      }
+    }
     if (world.map.waypoints?.length) {
       // Waypoint-driven ROAM
       if (!mover.currentWaypoint || isAtWaypoint(self, mover.currentWaypoint)) {
@@ -206,7 +218,7 @@ export function createBotMover(profile) {
           excludeId: mover.currentWaypoint?.id,
           avoidTags: ['edge-risk'],
           randomness: profile.waypointRandomness ?? 0.25,
-          avoidDirection: mover.avoidDirection,
+          avoidDirection: decision.avoidDirection,
         });
       }
       if (mover.currentWaypoint) {
@@ -241,6 +253,79 @@ export function createBotMover(profile) {
     return desired;
   }
 
+  // Abstand zur nächstgelegenen Bedrohung an Punkt (x,z) — größer = sicherer.
+  // Berücksichtigt mehrere Bedrohungspunkte (decision.threatPoints) UND eine
+  // optionale Gefahr-Funktion (decision.dangerFn, z.B. world.laserDanger, die
+  // bereits ALLE Laser abscannt). Das macht die Flucht multi-bedrohungs-bewusst.
+  function threatClearance(x, z, decision) {
+    let minD = Infinity;
+    const pts = decision.threatPoints;
+    if (pts?.length) {
+      for (const tp of pts) {
+        const w = tp.weight ?? 1;
+        const d = Math.hypot(x - tp.x, z - tp.z) / w;
+        if (d < minD) minD = d;
+      }
+    }
+    if (decision.dangerFn) {
+      const dg = decision.dangerFn(x, z);
+      if (dg && typeof dg.dist === 'number') {
+        const d = dg.dist - (dg.active ? 1.5 : 0);
+        if (d < minD) minD = d;
+      }
+    }
+    return isFinite(minD) ? minD : 99;
+  }
+
+  // Sampling-basierte Fluchtrichtung: probt mehrere Richtungen, bewertet jede
+  // nach Abstand zu ALLEN Bedrohungen am Probe-Punkt, verwirft Richtungen, die
+  // in den Abgrund oder gegen Wände führen, und meidet Kartenränder. Dadurch
+  // weicht der Bot SEITLICH aus statt blind rückwärts in einen zweiten Laser /
+  // über die Kante zu laufen. Fällt auf computeFleeDesired zurück, falls keine
+  // Richtung brauchbar ist.
+  function chooseEscapeDirection(self, world, decision, profile) {
+    const away = computeFleeDesired(self, world, decision, mover, profile);
+
+    const samples = profile.escapeSamples ?? 8;
+    let candidates;
+    if (samples <= 4) {
+      candidates = [DIRS_8[0], DIRS_8[2], DIRS_8[4], DIRS_8[6]];
+    } else {
+      candidates = [...DIRS_8];
+      if (samples > 8) {
+        const vlen = Math.hypot(mover.velocity.x, mover.velocity.z);
+        if (vlen > 1e-3) {
+          candidates.push({ x: mover.velocity.x / vlen, z: mover.velocity.z / vlen });
+        }
+      }
+    }
+
+    const speed = world.speed ?? 6.4;
+    const lookahead = Math.max(1.5, Math.min(3.0, speed * (profile.reactionInterval ?? 0.3)));
+    const r = world.radius ?? 0.55;
+
+    let best = null;
+    for (const dir of candidates) {
+      if (wouldCollide(self, world, dir)) continue;
+      const px = self.x + dir.x * lookahead;
+      const pz = self.z + dir.z * lookahead;
+      const res = world.map.resolve(px, pz, r);
+      if (res.fell) continue;
+
+      const clearance = threatClearance(px, pz, decision);
+      let edgePen = 0;
+      if (world.map.steerToSafety) {
+        const e = world.map.steerToSafety(px, pz);
+        edgePen = Math.hypot(e.x, e.z);
+      }
+      const awayBias = dir.x * away.x + dir.z * away.z;
+      const score = clearance - edgePen * 2.0 + awayBias * 0.5;
+      if (!best || score > best.score) best = { dir, score };
+    }
+
+    return best ? best.dir : away;
+  }
+
   function computeAvoidEdgeDesired(self, world, mover) {
     if (world.map.steerToSafety) {
       const edge = world.map.steerToSafety(self.x, self.z);
@@ -263,19 +348,19 @@ export function createBotMover(profile) {
       case BotState.IDLE:
         return { x: 0, z: 0 };
       case BotState.ROAM:
-        return computeRoamDesired(self, world, mover, profile);
+        return computeRoamDesired(self, world, mover, profile, decision);
       case BotState.CHASE:
         if (decision.targetPos) {
           return norm(decision.targetPos.x - self.x, decision.targetPos.z - self.z);
         }
-        return computeRoamDesired(self, world, mover, profile);
+        return computeRoamDesired(self, world, mover, profile, decision);
       case BotState.PASS_BOMB:
         if (decision.targetPos) {
           return norm(decision.targetPos.x - self.x, decision.targetPos.z - self.z);
         }
-        return computeRoamDesired(self, world, mover, profile);
+        return computeRoamDesired(self, world, mover, profile, decision);
       case BotState.FLEE:
-        return computeFleeDesired(self, world, decision, mover, profile);
+        return chooseEscapeDirection(self, world, decision, profile);
       case BotState.AVOID_EDGE:
         return computeAvoidEdgeDesired(self, world, mover);
       case BotState.UNSTUCK:
