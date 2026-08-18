@@ -67,7 +67,10 @@ button, input { font: inherit; color: inherit; }
   pointer-events: none;
   background:
     radial-gradient(60rem 42rem at 18% -8%,  rgba(240, 179, 87, 0.13), transparent 62%),
-    radial-gradient(48rem 40rem at 88% 108%, rgba(120, 150, 210, 0.09), transparent 60%);
+    radial-gradient(48rem 40rem at 88% 108%, rgba(120, 150, 210, 0.09), transparent 60%),
+    /* Horizontlicht — füllt die leere rechte Bildhälfte, statt nur Deko zu
+       sein: die "Blaue Stunde" hat immer diesen einen fernen Lichtpunkt. */
+    radial-gradient(46rem 46rem at 84% 44%,  rgba(240, 179, 87, 0.11), transparent 66%);
   animation: lightDrift 72s var(--ease-out) infinite alternate;
 }
 
@@ -162,14 +165,28 @@ button, input { font: inherit; color: inherit; }
   white-space: nowrap;
 }
 
-/* ── Konto-Anzeige (angemeldeter Zustand) ────────────────────────────────── */
-.account {
+/* ── Konto-Anzeige (angemeldeter Zustand): ein Chip, öffnet das Profil ───── */
+.account { display: flex; }
+
+.profile-chip {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 0.75rem;
+  padding: 0.3rem 0.3rem 0.3rem 0.9rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.3s var(--ease-out), background-color 0.3s var(--ease-out);
+}
+.profile-chip:hover,
+.profile-chip:focus-visible {
+  border-color: var(--ink-line);
+  background: rgba(255, 255, 255, 0.03);
 }
 
-.account__id {
+.profile-chip__id {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -184,7 +201,10 @@ button, input { font: inherit; color: inherit; }
   color: var(--paper);
   white-space: nowrap;
   text-overflow: ellipsis;
+  transition: color 0.3s var(--ease-out);
 }
+.profile-chip:hover .account__name,
+.profile-chip:focus-visible .account__name { color: var(--lamp); }
 
 .account__rank {
   font-family: var(--font-mono);
@@ -194,23 +214,20 @@ button, input { font: inherit; color: inherit; }
   text-transform: uppercase;
 }
 
-/* ── Avatar-Knopf im Kopfband → öffnet das Profil-Fenster ────────────────── */
-.avatar-btn {
+.profile-chip__avatar {
   flex: none;
   width: 2.25rem;
   height: 2.25rem;
-  padding: 0;
   border: 1px solid var(--ink-line);
   border-radius: 50%;
   overflow: hidden;
   background: var(--ink-raised);
-  cursor: pointer;
   transition: border-color 0.3s var(--ease-out);
 }
-.avatar-btn:hover,
-.avatar-btn:focus-visible { border-color: var(--lamp-edge); }
+.profile-chip:hover .profile-chip__avatar,
+.profile-chip:focus-visible .profile-chip__avatar { border-color: var(--lamp-edge); }
 
-.avatar-btn__img {
+.profile-chip__avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -227,6 +244,22 @@ button, input { font: inherit; color: inherit; }
   width: 100%;
   max-width: var(--measure);
 }
+
+/* ── Zurück-Navigation (App-Seiten) ──────────────────────────────────────── */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 1.75rem;
+  color: var(--steel);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  transition: color 0.3s var(--ease-out), gap 0.3s var(--ease-out);
+}
+.back-link:hover,
+.back-link:focus-visible { color: var(--lamp); gap: 0.65rem; }
 
 /* ── Typografie ──────────────────────────────────────────────────────────── */
 .eyebrow {
@@ -671,8 +704,8 @@ select.field__input { cursor: pointer; }
   .brand__name { font-size: 0.6875rem; letter-spacing: 0.2em; }
   .band--foot  { justify-content: flex-start; }
   .band--head  { gap: 0.75rem; }
-  .account     { gap: 0.6rem; }
-  .account__name { max-width: 7.5rem; }
+  .profile-chip   { gap: 0.5rem; padding-left: 0.6rem; }
+  .account__name  { max-width: 7.5rem; }
 
   /* Hinweis und Schaltfläche nebeneinander wird hier zu eng. */
   .sheet__foot {

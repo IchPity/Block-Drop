@@ -25,18 +25,21 @@
       </a>
 
       <div class="account" data-account hidden data-enter style="--enter-step: 1">
-        <span class="account__id">
-          <span class="account__name" data-account-name></span>
-          <span class="account__rank" data-account-rank></span>
-        </span>
-        <button class="avatar-btn" type="button" data-open-profile aria-label="Profil bearbeiten">
-          <img class="avatar-btn__img" data-account-avatar alt="">
+        <button class="profile-chip" type="button" data-open-profile aria-label="Profil bearbeiten">
+          <span class="profile-chip__id">
+            <span class="account__name" data-account-name></span>
+            <span class="account__rank" data-account-rank></span>
+          </span>
+          <span class="profile-chip__avatar">
+            <img data-account-avatar alt="">
+          </span>
         </button>
       </div>
     </header>
 
     <main class="stage stage--app">
       <div class="stage__inner">
+        <a class="back-link" href="/" data-enter style="--enter-step: 2">← Übersicht</a>
         <span class="eyebrow" data-enter style="--enter-step: 3">App · Admin + Stellvertreter</span>
         <h1 class="headline headline--app" data-enter style="--enter-step: 4">Whitelist</h1>
         <p class="lede" data-enter style="--enter-step: 5">

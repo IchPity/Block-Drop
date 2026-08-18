@@ -31,12 +31,14 @@
       </button>
 
       <div class="account" data-account hidden data-enter style="--enter-step: 1">
-        <span class="account__id">
-          <span class="account__name" data-account-name></span>
-          <span class="account__rank" data-account-rank></span>
-        </span>
-        <button class="avatar-btn" type="button" data-open-profile aria-label="Profil bearbeiten">
-          <img class="avatar-btn__img" data-account-avatar alt="">
+        <button class="profile-chip" type="button" data-open-profile aria-label="Profil bearbeiten">
+          <span class="profile-chip__id">
+            <span class="account__name" data-account-name></span>
+            <span class="account__rank" data-account-rank></span>
+          </span>
+          <span class="profile-chip__avatar">
+            <img data-account-avatar alt="">
+          </span>
         </button>
       </div>
     </header>
