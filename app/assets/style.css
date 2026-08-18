@@ -103,8 +103,23 @@ button, input { font: inherit; color: inherit; }
 }
 
 .band--head {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   justify-content: space-between;
-  border-bottom: 1px solid var(--ink-line);
+  background: rgba(8, 11, 18, 0.72);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+}
+
+/* Hairline, die an den Rändern ausblendet statt hart abzuschneiden. */
+.band--head::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent, var(--ink-line) 12%, var(--ink-line) 88%, transparent);
 }
 
 .band--foot {
@@ -131,7 +146,12 @@ button, input { font: inherit; color: inherit; }
   height: 0.5rem;
   border-radius: 50%;
   background: var(--lamp);
-  box-shadow: 0 0 0 0.3rem var(--lamp-soft), 0 0 1.25rem var(--lamp-edge);
+  animation: markPulse 5s ease-in-out infinite;
+}
+
+@keyframes markPulse {
+  0%, 100% { box-shadow: 0 0 0 0.3rem var(--lamp-soft), 0 0 1.25rem var(--lamp-edge); }
+  50%      { box-shadow: 0 0 0 0.45rem var(--lamp-soft), 0 0 1.75rem var(--lamp-edge); }
 }
 
 .brand__name {
@@ -158,8 +178,12 @@ button, input { font: inherit; color: inherit; }
 }
 
 .account__email {
+  max-width: 14rem;
+  overflow: hidden;
   font-size: 0.8125rem;
   color: var(--paper);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .account__rank {
@@ -238,30 +262,90 @@ button, input { font: inherit; color: inherit; }
   text-transform: uppercase;
 }
 
-.apps__list {
-  list-style: none;
-  border-top: 1px solid var(--ink-line);
+.apps__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 10.5rem));
+  gap: 1rem;
 }
 
-.apps__item {
+/* Jede Kachel: Quadrat, Haarlinien-Rahmen, ein Spotlight, das erst beim
+   Hover/Fokus angeht — der Lampen-Akzent bleibt "eine Sache pro Blick",
+   nur eben zeitlich statt räumlich verteilt. */
+.apps__tile {
+  position: relative;
+  aspect-ratio: 1;
   display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0.4rem 1rem;
-  padding-block: 0.9rem;
-  border-bottom: 1px solid var(--ink-line);
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.1rem;
+  overflow: hidden;
+  border: 1px solid var(--ink-line);
+  border-radius: 3px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.025), transparent 60%);
+  color: inherit;
+  text-decoration: none;
+  opacity: 0;
+  transform: translateY(0.9rem) scale(0.97);
+  animation: tileIn 0.9s var(--ease-out) forwards;
+  animation-delay: calc(var(--tile-step, 0) * 90ms + 80ms);
+  transition: border-color 0.4s var(--ease-out),
+              transform 0.4s var(--ease-out),
+              box-shadow 0.4s var(--ease-out);
 }
 
-.apps__link {
-  color: var(--paper);
+@keyframes tileIn {
+  from { opacity: 0; transform: translateY(0.9rem) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+.apps__tile::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(11rem 9rem at 15% -10%, var(--lamp-soft), transparent 62%);
+  opacity: 0;
+  transition: opacity 0.5s var(--ease-out);
+  pointer-events: none;
+}
+
+.apps__tile:hover,
+.apps__tile:focus-visible {
+  border-color: var(--lamp-edge);
+  transform: translateY(-3px);
+  box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, 0.4);
+}
+
+.apps__tile:hover::before,
+.apps__tile:focus-visible::before { opacity: 1; }
+
+.apps__badge {
+  position: relative;
+  color: var(--steel);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.apps__name {
+  position: relative;
   font-family: var(--font-display);
   font-style: italic;
-  font-size: 1.25rem;
-  text-decoration: none;
-  transition: color 0.3s var(--ease-out);
+  font-size: 1.625rem;
+  line-height: 1.1;
+  color: var(--paper);
+  transition: color 0.35s var(--ease-out);
 }
 
-.apps__link:hover { color: var(--lamp); }
+.apps__tile:hover .apps__name,
+.apps__tile:focus-visible .apps__name { color: var(--lamp); }
+
+.apps__desc {
+  position: relative;
+  color: var(--steel);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
 
 .apps__desc {
   color: var(--steel);
@@ -525,12 +609,16 @@ select.field__input { cursor: pointer; }
     transition-duration: 0.001ms !important;
   }
   [data-enter] { opacity: 1; transform: none; }
+  .apps__tile { opacity: 1; transform: none; }
 }
 
 /* ── Schmale Viewports ───────────────────────────────────────────────────── */
 @media (max-width: 32rem) {
   .brand__name { font-size: 0.6875rem; letter-spacing: 0.2em; }
   .band--foot  { justify-content: flex-start; }
+  .band--head  { gap: 0.75rem; }
+  .account     { gap: 0.6rem; }
+  .account__email { max-width: 7.5rem; }
 
   /* Hinweis und Schaltfläche nebeneinander wird hier zu eng. */
   .sheet__foot {

@@ -54,14 +54,18 @@ window.SmashinAuth = (() => {
     if (!appsSection || !appsList) return;
     const apps = appsFor(rank);
     appsList.innerHTML = "";
-    apps.forEach((app) => {
-      const li = document.createElement("li");
-      li.className = "apps__item";
-      li.innerHTML = `
-        <a class="apps__link" href="/${app.slug}/">${app.name}</a>
+    apps.forEach((app, index) => {
+      const badge = app.ranks.map((r) => RANK_LABELS[r] || r).join(" + ");
+      const a = document.createElement("a");
+      a.className = "apps__tile";
+      a.href = `/${app.slug}/`;
+      a.style.setProperty("--tile-step", index);
+      a.innerHTML = `
+        <span class="apps__badge">${badge}</span>
+        <span class="apps__name">${app.name}</span>
         <span class="apps__desc">${app.desc}</span>
       `;
-      appsList.appendChild(li);
+      appsList.appendChild(a);
     });
     appsSection.hidden = apps.length === 0;
   }
