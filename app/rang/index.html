@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Rang — Smashin' Kurt</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400..700&family=Instrument+Serif:ital@0;1&display=swap">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <div class="stage-light" aria-hidden="true"></div>
+  <div class="stage-grain" aria-hidden="true"></div>
+
+  <div class="frame">
+
+    <header class="band band--head">
+      <a class="brand" href="/" data-enter style="--enter-step: 0">
+        <span class="brand__mark" aria-hidden="true"></span>
+        <span class="brand__name">Smashin' Kurt</span>
+      </a>
+
+      <div class="account" data-account hidden data-enter style="--enter-step: 1">
+        <span class="account__id">
+          <span class="account__email" data-account-email></span>
+          <span class="account__rank" data-account-rank></span>
+        </span>
+        <button class="btn btn--quiet" type="button" data-logout>Abmelden</button>
+      </div>
+    </header>
+
+    <main class="stage stage--app">
+      <div class="stage__inner">
+        <span class="eyebrow" data-enter style="--enter-step: 3">App · Admin</span>
+        <h1 class="headline headline--app" data-enter style="--enter-step: 4">Rang</h1>
+        <p class="lede" data-enter style="--enter-step: 5">
+          Ränge der angemeldeten Teammitglieder vergeben. Der Rang
+          entscheidet, welche weiteren Apps jemand sieht.
+        </p>
+        <p class="notice" id="rang-notice" role="status" aria-live="polite"></p>
+
+        <ul class="datalist" id="rang-list" data-enter style="--enter-step: 6"></ul>
+      </div>
+    </main>
+
+    <footer class="band band--foot" data-enter style="--enter-step: 8">
+      <span class="note">Zugang nur für Teammitglieder</span>
+      <span class="note">Aufbau läuft</span>
+    </footer>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="/assets/auth.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

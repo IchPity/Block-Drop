@@ -45,8 +45,13 @@
         <h1 class="headline" data-enter style="--enter-step: 4">Wo die Arbeit gerade steht.</h1>
         <p class="lede" data-enter style="--enter-step: 5">
           Aufgaben, Meilensteine und Termine des Teams an einem Ort.
-          Melde dich an, um deinen Bereich zu sehen.
+          <span data-guest>Melde dich an, um deinen Bereich zu sehen.</span>
         </p>
+
+        <section class="apps" data-apps hidden data-enter style="--enter-step: 6">
+          <span class="apps__label">Deine Apps</span>
+          <ul class="apps__list" data-apps-list></ul>
+        </section>
       </div>
     </main>
 
@@ -89,6 +94,7 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="/assets/auth.js"></script>
   <script src="/assets/ui.js"></script>
 </body>
 </html>

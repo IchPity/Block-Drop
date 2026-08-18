@@ -221,6 +221,53 @@ button, input { font: inherit; color: inherit; }
   letter-spacing: 0.1em;
 }
 
+/* ── Apps-Liste (angemeldeter Zustand) ────────────────────────────────────── */
+.apps {
+  max-width: var(--measure);
+  margin-top: clamp(2.5rem, 6vh, 3.5rem);
+}
+
+.apps__label {
+  display: block;
+  margin-bottom: 0.75rem;
+  color: var(--steel);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.apps__list {
+  list-style: none;
+  border-top: 1px solid var(--ink-line);
+}
+
+.apps__item {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  padding-block: 0.9rem;
+  border-bottom: 1px solid var(--ink-line);
+}
+
+.apps__link {
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.25rem;
+  text-decoration: none;
+  transition: color 0.3s var(--ease-out);
+}
+
+.apps__link:hover { color: var(--lamp); }
+
+.apps__desc {
+  color: var(--steel);
+  font-size: 0.875rem;
+}
+
 /* ── Schaltflächen ───────────────────────────────────────────────────────── */
 .btn {
   --btn-bg: transparent;
@@ -380,6 +427,78 @@ button, input { font: inherit; color: inherit; }
   line-height: 1.5;
 }
 .notice:empty { display: none; }
+
+/* ── App-Seiten (Whitelist / Rang / Passwords) ───────────────────────────── */
+.stage--app {
+  align-content: start;
+  padding-top: clamp(2.5rem, 8vh, 5rem);
+}
+
+.headline--app {
+  max-width: none;
+  font-size: clamp(2rem, 1.5rem + 2vw, 3rem);
+}
+
+.inline-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-top: clamp(1.5rem, 3.5vh, 2.25rem);
+  max-width: 34rem;
+}
+.inline-form .field { flex: 1; }
+/* `.btn--lamp` bringt width:100% aus dem Anmelde-Dialog mit — hier soll
+   nur das Feld wachsen, nicht der Button. */
+.inline-form .btn { flex: none; width: auto; }
+
+select.field__input { cursor: pointer; }
+
+.datalist {
+  list-style: none;
+  margin-top: clamp(2rem, 5vh, 3rem);
+  max-width: var(--measure);
+  border-top: 1px solid var(--ink-line);
+}
+
+.datalist__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  padding-block: 1rem;
+  border-bottom: 1px solid var(--ink-line);
+}
+
+.datalist__primary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.datalist__email {
+  color: var(--paper);
+  font-size: 0.9375rem;
+}
+
+.datalist__meta {
+  color: var(--steel);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+}
+
+.datalist__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.datalist__empty {
+  padding-block: 1.5rem;
+  color: var(--steel);
+  font-size: 0.9375rem;
+}
 
 /* ── Tastaturfokus ───────────────────────────────────────────────────────── */
 :focus-visible {
