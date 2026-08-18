@@ -230,7 +230,10 @@ button, input { font: inherit; color: inherit; }
   padding: 0.35rem 0;
   border: 0;
   color: var(--steel);
-  letter-spacing: 0.1em;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   text-transform: none;
 }
 .btn--quiet:hover { color: var(--paper); }
@@ -340,8 +343,8 @@ button, input { font: inherit; color: inherit; }
 /* Statusmeldung im Dialog — leer, bis es etwas zu sagen gibt. */
 .notice {
   color: var(--lamp);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
   line-height: 1.5;
 }
 .notice:empty { display: none; }
