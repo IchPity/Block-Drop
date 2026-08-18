@@ -29,6 +29,14 @@
       <button class="btn" type="button" data-open-login data-enter style="--enter-step: 1">
         Anmelden
       </button>
+
+      <div class="account" data-account hidden data-enter style="--enter-step: 1">
+        <span class="account__id">
+          <span class="account__email" data-account-email></span>
+          <span class="account__rank" data-account-rank></span>
+        </span>
+        <button class="btn btn--quiet" type="button" data-logout>Abmelden</button>
+      </div>
     </header>
 
     <main class="stage">
@@ -80,6 +88,7 @@
     </div>
   </dialog>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="/assets/ui.js"></script>
 </body>
 </html>
