@@ -18,8 +18,8 @@
   --lamp-edge:  rgba(240, 179, 87, 0.38);
 
   /* Typografie */
-  --font-display: "Archivo", "Segoe UI", system-ui, sans-serif;
-  --font-body:    "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-body:    "Instrument Sans", "Segoe UI", system-ui, sans-serif;
   --font-mono:    "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
 
   /* Raster */
@@ -42,7 +42,7 @@ body {
   background: var(--ink);
   color: var(--paper);
   font-family: var(--font-body);
-  font-weight: 300;
+  font-weight: 400;
   font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1.0625rem);
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
@@ -132,9 +132,8 @@ button, input { font: inherit; color: inherit; }
 
 .brand__name {
   font-family: var(--font-display);
-  font-variation-settings: "wdth" 125, "wght" 500;
-  font-size: 0.8125rem;
-  letter-spacing: 0.26em;
+  font-size: 0.875rem;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -164,13 +163,13 @@ button, input { font: inherit; color: inherit; }
 }
 
 .headline {
-  max-width: 18ch;
+  max-width: 20ch;
   font-family: var(--font-display);
-  font-variation-settings: "wdth" 125, "wght" 300;
+  font-style: italic;
   font-size: clamp(2.5rem, 1.4rem + 5.4vw, 5.25rem);
-  font-weight: 300;
-  line-height: 1.04;
-  letter-spacing: -0.012em;
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.006em;
   text-wrap: balance;
 }
 
@@ -271,8 +270,8 @@ button, input { font: inherit; color: inherit; }
 
 .sheet__title {
   font-family: var(--font-display);
-  font-variation-settings: "wdth" 118, "wght" 400;
-  font-size: 1.5rem;
+  font-style: italic;
+  font-size: 1.625rem;
   font-weight: 400;
   letter-spacing: 0.01em;
 }

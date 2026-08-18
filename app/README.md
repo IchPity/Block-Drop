@@ -26,8 +26,9 @@ ein kühles Fülllicht, feines Filmkorn. Kinoartig, aber still.
 | `--steel`     | `#78839a` | Sekundärtext, Labels               |
 | `--lamp`      | `#f0b357` | einziger Akzent — die Lichtquelle  |
 
-Schriften (Google Fonts): **Archivo** (variabel, `wdth 125`) für Titel,
-**IBM Plex Sans** für Fließtext, **IBM Plex Mono** für Labels und Werte.
+Schriften (Google Fonts): **Instrument Serif** (kursiv) für Titel und
+Wortmarke, **Instrument Sans** für Fließtext, **IBM Plex Mono** für Labels
+und Werte.
 
 Regeln, die neue Seiten einhalten sollen:
 
