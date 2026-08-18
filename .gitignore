@@ -17,3 +17,7 @@ desktop.ini
 
 # Lose Dateien, die nicht ins Repo sollen
 kurt_converted.jpg
+
+# Private Diplomarbeits-Unterlagen (Unterschriften, personenbezogene Daten) —
+# lokal referenziert, aber nichts für ein öffentliches Repo
+DiplData/
