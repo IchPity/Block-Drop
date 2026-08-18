@@ -32,10 +32,12 @@
 
       <div class="account" data-account hidden data-enter style="--enter-step: 1">
         <span class="account__id">
-          <span class="account__email" data-account-email></span>
+          <span class="account__name" data-account-name></span>
           <span class="account__rank" data-account-rank></span>
         </span>
-        <button class="btn btn--quiet" type="button" data-logout>Abmelden</button>
+        <button class="avatar-btn" type="button" data-open-profile aria-label="Profil bearbeiten">
+          <img class="avatar-btn__img" data-account-avatar alt="">
+        </button>
       </div>
     </header>
 
