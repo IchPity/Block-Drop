@@ -56,7 +56,7 @@ body {
 }
 
 img, svg { display: block; max-width: 100%; }
-button, input { font: inherit; color: inherit; }
+button, input, select, textarea { font: inherit; color: inherit; }
 
 /* ── Lichtsetzung ────────────────────────────────────────────────────────── */
 /* Key: warmes Licht von oben links. Fill: kühl, schwach, unten rechts.
@@ -400,13 +400,51 @@ button, input { font: inherit; color: inherit; }
 .apps__desc {
   position: relative;
   color: var(--steel);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   line-height: 1.4;
 }
 
-.apps__desc {
-  color: var(--steel);
-  font-size: 0.875rem;
+/* ── Angemeldeter Zustand: Bühne wird ein Arbeits-Cockpit statt Kino ─────────
+   Sobald jemand angemeldet ist (auth.js setzt die Klasse), rückt die Bühne
+   nach oben und die Wortmeldung schrumpft — wer täglich reinschaut, will den
+   Stand sehen, nicht erst durch eine Heldenfläche scrollen. Der abgemeldete
+   Zustand bleibt unverändert kinoartig. */
+body.is-authenticated .stage:not(.stage--app) {
+  align-content: start;
+  padding-top: clamp(2rem, 6vh, 3.25rem);
+}
+
+body.is-authenticated .eyebrow { margin-bottom: clamp(0.6rem, 1.5vh, 1rem); }
+
+body.is-authenticated .headline:not(.headline--app) {
+  max-width: none;
+  font-size: clamp(1.75rem, 1.3rem + 2vw, 2.75rem);
+}
+
+body.is-authenticated .lede {
+  max-width: 56ch;
+  margin-top: 0.6rem;
+}
+
+body.is-authenticated .apps { margin-top: clamp(2rem, 5vh, 2.75rem); }
+
+/* Lagebericht + Fortschritt nebeneinander statt gestapelt, sobald Platz da
+   ist — halbiert grob die Bauhöhe der Startseite und der App "Meilensteine". */
+.dash-grid {
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 2.5rem);
+  max-width: var(--measure);
+  margin-top: clamp(1.75rem, 4.5vh, 2.75rem);
+  padding-bottom: clamp(1.5rem, 4vh, 2.25rem);
+  border-bottom: 1px solid var(--ink-line);
+}
+.dash-grid > .report,
+.dash-grid > .progress {
+  margin-top: 0;
+  max-width: none;
+}
+@media (min-width: 58rem) {
+  .dash-grid { grid-template-columns: 1.3fr 1fr; align-items: start; }
 }
 
 /* ── Schaltflächen ───────────────────────────────────────────────────────── */
@@ -626,6 +664,7 @@ button, input { font: inherit; color: inherit; }
 .inline-form .btn { flex: none; width: auto; }
 
 select.field__input { cursor: pointer; }
+select.field__input option { background: var(--ink-raised); color: var(--paper); }
 
 .datalist {
   list-style: none;
@@ -688,12 +727,6 @@ select.field__input { cursor: pointer; }
 
 .datalist__detail--note { font-style: italic; }
 
-/* Vorgänger jetzt später fällig als der Meilenstein selbst. */
-.datalist__row--conflict {
-  padding-left: 0.85rem;
-  border-left: 2px solid var(--alarm);
-}
-
 .tag {
   font-family: var(--font-mono);
   font-size: 0.6875rem;
@@ -715,8 +748,6 @@ textarea.field__input {
 .report {
   max-width: var(--measure);
   margin-top: clamp(2rem, 5vh, 3rem);
-  padding-bottom: clamp(1.5rem, 4vh, 2.25rem);
-  border-bottom: 1px solid var(--ink-line);
 }
 
 .report__label {
@@ -817,6 +848,193 @@ textarea.field__input {
   letter-spacing: 0.04em;
 }
 .progress__person .progress__bar { height: 3px; margin-top: 0.35rem; }
+
+/* ── Fahrplan: Meilensteine auf einer Zeitachse, eine Spur je Person ─────────
+   Das ist die Übersicht auf einen Blick — Position = Termin, Spur = Person,
+   die Nadel zeigt "heute". Klick auf einen Punkt öffnet die passende Zeile
+   in der Liste darunter. */
+.runway {
+  max-width: var(--measure);
+  margin-top: clamp(1.75rem, 4.5vh, 2.5rem);
+  padding-bottom: clamp(1.5rem, 4vh, 2rem);
+  border-bottom: 1px solid var(--ink-line);
+}
+
+.runway__label {
+  display: block;
+  margin-bottom: 1rem;
+  color: var(--steel);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.runway__scroll { overflow-x: auto; padding-bottom: 0.25rem; }
+
+.runway__scale {
+  position: relative;
+  min-width: 40rem;
+  height: 1rem;
+  margin-left: 5rem;
+}
+
+.runway__scale-mark {
+  position: absolute;
+  transform: translateX(-50%);
+  color: var(--steel);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.runway__lanes { position: relative; min-width: 40rem; }
+
+.runway__today {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 1px;
+  background: var(--lamp-edge);
+}
+
+.runway__today-label {
+  position: absolute;
+  top: -1.15rem;
+  left: 0;
+  transform: translateX(-50%);
+  color: var(--lamp);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.runway__lane {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  padding-block: 0.5rem;
+}
+.runway__lane + .runway__lane { border-top: 1px solid var(--ink-line); }
+
+.runway__lane-label {
+  color: var(--steel);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+}
+
+.runway__track { position: relative; height: 1.25rem; }
+.runway__track::after {
+  content: "";
+  position: absolute;
+  inset: 50% 0 auto 0;
+  height: 1px;
+  background: var(--ink-line);
+}
+
+.runway__mark {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 0.6rem;
+  height: 0.6rem;
+  padding: 0;
+  border: 1px solid var(--steel);
+  border-radius: 50%;
+  background: var(--ink-raised);
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  transition: transform 0.25s var(--ease-out), border-color 0.25s var(--ease-out);
+}
+.runway__mark:hover,
+.runway__mark:focus-visible {
+  transform: translate(-50%, -50%) scale(1.7);
+  border-color: var(--lamp);
+}
+.runway__mark--fertig   { background: var(--paper); border-color: var(--paper); }
+.runway__mark--kritisch { background: var(--alarm); border-color: var(--alarm); }
+
+/* ── Meilenstein-Zeilen: eine Zeile per Default, Details per Klick ──────────
+   27 Einträge mit voller Beschreibung wären eine Wand aus Text — <details>
+   hält die Liste als Zeilen-Register lesbar und bringt Auf-/Zuklappen ohne
+   eigenes JS-Widget. */
+.milestone-item { border-bottom: 1px solid var(--ink-line); }
+.milestone-item--conflict {
+  padding-left: 0.85rem;
+  border-left: 2px solid var(--alarm);
+}
+
+.milestone > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  padding-block: 0.85rem;
+  cursor: pointer;
+}
+.milestone > summary::before {
+  content: "▸";
+  margin-right: 0.1rem;
+  color: var(--steel);
+  font-size: 0.7rem;
+  transition: transform 0.25s var(--ease-out);
+}
+.milestone[open] > summary::before { transform: rotate(90deg); }
+
+.milestone__dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--steel);
+}
+.milestone__dot--fertig   { background: var(--paper); }
+.milestone__dot--kritisch { background: var(--alarm); }
+
+.milestone__num {
+  flex: none;
+  color: var(--steel);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+}
+
+.milestone__title {
+  flex: 1 1 16rem;
+  min-width: 10rem;
+  color: var(--paper);
+  font-size: 0.9375rem;
+}
+
+.milestone__person,
+.milestone__due {
+  flex: none;
+  color: var(--steel);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+}
+
+.milestone__note-flag {
+  flex: none;
+  color: var(--lamp);
+  font-size: 0.8125rem;
+  cursor: help;
+}
+
+.milestone__body {
+  display: grid;
+  gap: 0.5rem;
+  padding-bottom: 1rem;
+  padding-left: 1.35rem;
+}
+.milestone__body .datalist__actions { margin-top: 0.35rem; }
 
 /* ── Tastaturfokus ───────────────────────────────────────────────────────── */
 :focus-visible {

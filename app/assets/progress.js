@@ -76,5 +76,33 @@ window.SmashinProgress = (() => {
     return result;
   }
 
-  return { ampel, shiftDays, summarize, nextDue, conflicts };
+  // ── Fahrplan (Runway): Termine auf eine 4–96%-Achse abbilden, mit Rand,
+  // damit der erste/letzte Punkt nicht am Kartenrand klebt.
+  function runwayRange(rows) {
+    const dates = rows.map((m) => new Date(m.due_date).getTime());
+    return { min: Math.min(...dates), max: Math.max(...dates) };
+  }
+
+  function runwayPercent(iso, range) {
+    const span = range.max - range.min || 1;
+    const raw = (new Date(iso).getTime() - range.min) / span;
+    return 4 + Math.min(1, Math.max(0, raw)) * 92;
+  }
+
+  function monthTicks(range) {
+    const ticks = [];
+    const cursor = new Date(range.min);
+    cursor.setDate(1);
+    const end = new Date(range.max);
+    while (cursor <= end) {
+      ticks.push({
+        label: cursor.toLocaleDateString("de-AT", { month: "short", year: "2-digit" }),
+        pct: runwayPercent(cursor.toISOString(), range),
+      });
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+    return ticks;
+  }
+
+  return { ampel, shiftDays, summarize, nextDue, conflicts, runwayRange, runwayPercent, monthTicks };
 })();

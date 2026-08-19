@@ -82,6 +82,7 @@ window.SmashinAuth = (() => {
   }
 
   function renderLoggedIn(member) {
+    document.body.classList.add("is-authenticated");
     openLoginBtns.forEach((el) => { el.hidden = true; });
     guestEls.forEach((el) => { el.hidden = true; });
     if (accountEl) {
@@ -95,6 +96,7 @@ window.SmashinAuth = (() => {
   }
 
   function renderLoggedOut() {
+    document.body.classList.remove("is-authenticated");
     openLoginBtns.forEach((el) => { el.hidden = false; });
     guestEls.forEach((el) => { el.hidden = false; });
     if (accountEl) accountEl.hidden = true;

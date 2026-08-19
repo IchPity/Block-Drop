@@ -47,31 +47,41 @@
           Stand; abhaken kann jede:r nur den eigenen Bereich.
         </p>
 
-        <section class="report" data-enter style="--enter-step: 6">
-          <span class="report__label">
-            <span>Lagebericht</span>
-            <button class="btn btn--quiet" type="button" id="report-edit-btn" hidden>Bearbeiten</button>
-          </span>
-          <p class="report__body" id="report-body">Lädt …</p>
-          <p class="report__meta" id="report-meta"></p>
+        <div class="dash-grid" data-enter style="--enter-step: 6">
+          <section class="report">
+            <span class="report__label">
+              <span>Lagebericht</span>
+              <button class="btn btn--quiet" type="button" id="report-edit-btn" hidden>Bearbeiten</button>
+            </span>
+            <p class="report__body" id="report-body">Lädt …</p>
+            <p class="report__meta" id="report-meta"></p>
 
-          <form class="report__form" id="report-form" hidden novalidate>
-            <textarea class="field__input" id="report-input" maxlength="2000"
-                      placeholder="Wie steht's, was verschiebt sich, was heißt das für den Rest?"></textarea>
-            <div class="datalist__actions">
-              <button class="btn btn--quiet" type="submit">Speichern</button>
-              <button class="btn btn--quiet" type="button" id="report-cancel-btn">Abbrechen</button>
+            <form class="report__form" id="report-form" hidden novalidate>
+              <textarea class="field__input" id="report-input" maxlength="2000"
+                        placeholder="Wie steht's, was verschiebt sich, was heißt das für den Rest?"></textarea>
+              <div class="datalist__actions">
+                <button class="btn btn--quiet" type="submit">Speichern</button>
+                <button class="btn btn--quiet" type="button" id="report-cancel-btn">Abbrechen</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="progress">
+            <div class="progress__stat">
+              <span class="progress__stat-value" id="progress-stat">0 / 0</span>
+              <span class="progress__stat-label">Meilensteine erledigt</span>
             </div>
-          </form>
-        </section>
+            <div class="progress__bar"><div class="progress__bar-fill" id="progress-bar" style="width: 0%"></div></div>
+            <div class="progress__people" id="progress-people"></div>
+          </section>
+        </div>
 
-        <section class="progress" data-enter style="--enter-step: 7">
-          <div class="progress__stat">
-            <span class="progress__stat-value" id="progress-stat">0 / 0</span>
-            <span class="progress__stat-label">Meilensteine erledigt</span>
+        <section class="runway" id="runway" data-enter style="--enter-step: 7" hidden>
+          <span class="runway__label">Fahrplan</span>
+          <div class="runway__scroll">
+            <div class="runway__scale" id="runway-scale"></div>
+            <div class="runway__lanes" id="runway-lanes"></div>
           </div>
-          <div class="progress__bar"><div class="progress__bar-fill" id="progress-bar" style="width: 0%"></div></div>
-          <div class="progress__people" id="progress-people"></div>
         </section>
 
         <p class="notice" id="milestones-notice" role="status" aria-live="polite"></p>

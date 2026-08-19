@@ -8,9 +8,10 @@
 (() => {
   "use strict";
 
+  const grid            = document.querySelector("[data-overview-grid]");
   const reportSection   = document.querySelector("[data-overview]");
   const progressSection = document.querySelector("[data-overview-progress]");
-  if (!reportSection || !progressSection) return;
+  if (!grid || !reportSection || !progressSection) return;
 
   const client = window.SmashinAuth.client;
   const { summarize } = window.SmashinProgress;
@@ -25,8 +26,7 @@
 
   async function render(member) {
     if (!member) {
-      reportSection.hidden = true;
-      progressSection.hidden = true;
+      grid.hidden = true;
       return;
     }
 
@@ -46,7 +46,6 @@
       reportBody.classList.add("report__body--empty");
       reportMeta.textContent = "";
     }
-    reportSection.hidden = false;
 
     const { total, done, people } = summarize(milestones);
     statEl.textContent = `${done} / ${total}`;
@@ -76,7 +75,7 @@
       peopleEl.appendChild(row);
     });
 
-    progressSection.hidden = false;
+    grid.hidden = false;
   }
 
   document.addEventListener("smashin:member", (event) => render(event.detail));

@@ -15,7 +15,7 @@
   const client = window.SmashinAuth.client;
   const isAdmin = member.rank === "admin";
   const { fmt, button } = window.SmashinList;
-  const { ampel, shiftDays, summarize, conflicts } = window.SmashinProgress;
+  const { ampel, shiftDays, summarize, conflicts, runwayRange, runwayPercent, monthTicks } = window.SmashinProgress;
 
   const notice = document.getElementById("milestones-notice");
   const list   = document.getElementById("milestones-list");
@@ -27,6 +27,7 @@
   let filter = "alle";
   let editingId = null;
   let openEditDialog = () => {};
+  const openRowIds = new Set(); // welche <details> offen sind, bleibt über Re-Renders erhalten
 
   /* ── Lagebericht ──────────────────────────────────────────────────────── */
   const reportBody     = document.getElementById("report-body");
@@ -137,56 +138,97 @@
 
   function renderRow(m) {
     const li = document.createElement("li");
-    li.className = "datalist__row";
-    if (conflictIds.has(m.id)) li.classList.add("datalist__row--conflict");
+    li.id = `milestone-${m.id}`;
+    li.className = "milestone-item";
+    if (conflictIds.has(m.id)) li.classList.add("milestone-item--conflict");
 
-    const primary = document.createElement("span");
-    primary.className = "datalist__primary";
+    const wasOpen = openRowIds.has(m.id);
+    const details = document.createElement("details");
+    details.className = "milestone";
+    details.open = wasOpen;
+    details.addEventListener("toggle", () => {
+      if (details.open) openRowIds.add(m.id);
+      else openRowIds.delete(m.id);
+    });
 
-    const title = document.createElement("span");
-    title.className = "datalist__title";
-    title.textContent = `#${m.id} ${m.title}`;
-    primary.appendChild(title);
+    const summary = document.createElement("summary");
 
     const info = ampel(m);
+    const dot = document.createElement("span");
+    dot.className = "milestone__dot"
+      + (info.key === "fertig" ? " milestone__dot--fertig" : "")
+      + (info.key === "delayed_critical" ? " milestone__dot--kritisch" : "");
+    summary.appendChild(dot);
+
+    const num = document.createElement("span");
+    num.className = "milestone__num";
+    num.textContent = `#${m.id}`;
+    summary.appendChild(num);
+
+    const title = document.createElement("span");
+    title.className = "milestone__title";
+    title.textContent = m.title;
+    summary.appendChild(title);
+
+    const person = document.createElement("span");
+    person.className = "milestone__person";
+    person.textContent = m.person_name;
+    summary.appendChild(person);
+
+    const shift = shiftDays(m);
+    const due = document.createElement("span");
+    due.className = "milestone__due";
+    due.textContent = fmtDate(m.due_date) + (shift !== 0 ? ` (${shift > 0 ? "+" : ""}${shift} Tg)` : "");
+    summary.appendChild(due);
+
     const tag = document.createElement("span");
     tag.className = "tag"
       + (info.key === "fertig" ? " tag--fertig" : "")
       + (info.key === "delayed_critical" ? " tag--kritisch" : "");
-    tag.textContent = `${info.icon} ${info.label}`;
-    primary.appendChild(tag);
+    tag.textContent = info.label;
+    summary.appendChild(tag);
 
-    const shift = shiftDays(m);
-    const meta = document.createElement("span");
-    meta.className = "datalist__meta";
-    meta.textContent = `Fällig ${fmtDate(m.due_date)}`
-      + (shift !== 0 ? ` (ursprünglich ${fmtDate(m.original_due_date)}, ${shift > 0 ? "+" : ""}${shift} Tage)` : "")
-      + ` · ${m.person_name}`;
-    primary.appendChild(meta);
+    if (m.admin_note) {
+      const noteFlag = document.createElement("span");
+      noteFlag.className = "milestone__note-flag";
+      noteFlag.textContent = "✎";
+      noteFlag.title = m.admin_note;
+      summary.appendChild(noteFlag);
+    }
 
-    const deliverable = document.createElement("span");
+    details.appendChild(summary);
+
+    const body = document.createElement("div");
+    body.className = "milestone__body";
+
+    const deliverable = document.createElement("p");
     deliverable.className = "datalist__detail";
     deliverable.textContent = m.deliverable;
-    primary.appendChild(deliverable);
+    body.appendChild(deliverable);
+
+    if (shift !== 0) {
+      const shiftNote = document.createElement("p");
+      shiftNote.className = "datalist__detail";
+      shiftNote.textContent = `Ursprünglich fällig am ${fmtDate(m.original_due_date)}.`;
+      body.appendChild(shiftNote);
+    }
 
     if (conflictIds.has(m.id)) {
       const dep = milestones.find((x) => x.id === m.depends_on);
-      const warn = document.createElement("span");
+      const warn = document.createElement("p");
       warn.className = "datalist__detail datalist__detail--note";
       warn.textContent = `⚠ Vorgänger „${dep ? dep.title : m.dependency_note}" ist jetzt später fällig.`;
-      primary.appendChild(warn);
+      body.appendChild(warn);
     }
 
     if (m.admin_note) {
-      const adminNote = document.createElement("span");
+      const adminNote = document.createElement("p");
       adminNote.className = "datalist__detail datalist__detail--note";
       adminNote.textContent = `Admin: ${m.admin_note}`;
-      primary.appendChild(adminNote);
+      body.appendChild(adminNote);
     }
 
-    li.appendChild(primary);
-
-    const actions = document.createElement("span");
+    const actions = document.createElement("div");
     actions.className = "datalist__actions";
 
     if (isAdmin) {
@@ -211,6 +253,7 @@
         m.status = newStatus;
         m.done_at = newStatus === "fertig" ? new Date().toISOString() : null;
         renderProgress();
+        renderRunway();
         renderList();
       });
 
@@ -219,7 +262,9 @@
       actions.appendChild(checkboxLabel);
     }
 
-    li.appendChild(actions);
+    body.appendChild(actions);
+    details.appendChild(body);
+    li.appendChild(details);
     return li;
   }
 
@@ -247,6 +292,80 @@
       renderList();
     });
   });
+
+  /* ── Fahrplan: eine Spur je Person, Position = Termin ───────────────────── */
+  const runwaySection = document.getElementById("runway");
+  const runwayScale    = document.getElementById("runway-scale");
+  const runwayLanes    = document.getElementById("runway-lanes");
+
+  function jumpToMilestone(id) {
+    filter = "alle";
+    filterBtns.forEach((b) => b.classList.toggle("btn--active", b.dataset.filter === "alle"));
+    openRowIds.add(id);
+    renderList();
+    const row = document.getElementById(`milestone-${id}`);
+    if (row) row.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function renderRunway() {
+    if (!runwaySection || !milestones.length) return;
+
+    const range = runwayRange(milestones);
+
+    runwayScale.innerHTML = "";
+    monthTicks(range).forEach((tick) => {
+      const mark = document.createElement("span");
+      mark.className = "runway__scale-mark";
+      mark.style.left = `${tick.pct}%`;
+      mark.textContent = tick.label;
+      runwayScale.appendChild(mark);
+    });
+
+    runwayLanes.innerHTML = "";
+
+    const today = document.createElement("div");
+    today.className = "runway__today";
+    today.style.left = `${runwayPercent(new Date().toISOString(), range)}%`;
+    const todayLabel = document.createElement("span");
+    todayLabel.className = "runway__today-label";
+    todayLabel.textContent = "Heute";
+    today.appendChild(todayLabel);
+    runwayLanes.appendChild(today);
+
+    const people = [...new Set(milestones.map((m) => m.person_name))];
+    people.forEach((personName) => {
+      const lane = document.createElement("div");
+      lane.className = "runway__lane";
+
+      const label = document.createElement("span");
+      label.className = "runway__lane-label";
+      label.textContent = personName.split(" ")[0];
+      lane.appendChild(label);
+
+      const track = document.createElement("div");
+      track.className = "runway__track";
+
+      milestones
+        .filter((m) => m.person_name === personName)
+        .forEach((m) => {
+          const info = ampel(m);
+          const mark = document.createElement("button");
+          mark.type = "button";
+          mark.className = "runway__mark"
+            + (info.key === "fertig" ? " runway__mark--fertig" : "")
+            + (info.key === "delayed_critical" ? " runway__mark--kritisch" : "");
+          mark.style.left = `${runwayPercent(m.due_date, range)}%`;
+          mark.title = `#${m.id} ${m.title} — ${fmtDate(m.due_date)} — ${info.label}`;
+          mark.addEventListener("click", () => jumpToMilestone(m.id));
+          track.appendChild(mark);
+        });
+
+      lane.appendChild(track);
+      runwayLanes.appendChild(lane);
+    });
+
+    runwaySection.hidden = false;
+  }
 
   /* ── Admin: Bearbeiten-Dialog ─────────────────────────────────────────── */
   if (isAdmin) {
@@ -300,6 +419,7 @@
 
       Object.assign(m, patch);
       renderProgress();
+      renderRunway();
       renderList();
       editDialog.close();
     });
@@ -358,5 +478,6 @@
   milestones = msData;
   renderReport(reportData);
   renderProgress();
+  renderRunway();
   renderList();
 })();
