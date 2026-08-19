@@ -635,6 +635,29 @@ body.is-authenticated .apps__label { margin-bottom: 0.5rem; }
   background: rgba(0, 0, 0, 0.4);
 }
 
+/* ── Passwortfeld mit Anzeigen/Verbergen-Umschalter ─────────────────────── */
+.field__password { position: relative; }
+.field__password .field__input { padding-right: 5.25rem; }
+
+.field__password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.7rem;
+  transform: translateY(-50%);
+  border: 0;
+  background: none;
+  padding: 0.2rem 0;
+  color: var(--steel);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.3s var(--ease-out);
+}
+.field__password-toggle:hover,
+.field__password-toggle:focus-visible { color: var(--lamp); }
+
 /* Statusmeldung im Dialog — leer, bis es etwas zu sagen gibt. */
 .notice {
   color: var(--lamp);

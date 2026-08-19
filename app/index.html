@@ -102,8 +102,11 @@
 
       <div class="field">
         <label class="field__label" for="login-password">Passwort</label>
-        <input class="field__input" id="login-password" name="password" type="password"
-               autocomplete="current-password" placeholder="••••••••" required>
+        <div class="field__password">
+          <input class="field__input" id="login-password" name="password" type="password"
+                 autocomplete="current-password" placeholder="••••••••" required>
+          <button class="field__password-toggle" type="button" data-toggle-password="login-password" aria-pressed="false">Anzeigen</button>
+        </div>
       </div>
 
       <p class="notice" id="login-notice" role="status" aria-live="polite"></p>

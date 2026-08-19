@@ -26,10 +26,17 @@
   const openLoginBtns  = document.querySelectorAll("[data-open-login]");
   const closeLoginBtns = document.querySelectorAll("[data-close-login]");
 
+  const passwordToggle = document.querySelector('[data-toggle-password="login-password"]');
+
   const open = () => {
     if (dialog.open) return;
     notice.textContent = "";
     form.reset();
+    passwordInput.type = "password";
+    if (passwordToggle) {
+      passwordToggle.textContent = "Anzeigen";
+      passwordToggle.setAttribute("aria-pressed", "false");
+    }
     dialog.showModal();
     // Erst nach dem Öffnen fokussieren, sonst scrollt Safari die Seite.
     requestAnimationFrame(() => emailInput.focus());

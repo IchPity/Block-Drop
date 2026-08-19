@@ -160,8 +160,11 @@ window.SmashinAuth = (() => {
 
         <div class="field">
           <label class="field__label" for="profile-password">Neues Passwort</label>
-          <input class="field__input" id="profile-password" type="password"
-                 autocomplete="new-password" placeholder="leer lassen = unverändert">
+          <div class="field__password">
+            <input class="field__input" id="profile-password" type="password"
+                   autocomplete="new-password" placeholder="leer lassen = unverändert">
+            <button class="field__password-toggle" type="button" data-toggle-password="profile-password" aria-pressed="false">Anzeigen</button>
+          </div>
         </div>
 
         <p class="notice" id="profile-notice" role="status" aria-live="polite"></p>
@@ -181,6 +184,7 @@ window.SmashinAuth = (() => {
     const avatarHint    = dialog.querySelector("#profile-avatar-hint");
     const nameInput     = dialog.querySelector("#profile-name");
     const passwordInput = dialog.querySelector("#profile-password");
+    const passwordToggle = dialog.querySelector('[data-toggle-password="profile-password"]');
     const notice        = dialog.querySelector("#profile-notice");
     const form           = dialog.querySelector("#profile-form");
     const submitBtn      = form.querySelector('button[type="submit"]');
@@ -192,6 +196,9 @@ window.SmashinAuth = (() => {
       notice.textContent = "";
       nameInput.value = currentMember.displayName || "";
       passwordInput.value = "";
+      passwordInput.type = "password";
+      passwordToggle.textContent = "Anzeigen";
+      passwordToggle.setAttribute("aria-pressed", "false");
       avatarPreview.src = currentMember.avatarUrl || DEFAULT_AVATAR;
       avatarHint.textContent = "";
       dialog.showModal();
@@ -280,6 +287,20 @@ window.SmashinAuth = (() => {
   }
 
   if (accountEl) buildProfileDialog();
+
+  /* ── Passwort-Felder: Klartext ein-/ausblenden ─────────────────────────
+     Delegiert auf `document`, damit auch das erst später ins DOM
+     eingefügte Profil-Passwortfeld ohne eigene Verdrahtung funktioniert. */
+  document.addEventListener("click", (event) => {
+    const toggle = event.target.closest("[data-toggle-password]");
+    if (!toggle) return;
+    const input = document.getElementById(toggle.dataset.togglePassword);
+    if (!input) return;
+    const shown = input.type === "text";
+    input.type = shown ? "password" : "text";
+    toggle.textContent = shown ? "Anzeigen" : "Verbergen";
+    toggle.setAttribute("aria-pressed", String(!shown));
+  });
 
   return { client, ready, requireRank, appsFor, RANK_LABELS, getMember: () => currentMember };
 })();
