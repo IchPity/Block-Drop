@@ -20,6 +20,92 @@
     { value: "admin", label: "Admin" },
   ];
 
+  const fmtDue = (iso) => new Date(iso).toLocaleDateString("de-AT", { dateStyle: "medium" });
+
+  // Einmal geladen, von allen Zuweisungs-Panels geteilt (schont Requests).
+  let milestonesPromise = null;
+  function loadMilestones() {
+    if (!milestonesPromise) {
+      milestonesPromise = client
+        .from("milestones")
+        .select("id, title, due_date, assignee_email")
+        .order("id")
+        .then(({ data, error }) => {
+          if (error) throw error;
+          return data;
+        });
+    }
+    return milestonesPromise;
+  }
+
+  function renderAssignPanel(entry) {
+    const details = document.createElement("details");
+    details.className = "rang-assign";
+
+    const summary = document.createElement("summary");
+    summary.textContent = "Meilensteine zuweisen";
+    details.appendChild(summary);
+
+    const body = document.createElement("div");
+    body.className = "rang-assign__body";
+    details.appendChild(body);
+
+    details.addEventListener("toggle", async () => {
+      if (!details.open || body.dataset.loaded) return;
+      body.dataset.loaded = "1";
+      body.textContent = "Lädt …";
+
+      let milestones;
+      try {
+        milestones = await loadMilestones();
+      } catch (err) {
+        body.textContent = "";
+        notice.textContent = err.message;
+        return;
+      }
+
+      body.innerHTML = "";
+      milestones.forEach((m) => {
+        const item = document.createElement("label");
+        item.className = "rang-assign__item";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = m.assignee_email === entry.email;
+        checkbox.addEventListener("change", async () => {
+          checkbox.disabled = true;
+          const newEmail = checkbox.checked ? entry.email : null;
+
+          const { error } = await client
+            .from("milestones")
+            .update({ assignee_email: newEmail, updated_at: new Date().toISOString() })
+            .eq("id", m.id);
+
+          checkbox.disabled = false;
+
+          if (error) {
+            notice.textContent = error.message;
+            checkbox.checked = !checkbox.checked;
+            return;
+          }
+          m.assignee_email = newEmail;
+        });
+
+        const text = document.createElement("span");
+        text.textContent = `#${m.id} ${m.title}`;
+
+        const due = document.createElement("span");
+        due.className = "rang-assign__item-due";
+        due.textContent = fmtDue(m.due_date);
+
+        item.append(checkbox, text, due);
+        body.appendChild(item);
+      });
+    });
+
+    return details;
+  }
+
   function renderRow(entry) {
     const select = document.createElement("select");
     select.className = "field__input";
@@ -51,7 +137,9 @@
       entry.rank = newRank;
     });
 
-    return row({ primary: entry.email, meta: `Mitglied seit ${fmt(entry.created_at)}`, actions: select });
+    const li = row({ primary: entry.email, meta: `Mitglied seit ${fmt(entry.created_at)}`, actions: select });
+    li.appendChild(renderAssignPanel(entry));
+    return li;
   }
 
   async function loadList() {
