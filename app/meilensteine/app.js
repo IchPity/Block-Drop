@@ -9,7 +9,7 @@
 (async () => {
   "use strict";
 
-  const member = await window.SmashinAuth.requireRank(["admin", "stellvertreter", "mitarbeiter"]);
+  const member = await window.SmashinAuth.requireRank(["admin", "stellvertreter", "mitarbeiter", "zuschauer"]);
   if (!member) return; // requireRank hat schon auf "/" umgeleitet
 
   const client = window.SmashinAuth.client;

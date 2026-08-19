@@ -14,6 +14,7 @@
   const list   = document.getElementById("rang-list");
 
   const RANKS = [
+    { value: "zuschauer", label: "Zuschauer" },
     { value: "mitarbeiter", label: "Mitarbeiter" },
     { value: "stellvertreter", label: "Stellvertreter" },
     { value: "admin", label: "Admin" },

@@ -17,12 +17,13 @@ window.SmashinAuth = (() => {
     admin: "Admin",
     stellvertreter: "Stellvertreter",
     mitarbeiter: "Mitarbeiter",
+    zuschauer: "Zuschauer",
   };
 
   // Registry aller Apps + welcher Rang sie sehen darf. Admin sieht immer
   // alles, auch ohne hier explizit gelistet zu sein (Filter unten).
   const APPS = [
-    { slug: "meilensteine", name: "Meilensteine", desc: "Fortschritt der Diplomarbeit", ranks: ["admin", "stellvertreter", "mitarbeiter"] },
+    { slug: "meilensteine", name: "Meilensteine", desc: "Fortschritt der Diplomarbeit", ranks: ["admin", "stellvertreter", "mitarbeiter", "zuschauer"] },
     { slug: "whitelist", name: "Whitelist", desc: "Neue E-Mails freischalten", ranks: ["admin", "stellvertreter"] },
     { slug: "rang",      name: "Rang",      desc: "Ränge der Teammitglieder vergeben", ranks: ["admin"] },
     { slug: "passwords", name: "Passwords", desc: "Zugangsstatus & Anmeldungen", ranks: ["admin"] },
