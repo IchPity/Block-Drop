@@ -8,6 +8,7 @@
   if (!member) return; // requireRank hat schon auf "/" umgeleitet
 
   const client = window.SmashinAuth.client;
+  const { fmt, row, renderList } = window.SmashinList;
 
   const notice = document.getElementById("rang-notice");
   const list   = document.getElementById("rang-list");
@@ -18,30 +19,14 @@
     { value: "admin", label: "Admin" },
   ];
 
-  const fmt = (iso) =>
-    new Date(iso).toLocaleString("de-AT", { dateStyle: "medium", timeStyle: "short" });
-
-  function renderRow(row) {
-    const li = document.createElement("li");
-    li.className = "datalist__row";
-
-    li.innerHTML = `
-      <span class="datalist__primary">
-        <span class="datalist__email">${row.email}</span>
-        <span class="datalist__meta">Mitglied seit ${fmt(row.created_at)}</span>
-      </span>
-    `;
-
-    const actions = document.createElement("span");
-    actions.className = "datalist__actions";
-
+  function renderRow(entry) {
     const select = document.createElement("select");
     select.className = "field__input";
     RANKS.forEach(({ value, label }) => {
       const option = document.createElement("option");
       option.value = value;
       option.textContent = label;
-      if (value === row.rank) option.selected = true;
+      if (value === entry.rank) option.selected = true;
       select.appendChild(option);
     });
 
@@ -53,22 +38,19 @@
       const { error } = await client
         .from("members")
         .update({ rank: newRank })
-        .eq("id", row.id);
+        .eq("id", entry.id);
 
       select.disabled = false;
 
       if (error) {
         notice.textContent = error.message;
-        select.value = row.rank; // zurücksetzen
+        select.value = entry.rank; // zurücksetzen
         return;
       }
-      row.rank = newRank;
+      entry.rank = newRank;
     });
 
-    actions.appendChild(select);
-    li.appendChild(actions);
-
-    return li;
+    return row({ primary: entry.email, meta: `Mitglied seit ${fmt(entry.created_at)}`, actions: select });
   }
 
   async function loadList() {
@@ -77,22 +59,13 @@
       .select("id, email, rank, created_at")
       .order("created_at", { ascending: true });
 
-    list.innerHTML = "";
-
     if (error) {
+      list.innerHTML = "";
       notice.textContent = error.message;
       return;
     }
 
-    if (!data.length) {
-      const empty = document.createElement("li");
-      empty.className = "datalist__empty";
-      empty.textContent = "Noch niemand angemeldet.";
-      list.appendChild(empty);
-      return;
-    }
-
-    data.forEach((row) => list.appendChild(renderRow(row)));
+    renderList(list, data, { emptyText: "Noch niemand angemeldet.", row: renderRow });
   }
 
   loadList();

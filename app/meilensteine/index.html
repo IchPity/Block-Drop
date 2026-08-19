@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Meilensteine — Smashin' Kurt</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400..700&family=Instrument+Serif:ital@0;1&display=swap">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <div class="stage-light" aria-hidden="true"></div>
+  <div class="stage-grain" aria-hidden="true"></div>
+
+  <div class="frame">
+
+    <header class="band band--head">
+      <a class="brand" href="/" data-enter style="--enter-step: 0">
+        <span class="brand__mark" aria-hidden="true"></span>
+        <span class="brand__name">Smashin' Kurt</span>
+      </a>
+
+      <div class="account" data-account hidden data-enter style="--enter-step: 1">
+        <button class="profile-chip" type="button" data-open-profile aria-label="Profil bearbeiten">
+          <span class="profile-chip__id">
+            <span class="account__name" data-account-name></span>
+            <span class="account__rank" data-account-rank></span>
+          </span>
+          <span class="profile-chip__avatar">
+            <img data-account-avatar alt="">
+          </span>
+        </button>
+      </div>
+    </header>
+
+    <main class="stage stage--app">
+      <div class="stage__inner">
+        <a class="back-link" href="/" data-enter style="--enter-step: 2">← Übersicht</a>
+        <span class="eyebrow" data-enter style="--enter-step: 3">App · Alle Ränge</span>
+        <h1 class="headline headline--app" data-enter style="--enter-step: 4">Meilensteine</h1>
+        <p class="lede" data-enter style="--enter-step: 5">
+          Der Meilensteinplan der Diplomarbeit. Jede Person sieht den ganzen
+          Stand; abhaken kann jede:r nur den eigenen Bereich.
+        </p>
+
+        <section class="report" data-enter style="--enter-step: 6">
+          <span class="report__label">
+            <span>Lagebericht</span>
+            <button class="btn btn--quiet" type="button" id="report-edit-btn" hidden>Bearbeiten</button>
+          </span>
+          <p class="report__body" id="report-body">Lädt …</p>
+          <p class="report__meta" id="report-meta"></p>
+
+          <form class="report__form" id="report-form" hidden novalidate>
+            <textarea class="field__input" id="report-input" maxlength="2000"
+                      placeholder="Wie steht's, was verschiebt sich, was heißt das für den Rest?"></textarea>
+            <div class="datalist__actions">
+              <button class="btn btn--quiet" type="submit">Speichern</button>
+              <button class="btn btn--quiet" type="button" id="report-cancel-btn">Abbrechen</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="progress" data-enter style="--enter-step: 7">
+          <div class="progress__stat">
+            <span class="progress__stat-value" id="progress-stat">0 / 0</span>
+            <span class="progress__stat-label">Meilensteine erledigt</span>
+          </div>
+          <div class="progress__bar"><div class="progress__bar-fill" id="progress-bar" style="width: 0%"></div></div>
+          <div class="progress__people" id="progress-people"></div>
+        </section>
+
+        <p class="notice" id="milestones-notice" role="status" aria-live="polite"></p>
+
+        <div class="datalist__actions" data-enter style="--enter-step: 8">
+          <button class="btn btn--quiet btn--active" type="button" data-filter="alle">Alle</button>
+          <button class="btn btn--quiet" type="button" data-filter="meine">Meine</button>
+          <button class="btn btn--quiet" type="button" data-filter="offen">Offen</button>
+        </div>
+
+        <ul class="datalist" id="milestones-list" data-enter style="--enter-step: 9"></ul>
+      </div>
+    </main>
+
+    <footer class="band band--foot" data-enter style="--enter-step: 10">
+      <span class="note">Zugang nur für Teammitglieder</span>
+      <span class="note">Aufbau läuft</span>
+    </footer>
+
+  </div>
+
+  <!-- Admin: Meilenstein bearbeiten -->
+  <dialog class="sheet" id="edit-dialog" aria-labelledby="edit-title">
+    <h2 class="sheet__title" id="edit-title">Meilenstein bearbeiten</h2>
+
+    <form class="sheet__form" id="edit-form" novalidate>
+      <div class="field">
+        <label class="field__label" for="edit-title-input">Titel</label>
+        <input class="field__input" id="edit-title-input" type="text" maxlength="120" required>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-deliverable-input">Was wird abgeliefert?</label>
+        <textarea class="field__input" id="edit-deliverable-input" maxlength="500" required></textarea>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-assignee-input">Zuständig</label>
+        <select class="field__input" id="edit-assignee-input"></select>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-due-input">Termin</label>
+        <input class="field__input" id="edit-due-input" type="date" required>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-status-input">Status</label>
+        <select class="field__input" id="edit-status-input">
+          <option value="offen">Offen</option>
+          <option value="in_arbeit">In Arbeit</option>
+          <option value="fertig">Fertig</option>
+          <option value="verschoben">Verschoben</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-note-input">Admin-Kommentar</label>
+        <textarea class="field__input" id="edit-note-input" maxlength="500"
+                  placeholder="Wie wirkt sich das aus, was ist der Stand?"></textarea>
+      </div>
+
+      <p class="notice" id="edit-notice" role="status" aria-live="polite"></p>
+
+      <button class="btn btn--lamp" type="submit">Speichern</button>
+    </form>
+
+    <div class="sheet__foot">
+      <span class="sheet__hint">Termin, Zuständigkeit und Status bestimmen die Ampel in der Liste.</span>
+      <button class="btn btn--quiet" type="button" id="edit-close-btn">Schließen</button>
+    </div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="/assets/auth.js"></script>
+  <script src="/assets/datalist.js"></script>
+  <script src="/assets/progress.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

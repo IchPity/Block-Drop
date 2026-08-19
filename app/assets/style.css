@@ -16,6 +16,7 @@
 
   --lamp-soft:  rgba(240, 179, 87, 0.14);
   --lamp-edge:  rgba(240, 179, 87, 0.38);
+  --alarm:      #c65d4a;   /* einziger Warnton — nur für kritische Verzögerung */
 
   /* Typografie */
   --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
@@ -457,6 +458,8 @@ button, input { font: inherit; color: inherit; }
 }
 .btn--quiet:hover { color: var(--paper); }
 
+.btn--active { color: var(--lamp); }
+
 /* ── Anmelde-Dialog ──────────────────────────────────────────────────────── */
 .sheet {
   margin: auto;   /* der globale margin-Reset hebelt das Standard-auto aus */
@@ -647,7 +650,8 @@ select.field__input { cursor: pointer; }
   gap: 0.25rem;
 }
 
-.datalist__email {
+.datalist__email,
+.datalist__title {
   color: var(--paper);
   font-size: 0.9375rem;
 }
@@ -665,11 +669,154 @@ select.field__input { cursor: pointer; }
   gap: 0.75rem;
 }
 
+.datalist__actions input[type="checkbox"] {
+  margin-right: 0.5rem;
+  accent-color: var(--lamp);
+}
+
 .datalist__empty {
   padding-block: 1.5rem;
   color: var(--steel);
   font-size: 0.9375rem;
 }
+
+.datalist__detail {
+  color: var(--steel);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.datalist__detail--note { font-style: italic; }
+
+/* Vorgänger jetzt später fällig als der Meilenstein selbst. */
+.datalist__row--conflict {
+  padding-left: 0.85rem;
+  border-left: 2px solid var(--alarm);
+}
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+.tag--fertig   { color: var(--paper); }
+.tag--kritisch { color: var(--alarm); }
+
+textarea.field__input {
+  cursor: text;
+  font-family: var(--font-body);
+  resize: vertical;
+}
+
+/* ── Lagebericht (Startseite + App "Meilensteine") ────────────────────────── */
+.report {
+  max-width: var(--measure);
+  margin-top: clamp(2rem, 5vh, 3rem);
+  padding-bottom: clamp(1.5rem, 4vh, 2.25rem);
+  border-bottom: 1px solid var(--ink-line);
+}
+
+.report__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  color: var(--steel);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.report__label .back-link { margin-bottom: 0; }
+
+.report__body {
+  max-width: 56ch;
+  color: var(--paper);
+  font-size: 1rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.report__body--empty {
+  color: var(--steel);
+  font-style: italic;
+}
+
+.report__meta {
+  margin-top: 0.5rem;
+  color: var(--steel);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+}
+
+.report__form {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 40rem;
+  margin-top: 1rem;
+}
+.report__form textarea.field__input { min-height: 6rem; }
+.report__form .btn { width: auto; }
+
+/* ── Fortschritt gesamt + je Person ───────────────────────────────────────── */
+.progress {
+  max-width: var(--measure);
+  margin-top: clamp(1.75rem, 4vh, 2.5rem);
+}
+
+.progress__stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-family: var(--font-mono);
+}
+
+.progress__stat-value { font-size: 1.5rem; color: var(--paper); }
+
+.progress__stat-label {
+  color: var(--steel);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+}
+
+.progress__bar {
+  position: relative;
+  height: 4px;
+  margin-top: 0.75rem;
+  border-radius: 999px;
+  background: var(--ink-line);
+  overflow: hidden;
+}
+
+.progress__bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--lamp);
+  transition: width 0.6s var(--ease-out);
+}
+
+.progress__people {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1rem 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.progress__person { display: grid; gap: 0.35rem; }
+.progress__person-name { font-size: 0.875rem; color: var(--paper); }
+.progress__person-frac {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--steel);
+  letter-spacing: 0.04em;
+}
+.progress__person .progress__bar { height: 3px; margin-top: 0.35rem; }
 
 /* ── Tastaturfokus ───────────────────────────────────────────────────────── */
 :focus-visible {

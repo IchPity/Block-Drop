@@ -22,6 +22,7 @@ window.SmashinAuth = (() => {
   // Registry aller Apps + welcher Rang sie sehen darf. Admin sieht immer
   // alles, auch ohne hier explizit gelistet zu sein (Filter unten).
   const APPS = [
+    { slug: "meilensteine", name: "Meilensteine", desc: "Fortschritt der Diplomarbeit", ranks: ["admin", "stellvertreter", "mitarbeiter"] },
     { slug: "whitelist", name: "Whitelist", desc: "Neue E-Mails freischalten", ranks: ["admin", "stellvertreter"] },
     { slug: "rang",      name: "Rang",      desc: "Ränge der Teammitglieder vergeben", ranks: ["admin"] },
     { slug: "passwords", name: "Passwords", desc: "Zugangsstatus & Anmeldungen", ranks: ["admin"] },
@@ -63,7 +64,9 @@ window.SmashinAuth = (() => {
     const apps = appsFor(rank);
     appsList.innerHTML = "";
     apps.forEach((app, index) => {
-      const badge = app.ranks.map((r) => RANK_LABELS[r] || r).join(" + ");
+      const badge = app.ranks.length >= 3
+        ? "Alle"
+        : app.ranks.map((r) => RANK_LABELS[r] || r).join(" + ");
       const a = document.createElement("a");
       a.className = "apps__tile";
       a.href = `/${app.slug}/`;

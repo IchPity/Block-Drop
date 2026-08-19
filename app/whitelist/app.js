@@ -8,39 +8,21 @@
   if (!member) return; // requireRank hat schon auf "/" umgeleitet
 
   const client = window.SmashinAuth.client;
+  const { fmt, row, button, renderList } = window.SmashinList;
 
   const form      = document.getElementById("whitelist-form");
   const emailInput = document.getElementById("whitelist-email");
   const notice    = document.getElementById("whitelist-notice");
   const list      = document.getElementById("whitelist-list");
 
-  const fmt = (iso) =>
-    new Date(iso).toLocaleString("de-AT", { dateStyle: "medium", timeStyle: "short" });
+  function renderRow(entry) {
+    const meta = entry.claimed_at
+      ? `Beigetreten am ${fmt(entry.claimed_at)}`
+      : `Eingeladen am ${fmt(entry.created_at)} — noch offen`;
 
-  function renderRow(row) {
-    const li = document.createElement("li");
-    li.className = "datalist__row";
-
-    const status = row.claimed_at
-      ? `Beigetreten am ${fmt(row.claimed_at)}`
-      : `Eingeladen am ${fmt(row.created_at)} — noch offen`;
-
-    li.innerHTML = `
-      <span class="datalist__primary">
-        <span class="datalist__email">${row.email}</span>
-        <span class="datalist__meta">${status}</span>
-      </span>
-    `;
-
-    const actions = document.createElement("span");
-    actions.className = "datalist__actions";
-    const delBtn = document.createElement("button");
-    delBtn.type = "button";
-    delBtn.className = "btn btn--quiet";
-    delBtn.textContent = "Entfernen";
-    delBtn.addEventListener("click", async () => {
+    const delBtn = button("Entfernen", async () => {
       delBtn.disabled = true;
-      const { error } = await client.from("whitelist").delete().eq("email", row.email);
+      const { error } = await client.from("whitelist").delete().eq("email", entry.email);
       if (error) {
         notice.textContent = error.message;
         delBtn.disabled = false;
@@ -48,10 +30,8 @@
       }
       loadList();
     });
-    actions.appendChild(delBtn);
-    li.appendChild(actions);
 
-    return li;
+    return row({ primary: entry.email, meta, actions: delBtn });
   }
 
   async function loadList() {
@@ -60,22 +40,13 @@
       .select("email, created_at, claimed_at")
       .order("created_at", { ascending: false });
 
-    list.innerHTML = "";
-
     if (error) {
+      list.innerHTML = "";
       notice.textContent = error.message;
       return;
     }
 
-    if (!data.length) {
-      const empty = document.createElement("li");
-      empty.className = "datalist__empty";
-      empty.textContent = "Noch niemand freigeschaltet.";
-      list.appendChild(empty);
-      return;
-    }
-
-    data.forEach((row) => list.appendChild(renderRow(row)));
+    renderList(list, data, { emptyText: "Noch niemand freigeschaltet.", row: renderRow });
   }
 
   form.addEventListener("submit", async (event) => {

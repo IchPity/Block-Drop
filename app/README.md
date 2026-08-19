@@ -5,11 +5,19 @@ Statisches Frontend des Smashin'-Kurt-Fortschritts-Trackers. Wird von Cloudflare
 
 ```
 app/
-├── index.html        Startseite (abgemeldeter Zustand) + Anmelde-Dialog
+├── index.html         Startseite: Anmeldung, Lagebericht + Fortschritt, App-Kacheln
 ├── favicon.svg
-└── assets/
-    ├── style.css     Tokens, Typografie, Grundgerüst — für alle Seiten
-    └── ui.js         Gemeinsame Oberflächen-Logik (aktuell: Dialog)
+├── assets/
+│   ├── style.css      Tokens, Typografie, Grundgerüst — für alle Seiten
+│   ├── auth.js        Supabase-Client, Kontoanzeige, Profil-Fenster, Rang-Guard, App-Registry
+│   ├── datalist.js    Gemeinsame Bausteine für Listen-Apps (Zeile, Button, leerer Zustand)
+│   ├── progress.js    Ampel-/Fortschritts-Berechnung aus Meilenstein-Daten (reine Logik)
+│   ├── overview.js    Lagebericht + Fortschritt auf der Startseite
+│   └── ui.js          Gemeinsame Oberflächen-Logik (Anmelde-Dialog)
+├── meilensteine/      App: Plan-Übersicht, Admin bearbeitet, jede:r hakt Eigenes ab
+├── whitelist/         App: neue E-Mails freischalten (Admin + Stellvertreter)
+├── rang/              App: Ränge vergeben (Admin)
+└── passwords/         App: Zugangsstatus & Anmeldungen (Admin)
 ```
 
 ## Designsystem
@@ -39,6 +47,9 @@ Regeln, die neue Seiten einhalten sollen:
 
 ## Stand
 
-Phase 1: Grundgerüst. Die Startseite zeigt Kopfband mit Anmelde-Schaltfläche
-und sonst eine bewusst leere Bühne. Der Anmelde-Dialog ist reine Optik —
-die eigentliche Anmeldung (Supabase Auth) kommt im nächsten Schritt.
+Phase 3: Inhalte. Anmeldung (Phase 2) läuft über Supabase Auth. Rang-System
+und die Verwaltungs-Apps Whitelist/Rang/Passwords stehen. Die App
+"Meilensteine" bildet den DA-Plan ab (siehe `db/milestones_setup.sql`):
+Admin bearbeitet Termine/Zuweisung/Status/Kommentar und schreibt den
+Lagebericht, alle anderen sehen den vollen Stand und haken nur den eigenen
+Bereich ab — durchgesetzt per RLS + RPC, nicht nur im Frontend.

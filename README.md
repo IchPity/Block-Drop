@@ -49,8 +49,12 @@ Anmelde-Dialog als reine Optik, sonst bewusst leer. Designsystem steht
 Supabase Auth. Nur vorab freigeschaltete E-Mail-Adressen können sich
 anmelden; beim ersten Anmelden setzt die Person ihr Passwort selbst.
 
-**Phase 3 — Inhalte.**
-Dashboard, Aufgaben/Meilensteine, Team- und Admin-Bereich.
+**Phase 3 — Inhalte (läuft).**
+App "Meilensteine" bildet den DA-Plan ab: Admin bearbeitet Termine,
+Zuweisung, Status und Kommentare sowie einen Lagebericht; alle
+Teammitglieder sehen den vollen Fortschritt (Startseite + App) und haken
+ausschließlich ihren eigenen Bereich ab. Team- und Admin-Bereich (Whitelist,
+Rang, Passwords) stehen bereits aus Phase 2.
 
 ## Passwörter und Admin-Zugriff
 

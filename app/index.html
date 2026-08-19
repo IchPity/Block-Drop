@@ -52,14 +52,32 @@
           <span data-guest>Melde dich an, um deinen Bereich zu sehen.</span>
         </p>
 
-        <section class="apps" data-apps hidden data-enter style="--enter-step: 6">
+        <section class="report" data-overview hidden data-enter style="--enter-step: 6">
+          <span class="report__label">
+            <span>Lagebericht</span>
+            <a class="back-link" href="/meilensteine/">Alle Meilensteine →</a>
+          </span>
+          <p class="report__body" data-overview-report>—</p>
+          <p class="report__meta" data-overview-meta></p>
+        </section>
+
+        <section class="progress" data-overview-progress hidden data-enter style="--enter-step: 7">
+          <div class="progress__stat">
+            <span class="progress__stat-value" data-overview-stat>0 / 0</span>
+            <span class="progress__stat-label">Meilensteine erledigt</span>
+          </div>
+          <div class="progress__bar"><div class="progress__bar-fill" data-overview-bar style="width: 0%"></div></div>
+          <div class="progress__people" data-overview-people></div>
+        </section>
+
+        <section class="apps" data-apps hidden data-enter style="--enter-step: 8">
           <span class="apps__label">Deine Apps</span>
           <div class="apps__grid" data-apps-list></div>
         </section>
       </div>
     </main>
 
-    <footer class="band band--foot" data-enter style="--enter-step: 7">
+    <footer class="band band--foot" data-enter style="--enter-step: 9">
       <span class="note">Zugang nur für Teammitglieder</span>
       <span class="note">Aufbau läuft</span>
     </footer>
@@ -99,6 +117,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="/assets/auth.js"></script>
+  <script src="/assets/progress.js"></script>
+  <script src="/assets/overview.js"></script>
   <script src="/assets/ui.js"></script>
 </body>
 </html>
