@@ -8,7 +8,7 @@
   if (!member) return; // requireRank hat schon auf "/" umgeleitet
 
   const client = window.SmashinAuth.client;
-  const { fmt, row, renderList } = window.SmashinList;
+  const { fmt, row, renderList, renderState } = window.SmashinList;
 
   const notice = document.getElementById("rang-notice");
   const list   = document.getElementById("rang-list");
@@ -143,14 +143,15 @@
   }
 
   async function loadList() {
+    renderState(list, "Lädt", "Mitgliederliste wird geladen …");
+
     const { data, error } = await client
       .from("members")
       .select("id, email, rank, created_at")
       .order("created_at", { ascending: true });
 
     if (error) {
-      list.innerHTML = "";
-      notice.textContent = error.message;
+      renderState(list, "Fehler", error.message);
       return;
     }
 

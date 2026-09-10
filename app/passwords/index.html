@@ -13,18 +13,20 @@
   <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
+  <a class="skip-link" href="#main">Zum Hauptinhalt springen</a>
+
   <div class="stage-light" aria-hidden="true"></div>
   <div class="stage-grain" aria-hidden="true"></div>
 
   <div class="frame">
 
     <header class="band band--head">
-      <a class="brand" href="/" data-enter style="--enter-step: 0">
+      <a class="brand" href="/" data-enter style="--enter-i: 0">
         <span class="brand__mark" aria-hidden="true"></span>
         <span class="brand__name">Smashin' Kurt</span>
       </a>
 
-      <div class="account" data-account hidden data-enter style="--enter-step: 1">
+      <div class="account" data-account hidden data-enter style="--enter-i: 1">
         <button class="profile-chip" type="button" data-open-profile aria-label="Profil bearbeiten">
           <span class="profile-chip__id">
             <span class="account__name" data-account-name></span>
@@ -37,23 +39,23 @@
       </div>
     </header>
 
-    <main class="stage stage--app">
+    <main class="stage stage--app" id="main">
       <div class="stage__inner">
-        <a class="back-link" href="/" data-enter style="--enter-step: 2">← Übersicht</a>
-        <span class="eyebrow" data-enter style="--enter-step: 3">App · Admin</span>
-        <h1 class="headline headline--app" data-enter style="--enter-step: 4">Passwords</h1>
-        <p class="lede" data-enter style="--enter-step: 5">
+        <a class="back-link" href="/" data-enter style="--enter-i: 2">← Übersicht</a>
+        <span class="eyebrow" data-enter style="--enter-i: 3">App · Admin</span>
+        <h1 class="headline headline--app" data-enter style="--enter-i: 4">Passwords</h1>
+        <p class="lede" data-enter style="--enter-i: 5">
           Zugangsstatus und Anmeldezeitpunkte des Teams. Supabase speichert
           Passwörter ausschließlich als Hash — auch hier gibt's deshalb
           keine Klartext-Passwörter, nur Reset-Mails.
         </p>
         <p class="notice" id="passwords-notice" role="status" aria-live="polite"></p>
 
-        <ul class="datalist" id="passwords-list" data-enter style="--enter-step: 6"></ul>
+        <ul class="datalist" id="passwords-list" data-enter style="--enter-i: 6"></ul>
       </div>
     </main>
 
-    <footer class="band band--foot" data-enter style="--enter-step: 8">
+    <footer class="band band--foot" data-enter style="--enter-i: 8">
       <span class="note">Zugang nur für Teammitglieder</span>
       <span class="note">Aufbau läuft</span>
     </footer>

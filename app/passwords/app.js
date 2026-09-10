@@ -11,7 +11,7 @@
 
   const client = window.SmashinAuth.client;
   const RANK_LABELS = window.SmashinAuth.RANK_LABELS;
-  const { fmt, row, button, renderList } = window.SmashinList;
+  const { fmt, row, button, renderList, renderState } = window.SmashinList;
 
   const notice = document.getElementById("passwords-notice");
   const list   = document.getElementById("passwords-list");
@@ -31,11 +31,12 @@
   }
 
   async function loadList() {
+    renderState(list, "Lädt", "Zugangsstatus wird geladen …");
+
     const { data, error } = await client.rpc("admin_access_overview");
 
     if (error) {
-      list.innerHTML = "";
-      notice.textContent = error.message;
+      renderState(list, "Fehler", error.message);
       return;
     }
 

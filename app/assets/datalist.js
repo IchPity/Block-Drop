@@ -52,17 +52,37 @@ window.SmashinList = (() => {
     return li;
   }
 
+  // Leer-/Lade-/Fehlerzustand einer Liste: Mono-Eyebrow über kurzem Satz
+  // in --steel (siehe .datalist__state in style.css).
+  function state(tag, text) {
+    const li = document.createElement("li");
+    li.className = "datalist__state";
+
+    const eyebrow = document.createElement("span");
+    eyebrow.className = "datalist__state-tag";
+    eyebrow.textContent = tag;
+
+    const p = document.createElement("span");
+    p.className = "datalist__state-text";
+    p.textContent = text;
+
+    li.append(eyebrow, p);
+    return li;
+  }
+
+  function renderState(listEl, tag, text) {
+    listEl.innerHTML = "";
+    listEl.appendChild(state(tag, text));
+  }
+
   function renderList(listEl, data, { emptyText, row: buildRow }) {
     listEl.innerHTML = "";
     if (!data.length) {
-      const empty = document.createElement("li");
-      empty.className = "datalist__empty";
-      empty.textContent = emptyText;
-      listEl.appendChild(empty);
+      listEl.appendChild(state("Leer", emptyText));
       return;
     }
     data.forEach((item) => listEl.appendChild(buildRow(item)));
   }
 
-  return { fmt, row, button, renderList };
+  return { fmt, row, button, state, renderState, renderList };
 })();

@@ -19,7 +19,10 @@
 
   const notice = document.getElementById("milestones-notice");
   const list   = document.getElementById("milestones-list");
+  const filterCount = document.getElementById("filter-count");
   const fmtDate = (iso) => new Date(iso).toLocaleDateString("de-AT", { dateStyle: "medium" });
+
+  list.appendChild(window.SmashinList.state("Lädt", "Meilensteine werden geladen …"));
 
   let milestones = [];
   let conflictIds = new Set();
@@ -97,12 +100,15 @@
   /* ── Fortschritt ──────────────────────────────────────────────────────── */
   const progressStat   = document.getElementById("progress-stat");
   const progressBar    = document.getElementById("progress-bar");
+  const progressBarWrap = progressBar.parentElement;
   const progressPeople = document.getElementById("progress-people");
 
   function renderProgress() {
     const { total, done, people } = summarize(milestones);
+    const pct = total ? Math.round((done / total) * 100) : 0;
     progressStat.textContent = `${done} / ${total}`;
-    progressBar.style.width = total ? `${Math.round((done / total) * 100)}%` : "0%";
+    progressBar.style.width = `${pct}%`;
+    progressBarWrap.setAttribute("aria-valuenow", String(pct));
 
     progressPeople.innerHTML = "";
     people.forEach((p) => {
@@ -117,11 +123,17 @@
       frac.className = "progress__person-frac";
       frac.textContent = `${p.done} / ${p.total}`;
 
+      const personPct = p.total ? Math.round((p.done / p.total) * 100) : 0;
       const bar = document.createElement("div");
       bar.className = "progress__bar";
+      bar.setAttribute("role", "progressbar");
+      bar.setAttribute("aria-valuemin", "0");
+      bar.setAttribute("aria-valuemax", "100");
+      bar.setAttribute("aria-valuenow", String(personPct));
+      bar.setAttribute("aria-label", `Fortschritt ${p.name}`);
       const fill = document.createElement("div");
       fill.className = "progress__bar-fill";
-      fill.style.width = p.total ? `${Math.round((p.done / p.total) * 100)}%` : "0%";
+      fill.style.width = `${personPct}%`;
       bar.appendChild(fill);
 
       row.append(name, frac, bar);
@@ -273,11 +285,14 @@
     list.innerHTML = "";
     const rows = milestones.filter(matchesFilter);
 
+    if (filterCount) {
+      filterCount.textContent = rows.length === 1
+        ? "1 Meilenstein angezeigt."
+        : `${rows.length} Meilensteine angezeigt.`;
+    }
+
     if (!rows.length) {
-      const empty = document.createElement("li");
-      empty.className = "datalist__empty";
-      empty.textContent = "Keine Meilensteine in diesem Filter.";
-      list.appendChild(empty);
+      list.appendChild(window.SmashinList.state("Leer", "Keine Meilensteine in diesem Filter."));
       return;
     }
 
@@ -471,7 +486,10 @@
   const [{ data: msData, error: msError }, { data: reportData }] = await Promise.all(tasks);
 
   if (msError || !msData) {
-    notice.textContent = msError ? msError.message : "Meilensteine konnten nicht geladen werden.";
+    window.SmashinList.renderState(
+      list, "Fehler",
+      msError ? msError.message : "Meilensteine konnten nicht geladen werden."
+    );
     return;
   }
 

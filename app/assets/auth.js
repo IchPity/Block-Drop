@@ -71,7 +71,7 @@ window.SmashinAuth = (() => {
       const a = document.createElement("a");
       a.className = "apps__tile";
       a.href = `/${app.slug}/`;
-      a.style.setProperty("--tile-step", index);
+      a.style.setProperty("--tile-i", index);
       a.innerHTML = `
         <span class="apps__badge">${badge}</span>
         <span class="apps__name">${app.name}</span>

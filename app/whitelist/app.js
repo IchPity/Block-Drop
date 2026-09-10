@@ -8,7 +8,7 @@
   if (!member) return; // requireRank hat schon auf "/" umgeleitet
 
   const client = window.SmashinAuth.client;
-  const { fmt, row, button, renderList } = window.SmashinList;
+  const { fmt, row, button, renderList, renderState } = window.SmashinList;
 
   const form      = document.getElementById("whitelist-form");
   const emailInput = document.getElementById("whitelist-email");
@@ -35,14 +35,15 @@
   }
 
   async function loadList() {
+    renderState(list, "Lädt", "Whitelist wird geladen …");
+
     const { data, error } = await client
       .from("whitelist")
       .select("email, created_at, claimed_at")
       .order("created_at", { ascending: false });
 
     if (error) {
-      list.innerHTML = "";
-      notice.textContent = error.message;
+      renderState(list, "Fehler", error.message);
       return;
     }
 

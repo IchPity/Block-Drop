@@ -14,6 +14,8 @@
   <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
+  <a class="skip-link" href="#main">Zum Hauptinhalt springen</a>
+
   <!-- Lichtsetzung: Key warm oben links, Fill kühl unten rechts, darüber Korn. -->
   <div class="stage-light" aria-hidden="true"></div>
   <div class="stage-grain" aria-hidden="true"></div>
@@ -21,16 +23,16 @@
   <div class="frame">
 
     <header class="band band--head">
-      <a class="brand" href="/" data-enter style="--enter-step: 0">
+      <a class="brand" href="/" data-enter style="--enter-i: 0">
         <span class="brand__mark" aria-hidden="true"></span>
         <span class="brand__name">Smashin' Kurt</span>
       </a>
 
-      <button class="btn" type="button" data-open-login data-enter style="--enter-step: 1">
+      <button class="btn" type="button" data-open-login data-enter style="--enter-i: 1">
         Anmelden
       </button>
 
-      <div class="account" data-account hidden data-enter style="--enter-step: 1">
+      <div class="account" data-account hidden data-enter style="--enter-i: 1">
         <button class="profile-chip" type="button" data-open-profile aria-label="Profil bearbeiten">
           <span class="profile-chip__id">
             <span class="account__name" data-account-name></span>
@@ -43,16 +45,16 @@
       </div>
     </header>
 
-    <main class="stage">
+    <main class="stage" id="main">
       <div class="stage__inner">
-        <span class="eyebrow" data-enter style="--enter-step: 3">Interner Bereich</span>
-        <h1 class="headline" data-enter style="--enter-step: 4">Wo die Arbeit gerade steht.</h1>
-        <p class="lede" data-enter style="--enter-step: 5">
+        <span class="eyebrow" data-enter style="--enter-i: 3">Interner Bereich</span>
+        <h1 class="headline" data-enter style="--enter-i: 4">Wo die Arbeit gerade steht.</h1>
+        <p class="lede" data-enter style="--enter-i: 5">
           Aufgaben, Meilensteine und Termine des Teams an einem Ort.
           <span data-guest>Melde dich an, um deinen Bereich zu sehen.</span>
         </p>
 
-        <div class="dash-grid" data-overview-grid hidden data-enter style="--enter-step: 6">
+        <div class="dash-grid" data-overview-grid hidden data-enter style="--enter-i: 6">
           <section class="report" data-overview>
             <span class="report__label">
               <span>Lagebericht</span>
@@ -67,19 +69,19 @@
               <span class="progress__stat-value" data-overview-stat>0 / 0</span>
               <span class="progress__stat-label">Meilensteine erledigt</span>
             </div>
-            <div class="progress__bar"><div class="progress__bar-fill" data-overview-bar style="width: 0%"></div></div>
+            <div class="progress__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Fortschritt gesamt"><div class="progress__bar-fill" data-overview-bar style="width: 0%"></div></div>
             <div class="progress__people" data-overview-people></div>
           </section>
         </div>
 
-        <section class="apps" data-apps hidden data-enter style="--enter-step: 8">
+        <section class="apps" data-apps hidden data-enter style="--enter-i: 8">
           <span class="apps__label">Deine Apps</span>
           <div class="apps__grid" data-apps-list></div>
         </section>
       </div>
     </main>
 
-    <footer class="band band--foot" data-enter style="--enter-step: 9">
+    <footer class="band band--foot" data-enter style="--enter-i: 9">
       <span class="note">Zugang nur für Teammitglieder</span>
       <span class="note">Aufbau läuft</span>
     </footer>

@@ -20,6 +20,7 @@
   const reportMeta = reportSection.querySelector("[data-overview-meta]");
   const statEl     = progressSection.querySelector("[data-overview-stat]");
   const barEl      = progressSection.querySelector("[data-overview-bar]");
+  const barWrapEl  = barEl.parentElement;
   const peopleEl   = progressSection.querySelector("[data-overview-people]");
 
   const fmtDate = (iso) => new Date(iso).toLocaleDateString("de-AT", { dateStyle: "medium" });
@@ -48,8 +49,10 @@
     }
 
     const { total, done, people } = summarize(milestones);
+    const pct = total ? Math.round((done / total) * 100) : 0;
     statEl.textContent = `${done} / ${total}`;
-    barEl.style.width = total ? `${Math.round((done / total) * 100)}%` : "0%";
+    barEl.style.width = `${pct}%`;
+    barWrapEl.setAttribute("aria-valuenow", String(pct));
 
     peopleEl.innerHTML = "";
     people.forEach((p) => {
@@ -64,11 +67,17 @@
       frac.className = "progress__person-frac";
       frac.textContent = `${p.done} / ${p.total}`;
 
+      const personPct = p.total ? Math.round((p.done / p.total) * 100) : 0;
       const bar = document.createElement("div");
       bar.className = "progress__bar";
+      bar.setAttribute("role", "progressbar");
+      bar.setAttribute("aria-valuemin", "0");
+      bar.setAttribute("aria-valuemax", "100");
+      bar.setAttribute("aria-valuenow", String(personPct));
+      bar.setAttribute("aria-label", `Fortschritt ${p.name}`);
       const fill = document.createElement("div");
       fill.className = "progress__bar-fill";
-      fill.style.width = p.total ? `${Math.round((p.done / p.total) * 100)}%` : "0%";
+      fill.style.width = `${personPct}%`;
       bar.appendChild(fill);
 
       row.append(name, frac, bar);
