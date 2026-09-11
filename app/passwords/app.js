@@ -24,7 +24,7 @@
       notice.textContent = "";
       const { error } = await client.auth.resetPasswordForEmail(entry.email);
       resetBtn.disabled = false;
-      notice.textContent = error ? error.message : `Reset-Mail an ${entry.email} angefordert.`;
+      notice.textContent = error ? window.SmashinErrors.friendly(error) : `Reset-Mail an ${entry.email} angefordert.`;
     });
 
     return row({ primary: entry.email, meta, actions: resetBtn });
@@ -36,7 +36,7 @@
     const { data, error } = await client.rpc("admin_access_overview");
 
     if (error) {
-      renderState(list, "Fehler", error.message);
+      renderState(list, "Fehler", window.SmashinErrors.friendly(error));
       return;
     }
 

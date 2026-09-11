@@ -20,11 +20,18 @@
       ? `Beigetreten am ${fmt(entry.claimed_at)}`
       : `Eingeladen am ${fmt(entry.created_at)} — noch offen`;
 
-    const delBtn = button("Entfernen", async () => {
+    const delBtn = button(entry.claimed_at ? "Konto entfernen" : "Entfernen", async () => {
+      if (entry.claimed_at && !window.confirm(
+        `${entry.email} hat schon ein Konto. Entfernen löscht das Konto komplett — kein Login mehr, kein Reset-Mail, weg aus den Apps Rang und Passwords. Das lässt sich nicht rückgängig machen. Wirklich entfernen?`
+      )) {
+        return;
+      }
+
       delBtn.disabled = true;
-      const { error } = await client.from("whitelist").delete().eq("email", entry.email);
+      notice.textContent = "";
+      const { error } = await client.rpc("admin_remove_access", { p_email: entry.email });
       if (error) {
-        notice.textContent = error.message;
+        notice.textContent = error.code === "P0001" ? error.message : window.SmashinErrors.friendly(error);
         delBtn.disabled = false;
         return;
       }
@@ -43,7 +50,7 @@
       .order("created_at", { ascending: false });
 
     if (error) {
-      renderState(list, "Fehler", error.message);
+      renderState(list, "Fehler", window.SmashinErrors.friendly(error));
       return;
     }
 
@@ -68,7 +75,7 @@
     if (error) {
       notice.textContent = error.code === "23505"
         ? "Diese E-Mail ist schon freigeschaltet."
-        : error.message;
+        : window.SmashinErrors.friendly(error);
       return;
     }
 

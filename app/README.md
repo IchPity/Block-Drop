@@ -9,6 +9,7 @@ app/
 ├── favicon.svg
 ├── assets/
 │   ├── style.css      Tokens, Typografie, Grundgerüst — für alle Seiten
+│   ├── errors.js      Rohe Supabase-/Fetch-Fehler in verständliche Sätze übersetzen
 │   ├── auth.js        Supabase-Client, Kontoanzeige, Profil-Fenster, Rang-Guard, App-Registry
 │   ├── datalist.js    Gemeinsame Bausteine für Listen-Apps (Zeile, Button, leerer Zustand)
 │   ├── progress.js    Ampel-/Fortschritts-Berechnung aus Meilenstein-Daten (reine Logik)

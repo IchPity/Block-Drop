@@ -98,7 +98,7 @@
     } else if (signUpError.message.toLowerCase().includes("password")) {
       notice.textContent = "Passwort zu kurz — mindestens 6 Zeichen.";
     } else {
-      notice.textContent = signUpError.message;
+      notice.textContent = window.SmashinErrors.friendly(signUpError);
     }
   });
 })();

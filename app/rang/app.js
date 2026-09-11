@@ -60,7 +60,7 @@
         milestones = await loadMilestones();
       } catch (err) {
         body.textContent = "";
-        notice.textContent = err.message;
+        notice.textContent = window.SmashinErrors.friendly(err);
         return;
       }
 
@@ -84,7 +84,7 @@
           checkbox.disabled = false;
 
           if (error) {
-            notice.textContent = error.message;
+            notice.textContent = window.SmashinErrors.friendly(error);
             checkbox.checked = !checkbox.checked;
             return;
           }
@@ -130,7 +130,7 @@
       select.disabled = false;
 
       if (error) {
-        notice.textContent = error.message;
+        notice.textContent = window.SmashinErrors.friendly(error);
         select.value = entry.rank; // zurücksetzen
         return;
       }
@@ -151,7 +151,7 @@
       .order("created_at", { ascending: true });
 
     if (error) {
-      renderState(list, "Fehler", error.message);
+      renderState(list, "Fehler", window.SmashinErrors.friendly(error));
       return;
     }
 

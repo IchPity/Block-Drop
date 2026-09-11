@@ -36,7 +36,17 @@
       client.from("status_report").select("body, updated_at").eq("id", true).single(),
     ]);
 
-    if (error || !milestones) return;
+    if (error || !milestones) {
+      grid.hidden = false;
+      reportBody.textContent = window.SmashinErrors.friendly(error);
+      reportBody.classList.add("report__body--empty");
+      reportMeta.textContent = "";
+      statEl.textContent = "– / –";
+      barEl.style.width = "0%";
+      barWrapEl.setAttribute("aria-valuenow", "0");
+      peopleEl.innerHTML = "";
+      return;
+    }
 
     if (report && report.body) {
       reportBody.textContent = report.body;

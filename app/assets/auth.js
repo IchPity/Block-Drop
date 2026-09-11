@@ -222,7 +222,7 @@ window.SmashinAuth = (() => {
         .upload(path, file, { upsert: true, contentType: file.type });
 
       if (uploadError) {
-        avatarHint.textContent = uploadError.message;
+        avatarHint.textContent = window.SmashinErrors.friendly(uploadError);
         return;
       }
 
@@ -232,7 +232,7 @@ window.SmashinAuth = (() => {
       });
 
       if (rpcError) {
-        avatarHint.textContent = rpcError.message;
+        avatarHint.textContent = window.SmashinErrors.friendly(rpcError);
         return;
       }
 
@@ -252,7 +252,7 @@ window.SmashinAuth = (() => {
 
       if (nameError) {
         submitBtn.disabled = false;
-        notice.textContent = nameError.message;
+        notice.textContent = window.SmashinErrors.friendly(nameError);
         return;
       }
 
@@ -264,7 +264,7 @@ window.SmashinAuth = (() => {
           submitBtn.disabled = false;
           notice.textContent = pwError.message.toLowerCase().includes("password")
             ? "Passwort zu kurz — mindestens 6 Zeichen."
-            : pwError.message;
+            : window.SmashinErrors.friendly(pwError);
           return;
         }
       }

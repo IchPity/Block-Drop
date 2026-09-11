@@ -88,7 +88,7 @@
       submitBtn.disabled = false;
 
       if (error) {
-        notice.textContent = error.message;
+        notice.textContent = window.SmashinErrors.friendly(error);
         return;
       }
 
@@ -258,7 +258,7 @@
         const { error } = await client.rpc("set_own_milestone_status", { p_id: m.id, p_status: newStatus });
         checkbox.disabled = false;
         if (error) {
-          notice.textContent = error.message;
+          notice.textContent = window.SmashinErrors.friendly(error);
           checkbox.checked = !checkbox.checked;
           return;
         }
@@ -428,7 +428,7 @@
       submitBtn.disabled = false;
 
       if (error) {
-        editNotice.textContent = error.message;
+        editNotice.textContent = window.SmashinErrors.friendly(error);
         return;
       }
 
@@ -486,10 +486,7 @@
   const [{ data: msData, error: msError }, { data: reportData }] = await Promise.all(tasks);
 
   if (msError || !msData) {
-    window.SmashinList.renderState(
-      list, "Fehler",
-      msError ? msError.message : "Meilensteine konnten nicht geladen werden."
-    );
+    window.SmashinList.renderState(list, "Fehler", window.SmashinErrors.friendly(msError));
     return;
   }
 
