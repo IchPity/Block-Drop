@@ -955,6 +955,7 @@
             <button class="auth-menu-item" data-act="profile" type="button">Profil</button>
             <button class="auth-menu-item" data-act="friends" type="button">Freunde</button>
             <button class="auth-menu-item" data-act="achievements" type="button">Achievements</button>
+            <button class="auth-menu-item" data-act="stundenplan" type="button">Stundenplan</button>
             <button class="auth-menu-item danger" data-act="logout" type="button">Abmelden</button>
           </div>
         `;
@@ -975,6 +976,7 @@
               // Auf jeden Pfad funktionierender Link
               window.location.href = '/achievements/';
             }
+            if (act === 'stundenplan') window.location.href = '/stundenplan/';
           });
         });
       } else {
