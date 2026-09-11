@@ -216,98 +216,67 @@
 // Neue Klasse hinzufügen: Eintrag zu CLASSES ergänzen, Tage sind
 // Mo–Fr, jeder Eintrag verweist per periodIndex (0-basiert, siehe
 // PERIODS unten) auf eine Unterrichtsstunde. Fach leer lassen bzw.
-// den Eintrag weglassen = frei.
-//
-// TODO (Peter): Platzhalter-Fächer unten durch echte Stundenpläne ersetzen.
+// den Eintrag weglassen = frei. `room` ist hier das Lehrer-Kürzel
+// (kein Raum bekannt), wird aber wie die restliche Sekundärangabe
+// unter dem Fach angezeigt.
 
 const PERIODS = [
-  { num: 1, start: '07:50', end: '08:40' },
-  { num: 2, start: '08:45', end: '09:35' },
-  { num: 3, start: '09:40', end: '10:30' },
-  { num: 4, start: '10:45', end: '11:35' },
-  { num: 5, start: '11:40', end: '12:30' },
-  { num: 6, start: '12:35', end: '13:25' },
-  { num: 7, start: '14:15', end: '15:05' },
-  { num: 8, start: '15:05', end: '15:55' },
+  { num: 1, start: '07:50', end: '08:35' },
+  { num: 2, start: '08:40', end: '09:25' },
+  { num: 3, start: '09:35', end: '10:20' },
+  { num: 4, start: '10:30', end: '11:25' },
+  { num: 5, start: '11:35', end: '12:25' },
+  { num: 6, start: '12:30', end: '13:20' },
 ];
 
 const DAY_NAMES = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
 
 const CLASSES = {
-  '1AHIF': [
+  '5DK': [
     // Montag
     [
-      { subject: 'Deutsch', room: 'A12' },
-      { subject: 'Englisch', room: 'A12' },
-      { subject: 'Mathematik', room: 'A12' },
-      { subject: 'BWL', room: 'A12' },
-      { subject: 'Übungsfirma', room: 'EDV1' },
+      { subject: 'EBC', room: 'GOES' },
+      { subject: 'D', room: 'KAIN' },
+      { subject: 'ENWS', room: 'DIES' },
+      { subject: 'IMCM', room: 'HARM / HART' },
+      { subject: 'RK', room: 'RIED' },
       null,
-      { subject: 'Turnen', room: 'Halle' },
     ],
     // Dienstag
     [
-      { subject: 'Informatik', room: 'EDV2' },
-      { subject: 'Informatik', room: 'EDV2' },
-      { subject: 'Rechnungswesen', room: 'A12' },
-      { subject: 'Deutsch', room: 'A12' },
-      { subject: 'Religion', room: 'A12' },
+      { subject: 'UNCO', room: 'PRAG' },
+      { subject: 'MAM', room: 'SIEG' },
+      { subject: 'BESP / TURN1', room: 'KOPI' },
+      { subject: 'SWP1', room: 'WINK' },
+      { subject: 'VOW', room: 'SCHA' },
+      { subject: 'BW', room: 'SCHA' },
     ],
     // Mittwoch
     [
-      { subject: 'Mathematik', room: 'A12' },
-      { subject: 'Englisch', room: 'A12' },
-      { subject: 'Geografie', room: 'A12' },
-      { subject: 'BWL', room: 'A12' },
-      { subject: 'Bewegung & Sport', room: 'Halle' },
+      { subject: 'ENWS', room: 'DIES' },
+      { subject: 'SWP1', room: 'WINK' },
+      null,
+      { subject: 'D', room: 'KAIN' },
+      { subject: 'EBC', room: 'PRAG' },
+      { subject: 'RK', room: 'RIED' },
     ],
     // Donnerstag
     [
-      { subject: 'Rechnungswesen', room: 'A12' },
-      { subject: 'Rechnungswesen', room: 'A12' },
-      { subject: 'Deutsch', room: 'A12' },
-      { subject: 'Mathematik', room: 'A12' },
-      { subject: 'Übungsfirma', room: 'EDV1' },
+      { subject: 'ENCO', room: 'DIES' },
+      { subject: 'D', room: 'KAIN' },
+      { subject: 'BW', room: 'SCHA' },
+      { subject: 'MAM', room: 'SIEG' },
+      { subject: 'BUNW', room: 'GOES' },
+      { subject: 'VOW', room: 'SCHA' },
     ],
     // Freitag
     [
-      { subject: 'Englisch', room: 'A12' },
-      { subject: 'Geschichte', room: 'A12' },
-      { subject: 'BWL', room: 'A12' },
-      { subject: 'Informatik', room: 'EDV2' },
-    ],
-  ],
-  '5AHIF': [
-    [
-      { subject: 'Diplomarbeit', room: 'A20' },
-      { subject: 'BWL', room: 'A20' },
-      { subject: 'Controlling', room: 'A20' },
-      { subject: 'Englisch', room: 'A20' },
-      { subject: 'Wirtschaftsinformatik', room: 'EDV3' },
-    ],
-    [
-      { subject: 'Deutsch', room: 'A20' },
-      { subject: 'Deutsch', room: 'A20' },
-      { subject: 'Mathematik', room: 'A20' },
-      { subject: 'Recht', room: 'A20' },
-    ],
-    [
-      { subject: 'Wirtschaftsinformatik', room: 'EDV3' },
-      { subject: 'Wirtschaftsinformatik', room: 'EDV3' },
-      { subject: 'BWL', room: 'A20' },
-      { subject: 'Englisch', room: 'A20' },
-      { subject: 'Bewegung & Sport', room: 'Halle' },
-    ],
-    [
-      { subject: 'Controlling', room: 'A20' },
-      { subject: 'Mathematik', room: 'A20' },
-      { subject: 'Diplomarbeit', room: 'A20' },
-      { subject: 'Deutsch', room: 'A20' },
-    ],
-    [
-      { subject: 'Recht', room: 'A20' },
-      { subject: 'BWL', room: 'A20' },
-      { subject: 'Projektmanagement', room: 'A20' },
+      { subject: 'UNCO', room: 'PRAG' },
+      { subject: 'IWK', room: 'KOPI' },
+      { subject: 'BUNW', room: 'GOES' },
+      { subject: 'MCM / IMCM', room: 'HARM / HART' },
+      { subject: 'SWP1', room: 'WINK' },
+      null,
     ],
   ],
 };
