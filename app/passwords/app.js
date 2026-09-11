@@ -27,7 +27,30 @@
       notice.textContent = error ? window.SmashinErrors.friendly(error) : `Reset-Mail an ${entry.email} angefordert.`;
     });
 
-    return row({ primary: entry.email, meta, actions: resetBtn });
+    const actions = [resetBtn];
+
+    if (entry.id !== member.id) {
+      const delBtn = button("Konto entfernen", async () => {
+        if (!window.confirm(
+          `${entry.email} wirklich entfernen? Das löscht das Konto komplett — kein Login mehr, kein Reset-Mail, weg aus Rang und Passwords. Das lässt sich nicht rückgängig machen.`
+        )) return;
+
+        delBtn.disabled = true;
+        resetBtn.disabled = true;
+        notice.textContent = "";
+        const { error } = await client.rpc("admin_remove_access", { p_email: entry.email });
+        if (error) {
+          notice.textContent = error.code === "P0001" ? error.message : window.SmashinErrors.friendly(error);
+          delBtn.disabled = false;
+          resetBtn.disabled = false;
+          return;
+        }
+        loadList();
+      });
+      actions.push(delBtn);
+    }
+
+    return row({ primary: entry.email, meta, actions });
   }
 
   async function loadList() {

@@ -8,7 +8,7 @@
   if (!member) return; // requireRank hat schon auf "/" umgeleitet
 
   const client = window.SmashinAuth.client;
-  const { fmt, row, renderList, renderState } = window.SmashinList;
+  const { fmt, row, button, renderList, renderState } = window.SmashinList;
 
   const notice = document.getElementById("rang-notice");
   const list   = document.getElementById("rang-list");
@@ -137,7 +137,30 @@
       entry.rank = newRank;
     });
 
-    const li = row({ primary: entry.email, meta: `Mitglied seit ${fmt(entry.created_at)}`, actions: select });
+    const actions = [select];
+
+    if (entry.id !== member.id) {
+      const delBtn = button("Konto entfernen", async () => {
+        if (!window.confirm(
+          `${entry.email} wirklich entfernen? Das löscht das Konto komplett — kein Login mehr, kein Reset-Mail, weg aus Rang und Passwords. Das lässt sich nicht rückgängig machen.`
+        )) return;
+
+        delBtn.disabled = true;
+        select.disabled = true;
+        notice.textContent = "";
+        const { error } = await client.rpc("admin_remove_access", { p_email: entry.email });
+        if (error) {
+          notice.textContent = error.code === "P0001" ? error.message : window.SmashinErrors.friendly(error);
+          delBtn.disabled = false;
+          select.disabled = false;
+          return;
+        }
+        loadList();
+      });
+      actions.push(delBtn);
+    }
+
+    const li = row({ primary: entry.email, meta: `Mitglied seit ${fmt(entry.created_at)}`, actions });
     li.appendChild(renderAssignPanel(entry));
     return li;
   }
