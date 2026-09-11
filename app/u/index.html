@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Spielerprofil — Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --red: #e94560; --gold: #f0c000; --green: #22c55e; --bg: #060818; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg); min-height: 100vh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #eee; overflow-x: hidden;
+    }
+
+    .orb { position: fixed; border-radius: 50%; filter: blur(130px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 700px; height: 700px; background: #e94560; opacity: 0.05; top: -240px; right: -220px; animation: orbFloat1 26s ease-in-out infinite alternate; }
+    .orb-2 { width: 580px; height: 580px; background: #6d4ae9; opacity: 0.045; bottom: -200px; left: -180px; animation: orbFloat2 32s ease-in-out infinite alternate; }
+    @keyframes orbFloat1 { from { transform: translate(0,0) scale(1); } to { transform: translate(-80px,80px) scale(1.15); } }
+    @keyframes orbFloat2 { from { transform: translate(0,0) scale(1); } to { transform: translate(80px,-80px) scale(1.18); } }
+    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px); background-size: 30px 30px; }
+    .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 35%, rgba(5,5,14,0.75) 100%); }
+
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 32px;
+      background: rgba(6,8,24,0.7);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-left { display: flex; align-items: center; gap: 16px; }
+    .nav-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none; color: rgba(255,255,255,0.35);
+      font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+      padding: 7px 14px; transition: all 0.2s;
+    }
+    .nav-back:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.04); }
+    .nav-title { font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.5); letter-spacing: 0.3px; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+
+    .container { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 0 36px; }
+
+    .hero { padding: 108px 0 28px; }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase;
+      color: var(--red); margin-bottom: 14px;
+      opacity: 0; transform: translateY(12px); animation: fadeUp 0.7s 0.05s both;
+    }
+    .hero-eyebrow::before { content: ''; display: block; width: 18px; height: 2px; background: var(--red); border-radius: 1px; }
+    .hero h1 {
+      font-size: 46px; font-weight: 900; letter-spacing: -2.5px; color: #fff; line-height: 1;
+      opacity: 0; transform: translateY(18px); animation: fadeUp 0.7s 0.1s both;
+    }
+    .hero h1 em { font-style: normal; color: var(--red); }
+
+    .state-box {
+      background: rgba(18,18,42,0.7);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 22px; padding: 44px 32px; text-align: center;
+      margin-top: 12px;
+    }
+    .state-box .ic { font-size: 40px; margin-bottom: 14px; }
+    .state-box h2 { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.5px; }
+    .state-box p { font-size: 13px; color: rgba(255,255,255,0.4); line-height: 1.6; }
+    .spinner {
+      display: inline-block; width: 26px; height: 26px;
+      border: 2px solid rgba(255,255,255,0.1); border-top-color: var(--red);
+      border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #profile-view { display: none; }
+    #profile-view.show { display: block; }
+
+    .profile-card {
+      display: flex; align-items: center; gap: 24px;
+      background: rgba(18,18,42,0.7);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 22px; padding: 26px 28px;
+      margin-bottom: 16px;
+      opacity: 0; transform: translateY(14px); animation: fadeUp 0.6s 0.15s both;
+    }
+    .avatar {
+      width: 96px; height: 96px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, #e94560, #b8334a);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 38px; font-weight: 900; color: #fff;
+      object-fit: cover; overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.1);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+    }
+    img.avatar { display: block; }
+    .p-info { min-width: 0; flex: 1; }
+    .p-name { font-size: 26px; font-weight: 900; color: #fff; letter-spacing: -0.8px; overflow: hidden; text-overflow: ellipsis; }
+    .p-since { font-size: 11px; color: rgba(255,255,255,0.32); margin-top: 6px; font-weight: 600; letter-spacing: 0.3px; }
+
+    /* Friend action button */
+    .friend-row { margin-top: 16px; }
+    .friend-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      border: none; border-radius: 12px; padding: 12px 22px;
+      font-family: inherit; font-size: 13px; font-weight: 800; letter-spacing: 0.3px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .friend-btn.add { background: var(--red); color: #fff; box-shadow: 0 0 24px rgba(233,69,96,0.3); }
+    .friend-btn.add:hover:not(:disabled) { background: #f05672; transform: translateY(-1px); box-shadow: 0 0 36px rgba(233,69,96,0.5); }
+    .friend-btn.accept { background: var(--green); color: #06210f; box-shadow: 0 0 24px rgba(34,197,94,0.25); }
+    .friend-btn.accept:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.08); }
+    .friend-btn.ghost {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.14);
+      color: rgba(255,255,255,0.7);
+    }
+    .friend-btn.ghost:hover:not(:disabled) { color: #fff; border-color: rgba(255,255,255,0.28); background: rgba(255,255,255,0.09); }
+    .friend-btn.danger { background: rgba(233,69,96,0.1); border: 1px solid rgba(233,69,96,0.3); color: #ff7a90; }
+    .friend-btn.danger:hover:not(:disabled) { background: rgba(233,69,96,0.18); color: #ff97aa; }
+    .friend-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .friend-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .friend-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 800; letter-spacing: 0.3px;
+      padding: 10px 16px; border-radius: 12px;
+    }
+    .friend-pill.ok { color: var(--green); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); }
+    .friend-pill.pending { color: var(--gold); background: rgba(240,192,0,0.08); border: 1px solid rgba(240,192,0,0.3); }
+
+    /* Stats */
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+    .stat-card {
+      background: rgba(18,18,42,0.7); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px; padding: 18px 18px;
+      opacity: 0; transform: translateY(14px); animation: fadeUp 0.6s 0.22s both;
+    }
+    .stat-tag { font-size: 9px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 8px; }
+    .stat-val { font-size: 26px; font-weight: 900; color: #fff; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+    .stat-val.gold { color: var(--gold); }
+    .stat-sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 4px; }
+
+    .msg { border-radius: 10px; padding: 10px 14px; font-size: 12px; margin-top: 12px; line-height: 1.4; }
+    .msg.err { background: rgba(233,69,96,0.1); border: 1px solid rgba(233,69,96,0.3); color: #ff97aa; }
+    .msg.ok { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #7ee2a3; }
+
+    .bottom-space { height: 60px; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 600px) {
+      .navbar { padding: 12px 16px; }
+      .nav-back { padding: 6px 12px; font-size: 10px; }
+      .container { padding: 0 18px; }
+      .hero { padding: 92px 0 22px; }
+      .hero h1 { font-size: 34px; letter-spacing: -1.5px; }
+      .profile-card { flex-direction: column; text-align: center; gap: 16px; padding: 24px 20px; }
+      .friend-actions { justify-content: center; }
+      .stats-grid { grid-template-columns: 1fr; }
+    }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="dot-grid"></div>
+<div class="vignette"></div>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="/" class="nav-back">&#8592; Arcade</a>
+    <div class="nav-title">Spielerprofil</div>
+  </div>
+  <div class="nav-right">
+    <div data-auth-slot></div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-eyebrow">Arcade Spieler</div>
+    <h1 id="hero-title">SPIELER<em>PROFIL</em></h1>
+  </div>
+
+  <!-- Loading / Error / Empty -->
+  <div class="state-box" id="state-box">
+    <div class="spinner"></div>
+    <div style="color:rgba(255,255,255,0.4);font-size:13px;">Lade Profil…</div>
+  </div>
+
+  <!-- Profil -->
+  <div id="profile-view">
+    <div class="profile-card">
+      <div class="avatar" id="p-avatar"></div>
+      <div class="p-info">
+        <div class="p-name" id="p-name">—</div>
+        <div class="p-since" id="p-since"></div>
+        <div class="friend-row" id="friend-row"></div>
+      </div>
+    </div>
+
+    <div class="stats-grid" id="stats-grid"></div>
+    <div id="friend-msg"></div>
+  </div>
+
+  <div class="bottom-space"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script>
+(function () {
+  const params = new URLSearchParams(location.search);
+  const targetId = params.get('id') || params.get('u');
+  const targetName = params.get('name');
+
+  const stateBox    = document.getElementById('state-box');
+  const view        = document.getElementById('profile-view');
+  const elAvatar    = document.getElementById('p-avatar');
+  const elName      = document.getElementById('p-name');
+  const elSince     = document.getElementById('p-since');
+  const elFriendRow = document.getElementById('friend-row');
+  const elStats     = document.getElementById('stats-grid');
+  const heroTitle   = document.getElementById('hero-title');
+
+  let targetProfile = null;
+
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function showState(icon, title, text) {
+    view.classList.remove('show');
+    stateBox.style.display = '';
+    stateBox.innerHTML = `<div class="ic">${icon}</div><h2>${esc(title)}</h2><p>${esc(text)}</p>`;
+  }
+  function setMsg(type, text) {
+    document.getElementById('friend-msg').innerHTML = text ? `<div class="msg ${type}">${esc(text)}</div>` : '';
+  }
+
+  function renderAvatar(profile) {
+    const name = profile.username || '?';
+    if (profile.avatar_url) {
+      const img = document.createElement('img');
+      img.className = 'avatar'; img.id = 'p-avatar'; img.alt = ''; img.src = profile.avatar_url;
+      elAvatar.replaceWith(img);
+    } else {
+      elAvatar.textContent = (name[0] || '?').toUpperCase();
+    }
+  }
+
+  async function renderStats(profile) {
+    // F1-Punkte (neueste Saison)
+    let f1 = null;
+    try { f1 = await window.Auth.getF1Points(profile.id); } catch (e) {}
+    const achCount = Array.isArray(profile.achievements) ? profile.achievements.length : 0;
+
+    const cards = [];
+    if (f1) {
+      cards.push(`
+        <div class="stat-card">
+          <div class="stat-tag">F1 Punkte</div>
+          <div class="stat-val gold">${Number(f1.points).toLocaleString('de-DE')}</div>
+          <div class="stat-sub">Saison ${f1.season}</div>
+        </div>`);
+    }
+    cards.push(`
+      <div class="stat-card">
+        <div class="stat-tag">Achievements</div>
+        <div class="stat-val">${achCount}</div>
+        <div class="stat-sub">freigeschaltet</div>
+      </div>`);
+    elStats.innerHTML = cards.join('');
+  }
+
+  // ─── Friend button rendering ──────────────────────────────────────────────
+  async function renderFriendArea() {
+    elFriendRow.innerHTML = '';
+    const me = window.Auth && window.Auth.user;
+
+    if (!me) {
+      elFriendRow.innerHTML = `<button class="friend-btn add" id="fb-login">＋ Als Freund hinzufügen</button>`;
+      document.getElementById('fb-login').addEventListener('click', () => window.Auth.openLogin());
+      return;
+    }
+
+    const status = await window.Auth.friendStatus(targetProfile.id);
+
+    if (status === 'self') {
+      elFriendRow.innerHTML = `<a class="friend-btn ghost" href="/profile/">Das bist du — Profil bearbeiten</a>`;
+      return;
+    }
+
+    if (status === 'friends') {
+      elFriendRow.innerHTML = `
+        <div class="friend-actions">
+          <span class="friend-pill ok">✓ Befreundet</span>
+          <button class="friend-btn danger" id="fb-remove">Entfernen</button>
+        </div>`;
+      wire('fb-remove', async (btn) => {
+        if (!confirm('Freund wirklich entfernen?')) return;
+        await act(btn, () => window.Auth.removeFriend(targetProfile.id), 'Freund entfernt.');
+      });
+      return;
+    }
+
+    if (status === 'outgoing') {
+      elFriendRow.innerHTML = `
+        <div class="friend-actions">
+          <span class="friend-pill pending">⏳ Anfrage gesendet</span>
+          <button class="friend-btn ghost" id="fb-cancel">Zurückziehen</button>
+        </div>`;
+      wire('fb-cancel', async (btn) => act(btn, () => window.Auth.removeFriend(targetProfile.id), 'Anfrage zurückgezogen.'));
+      return;
+    }
+
+    if (status === 'incoming') {
+      elFriendRow.innerHTML = `
+        <div class="friend-actions">
+          <button class="friend-btn accept" id="fb-accept">✓ Anfrage annehmen</button>
+          <button class="friend-btn danger" id="fb-reject">Ablehnen</button>
+        </div>`;
+      wire('fb-accept', async (btn) => act(btn, () => window.Auth.acceptFriendRequest(targetProfile.id), 'Ihr seid jetzt Freunde! 🎉'));
+      wire('fb-reject', async (btn) => act(btn, () => window.Auth.removeFriend(targetProfile.id), 'Anfrage abgelehnt.'));
+      return;
+    }
+
+    // none
+    elFriendRow.innerHTML = `<button class="friend-btn add" id="fb-add">＋ Als Freund hinzufügen</button>`;
+    wire('fb-add', async (btn) => act(btn, () => window.Auth.sendFriendRequest(targetProfile.id), 'Freundschaftsanfrage gesendet!'));
+  }
+
+  function wire(id, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', () => fn(el));
+  }
+  async function act(btn, fn, okMsg) {
+    btn.disabled = true;
+    try {
+      const { error } = await fn();
+      if (error) { setMsg('err', error.message || 'Fehler'); }
+      else { setMsg('ok', okMsg); }
+    } finally {
+      await renderFriendArea();
+    }
+  }
+
+  // ─── Boot ─────────────────────────────────────────────────────────────────
+  async function load() {
+    if (!targetId && !targetName) {
+      showState('🤷', 'Kein Spieler gewählt', 'Diese Seite zeigt das Profil eines Spielers. Öffne sie über einen Link, z. B. aus den F1-Wetten.');
+      return;
+    }
+    if (!window.Auth) {
+      showState('⚠', 'Fehler', 'Auth konnte nicht geladen werden.');
+      return;
+    }
+    const profile = targetId
+      ? await window.Auth.getPublicProfile(targetId)
+      : await window.Auth.getPublicProfileByUsername(targetName);
+    if (!profile) {
+      showState('🔍', 'Spieler nicht gefunden', 'Zu dieser ID gibt es kein Profil.');
+      return;
+    }
+    targetProfile = profile;
+
+    elName.textContent = profile.username || '—';
+    heroTitle.innerHTML = esc(profile.username || 'Spieler');
+    document.title = (profile.username || 'Spieler') + ' — Arcade';
+    if (profile.created_at) {
+      const d = new Date(profile.created_at);
+      elSince.textContent = 'Mitglied seit ' + d.toLocaleDateString('de-AT', { month: 'long', year: 'numeric' });
+    }
+    renderAvatar(profile);
+    await renderStats(profile);
+    await renderFriendArea();
+
+    stateBox.style.display = 'none';
+    view.classList.add('show');
+  }
+
+  // Auf Auth-Zustand reagieren (Login im Modal → Friend-Button neu rendern).
+  if (window.Auth) {
+    let booted = false;
+    window.Auth.onChange(async () => {
+      if (!booted) { booted = true; await load(); }
+      else if (targetProfile) { await renderFriendArea(); }
+    });
+  } else {
+    load();
+  }
+})();
+</script>
+</body>
+</html>

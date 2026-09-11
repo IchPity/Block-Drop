@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <title>Achievements — Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --red: #e94560; --gold: #f0c000; --bg: #060818; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg); min-height: 100vh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #eee; overflow-x: hidden;
+    }
+
+    /* ── Background ─────────────────────────────────────── */
+    .orb { position: fixed; border-radius: 50%; filter: blur(130px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 700px; height: 700px; background: #f0c000; opacity: 0.045; top: -240px; right: -220px; animation: orbFloat1 26s ease-in-out infinite alternate; }
+    .orb-2 { width: 580px; height: 580px; background: #e94560; opacity: 0.04; bottom: -200px; left: -180px; animation: orbFloat2 32s ease-in-out infinite alternate; }
+    @keyframes orbFloat1 { from { transform: translate(0,0) scale(1); } to { transform: translate(-80px,80px) scale(1.15); } }
+    @keyframes orbFloat2 { from { transform: translate(0,0) scale(1); } to { transform: translate(80px,-80px) scale(1.18); } }
+    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px); background-size: 30px 30px; }
+    .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 35%, rgba(5,5,14,0.75) 100%); }
+
+    /* ── Navbar ─────────────────────────────────────────── */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 32px;
+      background: rgba(6,8,24,0.7);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-left { display: flex; align-items: center; gap: 16px; }
+    .nav-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none; color: rgba(255,255,255,0.35);
+      font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+      padding: 7px 14px; transition: all 0.2s;
+    }
+    .nav-back:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.04); }
+    .nav-title { font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.5); letter-spacing: 0.3px; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .user-chip { display: flex; align-items: center; gap: 7px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); border-radius: 999px; padding: 6px 14px 6px 8px; }
+    .user-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--red); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; color: #fff; }
+    .user-label { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); }
+    .nav-btn { background: transparent; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 7px 14px; color: rgba(255,255,255,0.4); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+    .nav-btn:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); }
+    .nav-cta { display: inline-flex; align-items: center; gap: 6px; background: var(--red); border: none; border-radius: 10px; padding: 8px 18px; color: #fff; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; text-decoration: none; box-shadow: 0 0 20px rgba(233,69,96,0.3); transition: all 0.2s; }
+    .nav-cta:hover { background: #f05672; box-shadow: 0 0 30px rgba(233,69,96,0.5); transform: translateY(-1px); }
+
+    /* ── Layout ─────────────────────────────────────────── */
+    .container { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 0 36px; }
+
+    /* ── Hero ───────────────────────────────────────────── */
+    .hero { padding: 108px 0 48px; }
+    .hero-top {
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 32px;
+      margin-bottom: 36px;
+    }
+    .hero-text {
+      opacity: 0; transform: translateY(18px);
+      animation: fadeUp 0.7s 0.1s both;
+    }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 14px;
+    }
+    .hero-eyebrow::before { content: ''; display: block; width: 18px; height: 2px; background: var(--gold); border-radius: 1px; }
+    .hero h1 { font-size: 56px; font-weight: 900; letter-spacing: -3px; color: #fff; line-height: 1; }
+    .hero h1 em { font-style: normal; color: var(--gold); }
+
+    .hero-cta {
+      opacity: 0; transform: translateY(12px);
+      animation: fadeUp 0.7s 0.2s both;
+      flex-shrink: 0;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: var(--red); border: none; border-radius: 14px;
+      padding: 14px 28px; color: #fff; font-family: inherit; font-size: 14px; font-weight: 800;
+      cursor: pointer; text-decoration: none;
+      box-shadow: 0 0 32px rgba(233,69,96,0.4), 0 8px 24px rgba(0,0,0,0.4);
+      transition: all 0.22s;
+    }
+    .btn-primary:hover { background: #f05672; box-shadow: 0 0 48px rgba(233,69,96,0.6), 0 12px 32px rgba(0,0,0,0.5); transform: translateY(-2px); }
+    .btn-primary .arrow { font-size: 16px; transition: transform 0.2s; }
+    .btn-primary:hover .arrow { transform: translateX(4px); }
+
+    /* ── Stats Row ──────────────────────────────────────── */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+      margin-bottom: 48px;
+      opacity: 0; transform: translateY(14px);
+      animation: fadeUp 0.7s 0.25s both;
+    }
+    .stat-card {
+      background: rgba(240,192,0,0.06);
+      border: 1px solid rgba(240,192,0,0.18);
+      border-radius: 18px; padding: 20px 24px;
+    }
+    .stat-card.red { background: rgba(233,69,96,0.06); border-color: rgba(233,69,96,0.18); }
+    .stat-card.neutral { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.07); }
+    .stat-val { font-size: 36px; font-weight: 900; color: #fff; letter-spacing: -2px; line-height: 1; margin-bottom: 4px; }
+    .stat-val .accent { color: var(--gold); }
+    .stat-card.red .accent { color: var(--red); }
+    .stat-lbl { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+
+    /* ── Progress ───────────────────────────────────────── */
+    .progress-section {
+      margin-bottom: 48px;
+      opacity: 0; transform: translateY(12px);
+      animation: fadeUp 0.7s 0.3s both;
+    }
+    .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .progress-title { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+    .progress-label { font-size: 12px; font-weight: 700; color: var(--gold); }
+    .progress-track { background: rgba(255,255,255,0.05); border-radius: 100px; height: 8px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--red)); border-radius: 100px; transition: width 1s cubic-bezier(0.22,1,0.36,1); width: 0%; box-shadow: 0 0 12px rgba(240,192,0,0.3); }
+
+    /* ── Section Header ─────────────────────────────────── */
+    .section-header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px; margin-top: 8px; }
+    .section-label { font-size: 11px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+    .section-divider { flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+    .section-count { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.2); }
+
+    /* ── Achievement Grid ───────────────────────────────── */
+    .ach-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 40px; }
+
+    .ach-card {
+      background: rgba(18,18,42,0.7);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px; padding: 20px;
+      display: flex; flex-direction: column; gap: 6px;
+      opacity: 0; transform: translateY(16px);
+      transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.22,1,0.36,1),
+                  border-color 0.25s, background 0.25s, box-shadow 0.25s;
+    }
+    .ach-card.unlocked {
+      border-color: rgba(240,192,0,0.32);
+      background: rgba(240,192,0,0.05);
+      box-shadow: 0 0 30px rgba(240,192,0,0.06);
+    }
+
+    .ach-icon { font-size: 28px; margin-bottom: 4px; }
+    .ach-name { font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
+    .ach-card.locked .ach-name { color: rgba(255,255,255,0.25); }
+    .ach-desc { font-size: 11px; color: rgba(255,255,255,0.28); line-height: 1.55; }
+    .ach-card.locked .ach-desc { color: rgba(255,255,255,0.13); }
+
+    .ach-status { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 8px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
+    .ach-status.done { color: var(--gold); }
+    .ach-status.done::before { content: '✓'; }
+    .ach-status.todo { color: rgba(255,255,255,0.12); }
+
+    /* ── Leaderboard ────────────────────────────────────── */
+    .lb-section { margin-bottom: 48px; }
+    .lb-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+    .lb-tab {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.45);
+      padding: 7px 14px; border-radius: 10px;
+      font-family: inherit; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.5px; cursor: pointer; transition: all 0.2s;
+    }
+    .lb-tab:hover { color: #fff; border-color: rgba(255,255,255,0.2); }
+    .lb-tab.active { background: rgba(233,69,96,0.15); border-color: rgba(233,69,96,0.45); color: #fff; }
+    .lb-list {
+      background: rgba(18,18,42,0.5);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 18px; overflow: hidden;
+      min-height: 200px;
+    }
+    .lb-row {
+      display: grid; grid-template-columns: 48px 1fr 100px 80px;
+      align-items: center; gap: 12px;
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 13px;
+    }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-row.head {
+      background: rgba(255,255,255,0.02);
+      font-size: 10px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: rgba(255,255,255,0.3);
+    }
+    .lb-row.me { background: rgba(233,69,96,0.08); }
+    .lb-rank { font-weight: 900; color: rgba(255,255,255,0.5); }
+    .lb-rank.gold { color: #f0c000; }
+    .lb-rank.silver { color: #c8c8d0; }
+    .lb-rank.bronze { color: #cd7f32; }
+    .lb-name { font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    a.lb-name { text-decoration: none; transition: color 0.15s; cursor: pointer; }
+    a.lb-name:hover { color: var(--red); }
+    .lb-score { color: var(--red); font-weight: 800; text-align: right; }
+    .lb-plays { color: rgba(255,255,255,0.35); font-weight: 600; text-align: right; }
+    .lb-empty {
+      padding: 36px 20px; text-align: center;
+      color: rgba(255,255,255,0.3); font-size: 12px;
+    }
+
+    /* ── Bottom CTA ─────────────────────────────────────── */
+    .bottom-cta {
+      text-align: center; padding: 48px 0 72px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      margin-top: 32px;
+    }
+    .bottom-cta h3 { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: -0.5px; margin-bottom: 8px; }
+    .bottom-cta p { font-size: 13px; color: rgba(255,255,255,0.3); margin-bottom: 24px; }
+    .cta-buttons { display: flex; justify-content: center; gap: 12px; }
+
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px;
+      padding: 13px 24px; color: rgba(255,255,255,0.55); font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer; text-decoration: none; transition: all 0.22s;
+    }
+    .btn-secondary:hover { color: #fff; border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.08); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 760px) {
+      .navbar { padding: 12px 16px; }
+      .nav-back { padding: 6px 12px; font-size: 10px; }
+      .nav-title { font-size: 12px; }
+      .container { padding: 0 18px; }
+      .hero { padding: 92px 0 32px; }
+      .hero-top { flex-direction: column; align-items: flex-start; gap: 16px; margin-bottom: 24px; }
+      .hero h1 { font-size: 40px; letter-spacing: -2px; }
+      .hero-eyebrow { font-size: 10px; letter-spacing: 3px; margin-bottom: 10px; }
+      .btn-primary { padding: 12px 22px; font-size: 13px; }
+      .stats-row { grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 32px; }
+      .stat-card { padding: 14px 14px; }
+      .stat-val { font-size: 26px; }
+      .stat-lbl { font-size: 9px; letter-spacing: 1.5px; }
+      .progress-section { margin-bottom: 32px; }
+      .ach-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .ach-card { padding: 14px; border-radius: 16px; }
+      .ach-icon { font-size: 24px; }
+      .ach-name { font-size: 13px; }
+      .ach-desc { font-size: 10px; }
+
+      .lb-tabs { flex-wrap: wrap; }
+      .lb-tab { font-size: 10px; padding: 6px 10px; }
+      .lb-row { grid-template-columns: 36px 1fr 80px 50px; padding: 10px 12px; gap: 8px; font-size: 12px; }
+      .lb-row.head { font-size: 9px; letter-spacing: 1.5px; }
+      .lb-name { font-size: 12px; }
+      .bottom-cta { padding: 36px 0 56px; }
+      .bottom-cta h3 { font-size: 18px; }
+      .cta-buttons { flex-direction: column; align-items: stretch; }
+      .btn-secondary { justify-content: center; padding: 12px 20px; font-size: 13px; }
+    }
+    @media (max-width: 420px) {
+      .hero h1 { font-size: 32px; }
+      .ach-grid { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .stats-row .stat-card:nth-child(3) { grid-column: span 2; }
+      .lb-row { grid-template-columns: 32px 1fr 70px; gap: 6px; }
+      .lb-row .lb-plays { display: none; }
+    }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+  </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="dot-grid"></div>
+<div class="vignette"></div>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="/" class="nav-back">&#8592; Arcade</a>
+    <div class="nav-title">Achievements</div>
+  </div>
+  <div class="nav-right">
+    <div data-auth-slot></div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-top">
+      <div class="hero-text">
+        <div class="hero-eyebrow">Deine Fortschritte</div>
+        <h1>ACHIEVE<br><em>MENTS</em></h1>
+      </div>
+      <div class="hero-cta">
+        <a href="/games/blockdrop/" class="btn-primary">
+          Jetzt spielen <span class="arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-val"><span class="accent" id="unlocked-count">—</span></div>
+        <div class="stat-lbl">Freigeschaltet</div>
+      </div>
+      <div class="stat-card neutral">
+        <div class="stat-val"><span class="accent" id="total-count" style="color:rgba(255,255,255,0.5)">—</span></div>
+        <div class="stat-lbl">Gesamt</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-val"><span class="accent" style="color:var(--red)" id="pct-count">—</span><span style="font-size:20px;color:rgba(255,255,255,0.3)">%</span></div>
+        <div class="stat-lbl">Abgeschlossen</div>
+      </div>
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-header">
+        <div class="progress-title">Gesamtfortschritt</div>
+        <div class="progress-label" id="prog-label">—</div>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="prog-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ach-content"></div>
+
+  <div class="lb-section">
+    <div class="section-header">
+      <div class="section-label">Leaderboard</div>
+      <div class="section-divider"></div>
+      <div class="section-count" id="lb-count">—</div>
+    </div>
+    <div class="lb-tabs">
+      <button class="lb-tab active" data-mode="standard">Block Drop · Standard</button>
+      <button class="lb-tab" data-mode="classic">Block Drop · Classic</button>
+    </div>
+    <div class="lb-list" id="lb-list">
+      <div class="lb-empty">Lade…</div>
+    </div>
+  </div>
+
+  <div class="bottom-cta">
+    <h3>Noch mehr freischalten?</h3>
+    <p>Spiel Block Drop und sammle alle Achievements — manche sind echter schwer.</p>
+    <div class="cta-buttons">
+      <a href="/games/blockdrop/" class="btn-primary">Block Drop spielen <span class="arrow">→</span></a>
+      <a href="/games/schuluhr/" class="btn-secondary">SchulUhr öffnen</a>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script>
+const ACHIEVEMENTS = [
+  { id: 'bd_first',    game: 'Block Drop', name: 'Anfänger',                        desc: 'Starte dein erstes Spiel',                    icon: '🎮' },
+  { id: 'bd_tetris',   game: 'Block Drop', name: 'TETRIS!',                         desc: 'Lösch 4 Zeilen auf einmal',                   icon: '✨' },
+  { id: 'bd_combo5',   game: 'Block Drop', name: 'Combo Maniac',                    desc: 'Erreiche eine 5× Kombo',                      icon: '🔥' },
+  { id: 'bd_level10',  game: 'Block Drop', name: 'Speed Junkie',                    desc: 'Erreiche Level 10 im Classic Modus',          icon: '⚡' },
+  { id: 'bd_score50k', game: 'Block Drop', name: 'Großverdiener',                   desc: 'Erziele 50.000 Punkte in einem Spiel',        icon: '💰' },
+  { id: 'bd_lines100', game: 'Block Drop', name: 'Linienkiller',                    desc: 'Lösch 100 Zeilen in einem Spiel',             icon: '💥' },
+  { id: 'bd_harddrop', game: 'Block Drop', name: 'Kein Zeit für Langsam',          desc: 'Mach 25 Hard Drops in einem Spiel',           icon: '⬇️' },
+  { id: 'bd_no_hold',  game: 'Block Drop', name: 'Ich brauch kein Hold',           desc: 'Beende ein Spiel ohne Hold zu benutzen',      icon: '🙅' },
+  { id: 'bd_score250k',game: 'Block Drop', name: 'Legende',                         desc: 'Erziele 250.000 Punkte in einem Spiel',       icon: '🏆' },
+  { id: 'su_15min',    game: 'SchulUhr',   name: 'du hast wirklich keine Lust oder',desc: '15 Minuten auf der SchulUhr verbracht',       icon: '😴' },
+  { id: 'f1_first_win',game: 'F1 Wetten',  name: 'Lucky Punt',                       desc: 'Gewinne deine erste F1 Podium-Wette',         icon: '🎰' },
+];
+
+let cloudAchievements = null;
+
+function getUnlocked() {
+  // Cloud hat Vorrang, sonst localStorage
+  if (cloudAchievements && Array.isArray(cloudAchievements)) return cloudAchievements;
+  try { return JSON.parse(localStorage.getItem('arcade_achievements')) || []; }
+  catch(e) { return []; }
+}
+
+function render() {
+  const unlocked = getUnlocked();
+
+  const unlockedIds   = new Set(unlocked.map(a => a.id));
+  const unlockedCount = ACHIEVEMENTS.filter(a => unlockedIds.has(a.id)).length;
+  const pct = Math.round(unlockedCount / ACHIEVEMENTS.length * 100);
+
+  document.getElementById('prog-fill').style.width  = pct + '%';
+  document.getElementById('prog-label').textContent = `${unlockedCount} / ${ACHIEVEMENTS.length}`;
+  document.getElementById('unlocked-count').textContent = unlockedCount;
+  document.getElementById('total-count').textContent = ACHIEVEMENTS.length;
+  document.getElementById('pct-count').textContent = pct;
+
+  const games = [...new Set(ACHIEVEMENTS.map(a => a.game))];
+  let html = '';
+
+  for (const game of games) {
+    const achs = ACHIEVEMENTS.filter(a => a.game === game);
+    const unlockedInGame = achs.filter(a => unlockedIds.has(a.id)).length;
+    html += `
+      <div class="section-header">
+        <div class="section-label">${game}</div>
+        <div class="section-divider"></div>
+        <div class="section-count">${unlockedInGame}/${achs.length}</div>
+      </div>
+      <div class="ach-grid">`;
+
+    for (const a of achs) {
+      const isUnlocked = unlockedIds.has(a.id);
+      const entry = unlocked.find(u => u.id === a.id);
+      const dateStr = entry
+        ? new Date(entry.unlockedAt).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        : '';
+
+      html += `
+        <div class="ach-card ${isUnlocked ? 'unlocked' : 'locked'}">
+          <div class="ach-icon">${isUnlocked ? a.icon : '🔒'}</div>
+          <div class="ach-name">${a.name}</div>
+          <div class="ach-desc">${a.desc}</div>
+          <div class="ach-status ${isUnlocked ? 'done' : 'todo'}">
+            ${isUnlocked ? dateStr : 'Noch gesperrt'}
+          </div>
+        </div>`;
+    }
+    html += '</div>';
+  }
+
+  document.getElementById('ach-content').innerHTML = html;
+
+  document.querySelectorAll('.ach-card').forEach((card, i) => {
+    const locked = card.classList.contains('locked');
+    setTimeout(() => {
+      card.style.opacity   = locked ? '0.3' : '1';
+      card.style.transform = 'translateY(0)';
+    }, 80 + i * 45);
+  });
+}
+
+render();
+
+// ─── Cloud-Sync ────────────────────────────────────────────────────────
+async function syncFromCloud() {
+  if (!window.Auth || !window.Auth.user) return;
+  try {
+    const list = await window.Auth.loadAchievements();
+    if (list && list.length) {
+      cloudAchievements = list;
+      // Auch lokal speichern (Backup für offline)
+      localStorage.setItem('arcade_achievements', JSON.stringify(list));
+      render();
+    } else {
+      // Cloud leer, aber lokal vielleicht etwas — hochladen
+      const local = JSON.parse(localStorage.getItem('arcade_achievements') || '[]');
+      if (local.length) await window.Auth.saveAchievements(local);
+    }
+  } catch (e) { console.warn('Sync fail:', e); }
+}
+
+window.Auth?.onChange?.(user => {
+  if (user) syncFromCloud();
+  else { cloudAchievements = null; render(); }
+});
+
+// ─── Leaderboard ───────────────────────────────────────────────────────
+let lbMode = 'standard';
+
+async function renderLeaderboard() {
+  const listEl = document.getElementById('lb-list');
+  const countEl = document.getElementById('lb-count');
+  if (!listEl) return;
+  listEl.innerHTML = '<div class="lb-empty">Lade…</div>';
+
+  if (!window.Auth) {
+    listEl.innerHTML = '<div class="lb-empty">Leaderboard nicht verfügbar.</div>';
+    return;
+  }
+
+  const rows = await window.Auth.getLeaderboard('blockdrop', lbMode, 50);
+  countEl.textContent = rows.length ? `${rows.length} Spieler` : '';
+
+  if (!rows.length) {
+    listEl.innerHTML = '<div class="lb-empty">Noch keine Scores. Sei der erste!</div>';
+    return;
+  }
+
+  const myUsername = window.Auth.profile?.username;
+  let html = `
+    <div class="lb-row head">
+      <div>Rang</div><div>Name</div>
+      <div style="text-align:right">Score</div>
+      <div style="text-align:right">Spiele</div>
+    </div>`;
+  rows.forEach((r, i) => {
+    const rank = i + 1;
+    const rankCls = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+    const isMe = r.username === myUsername;
+    const meCls = isMe ? 'me' : '';
+    const escape = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const href = isMe
+      ? '/profile/'
+      : (r.user_id ? `/u/?id=${encodeURIComponent(r.user_id)}` : `/u/?name=${encodeURIComponent(r.username)}`);
+    html += `
+      <div class="lb-row ${meCls}">
+        <div class="lb-rank ${rankCls}">#${rank}</div>
+        <a class="lb-name" href="${href}">${escape(r.username)}</a>
+        <div class="lb-score">${Number(r.best_score).toLocaleString()}</div>
+        <div class="lb-plays">${r.plays}×</div>
+      </div>`;
+  });
+  listEl.innerHTML = html;
+}
+
+document.querySelectorAll('.lb-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    lbMode = tab.dataset.mode;
+    renderLeaderboard();
+  });
+});
+
+renderLeaderboard();
+</script>
+</body>
+</html>

@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <title>Block Drop — Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --red: #e94560; --gold: #f0c000; --bg: #05050e; }
+
+    body {
+      background: var(--bg); min-height: 100vh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #eee; overflow-x: hidden;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 80px 16px 32px; gap: 20px;
+    }
+
+    /* ── Background ─────────────────────────────────────── */
+    .orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 640px; height: 640px; background: #e94560; opacity: 0.05; top: -240px; left: -200px; animation: orbFloat1 24s ease-in-out infinite alternate; }
+    .orb-2 { width: 520px; height: 520px; background: #3050e0; opacity: 0.04; bottom: -200px; right: -200px; animation: orbFloat2 30s ease-in-out infinite alternate; }
+    @keyframes orbFloat1 { from { transform: translate(0,0) scale(1); } to { transform: translate(80px,70px) scale(1.15); } }
+    @keyframes orbFloat2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-70px,-90px) scale(1.2); } }
+    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,0.01) 1px, transparent 1px); background-size: 30px 30px; }
+    .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 30%, rgba(5,5,14,0.8) 100%); }
+
+    /* ── Navbar ─────────────────────────────────────────── */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px;
+      background: rgba(5,5,14,0.8);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-left { display: flex; align-items: center; gap: 14px; }
+    .nav-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none; color: rgba(255,255,255,0.35);
+      font-size: 11px; font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+      padding: 6px 12px; transition: all 0.2s;
+    }
+    .nav-back:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); }
+    .nav-game-title { font-size: 13px; font-weight: 900; color: #fff; letter-spacing: -0.3px; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .nav-score-display {
+      display: flex; align-items: center; gap: 16px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px; padding: 6px 14px;
+    }
+    .nav-stat { display: flex; flex-direction: column; align-items: center; }
+    .nav-stat-val { font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -0.5px; line-height: 1; }
+    .nav-stat-lbl { font-size: 8px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-top: 1px; }
+    .nav-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.07); }
+
+    /* ── Layout ─────────────────────────────────────────── */
+    #wrapper { position: relative; z-index: 1; display: flex; gap: 14px; align-items: center; }
+    #left-panel { display: flex; flex-direction: column; gap: 8px; width: 120px; }
+    #right-panel { display: flex; flex-direction: column; gap: 8px; width: 140px; }
+
+    /* ── Panels ─────────────────────────────────────────── */
+    .panel-box {
+      background: rgba(255,255,255,0.028);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; padding: 12px 14px;
+      transition: border-color 0.3s;
+    }
+    .panel-box h3 {
+      font-size: 8px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 3px;
+      color: rgba(255,255,255,0.2); margin-bottom: 8px;
+    }
+    .panel-box .value {
+      font-size: 28px; font-weight: 900; color: #fff;
+      letter-spacing: -1.5px; line-height: 1;
+    }
+    #score-display { font-size: 22px; color: var(--red); text-shadow: 0 0 20px rgba(233,69,96,0.3); }
+
+    /* ── Board ──────────────────────────────────────────── */
+    #game-area {
+      position: relative; border-radius: 12px; overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 0 60px rgba(233,69,96,0.08), 0 32px 80px rgba(0,0,0,0.85);
+    }
+    canvas#board { display: block; background: rgba(0,0,0,0.7); }
+    canvas#next-canvas, canvas#hold-canvas { display: block; }
+
+    /* ── Overlay ────────────────────────────────────────── */
+    #overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(5,5,14,0.94);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center; gap: 16px;
+      padding: 24px;
+    }
+    #overlay h1 {
+      font-size: 32px; font-weight: 900; color: #fff;
+      letter-spacing: -1.5px;
+      text-shadow: 0 0 48px rgba(233,69,96,0.5);
+    }
+    #overlay .overlay-sub { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: -8px; }
+    #overlay p { font-size: 12px; color: rgba(255,255,255,0.35); text-align: center; line-height: 1.5; }
+    #overlay p strong { color: rgba(255,255,255,0.75); }
+
+    /* ── Mode Buttons ───────────────────────────────────── */
+    .mode-btns { display: flex; gap: 8px; width: 100%; }
+    .mode-btn {
+      flex: 1; background: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.4);
+      border: 1px solid rgba(255,255,255,0.09);
+      padding: 10px 8px; font-size: 11px; font-weight: 700;
+      font-family: inherit; border-radius: 10px;
+      cursor: pointer; transition: all 0.2s; text-align: center; line-height: 1.3;
+    }
+    .mode-btn:hover { border-color: rgba(233,69,96,0.35); color: #fff; background: rgba(233,69,96,0.06); }
+    .mode-btn.selected {
+      background: rgba(233,69,96,0.14); border-color: rgba(233,69,96,0.45); color: #fff;
+      box-shadow: 0 0 16px rgba(233,69,96,0.12);
+    }
+    .mode-btn small { display: block; font-size: 9px; font-weight: 400; opacity: 0.55; margin-top: 2px; }
+
+    /* ── Start Button ───────────────────────────────────── */
+    .btn {
+      background: var(--red); color: #fff; border: none;
+      padding: 14px 0; font-size: 14px; font-weight: 800;
+      font-family: inherit; border-radius: 12px; cursor: pointer;
+      letter-spacing: 0.5px; width: 100%;
+      box-shadow: 0 0 28px rgba(233,69,96,0.45);
+      transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn:hover { background: #f05672; box-shadow: 0 0 40px rgba(233,69,96,0.6); transform: translateY(-1px); }
+    .btn:active { transform: scale(0.98); }
+
+    /* ── Level Bar ──────────────────────────────────────── */
+    #level-bar-wrap { background: rgba(255,255,255,0.06); border-radius: 100px; height: 3px; width: 100%; margin-top: 8px; overflow: hidden; }
+    #level-bar { height: 100%; background: var(--red); border-radius: 100px; transition: width 0.4s ease; width: 0%; }
+
+    /* ── Mode Badge ─────────────────────────────────────── */
+    #mode-badge {
+      font-size: 8px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 2px; padding: 3px 8px; border-radius: 5px;
+      margin-top: 8px; display: inline-block;
+    }
+    #mode-badge.classic  { background: rgba(233,69,96,0.15); color: var(--red); }
+    #mode-badge.standard { background: rgba(56,189,248,0.12); color: #38bdf8; }
+
+    /* ── Controls ───────────────────────────────────────── */
+    #controls-hint { font-size: 9px; color: rgba(255,255,255,0.18); line-height: 2.1; }
+
+    /* ── High Scores ────────────────────────────────────── */
+    #hs-mode-label { font-size: 8px; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.2); margin-bottom: 10px; }
+    .highscore-list { font-size: 11px; color: rgba(255,255,255,0.4); line-height: 2; min-height: 100px; }
+    .highscore-list span { color: var(--red); font-weight: 700; }
+
+    /* ── Achievement Overlay ────────────────────────────── */
+    #ach-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10000; pointer-events: none; transition: background 0.35s;
+    }
+    #ach-overlay.show { background: rgba(0,0,0,0.88); pointer-events: all; }
+    #ach-modal {
+      background: rgba(10,10,26,0.98); border: 1px solid rgba(240,192,0,0.2);
+      border-radius: 24px; padding: 44px 64px; text-align: center;
+      position: relative; overflow: hidden;
+      box-shadow: 0 0 80px rgba(240,192,0,0.07), 0 40px 80px rgba(0,0,0,0.95);
+      transform: scale(0.55) translateY(48px); opacity: 0;
+      transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s;
+    }
+    #ach-overlay.show #ach-modal { transform: scale(1) translateY(0); opacity: 1; }
+    #ach-modal::before {
+      content: ''; position: absolute; top: 0; left: -100%;
+      width: 100%; height: 2px;
+      background: linear-gradient(90deg, transparent, #f0c000, transparent);
+    }
+    #ach-overlay.show #ach-modal::before { animation: achShimmer 2s 0.5s ease-in-out infinite; }
+    @keyframes achShimmer { 0% { left:-100%; } 100% { left:200%; } }
+    .ach-label { font-size: 9px; letter-spacing: 4px; text-transform: uppercase; color: var(--gold); margin-bottom: 18px; }
+    #ach-icon-big { font-size: 68px; display: block; margin-bottom: 14px; transform: scale(0); }
+    #ach-overlay.show #ach-icon-big { animation: achIconPop 0.55s 0.2s both cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes achIconPop { from { transform: scale(0) rotate(-15deg); } to { transform: scale(1) rotate(0deg); } }
+    #ach-name-big { font-size: 22px; font-weight: 900; color: #fff; margin-bottom: 8px; letter-spacing: -0.5px; }
+    #ach-desc-big { font-size: 12px; color: rgba(255,255,255,0.3); line-height: 1.5; }
+    .ach-hint { font-size: 9px; color: rgba(255,255,255,0.12); text-transform: uppercase; letter-spacing: 2px; margin-top: 28px; opacity: 0; }
+    #ach-overlay.show .ach-hint { animation: achHintFade 0.6s 1.8s both; }
+    @keyframes achHintFade { from { opacity:0; } to { opacity:1; } }
+
+    /* ── Tetris-Effekt (4 Zeilen) ───────────────────────── */
+    .tetris-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 9998; overflow: hidden; }
+    .tetris-confetti i {
+      position: absolute; top: -24px; display: block; opacity: 0;
+      animation-name: tetrisConfettiFall;
+      animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+      animation-fill-mode: forwards;
+      box-shadow: 0 0 6px rgba(255,255,255,0.15);
+    }
+    @keyframes tetrisConfettiFall {
+      0%   { opacity: 0; transform: translate(0, -10vh) rotate(0deg); }
+      8%   { opacity: 1; }
+      100% { opacity: 0; transform: translate(var(--xd), 110vh) rotate(var(--rot)); }
+    }
+    .tetris-banner {
+      position: fixed; top: 40%; left: 50%; z-index: 9999; pointer-events: none;
+      font-family: 'Inter', sans-serif; font-weight: 900;
+      font-size: clamp(48px, 13vw, 130px); letter-spacing: -5px;
+      background: linear-gradient(90deg, #00cfcf, #f0c000, #e94560, #a000f0);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; color: transparent;
+      filter: drop-shadow(0 0 24px rgba(240,192,0,0.55)) drop-shadow(0 0 48px rgba(233,69,96,0.4));
+      transform: translate(-50%, -50%) scale(0.3); opacity: 0;
+      animation: tetrisBannerPop 1.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes tetrisBannerPop {
+      0%   { opacity: 0; transform: translate(-50%,-50%) scale(0.3) rotate(-6deg); }
+      14%  { opacity: 1; transform: translate(-50%,-50%) scale(1.18) rotate(2deg); }
+      28%  { transform: translate(-50%,-50%) scale(0.98) rotate(0deg); }
+      72%  { opacity: 1; transform: translate(-50%,-50%) scale(1) rotate(0deg); }
+      100% { opacity: 0; transform: translate(-50%,-50%) scale(1.12); }
+    }
+    .tetris-shake { animation: tetrisShake 0.65s cubic-bezier(.36,.07,.19,.97); }
+    @keyframes tetrisShake {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      10% { transform: translate(-7px, 5px) rotate(-0.6deg); }
+      20% { transform: translate(8px, -6px) rotate(0.6deg); }
+      30% { transform: translate(-9px, 4px) rotate(-0.5deg); }
+      40% { transform: translate(8px, 6px) rotate(0.5deg); }
+      50% { transform: translate(-6px, -5px) rotate(-0.4deg); }
+      60% { transform: translate(6px, 4px) rotate(0.3deg); }
+      70% { transform: translate(-4px, -3px) rotate(-0.2deg); }
+      80% { transform: translate(3px, 2px) rotate(0.15deg); }
+      90% { transform: translate(-2px, 1px) rotate(0deg); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .tetris-shake { animation: none; }
+    }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 3px; }
+
+    /* ── Touch Controls (mobile only) ───────────────────── */
+    #touch-controls { display: none; }
+    @media (hover: none) and (pointer: coarse), (max-width: 760px) {
+      #touch-controls {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+        width: min(100vw - 24px, 380px);
+        margin: 4px auto 0;
+        position: relative; z-index: 1;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+      }
+      .tc-btn {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 14px;
+        color: #fff; font-size: 20px;
+        font-family: inherit; font-weight: 700;
+        padding: 14px 0;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        transition: background 0.1s, transform 0.05s;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .tc-btn:active {
+        background: rgba(233,69,96,0.18);
+        border-color: rgba(233,69,96,0.45);
+        transform: scale(0.95);
+      }
+      .tc-btn.wide { grid-column: span 1; }
+      .tc-btn.lbl { font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
+      .tc-row2 { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 8px; }
+    }
+
+    /* ── Responsive Layout ──────────────────────────────── */
+    @media (max-width: 760px) {
+      body { padding: 64px 8px 16px; gap: 10px; }
+      .navbar { padding: 10px 14px; }
+      .nav-back { padding: 5px 10px; font-size: 10px; }
+      .nav-game-title { font-size: 12px; }
+      .nav-right { gap: 8px; }
+      .nav-score-display { gap: 10px; padding: 5px 10px; }
+      .nav-stat-val { font-size: 12px; }
+      .nav-stat-lbl { font-size: 7px; letter-spacing: 1px; }
+      .nav-divider { height: 18px; }
+
+      #wrapper { flex-direction: column; gap: 10px; align-items: center; }
+      #left-panel, #right-panel { width: min(100vw - 24px, 380px); flex-direction: row; gap: 8px; flex-wrap: wrap; }
+
+      /* Reorder: board first, then mini-stats row, then next preview, then high-scores, hide controls hint */
+      #left-panel { order: 1; }
+      #game-area { order: 0; }
+      #right-panel { order: 2; }
+
+      .panel-box { padding: 10px 12px; flex: 1 1 calc(33.333% - 6px); min-width: 80px; }
+      .panel-box h3 { font-size: 7px; letter-spacing: 2px; margin-bottom: 4px; }
+      .panel-box .value { font-size: 18px; letter-spacing: -0.5px; }
+      #score-display { font-size: 17px; }
+      #level-bar-wrap { margin-top: 6px; }
+      #mode-badge { margin-top: 6px; font-size: 7px; padding: 2px 6px; }
+
+      /* Hide on-screen keyboard hint (replaced by touch buttons) */
+      #controls-hint-box, .controls-hint-box { display: none; }
+
+      /* Hold + Next: smaller canvases */
+      #hold-canvas { width: 60px; height: 48px; display: block; margin: 0 auto; }
+      #next-canvas { width: 60px; height: 156px; display: block; margin: 0 auto; }
+
+      /* Board: scale to fit screen */
+      #game-area { width: 100%; max-width: min(100vw - 16px, 320px); aspect-ratio: 1 / 2; touch-action: none; }
+      canvas#board { width: 100% !important; height: 100% !important; touch-action: none; }
+      #overlay { padding: 16px; }
+      #overlay h1 { font-size: 26px; }
+      .mode-btn { padding: 9px 6px; font-size: 10px; }
+      .mode-btn small { font-size: 8px; }
+      .btn { padding: 12px 0; font-size: 13px; }
+
+      /* High score list compact */
+      #hs-list { font-size: 10px; line-height: 1.7; min-height: 70px; }
+      #hs-mode-label { font-size: 7px; letter-spacing: 1.5px; margin-bottom: 6px; }
+    }
+
+    @media (max-width: 380px) {
+      #overlay h1 { font-size: 22px; }
+      .panel-box .value { font-size: 16px; }
+      #left-panel, #right-panel { gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="dot-grid"></div>
+<div class="vignette"></div>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="../../" class="nav-back">&#8592; Arcade</a>
+    <div class="nav-game-title">Block Drop</div>
+  </div>
+  <div class="nav-right">
+    <div data-auth-slot></div>
+    <div class="nav-score-display">
+      <div class="nav-stat">
+        <div class="nav-stat-val" id="nav-score">0</div>
+        <div class="nav-stat-lbl">Score</div>
+      </div>
+      <div class="nav-divider"></div>
+      <div class="nav-stat">
+        <div class="nav-stat-val" id="nav-level">1</div>
+        <div class="nav-stat-lbl">Level</div>
+      </div>
+      <div class="nav-divider"></div>
+      <div class="nav-stat">
+        <div class="nav-stat-val" id="nav-lines">0</div>
+        <div class="nav-stat-lbl">Lines</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div id="wrapper">
+  <div id="left-panel">
+    <div class="panel-box">
+      <h3>Score</h3>
+      <div class="value" id="score-display">0</div>
+    </div>
+    <div class="panel-box">
+      <h3>Level</h3>
+      <div class="value" id="level-display">1</div>
+      <div id="level-bar-wrap"><div id="level-bar"></div></div>
+      <div id="mode-badge" class="classic">Classic</div>
+    </div>
+    <div class="panel-box">
+      <h3>Lines</h3>
+      <div class="value" id="lines-display">0</div>
+    </div>
+    <div class="panel-box">
+      <h3>Hold</h3>
+      <canvas id="hold-canvas" width="100" height="80"></canvas>
+    </div>
+    <div class="panel-box controls-hint-box">
+      <h3>Controls</h3>
+      <div id="controls-hint">
+        ← → &nbsp;Move<br>
+        ↑ / Z &nbsp;Rotate CW<br>
+        X &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rotate CCW<br>
+        ↓ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Soft drop<br>
+        Space Hard drop<br>
+        Shift &nbsp;Hold<br>
+        P &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Pause
+      </div>
+    </div>
+  </div>
+
+  <div id="game-area">
+    <canvas id="board" width="300" height="600"></canvas>
+    <div id="overlay">
+      <h1>BLOCK DROP</h1>
+      <div class="overlay-sub">Wähl deinen Modus</div>
+      <div class="mode-btns">
+        <button class="mode-btn" id="mode-classic">Classic<small>Speed increases</small></button>
+        <button class="mode-btn selected" id="mode-standard">Standard<small>Fixed speed</small></button>
+      </div>
+      <button class="btn" id="start-btn">Spielen &nbsp;→</button>
+      <p id="overlay-info" style="display:none"></p>
+    </div>
+  </div>
+
+  <div id="right-panel">
+    <div class="panel-box">
+      <h3>Next</h3>
+      <canvas id="next-canvas" width="100" height="260"></canvas>
+    </div>
+    <div class="panel-box">
+      <h3>High Scores</h3>
+      <div id="hs-mode-label">Standard</div>
+      <div class="highscore-list" id="hs-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Touch controls (mobile only) -->
+<div id="touch-controls" aria-label="Touch-Steuerung">
+  <button class="tc-btn" id="tc-rotL" type="button" aria-label="Drehen links">↺</button>
+  <button class="tc-btn" id="tc-left" type="button" aria-label="Links">◀</button>
+  <button class="tc-btn" id="tc-down" type="button" aria-label="Runter">▼</button>
+  <button class="tc-btn" id="tc-right" type="button" aria-label="Rechts">▶</button>
+  <button class="tc-btn" id="tc-rotR" type="button" aria-label="Drehen rechts">↻</button>
+  <div class="tc-row2">
+    <button class="tc-btn lbl" id="tc-hold" type="button">Hold</button>
+    <button class="tc-btn lbl" id="tc-drop" type="button" style="background:rgba(233,69,96,0.18);border-color:rgba(233,69,96,0.4);">Drop</button>
+    <button class="tc-btn lbl" id="tc-pause" type="button">⏸</button>
+  </div>
+</div>
+
+<script>
+  // Mirror panel stats to navbar
+  const scoreObs = new MutationObserver(() => {
+    const v = document.getElementById('score-display').textContent;
+    document.getElementById('nav-score').textContent = v;
+  });
+  const levelObs = new MutationObserver(() => {
+    document.getElementById('nav-level').textContent = document.getElementById('level-display').textContent;
+  });
+  const linesObs = new MutationObserver(() => {
+    document.getElementById('nav-lines').textContent = document.getElementById('lines-display').textContent;
+  });
+  scoreObs.observe(document.getElementById('score-display'), { childList: true, subtree: true, characterData: true });
+  levelObs.observe(document.getElementById('level-display'), { childList: true, subtree: true, characterData: true });
+  linesObs.observe(document.getElementById('lines-display'), { childList: true, subtree: true, characterData: true });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script src="game.js"></script>
+<script>
+  // ── Touch controls ─────────────────────────────────────────────────
+  (function setupTouchControls() {
+    const G = () => window._game;
+
+    function bindTap(id, fn) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('click', e => {
+        e.preventDefault();
+        const g = G();
+        if (!g) return;
+        if (g.state === 'idle' || g.state === 'gameover') return;
+        fn(g);
+      });
+    }
+
+    // Auto-repeat for horizontal moves + soft drop while finger held
+    function bindHold(id, fn, repeatMs = 90, initialDelay = 160) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      let repeat = null, delay = null;
+
+      const start = e => {
+        e.preventDefault();
+        const g = G(); if (!g || g.state !== 'playing') return;
+        fn(g);
+        delay = setTimeout(() => {
+          repeat = setInterval(() => {
+            const g2 = G(); if (g2 && g2.state === 'playing') fn(g2);
+          }, repeatMs);
+        }, initialDelay);
+      };
+      const stop = () => {
+        clearTimeout(delay); clearInterval(repeat);
+        delay = null; repeat = null;
+      };
+      el.addEventListener('touchstart', start, { passive: false });
+      el.addEventListener('touchend', stop);
+      el.addEventListener('touchcancel', stop);
+      el.addEventListener('mousedown', start);
+      el.addEventListener('mouseup', stop);
+      el.addEventListener('mouseleave', stop);
+    }
+
+    bindHold('tc-left',  g => g.moveLeft());
+    bindHold('tc-right', g => g.moveRight());
+    bindHold('tc-down',  g => g.softDrop(),     40, 0);
+    bindTap('tc-rotL',  g => g.rotate(-1));
+    bindTap('tc-rotR',  g => g.rotate(1));
+    bindTap('tc-drop',  g => g.hardDrop());
+    bindTap('tc-hold',  g => g.holdPiece && g.holdPiece());
+    bindTap('tc-pause', g => g.togglePause && g.togglePause());
+
+    // Swipe on the board itself: left/right = move, up = rotate, down-fast = hard drop
+    const board = document.getElementById('game-area');
+    if (board) {
+      let sx = 0, sy = 0, sxLast = 0, syLast = 0, startTime = 0, moving = false;
+      const STEP = 24;       // px per cell move
+      const SWIPE_UP = 30;   // px swipe up = rotate
+      const HARD_DROP = 60;  // fast down flick triggers hard drop
+
+      board.addEventListener('touchstart', e => {
+        const g = G();
+        if (!g || g.state !== 'playing') return;
+        const t = e.touches[0];
+        sx = sxLast = t.clientX;
+        sy = syLast = t.clientY;
+        startTime = Date.now();
+        moving = false;
+      }, { passive: false });
+
+      board.addEventListener('touchmove', e => {
+        const g = G();
+        if (!g || g.state !== 'playing') return;
+        e.preventDefault();   // stop page scroll while playing
+        const t = e.touches[0];
+        const dx = t.clientX - sxLast;
+        const dy = t.clientY - syLast;
+
+        // horizontal step
+        if (Math.abs(dx) >= STEP && Math.abs(dx) > Math.abs(dy)) {
+          if (dx > 0) g.moveRight(); else g.moveLeft();
+          sxLast = t.clientX;
+          moving = true;
+        }
+        // continuous soft drop on slow down-drag
+        else if (dy >= STEP && dy < HARD_DROP) {
+          g.softDrop();
+          syLast = t.clientY;
+          moving = true;
+        }
+      }, { passive: false });
+
+      board.addEventListener('touchend', e => {
+        const g = G();
+        if (!g || g.state !== 'playing') return;
+        const ch = e.changedTouches[0];
+        const dx = ch.clientX - sx;
+        const dy = ch.clientY - sy;
+        const dt = Date.now() - startTime;
+
+        // fast flick down → hard drop
+        if (!moving && dy > HARD_DROP && Math.abs(dx) < 40 && dt < 350) {
+          g.hardDrop();
+          return;
+        }
+        // tap (no move) → rotate
+        if (!moving && Math.abs(dx) < 12 && Math.abs(dy) < 12 && dt < 250) {
+          g.rotate(1);
+          return;
+        }
+        // swipe up → rotate
+        if (!moving && dy < -SWIPE_UP && Math.abs(dx) < 40) {
+          g.rotate(1);
+        }
+      });
+    }
+  })();
+</script>
+</body>
+</html>

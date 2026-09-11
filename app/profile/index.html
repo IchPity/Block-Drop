@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <title>Profil — Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --red: #e94560; --gold: #f0c000; --bg: #060818; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg); min-height: 100vh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #eee; overflow-x: hidden;
+    }
+
+    /* ── Background ─────────────────────────────────────── */
+    .orb { position: fixed; border-radius: 50%; filter: blur(130px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 700px; height: 700px; background: #e94560; opacity: 0.05; top: -240px; right: -220px; animation: orbFloat1 26s ease-in-out infinite alternate; }
+    .orb-2 { width: 580px; height: 580px; background: #6d4ae9; opacity: 0.045; bottom: -200px; left: -180px; animation: orbFloat2 32s ease-in-out infinite alternate; }
+    @keyframes orbFloat1 { from { transform: translate(0,0) scale(1); } to { transform: translate(-80px,80px) scale(1.15); } }
+    @keyframes orbFloat2 { from { transform: translate(0,0) scale(1); } to { transform: translate(80px,-80px) scale(1.18); } }
+    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px); background-size: 30px 30px; }
+    .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 35%, rgba(5,5,14,0.75) 100%); }
+
+    /* ── Navbar ─────────────────────────────────────────── */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 32px;
+      background: rgba(6,8,24,0.7);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-left { display: flex; align-items: center; gap: 16px; }
+    .nav-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none; color: rgba(255,255,255,0.35);
+      font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+      padding: 7px 14px; transition: all 0.2s;
+    }
+    .nav-back:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.04); }
+    .nav-title { font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.5); letter-spacing: 0.3px; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+
+    /* ── Layout ─────────────────────────────────────────── */
+    .container { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 0 36px; }
+
+    /* ── Hero ───────────────────────────────────────────── */
+    .hero { padding: 108px 0 36px; }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase;
+      color: var(--red); margin-bottom: 14px;
+      opacity: 0; transform: translateY(12px); animation: fadeUp 0.7s 0.05s both;
+    }
+    .hero-eyebrow::before { content: ''; display: block; width: 18px; height: 2px; background: var(--red); border-radius: 1px; }
+    .hero h1 {
+      font-size: 52px; font-weight: 900; letter-spacing: -3px; color: #fff; line-height: 1;
+      opacity: 0; transform: translateY(18px); animation: fadeUp 0.7s 0.1s both;
+    }
+    .hero h1 em { font-style: normal; color: var(--red); }
+
+    /* ── Logged-out state ───────────────────────────────── */
+    .gate {
+      display: none;
+      background: rgba(18,18,42,0.7);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 22px; padding: 40px 32px; text-align: center;
+      margin-bottom: 48px;
+    }
+    .gate.show { display: block; animation: fadeUp 0.5s both; }
+    .gate-icon { font-size: 40px; margin-bottom: 14px; }
+    .gate h2 { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.5px; }
+    .gate p { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 24px; line-height: 1.6; }
+
+    /* ── Profile area ───────────────────────────────────── */
+    .profile-area { display: none; }
+    .profile-area.show { display: block; }
+
+    /* ── Avatar header card ─────────────────────────────── */
+    .avatar-card {
+      display: flex; align-items: center; gap: 24px;
+      background: rgba(18,18,42,0.7);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 22px; padding: 24px 28px;
+      margin-bottom: 16px;
+      opacity: 0; transform: translateY(14px); animation: fadeUp 0.6s 0.15s both;
+    }
+    .avatar-wrap { position: relative; flex-shrink: 0; }
+    .avatar {
+      width: 96px; height: 96px; border-radius: 50%;
+      background: linear-gradient(135deg, #e94560, #b8334a);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 38px; font-weight: 900; color: #fff;
+      object-fit: cover; overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.1);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+    }
+    img.avatar { display: block; }
+    .avatar-edit-btn {
+      position: absolute; bottom: -2px; right: -2px;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--red); border: 3px solid var(--bg);
+      color: #fff; cursor: pointer; font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; box-shadow: 0 0 16px rgba(233,69,96,0.4);
+    }
+    .avatar-edit-btn:hover { background: #f05672; transform: scale(1.08); }
+    .avatar-info { min-width: 0; }
+    .avatar-name { font-size: 24px; font-weight: 900; color: #fff; letter-spacing: -0.8px; overflow: hidden; text-overflow: ellipsis; }
+    .avatar-email { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 4px; }
+    .avatar-since { font-size: 11px; color: rgba(255,255,255,0.28); margin-top: 8px; font-weight: 600; letter-spacing: 0.3px; }
+    .avatar-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .mini-btn {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.6); border-radius: 9px; padding: 6px 12px;
+      font-family: inherit; font-size: 11px; font-weight: 700; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mini-btn:hover { color: #fff; border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); }
+    .mini-btn.danger { color: #ff7a90; border-color: rgba(233,69,96,0.25); }
+    .mini-btn.danger:hover { background: rgba(233,69,96,0.12); color: #ff97aa; }
+    .mini-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Setting cards ──────────────────────────────────── */
+    .card {
+      background: rgba(18,18,42,0.7);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 22px; padding: 26px 28px;
+      margin-bottom: 16px;
+      opacity: 0; transform: translateY(14px);
+    }
+    .card.a1 { animation: fadeUp 0.6s 0.2s both; }
+    .card.a2 { animation: fadeUp 0.6s 0.25s both; }
+    .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .card-head .ic { font-size: 18px; }
+    .card h3 { font-size: 16px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
+    .card-sub { font-size: 12px; color: rgba(255,255,255,0.38); margin-bottom: 20px; line-height: 1.5; }
+
+    .field { display: block; margin-bottom: 14px; }
+    .field label {
+      display: block; font-size: 10px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: rgba(255,255,255,0.35); margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%; background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+      padding: 12px 14px; color: #fff;
+      font-family: inherit; font-size: 14px; font-weight: 500;
+      outline: none; transition: border-color 0.2s, background 0.2s;
+    }
+    .field input:focus { border-color: rgba(233,69,96,0.5); background: rgba(255,255,255,0.06); }
+    .field input:disabled { opacity: 0.6; }
+
+    .submit-btn {
+      background: var(--red); color: #fff;
+      border: none; border-radius: 12px; padding: 12px 24px;
+      font-family: inherit; font-size: 13px; font-weight: 800;
+      letter-spacing: 0.3px; cursor: pointer;
+      box-shadow: 0 0 24px rgba(233,69,96,0.3);
+      transition: all 0.2s; margin-top: 4px;
+    }
+    .submit-btn:hover:not(:disabled) { background: #f05672; box-shadow: 0 0 36px rgba(233,69,96,0.5); transform: translateY(-1px); }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .login-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--red); border: none; border-radius: 12px;
+      padding: 13px 28px; color: #fff;
+      font-family: inherit; font-size: 14px; font-weight: 800;
+      cursor: pointer; box-shadow: 0 0 28px rgba(233,69,96,0.35);
+      transition: all 0.2s;
+    }
+    .login-btn:hover { background: #f05672; transform: translateY(-1px); box-shadow: 0 0 40px rgba(233,69,96,0.5); }
+
+    .msg { border-radius: 10px; padding: 10px 14px; font-size: 12px; margin-bottom: 14px; line-height: 1.4; }
+    .msg.err { background: rgba(233,69,96,0.1); border: 1px solid rgba(233,69,96,0.3); color: #ff97aa; }
+    .msg.ok { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #7ee2a3; }
+
+    .bottom-space { height: 60px; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 600px) {
+      .navbar { padding: 12px 16px; }
+      .nav-back { padding: 6px 12px; font-size: 10px; }
+      .container { padding: 0 18px; }
+      .hero { padding: 92px 0 28px; }
+      .hero h1 { font-size: 38px; letter-spacing: -2px; }
+      .avatar-card { flex-direction: column; text-align: center; gap: 16px; padding: 24px 20px; }
+      .avatar-actions { justify-content: center; }
+      .avatar-name { font-size: 22px; }
+      .card { padding: 22px 20px; }
+    }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+  </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="dot-grid"></div>
+<div class="vignette"></div>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="/" class="nav-back">&#8592; Arcade</a>
+    <div class="nav-title">Profil</div>
+  </div>
+  <div class="nav-right">
+    <div data-auth-slot></div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-eyebrow">Dein Account</div>
+    <h1>MEIN <em>PROFIL</em></h1>
+  </div>
+
+  <!-- Nicht eingeloggt -->
+  <div class="gate" id="gate">
+    <div class="gate-icon">🔒</div>
+    <h2>Bitte anmelden</h2>
+    <p>Melde dich an, um dein Profil zu bearbeiten, Username &amp; Passwort zu ändern<br>oder ein Profilbild hochzuladen.</p>
+    <button class="login-btn" id="gate-login">Anmelden</button>
+  </div>
+
+  <!-- Eingeloggt -->
+  <div class="profile-area" id="profile-area">
+
+    <!-- Avatar / Header -->
+    <div class="avatar-card">
+      <div class="avatar-wrap">
+        <div class="avatar" id="avatar"></div>
+        <button class="avatar-edit-btn" id="avatar-edit" title="Profilbild ändern" aria-label="Profilbild ändern">📷</button>
+        <input type="file" id="avatar-input" accept="image/*" hidden />
+      </div>
+      <div class="avatar-info">
+        <div class="avatar-name" id="header-name">—</div>
+        <div class="avatar-email" id="header-email">—</div>
+        <div class="avatar-since" id="header-since"></div>
+        <div class="avatar-actions">
+          <button class="mini-btn" id="avatar-upload-btn">📷 Bild hochladen</button>
+          <button class="mini-btn danger" id="avatar-remove-btn" style="display:none">Entfernen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Username ändern -->
+    <div class="card a1">
+      <div class="card-head"><span class="ic">✏️</span><h3>Username ändern</h3></div>
+      <div class="card-sub">Dein Anzeigename im Leaderboard und in der Navbar.</div>
+      <div id="username-msg"></div>
+      <form id="username-form" autocomplete="off">
+        <div class="field">
+          <label for="username-input">Username</label>
+          <input id="username-input" type="text" minlength="3" maxlength="20" required
+                 autocapitalize="none" autocorrect="off" spellcheck="false" />
+        </div>
+        <button type="submit" class="submit-btn" id="username-submit">Speichern</button>
+      </form>
+    </div>
+
+    <!-- Passwort ändern -->
+    <div class="card a2">
+      <div class="card-head"><span class="ic">🔑</span><h3>Passwort ändern</h3></div>
+      <div class="card-sub">Mindestens 6 Zeichen. Du bleibst auf diesem Gerät angemeldet.</div>
+      <div id="password-msg"></div>
+      <form id="password-form">
+        <div class="field">
+          <label for="password-input">Neues Passwort</label>
+          <input id="password-input" type="password" minlength="6" required autocomplete="new-password" />
+        </div>
+        <div class="field">
+          <label for="password-input2">Passwort bestätigen</label>
+          <input id="password-input2" type="password" minlength="6" required autocomplete="new-password" />
+        </div>
+        <button type="submit" class="submit-btn" id="password-submit">Passwort ändern</button>
+      </form>
+    </div>
+
+  </div>
+
+  <div class="bottom-space"></div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script>
+(function () {
+  const gate        = document.getElementById('gate');
+  const area        = document.getElementById('profile-area');
+  const avatarInput = document.getElementById('avatar-input');
+  const headerName  = document.getElementById('header-name');
+  const headerEmail = document.getElementById('header-email');
+  const headerSince = document.getElementById('header-since');
+  const removeBtn   = document.getElementById('avatar-remove-btn');
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function setMsg(id, type, text) {
+    document.getElementById(id).innerHTML = text ? `<div class="msg ${type}">${esc(text)}</div>` : '';
+  }
+
+  function renderHeader(user, profile) {
+    const name = (profile && profile.username) || (user && user.email) || '?';
+    headerName.textContent = name;
+    headerEmail.textContent = user ? user.email : '';
+
+    // Member since (aus profile.created_at oder user.created_at)
+    const created = (profile && profile.created_at) || (user && user.created_at);
+    if (created) {
+      const d = new Date(created);
+      headerSince.textContent = 'Mitglied seit ' + d.toLocaleDateString('de-AT', { month: 'long', year: 'numeric' });
+    } else {
+      headerSince.textContent = '';
+    }
+
+    // Avatar — Element jedes Mal frisch holen, da wir es per replaceWith austauschen
+    const current = document.getElementById('avatar');
+    const url = profile && profile.avatar_url;
+    if (url) {
+      const img = document.createElement('img');
+      img.className = 'avatar'; img.id = 'avatar'; img.alt = '';
+      img.src = url;
+      current.replaceWith(img);
+      removeBtn.style.display = '';
+    } else {
+      const div = document.createElement('div');
+      div.className = 'avatar'; div.id = 'avatar';
+      div.textContent = (name[0] || '?').toUpperCase();
+      current.replaceWith(div);
+      removeBtn.style.display = 'none';
+    }
+
+    // Username-Feld vorbefüllen
+    const ui = document.getElementById('username-input');
+    if (ui && document.activeElement !== ui) ui.value = (profile && profile.username) || '';
+  }
+
+  // ─── Auth-State ──────────────────────────────────────────────────────────
+  function apply(user, profile) {
+    if (user) {
+      gate.classList.remove('show');
+      area.classList.add('show');
+      renderHeader(user, profile);
+    } else {
+      area.classList.remove('show');
+      gate.classList.add('show');
+    }
+  }
+
+  if (window.Auth) {
+    window.Auth.onChange(apply);
+  } else {
+    gate.classList.add('show');
+  }
+
+  document.getElementById('gate-login').addEventListener('click', () => window.Auth && window.Auth.openLogin());
+
+  // ─── Avatar Upload ───────────────────────────────────────────────────────
+  function triggerUpload() { avatarInput.click(); }
+  document.getElementById('avatar-edit').addEventListener('click', triggerUpload);
+  document.getElementById('avatar-upload-btn').addEventListener('click', triggerUpload);
+
+  avatarInput.addEventListener('change', async () => {
+    const file = avatarInput.files && avatarInput.files[0];
+    if (!file) return;
+    const btn = document.getElementById('avatar-upload-btn');
+    btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Lädt…';
+    try {
+      const { error } = await window.Auth.uploadAvatar(file);
+      if (error) { alert(error.message || 'Upload fehlgeschlagen'); }
+    } finally {
+      btn.disabled = false; btn.textContent = orig;
+      avatarInput.value = '';
+    }
+  });
+
+  removeBtn.addEventListener('click', async () => {
+    if (!confirm('Profilbild wirklich entfernen?')) return;
+    removeBtn.disabled = true;
+    try {
+      const { error } = await window.Auth.removeAvatar();
+      if (error) alert(error.message || 'Konnte nicht entfernen');
+    } finally { removeBtn.disabled = false; }
+  });
+
+  // ─── Username ändern ─────────────────────────────────────────────────────
+  document.getElementById('username-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const input = document.getElementById('username-input');
+    const submit = document.getElementById('username-submit');
+    setMsg('username-msg', '', '');
+    submit.disabled = true; const orig = submit.textContent; submit.textContent = '…';
+    try {
+      const { error } = await window.Auth.updateUsername(input.value);
+      if (error) setMsg('username-msg', 'err', error.message || 'Fehler');
+      else setMsg('username-msg', 'ok', 'Username gespeichert ✓');
+    } finally { submit.disabled = false; submit.textContent = orig; }
+  });
+
+  // ─── Passwort ändern ─────────────────────────────────────────────────────
+  document.getElementById('password-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const p1 = document.getElementById('password-input');
+    const p2 = document.getElementById('password-input2');
+    const submit = document.getElementById('password-submit');
+    setMsg('password-msg', '', '');
+    if (p1.value !== p2.value) { setMsg('password-msg', 'err', 'Passwörter stimmen nicht überein.'); return; }
+    submit.disabled = true; const orig = submit.textContent; submit.textContent = '…';
+    try {
+      const { error } = await window.Auth.updatePassword(p1.value);
+      if (error) setMsg('password-msg', 'err', error.message || 'Fehler');
+      else { setMsg('password-msg', 'ok', 'Passwort geändert ✓'); p1.value = ''; p2.value = ''; }
+    } finally { submit.disabled = false; submit.textContent = orig; }
+  });
+})();
+</script>
+</body>
+</html>

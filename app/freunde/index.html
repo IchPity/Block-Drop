@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Freunde — Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --red: #e94560; --gold: #f0c000; --green: #22c55e; --bg: #060818; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg); min-height: 100vh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #eee; overflow-x: hidden;
+    }
+
+    .orb { position: fixed; border-radius: 50%; filter: blur(130px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 700px; height: 700px; background: #e94560; opacity: 0.05; top: -240px; right: -220px; animation: orbFloat1 26s ease-in-out infinite alternate; }
+    .orb-2 { width: 580px; height: 580px; background: #6d4ae9; opacity: 0.045; bottom: -200px; left: -180px; animation: orbFloat2 32s ease-in-out infinite alternate; }
+    @keyframes orbFloat1 { from { transform: translate(0,0) scale(1); } to { transform: translate(-80px,80px) scale(1.15); } }
+    @keyframes orbFloat2 { from { transform: translate(0,0) scale(1); } to { transform: translate(80px,-80px) scale(1.18); } }
+    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px); background-size: 30px 30px; }
+    .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 35%, rgba(5,5,14,0.75) 100%); }
+
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 32px;
+      background: rgba(6,8,24,0.7);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-left { display: flex; align-items: center; gap: 16px; }
+    .nav-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none; color: rgba(255,255,255,0.35);
+      font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+      padding: 7px 14px; transition: all 0.2s;
+    }
+    .nav-back:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.04); }
+    .nav-title { font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.5); letter-spacing: 0.3px; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+
+    .container { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 0 36px; }
+
+    .hero { padding: 108px 0 28px; }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase;
+      color: var(--red); margin-bottom: 14px;
+      opacity: 0; transform: translateY(12px); animation: fadeUp 0.7s 0.05s both;
+    }
+    .hero-eyebrow::before { content: ''; display: block; width: 18px; height: 2px; background: var(--red); border-radius: 1px; }
+    .hero h1 {
+      font-size: 52px; font-weight: 900; letter-spacing: -3px; color: #fff; line-height: 1;
+      opacity: 0; transform: translateY(18px); animation: fadeUp 0.7s 0.1s both;
+    }
+    .hero h1 em { font-style: normal; color: var(--red); }
+
+    .gate {
+      display: none;
+      background: rgba(18,18,42,0.7);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 22px; padding: 44px 32px; text-align: center;
+    }
+    .gate.show { display: block; animation: fadeUp 0.5s both; }
+    .gate-icon { font-size: 40px; margin-bottom: 14px; }
+    .gate h2 { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.5px; }
+    .gate p { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 24px; line-height: 1.6; }
+    .login-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--red); border: none; border-radius: 12px;
+      padding: 13px 28px; color: #fff;
+      font-family: inherit; font-size: 14px; font-weight: 800;
+      cursor: pointer; box-shadow: 0 0 28px rgba(233,69,96,0.35);
+      transition: all 0.2s;
+    }
+    .login-btn:hover { background: #f05672; transform: translateY(-1px); box-shadow: 0 0 40px rgba(233,69,96,0.5); }
+
+    #area { display: none; }
+    #area.show { display: block; }
+
+    .card {
+      background: rgba(18,18,42,0.7);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 22px; padding: 22px 24px;
+      margin-bottom: 16px;
+    }
+    .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+    .card-head .ic { font-size: 17px; }
+    .card h3 { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -0.2px; }
+    .card-head .count {
+      margin-left: auto; font-size: 11px; font-weight: 800;
+      background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.7);
+      padding: 2px 9px; border-radius: 99px;
+    }
+    .card-head .count.alert { background: rgba(233,69,96,0.16); color: #ff9aab; }
+    .card-sub { font-size: 12px; color: rgba(255,255,255,0.38); margin-bottom: 14px; line-height: 1.5; }
+
+    /* Friend / request row */
+    .frow {
+      display: flex; align-items: center; gap: 14px;
+      padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .frow:last-child { border-bottom: none; }
+    .frow-avatar {
+      width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, #e94560, #b8334a);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; font-weight: 900; color: #fff; object-fit: cover; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    img.frow-avatar { display: block; }
+    .frow-main { flex: 1; min-width: 0; }
+    .frow-name {
+      font-size: 14px; font-weight: 800; color: #fff; text-decoration: none;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;
+    }
+    .frow-name:hover { color: var(--red); }
+    .frow-meta { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+    .frow-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .mini-btn {
+      border: none; border-radius: 9px; padding: 8px 13px;
+      font-family: inherit; font-size: 11px; font-weight: 800; cursor: pointer;
+      transition: all 0.18s; white-space: nowrap;
+    }
+    .mini-btn.accept { background: var(--green); color: #06210f; }
+    .mini-btn.accept:hover:not(:disabled) { filter: brightness(1.1); }
+    .mini-btn.ghost { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.14); color: rgba(255,255,255,0.65); }
+    .mini-btn.ghost:hover:not(:disabled) { color: #fff; background: rgba(255,255,255,0.09); }
+    .mini-btn.danger { background: rgba(233,69,96,0.1); border: 1px solid rgba(233,69,96,0.28); color: #ff7a90; }
+    .mini-btn.danger:hover:not(:disabled) { background: rgba(233,69,96,0.18); color: #ff97aa; }
+    .mini-btn.add { background: var(--red); color: #fff; }
+    .mini-btn.add:hover:not(:disabled) { background: #f05672; }
+    .mini-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .mini-tag { font-size: 11px; font-weight: 800; padding: 7px 12px; border-radius: 9px; }
+    .mini-tag.pending { color: var(--gold); background: rgba(240,192,0,0.08); border: 1px solid rgba(240,192,0,0.3); }
+    .mini-tag.ok { color: var(--green); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); }
+
+    .empty { padding: 22px 4px; text-align: center; color: rgba(255,255,255,0.35); font-size: 13px; }
+
+    /* Search */
+    .search-wrap { position: relative; }
+    .search-input {
+      width: 100%; background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+      padding: 12px 14px; color: #fff; font-family: inherit; font-size: 14px; font-weight: 500;
+      outline: none; transition: border-color 0.2s, background 0.2s;
+    }
+    .search-input:focus { border-color: rgba(233,69,96,0.5); background: rgba(255,255,255,0.06); }
+    #search-results { margin-top: 6px; }
+
+    .msg { border-radius: 10px; padding: 10px 14px; font-size: 12px; margin-bottom: 12px; line-height: 1.4; }
+    .msg.err { background: rgba(233,69,96,0.1); border: 1px solid rgba(233,69,96,0.3); color: #ff97aa; }
+    .msg.ok { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #7ee2a3; }
+
+    .spinner {
+      display: inline-block; width: 24px; height: 24px;
+      border: 2px solid rgba(255,255,255,0.1); border-top-color: var(--red);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .bottom-space { height: 60px; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 600px) {
+      .navbar { padding: 12px 16px; }
+      .nav-back { padding: 6px 12px; font-size: 10px; }
+      .container { padding: 0 18px; }
+      .hero { padding: 92px 0 22px; }
+      .hero h1 { font-size: 38px; letter-spacing: -2px; }
+      .card { padding: 20px; }
+      .mini-btn { padding: 7px 10px; }
+    }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="dot-grid"></div>
+<div class="vignette"></div>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="/" class="nav-back">&#8592; Arcade</a>
+    <div class="nav-title">Freunde</div>
+  </div>
+  <div class="nav-right">
+    <div data-auth-slot></div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-eyebrow">Dein Netzwerk</div>
+    <h1>MEINE <em>FREUNDE</em></h1>
+  </div>
+
+  <!-- Nicht eingeloggt -->
+  <div class="gate" id="gate">
+    <div class="gate-icon">🔒</div>
+    <h2>Bitte anmelden</h2>
+    <p>Melde dich an, um Freunde hinzuzufügen, Anfragen zu verwalten<br>und zu sehen, wer mit dir verbunden ist.</p>
+    <button class="login-btn" id="gate-login">Anmelden</button>
+  </div>
+
+  <!-- Eingeloggt -->
+  <div id="area">
+
+    <!-- Suche -->
+    <div class="card">
+      <div class="card-head"><span class="ic">🔎</span><h3>Freund finden</h3></div>
+      <div class="card-sub">Such nach einem Username, um eine Freundschaftsanfrage zu schicken.</div>
+      <div class="search-wrap">
+        <input type="text" id="search-input" class="search-input" placeholder="Username eingeben…"
+               autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" />
+      </div>
+      <div id="search-results"></div>
+    </div>
+
+    <div id="msg"></div>
+
+    <!-- Eingehende Anfragen -->
+    <div class="card" id="incoming-card" style="display:none">
+      <div class="card-head"><span class="ic">📨</span><h3>Eingehende Anfragen</h3><span class="count alert" id="incoming-count">0</span></div>
+      <div id="incoming-list"></div>
+    </div>
+
+    <!-- Freunde -->
+    <div class="card">
+      <div class="card-head"><span class="ic">🤝</span><h3>Freunde</h3><span class="count" id="friends-count">0</span></div>
+      <div id="friends-list"><div class="empty"><span class="spinner"></span></div></div>
+    </div>
+
+    <!-- Gesendete Anfragen -->
+    <div class="card" id="outgoing-card" style="display:none">
+      <div class="card-head"><span class="ic">📤</span><h3>Gesendete Anfragen</h3><span class="count" id="outgoing-count">0</span></div>
+      <div id="outgoing-list"></div>
+    </div>
+
+  </div>
+
+  <div class="bottom-space"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script>
+(function () {
+  const gate     = document.getElementById('gate');
+  const area     = document.getElementById('area');
+  const A = () => window.Auth;
+
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function setMsg(type, text) {
+    document.getElementById('msg').innerHTML = text ? `<div class="msg ${type}">${esc(text)}</div>` : '';
+    if (text) setTimeout(() => { document.getElementById('msg').innerHTML = ''; }, 4000);
+  }
+  function initial(name) { return (String(name || '?')[0] || '?').toUpperCase(); }
+  function avatarHtml(p, cls) {
+    if (p.avatar_url) return `<img class="${cls}" src="${esc(p.avatar_url)}" alt="" />`;
+    return `<span class="${cls}">${esc(initial(p.username))}</span>`;
+  }
+  function profileLink(p, extra) {
+    return `<a class="frow-name" href="/u/?id=${encodeURIComponent(p.id)}">${esc(p.username || '—')}</a>${extra || ''}`;
+  }
+  function fmtSince(iso) {
+    if (!iso) return '';
+    try { return new Date(iso).toLocaleDateString('de-AT', { day: '2-digit', month: 'short', year: 'numeric' }); }
+    catch (e) { return ''; }
+  }
+
+  // ─── Overview laden + rendern ───────────────────────────────────────────────
+  async function refresh() {
+    const data = await A().getFriendOverview();
+
+    // Freunde
+    const fl = document.getElementById('friends-list');
+    document.getElementById('friends-count').textContent = data.friends.length;
+    if (!data.friends.length) {
+      fl.innerHTML = `<div class="empty">Noch keine Freunde — schick jemandem eine Anfrage! 👆</div>`;
+    } else {
+      fl.innerHTML = data.friends.map(f => `
+        <div class="frow" data-id="${esc(f.id)}">
+          ${avatarHtml(f, 'frow-avatar')}
+          <div class="frow-main">
+            ${profileLink(f)}
+            <div class="frow-meta">Freunde seit ${esc(fmtSince(f.since))}</div>
+          </div>
+          <div class="frow-actions">
+            <button class="mini-btn danger" data-act="remove" data-id="${esc(f.id)}">Entfernen</button>
+          </div>
+        </div>`).join('');
+    }
+
+    // Eingehende Anfragen
+    const inCard = document.getElementById('incoming-card');
+    const inList = document.getElementById('incoming-list');
+    document.getElementById('incoming-count').textContent = data.incoming.length;
+    if (data.incoming.length) {
+      inCard.style.display = '';
+      inList.innerHTML = data.incoming.map(f => `
+        <div class="frow" data-id="${esc(f.id)}">
+          ${avatarHtml(f, 'frow-avatar')}
+          <div class="frow-main">
+            ${profileLink(f)}
+            <div class="frow-meta">möchte dich als Freund hinzufügen</div>
+          </div>
+          <div class="frow-actions">
+            <button class="mini-btn accept" data-act="accept" data-id="${esc(f.id)}">Annehmen</button>
+            <button class="mini-btn danger" data-act="reject" data-id="${esc(f.id)}">Ablehnen</button>
+          </div>
+        </div>`).join('');
+    } else {
+      inCard.style.display = 'none';
+    }
+
+    // Gesendete Anfragen
+    const outCard = document.getElementById('outgoing-card');
+    const outList = document.getElementById('outgoing-list');
+    document.getElementById('outgoing-count').textContent = data.outgoing.length;
+    if (data.outgoing.length) {
+      outCard.style.display = '';
+      outList.innerHTML = data.outgoing.map(f => `
+        <div class="frow" data-id="${esc(f.id)}">
+          ${avatarHtml(f, 'frow-avatar')}
+          <div class="frow-main">
+            ${profileLink(f)}
+            <div class="frow-meta">Anfrage ausstehend</div>
+          </div>
+          <div class="frow-actions">
+            <span class="mini-tag pending">Ausstehend</span>
+            <button class="mini-btn ghost" data-act="cancel" data-id="${esc(f.id)}">Zurückziehen</button>
+          </div>
+        </div>`).join('');
+    } else {
+      outCard.style.display = 'none';
+    }
+
+    wireActions();
+  }
+
+  function wireActions() {
+    area.querySelectorAll('[data-act]').forEach(btn => {
+      if (btn._wired) return; btn._wired = true;
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const act = btn.dataset.act;
+        if (act === 'remove' && !confirm('Freund wirklich entfernen?')) return;
+        btn.disabled = true;
+        let res, ok;
+        if (act === 'accept') { res = await A().acceptFriendRequest(id); ok = 'Anfrage angenommen 🎉'; }
+        else if (act === 'reject') { res = await A().removeFriend(id); ok = 'Anfrage abgelehnt.'; }
+        else if (act === 'cancel') { res = await A().removeFriend(id); ok = 'Anfrage zurückgezogen.'; }
+        else if (act === 'remove') { res = await A().removeFriend(id); ok = 'Freund entfernt.'; }
+        if (res && res.error) setMsg('err', res.error.message || 'Fehler');
+        else setMsg('ok', ok);
+        await refresh();
+      });
+    });
+  }
+
+  // ─── Suche ──────────────────────────────────────────────────────────────────
+  let searchTimer = null;
+  function setupSearch() {
+    const input = document.getElementById('search-input');
+    const results = document.getElementById('search-results');
+    input.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      const q = input.value.trim();
+      if (q.length < 2) { results.innerHTML = ''; return; }
+      results.innerHTML = `<div class="empty"><span class="spinner"></span></div>`;
+      searchTimer = setTimeout(async () => {
+        const users = await A().searchUsers(q);
+        if (!users.length) { results.innerHTML = `<div class="empty">Niemand gefunden.</div>`; return; }
+        // Status pro User ermitteln
+        const withStatus = await Promise.all(users.map(async u => ({ u, st: await A().friendStatus(u.id) })));
+        results.innerHTML = withStatus.map(({ u, st }) => {
+          let action;
+          if (st === 'friends') action = `<span class="mini-tag ok">✓ Freund</span>`;
+          else if (st === 'outgoing') action = `<span class="mini-tag pending">Ausstehend</span>`;
+          else if (st === 'incoming') action = `<button class="mini-btn accept" data-sact="accept" data-id="${esc(u.id)}">Annehmen</button>`;
+          else action = `<button class="mini-btn add" data-sact="add" data-id="${esc(u.id)}">＋ Anfragen</button>`;
+          return `
+            <div class="frow" data-id="${esc(u.id)}">
+              ${avatarHtml(u, 'frow-avatar')}
+              <div class="frow-main">${profileLink(u)}</div>
+              <div class="frow-actions">${action}</div>
+            </div>`;
+        }).join('');
+        results.querySelectorAll('[data-sact]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            btn.disabled = true;
+            const fn = btn.dataset.sact === 'accept'
+              ? A().acceptFriendRequest(id) : A().sendFriendRequest(id);
+            const { error } = await fn;
+            if (error) { setMsg('err', error.message || 'Fehler'); btn.disabled = false; return; }
+            setMsg('ok', btn.dataset.sact === 'accept' ? 'Anfrage angenommen 🎉' : 'Anfrage gesendet!');
+            // Button durch Status-Tag ersetzen
+            btn.outerHTML = btn.dataset.sact === 'accept'
+              ? `<span class="mini-tag ok">✓ Freund</span>`
+              : `<span class="mini-tag pending">Ausstehend</span>`;
+            await refresh();
+          });
+        });
+      }, 300);
+    });
+  }
+
+  // ─── Auth-State ──────────────────────────────────────────────────────────────
+  let setup = false;
+  function apply(user) {
+    if (user) {
+      gate.classList.remove('show');
+      area.classList.add('show');
+      if (!setup) { setup = true; setupSearch(); }
+      refresh();
+    } else {
+      area.classList.remove('show');
+      gate.classList.add('show');
+    }
+  }
+
+  document.getElementById('gate-login').addEventListener('click', () => A() && A().openLogin());
+
+  if (window.Auth) window.Auth.onChange(apply);
+  else gate.classList.add('show');
+})();
+</script>
+</body>
+</html>

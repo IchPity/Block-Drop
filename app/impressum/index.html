@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <title>Impressum — Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --purple: #8b7eff;
+      --bg:     #060818;
+      --card:   rgba(18, 22, 34, 0.72);
+      --border: rgba(255,255,255,0.08);
+    }
+    body {
+      background: var(--bg); min-height: 100vh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #eee; overflow-x: hidden;
+      padding: 72px 0 24px;
+    }
+
+    /* Background */
+    .orb { position: fixed; border-radius: 50%; filter: blur(140px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 660px; height: 660px; background: #8b7eff; opacity: 0.06; top: -250px; left: -220px; animation: f1 24s ease-in-out infinite alternate; }
+    .orb-2 { width: 540px; height: 540px; background: #3050e0; opacity: 0.05; bottom: -200px; right: -200px; animation: f2 30s ease-in-out infinite alternate; }
+    @keyframes f1 { to { transform: translate(80px,70px) scale(1.15); } }
+    @keyframes f2 { to { transform: translate(-90px,-110px) scale(1.2); } }
+    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px); background-size: 30px 30px; }
+    .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 35%, rgba(5,5,14,0.78) 100%); }
+
+    /* Navbar */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px;
+      background: rgba(6,8,24,0.8);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-left { display: flex; align-items: center; gap: 14px; }
+    .nav-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none; color: rgba(255,255,255,0.4);
+      font-size: 11px; font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+      padding: 6px 12px; transition: all 0.2s;
+    }
+    .nav-back:hover { color: #fff; border-color: rgba(255,255,255,0.25); }
+    .nav-game-title {
+      font-size: 13px; font-weight: 900; color: #fff; letter-spacing: 1px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .nav-game-title .pill {
+      background: var(--purple); color: #0a0a14; padding: 2px 7px;
+      border-radius: 4px; font-size: 10px; font-weight: 900; letter-spacing: 1.5px;
+    }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+
+    /* Container */
+    .container { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 0 24px; }
+
+    /* Hero */
+    .hero { margin-top: 28px; margin-bottom: 22px; }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 10px; font-weight: 800; letter-spacing: 4px;
+      text-transform: uppercase; color: var(--purple); margin-bottom: 12px;
+    }
+    .hero-eyebrow::before { content:''; width: 18px; height: 2px; background: var(--purple); border-radius: 1px; }
+    .hero h1 {
+      font-size: 50px; font-weight: 900; letter-spacing: -2.5px; line-height: 0.98;
+      color: #fff;
+    }
+    .hero h1 em { font-style: normal; color: var(--purple); }
+    .hero-sub {
+      margin-top: 14px; font-size: 13px; max-width: 520px;
+      color: rgba(255,255,255,0.5); line-height: 1.6;
+    }
+
+    /* Content card */
+    .doc-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 22px; padding: 32px 36px;
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .doc-card h2 {
+      font-size: 11px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+      margin-top: 26px; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .doc-card h2:first-child { margin-top: 0; }
+    .doc-card h2::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+    .doc-card p {
+      font-size: 14px; line-height: 1.7;
+      color: rgba(255,255,255,0.72);
+      margin-bottom: 12px;
+    }
+    .doc-card p:last-child { margin-bottom: 0; }
+    .doc-card a {
+      color: var(--purple); text-decoration: none;
+      border-bottom: 1px solid rgba(139,126,255,0.3);
+      transition: border-color 0.2s;
+    }
+    .doc-card a:hover { border-bottom-color: var(--purple); }
+    .doc-card strong { color: #fff; font-weight: 700; }
+
+    @media (max-width: 720px) {
+      body { padding: 64px 0 24px; }
+      .navbar { padding: 10px 14px; }
+      .nav-back { padding: 5px 10px; font-size: 10px; }
+      .nav-game-title { font-size: 12px; }
+      .container { padding: 0 16px; }
+      .hero { margin-top: 20px; margin-bottom: 18px; }
+      .hero h1 { font-size: 34px; letter-spacing: -1.5px; }
+      .hero-eyebrow { font-size: 9px; letter-spacing: 3px; margin-bottom: 8px; }
+      .hero-sub { font-size: 12px; margin-top: 10px; }
+      .doc-card { padding: 22px 18px; border-radius: 18px; }
+      .doc-card p { font-size: 13px; line-height: 1.65; }
+      .doc-card h2 { font-size: 10px; letter-spacing: 2px; margin-top: 20px; }
+    }
+    @media (max-width: 420px) {
+      .hero h1 { font-size: 28px; }
+    }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="dot-grid"></div>
+<div class="vignette"></div>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="/" class="nav-back">&larr; Arcade</a>
+    <div class="nav-game-title"><span class="pill">§</span> Impressum</div>
+  </div>
+  <div class="nav-right">
+    <div data-auth-slot></div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <section class="hero">
+    <div class="hero-eyebrow">Rechtliches</div>
+    <h1>IMP<em>RESSUM</em></h1>
+    <p class="hero-sub">Offenlegung nach &sect; 25 Medien&shy;gesetz (MedienG) sowie Angaben nach &sect; 5 E-Commerce-Gesetz (ECG). Diese Seite ist ein privates, nicht-kommerzielles Hobby-Projekt.</p>
+  </section>
+
+  <div class="doc-card">
+
+    <h2>Medieninhaber &amp; verantwortlich für den Inhalt</h2>
+    <p>
+      <strong>Peter Scheikl</strong><br>
+      Wohnort: Wien, Österreich<br>
+      E-Mail: <a href="mailto:peterscheikl10@gmail.com">peterscheikl10@gmail.com</a>
+    </p>
+
+    <h2>Unternehmensgegenstand / Blattlinie</h2>
+    <p>
+      Diese Webseite wird als <strong>privates Hobby-Projekt</strong> betrieben. Es werden keine
+      kommerziellen Zwecke verfolgt, keine Werbung geschaltet und keine bezahlten Inhalte angeboten.
+      Die hier angebotenen Mini-Apps (Block Drop, Schach, SchulUhr, Wetter, METAR Browser, F1 Hub,
+      F1 Wetten) dienen ausschließlich der persönlichen Unterhaltung und dem Lernen. Die Inhalte
+      geben die persönliche Meinung des Medieninhabers wieder.
+    </p>
+
+    <h2>Haftung für Inhalte</h2>
+    <p>
+      Die Inhalte dieser Seite wurden mit größtmöglicher Sorgfalt erstellt. Für die Richtigkeit,
+      Vollständigkeit und Aktualität der Inhalte kann jedoch keine Gewähr übernommen werden. Daten
+      aus externen Quellen (z.&nbsp;B. Wetter-, F1- oder Flugwetter-Daten) werden ohne Anspruch auf
+      Korrektheit dargestellt und dürfen <strong>nicht</strong> für sicherheitsrelevante
+      Entscheidungen (z.&nbsp;B. Luftfahrt, Sportwetten mit echtem Geld) verwendet werden.
+    </p>
+
+    <h2>Haftung für Links</h2>
+    <p>
+      Diese Seite enthält Links zu externen Webseiten Dritter, auf deren Inhalte ich keinen Einfluss
+      habe. Für diese fremden Inhalte kann keine Gewähr übernommen werden. Für die Inhalte der
+      verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber verantwortlich.
+    </p>
+
+    <h2>Urheberrecht</h2>
+    <p>
+      Die auf dieser Seite veröffentlichten eigenen Inhalte und Werke unterliegen dem
+      österreichischen Urheberrecht. Inhalte Dritter (Bibliotheken, APIs, Schriftarten) werden
+      unter ihren jeweiligen Lizenzen verwendet &mdash; siehe <a href="/datenschutz/">Datenschutz</a>
+      für eine Auflistung der eingebundenen Dienste.
+    </p>
+
+    <h2>Anwendbares Recht &amp; Gerichtsstand</h2>
+    <p>
+      Für sämtliche Inhalte und Rechtsbeziehungen im Zusammenhang mit dieser Webseite gilt
+      ausschließlich österreichisches Recht unter Ausschluss des UN-Kaufrechts und der
+      Verweisungsnormen des IPR.
+    </p>
+
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+</body>
+</html>
