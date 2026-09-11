@@ -8,14 +8,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/theme.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    :root { --red: #e94560; --gold: #f0c000; --bg: #060818; }
+    :root { --red: #e94560; --gold: #f0c000; --bg: var(--board); }
     html { scroll-behavior: smooth; }
     body {
       background: var(--bg); min-height: 100vh;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color: #eee; overflow-x: hidden;
+      color: var(--chalk); overflow-x: hidden;
     }
 
     /* ── Background ─────────────────────────────────────── */
@@ -68,14 +70,7 @@
       opacity: 0; transform: translateY(18px);
       animation: fadeUp 0.7s 0.1s both;
     }
-    .hero-eyebrow {
-      display: inline-flex; align-items: center; gap: 8px;
-      font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase;
-      color: var(--gold); margin-bottom: 14px;
-    }
-    .hero-eyebrow::before { content: ''; display: block; width: 18px; height: 2px; background: var(--gold); border-radius: 1px; }
     .hero h1 { font-size: 56px; font-weight: 900; letter-spacing: -3px; color: #fff; line-height: 1; }
-    .hero h1 em { font-style: normal; color: var(--gold); }
 
     .hero-cta {
       opacity: 0; transform: translateY(12px);
@@ -234,7 +229,6 @@
       .hero { padding: 92px 0 32px; }
       .hero-top { flex-direction: column; align-items: flex-start; gap: 16px; margin-bottom: 24px; }
       .hero h1 { font-size: 40px; letter-spacing: -2px; }
-      .hero-eyebrow { font-size: 10px; letter-spacing: 3px; margin-bottom: 10px; }
       .btn-primary { padding: 12px 22px; font-size: 13px; }
       .stats-row { grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 32px; }
       .stat-card { padding: 14px 14px; }
@@ -294,7 +288,6 @@
   <div class="hero">
     <div class="hero-top">
       <div class="hero-text">
-        <div class="hero-eyebrow">Deine Fortschritte</div>
         <h1>ACHIEVE<br><em>MENTS</em></h1>
       </div>
       <div class="hero-cta">

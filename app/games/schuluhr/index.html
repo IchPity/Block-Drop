@@ -8,20 +8,22 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/theme.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-            --bg: #060818;
-            --card: rgba(18, 22, 34, 0.72);
-            --border: rgba(255,255,255,0.08);
+            --bg: var(--board);
+            --card: var(--board-raised);
+            --border: var(--board-line);
             --purple: #8b7eff;
             --blue: #38bdf8;
             --green: #22c55e;
             --yellow: #f0c000;
             --red: #e94560;
             --orange: #fb923c;
-            --text: #eee;
+            --text: var(--chalk);
             --muted: rgba(255,255,255,0.28);
             --muted2: rgba(255,255,255,0.5);
         }
@@ -78,17 +80,10 @@
         .container { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 0 24px; }
 
         .hero { margin-top: 28px; margin-bottom: 22px; }
-        .hero-eyebrow {
-            display: inline-flex; align-items: center; gap: 8px;
-            font-size: 10px; font-weight: 800; letter-spacing: 4px;
-            text-transform: uppercase; color: var(--purple); margin-bottom: 12px;
-        }
-        .hero-eyebrow::before { content:''; width: 18px; height: 2px; background: var(--purple); border-radius: 1px; }
         .hero h1 {
             font-size: 50px; font-weight: 900; letter-spacing: -2.5px; line-height: 0.98;
             color: #fff;
         }
-        .hero h1 em { font-style: normal; color: var(--purple); }
         .hero-sub {
             margin-top: 14px; font-size: 13px; max-width: 520px;
             color: rgba(255,255,255,0.5); line-height: 1.6;
@@ -331,7 +326,6 @@
             .container { padding: 0 16px; }
             .hero { margin-top: 18px; margin-bottom: 16px; }
             .hero h1 { font-size: 36px; letter-spacing: -1.5px; }
-            .hero-eyebrow { font-size: 9px; letter-spacing: 3px; margin-bottom: 8px; }
             .hero-sub { font-size: 12px; margin-top: 10px; }
             .card-body { padding: 26px 18px 22px; }
             .info-row { gap: 8px; }
@@ -379,7 +373,6 @@
 <div class="container">
 
     <section class="hero">
-        <div class="hero-eyebrow">Live Stundenplan</div>
         <h1>SCHUL<em>UHR</em></h1>
         <p class="hero-sub">Countdown bis zur nächsten Pause, Mittagspause oder zum Schulschluss — immer aktuell, mit Popout-Fenster für den zweiten Bildschirm.</p>
     </section>
@@ -595,7 +588,7 @@ let pipInterval = null;
 const PIP_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Inter:wght@400;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--purple:#7c6fff;--blue:#38bdf8;--green:#4ade80;--yellow:#fbbf24;--red:#f87171;--orange:#fb923c;--text:#e2e8f0;--muted:#4a5568;--muted2:#718096}
+:root{--purple:#7c6fff;--blue:#38bdf8;--green:#4ade80;--yellow:#fbbf24;--red:#f87171;--orange:#fb923c;--text: var(--chalk);--muted:#4a5568;--muted2:#718096}
 body{font-family:'Inter','Segoe UI',sans-serif;background:#08081a;color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none}
 .topbar{height:3px;flex-shrink:0}
 .bc{background:linear-gradient(90deg,var(--purple),#a78bfa)}

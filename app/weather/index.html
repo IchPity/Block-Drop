@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/theme.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -18,14 +20,14 @@
       --cyan:  #38bdf8;
       --green: #22c55e;
       --orange:#f97316;
-      --bg:    #050810;
-      --card:  rgba(18, 22, 34, 0.72);
-      --border: rgba(255,255,255,0.08);
+      --bg: var(--board);
+      --card: var(--board-raised);
+      --border: var(--board-line);
     }
     body {
       background: var(--bg); min-height: 100vh;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color: #eee; overflow-x: hidden;
+      color: var(--chalk); overflow-x: hidden;
       padding: 72px 0 64px;
     }
 

@@ -8,14 +8,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/theme.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    :root { --red: #e94560; --gold: #f0c000; --green: #22c55e; --bg: #060818; }
+    :root { --red: #e94560; --gold: #f0c000; --green: #22c55e; --bg: var(--board); }
     html { scroll-behavior: smooth; }
     body {
       background: var(--bg); min-height: 100vh;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color: #eee; overflow-x: hidden;
+      color: var(--chalk); overflow-x: hidden;
     }
 
     .orb { position: fixed; border-radius: 50%; filter: blur(130px); pointer-events: none; z-index: 0; }
@@ -49,18 +51,10 @@
     .container { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 0 36px; }
 
     .hero { padding: 108px 0 28px; }
-    .hero-eyebrow {
-      display: inline-flex; align-items: center; gap: 8px;
-      font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase;
-      color: var(--red); margin-bottom: 14px;
-      opacity: 0; transform: translateY(12px); animation: fadeUp 0.7s 0.05s both;
-    }
-    .hero-eyebrow::before { content: ''; display: block; width: 18px; height: 2px; background: var(--red); border-radius: 1px; }
     .hero h1 {
       font-size: 52px; font-weight: 900; letter-spacing: -3px; color: #fff; line-height: 1;
       opacity: 0; transform: translateY(18px); animation: fadeUp 0.7s 0.1s both;
     }
-    .hero h1 em { font-style: normal; color: var(--red); }
 
     .gate {
       display: none;
@@ -202,7 +196,6 @@
 <div class="container">
 
   <div class="hero">
-    <div class="hero-eyebrow">Dein Netzwerk</div>
     <h1>MEINE <em>FREUNDE</em></h1>
   </div>
 
