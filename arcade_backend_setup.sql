@@ -22,16 +22,16 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
-drop policy if exists "profiles_select_all" on public.profiles;
-create policy "profiles_select_all" on public.profiles
+drop policy if exists profiles_select_all on public.profiles;
+create policy profiles_select_all on public.profiles
   for select using (true);
 
-drop policy if exists "profiles_insert_self" on public.profiles;
-create policy "profiles_insert_self" on public.profiles
+drop policy if exists profiles_insert_self on public.profiles;
+create policy profiles_insert_self on public.profiles
   for insert with check (auth.uid() = id);
 
-drop policy if exists "profiles_update_self" on public.profiles;
-create policy "profiles_update_self" on public.profiles
+drop policy if exists profiles_update_self on public.profiles;
+create policy profiles_update_self on public.profiles
   for update using (auth.uid() = id);
 
 -- ── scores ──────────────────────────────────────────────────────────────────
@@ -51,12 +51,12 @@ create index if not exists scores_user_idx on public.scores (user_id);
 
 alter table public.scores enable row level security;
 
-drop policy if exists "scores_select_all" on public.scores;
-create policy "scores_select_all" on public.scores
+drop policy if exists scores_select_all on public.scores;
+create policy scores_select_all on public.scores
   for select using (true);
 
-drop policy if exists "scores_insert_self" on public.scores;
-create policy "scores_insert_self" on public.scores
+drop policy if exists scores_insert_self on public.scores;
+create policy scores_insert_self on public.scores
   for insert with check (auth.uid() = user_id);
 
 -- ── leaderboard (View über scores + profiles) ─────────────────────────────────
@@ -87,16 +87,16 @@ create table if not exists public.f1_points (
 
 alter table public.f1_points enable row level security;
 
-drop policy if exists "f1_points_select_all" on public.f1_points;
-create policy "f1_points_select_all" on public.f1_points
+drop policy if exists f1_points_select_all on public.f1_points;
+create policy f1_points_select_all on public.f1_points
   for select using (true);
 
-drop policy if exists "f1_points_insert_self" on public.f1_points;
-create policy "f1_points_insert_self" on public.f1_points
+drop policy if exists f1_points_insert_self on public.f1_points;
+create policy f1_points_insert_self on public.f1_points
   for insert with check (auth.uid() = user_id);
 
-drop policy if exists "f1_points_update_self" on public.f1_points;
-create policy "f1_points_update_self" on public.f1_points
+drop policy if exists f1_points_update_self on public.f1_points;
+create policy f1_points_update_self on public.f1_points
   for update using (auth.uid() = user_id);
 
 -- ── f1_bets ─────────────────────────────────────────────────────────────────
@@ -122,14 +122,14 @@ create index if not exists f1_bets_season_status_idx on public.f1_bets (season, 
 
 alter table public.f1_bets enable row level security;
 
-drop policy if exists "f1_bets_select_all" on public.f1_bets;
-create policy "f1_bets_select_all" on public.f1_bets
+drop policy if exists f1_bets_select_all on public.f1_bets;
+create policy f1_bets_select_all on public.f1_bets
   for select using (true);
 
-drop policy if exists "f1_bets_insert_self" on public.f1_bets;
-create policy "f1_bets_insert_self" on public.f1_bets
+drop policy if exists f1_bets_insert_self on public.f1_bets;
+create policy f1_bets_insert_self on public.f1_bets
   for insert with check (auth.uid() = user_id);
 
-drop policy if exists "f1_bets_update_self" on public.f1_bets;
-create policy "f1_bets_update_self" on public.f1_bets
+drop policy if exists f1_bets_update_self on public.f1_bets;
+create policy f1_bets_update_self on public.f1_bets
   for update using (auth.uid() = user_id);
