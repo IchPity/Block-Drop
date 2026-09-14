@@ -50,12 +50,12 @@
     .nav-title { font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.5); letter-spacing: 0.3px; }
     .nav-right { display: flex; align-items: center; gap: 10px; }
     .user-chip { display: flex; align-items: center; gap: 7px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); border-radius: 999px; padding: 6px 14px 6px 8px; }
-    .user-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--red); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; color: #fff; }
+    .user-avatar { width: 24px; height: 24px; border-radius: 50%; background: #d23e56; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; color: #fff; }
     .user-label { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); }
     .nav-btn { background: transparent; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 7px 14px; color: rgba(255,255,255,0.4); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s; }
     .nav-btn:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); }
-    .nav-cta { display: inline-flex; align-items: center; gap: 6px; background: var(--red); border: none; border-radius: 10px; padding: 8px 18px; color: #fff; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; text-decoration: none; box-shadow: 0 0 20px rgba(233,69,96,0.3); transition: all 0.2s; }
-    .nav-cta:hover { background: #f05672; box-shadow: 0 0 30px rgba(233,69,96,0.5); transform: translateY(-1px); }
+    .nav-cta { display: inline-flex; align-items: center; gap: 6px; background: #d23e56; border: none; border-radius: 10px; padding: 8px 18px; color: #fff; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; text-decoration: none; box-shadow: 0 0 20px rgba(233,69,96,0.3); transition: all 0.2s; }
+    .nav-cta:hover { background: #ca4860; box-shadow: 0 0 30px rgba(233,69,96,0.5); transform: translateY(-1px); }
 
     /* ── Layout ─────────────────────────────────────────── */
     .container { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 0 36px; }
@@ -79,13 +79,13 @@
     }
     .btn-primary {
       display: inline-flex; align-items: center; gap: 10px;
-      background: var(--red); border: none; border-radius: 14px;
+      background: #d23e56; border: none; border-radius: 14px;
       padding: 14px 28px; color: #fff; font-family: inherit; font-size: 14px; font-weight: 800;
       cursor: pointer; text-decoration: none;
       box-shadow: 0 0 32px rgba(233,69,96,0.4), 0 8px 24px rgba(0,0,0,0.4);
       transition: all 0.22s;
     }
-    .btn-primary:hover { background: #f05672; box-shadow: 0 0 48px rgba(233,69,96,0.6), 0 12px 32px rgba(0,0,0,0.5); transform: translateY(-2px); }
+    .btn-primary:hover { background: #ca4860; box-shadow: 0 0 48px rgba(233,69,96,0.6), 0 12px 32px rgba(0,0,0,0.5); transform: translateY(-2px); }
     .btn-primary .arrow { font-size: 16px; transition: transform 0.2s; }
     .btn-primary:hover .arrow { transform: translateX(4px); }
 
@@ -106,7 +106,7 @@
     .stat-val { font-size: 36px; font-weight: 900; color: #fff; letter-spacing: -2px; line-height: 1; margin-bottom: 4px; }
     .stat-val .accent { color: var(--gold); }
     .stat-card.red .accent { color: var(--red); }
-    .stat-lbl { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+    .stat-lbl { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.3); }
 
     /* ── Progress ───────────────────────────────────────── */
     .progress-section {
@@ -124,7 +124,7 @@
     .section-header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px; margin-top: 8px; }
     .section-label { font-size: 11px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.4); }
     .section-divider { flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
-    .section-count { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.2); }
+    .section-count { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.2); }
 
     /* ── Achievement Grid ───────────────────────────────── */
     .ach-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 40px; }
@@ -150,7 +150,7 @@
     .ach-desc { font-size: 11px; color: rgba(255,255,255,0.28); line-height: 1.55; }
     .ach-card.locked .ach-desc { color: rgba(255,255,255,0.13); }
 
-    .ach-status { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 8px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
+    .ach-status { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 8px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
     .ach-status.done { color: var(--gold); }
     .ach-status.done::before { content: '✓'; }
     .ach-status.todo { color: rgba(255,255,255,0.12); }
@@ -183,7 +183,7 @@
     .lb-row:last-child { border-bottom: none; }
     .lb-row.head {
       background: rgba(255,255,255,0.02);
-      font-size: 10px; font-weight: 700; letter-spacing: 2px;
+      font-size: 11px; font-weight: 700; letter-spacing: 2px;
       text-transform: uppercase; color: rgba(255,255,255,0.3);
     }
     .lb-row.me { background: rgba(233,69,96,0.08); }
@@ -207,7 +207,7 @@
       border-top: 1px solid rgba(255,255,255,0.05);
       margin-top: 32px;
     }
-    .bottom-cta h3 { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: -0.5px; margin-bottom: 8px; }
+    .bottom-cta h2 { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: -0.5px; margin-bottom: 8px; }
     .bottom-cta p { font-size: 13px; color: rgba(255,255,255,0.3); margin-bottom: 24px; }
     .cta-buttons { display: flex; justify-content: center; gap: 12px; }
 
@@ -223,7 +223,7 @@
 
     @media (max-width: 760px) {
       .navbar { padding: 12px 16px; }
-      .nav-back { padding: 6px 12px; font-size: 10px; }
+      .nav-back { padding: 6px 12px; font-size: 11px; }
       .nav-title { font-size: 12px; }
       .container { padding: 0 18px; }
       .hero { padding: 92px 0 32px; }
@@ -233,21 +233,21 @@
       .stats-row { grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 32px; }
       .stat-card { padding: 14px 14px; }
       .stat-val { font-size: 26px; }
-      .stat-lbl { font-size: 9px; letter-spacing: 1.5px; }
+      .stat-lbl { font-size: 11px; letter-spacing: 1.5px; }
       .progress-section { margin-bottom: 32px; }
       .ach-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
       .ach-card { padding: 14px; border-radius: 16px; }
       .ach-icon { font-size: 24px; }
       .ach-name { font-size: 13px; }
-      .ach-desc { font-size: 10px; }
+      .ach-desc { font-size: 11px; }
 
       .lb-tabs { flex-wrap: wrap; }
-      .lb-tab { font-size: 10px; padding: 6px 10px; }
+      .lb-tab { font-size: 11px; padding: 6px 10px; }
       .lb-row { grid-template-columns: 36px 1fr 80px 50px; padding: 10px 12px; gap: 8px; font-size: 12px; }
-      .lb-row.head { font-size: 9px; letter-spacing: 1.5px; }
+      .lb-row.head { font-size: 11px; letter-spacing: 1.5px; }
       .lb-name { font-size: 12px; }
       .bottom-cta { padding: 36px 0 56px; }
-      .bottom-cta h3 { font-size: 18px; }
+      .bottom-cta h2 { font-size: 18px; }
       .cta-buttons { flex-direction: column; align-items: stretch; }
       .btn-secondary { justify-content: center; padding: 12px 20px; font-size: 13px; }
     }
@@ -341,7 +341,7 @@
   </div>
 
   <div class="bottom-cta">
-    <h3>Noch mehr freischalten?</h3>
+    <h2>Noch mehr freischalten?</h2>
     <p>Spiel Block Drop und sammle alle Achievements — manche sind echter schwer.</p>
     <div class="cta-buttons">
       <a href="/games/blockdrop/" class="btn-primary">Block Drop spielen <span class="arrow">→</span></a>

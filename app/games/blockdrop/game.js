@@ -155,6 +155,7 @@ const KICKS_I = {
 
 const LINE_SCORES   = [0, 100, 300, 500, 800];
 const STANDARD_SPEED = 800;
+const SCROLL_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' ']);
 
 // Animation timing (ms)
 const ANIM_FLASH   = 160;
@@ -848,6 +849,12 @@ class BlockDrop {
 
   // ── Input ─────────────────────────────────────────────────────────────────
   onKey(e) {
+    // Pfeiltasten/Space scrollen sonst die Seite — auch während Pause/Räum-Animation,
+    // nicht nur während 'playing' (wo der switch weiter unten preventDefault ruft)
+    if (SCROLL_KEYS.has(e.key) && this.state !== 'idle' && this.state !== 'gameover') {
+      e.preventDefault();
+    }
+
     if (this.state === 'paused') {
       if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') this.resume();
       return;

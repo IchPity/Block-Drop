@@ -58,7 +58,7 @@
     }
     .nav-stat { display: flex; flex-direction: column; align-items: center; }
     .nav-stat-val { font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -0.5px; line-height: 1; }
-    .nav-stat-lbl { font-size: 8px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-top: 1px; }
+    .nav-stat-lbl { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-top: 1px; }
     .nav-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.07); }
 
     /* ── Layout ─────────────────────────────────────────── */
@@ -73,8 +73,8 @@
       border-radius: 14px; padding: 12px 14px;
       transition: border-color 0.3s;
     }
-    .panel-box h3 {
-      font-size: 8px; font-weight: 700;
+    .panel-box h2 {
+      font-size: 11px; font-weight: 700;
       text-transform: uppercase; letter-spacing: 3px;
       color: rgba(255,255,255,0.2); margin-bottom: 8px;
     }
@@ -82,7 +82,7 @@
       font-size: 28px; font-weight: 900; color: #fff;
       letter-spacing: -1.5px; line-height: 1;
     }
-    #score-display { font-size: 22px; color: var(--red); text-shadow: 0 0 20px rgba(233,69,96,0.3); }
+    #score-display { font-size: 22px; color: #ed667d; text-shadow: 0 0 20px rgba(233,69,96,0.3); }
 
     /* ── Board ──────────────────────────────────────────── */
     #game-area {
@@ -125,11 +125,11 @@
       background: rgba(233,69,96,0.14); border-color: rgba(233,69,96,0.45); color: #fff;
       box-shadow: 0 0 16px rgba(233,69,96,0.12);
     }
-    .mode-btn small { display: block; font-size: 9px; font-weight: 400; opacity: 0.55; margin-top: 2px; }
+    .mode-btn small { display: block; font-size: 11px; font-weight: 400; opacity: 0.55; margin-top: 2px; }
 
     /* ── Start Button ───────────────────────────────────── */
     .btn {
-      background: var(--red); color: #fff; border: none;
+      background: #d23e56; color: #fff; border: none;
       padding: 14px 0; font-size: 14px; font-weight: 800;
       font-family: inherit; border-radius: 12px; cursor: pointer;
       letter-spacing: 0.5px; width: 100%;
@@ -137,7 +137,7 @@
       transition: all 0.2s;
       display: flex; align-items: center; justify-content: center; gap: 8px;
     }
-    .btn:hover { background: #f05672; box-shadow: 0 0 40px rgba(233,69,96,0.6); transform: translateY(-1px); }
+    .btn:hover { background: #ca4860; box-shadow: 0 0 40px rgba(233,69,96,0.6); transform: translateY(-1px); }
     .btn:active { transform: scale(0.98); }
 
     /* ── Level Bar ──────────────────────────────────────── */
@@ -146,18 +146,18 @@
 
     /* ── Mode Badge ─────────────────────────────────────── */
     #mode-badge {
-      font-size: 8px; font-weight: 700; text-transform: uppercase;
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
       letter-spacing: 2px; padding: 3px 8px; border-radius: 5px;
       margin-top: 8px; display: inline-block;
     }
-    #mode-badge.classic  { background: rgba(233,69,96,0.15); color: var(--red); }
+    #mode-badge.classic  { background: rgba(233,69,96,0.15); color: #ed667d; }
     #mode-badge.standard { background: rgba(56,189,248,0.12); color: #38bdf8; }
 
     /* ── Controls ───────────────────────────────────────── */
-    #controls-hint { font-size: 9px; color: rgba(255,255,255,0.18); line-height: 2.1; }
+    #controls-hint { font-size: 11px; color: rgba(255,255,255,0.18); line-height: 2.1; }
 
     /* ── High Scores ────────────────────────────────────── */
-    #hs-mode-label { font-size: 8px; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.2); margin-bottom: 10px; }
+    #hs-mode-label { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.2); margin-bottom: 10px; }
     .highscore-list { font-size: 11px; color: rgba(255,255,255,0.4); line-height: 2; min-height: 100px; }
     .highscore-list span { color: var(--red); font-weight: 700; }
 
@@ -184,13 +184,13 @@
     }
     #ach-overlay.show #ach-modal::before { animation: achShimmer 2s 0.5s ease-in-out infinite; }
     @keyframes achShimmer { 0% { left:-100%; } 100% { left:200%; } }
-    .ach-label { font-size: 9px; letter-spacing: 4px; text-transform: uppercase; color: var(--gold); margin-bottom: 18px; }
+    .ach-label { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: var(--gold); margin-bottom: 18px; }
     #ach-icon-big { font-size: 68px; display: block; margin-bottom: 14px; transform: scale(0); }
     #ach-overlay.show #ach-icon-big { animation: achIconPop 0.55s 0.2s both cubic-bezier(0.34,1.56,0.64,1); }
     @keyframes achIconPop { from { transform: scale(0) rotate(-15deg); } to { transform: scale(1) rotate(0deg); } }
     #ach-name-big { font-size: 22px; font-weight: 900; color: #fff; margin-bottom: 8px; letter-spacing: -0.5px; }
     #ach-desc-big { font-size: 12px; color: rgba(255,255,255,0.3); line-height: 1.5; }
-    .ach-hint { font-size: 9px; color: rgba(255,255,255,0.12); text-transform: uppercase; letter-spacing: 2px; margin-top: 28px; opacity: 0; }
+    .ach-hint { font-size: 11px; color: rgba(255,255,255,0.12); text-transform: uppercase; letter-spacing: 2px; margin-top: 28px; opacity: 0; }
     #ach-overlay.show .ach-hint { animation: achHintFade 0.6s 1.8s both; }
     @keyframes achHintFade { from { opacity:0; } to { opacity:1; } }
 
@@ -279,7 +279,7 @@
         transform: scale(0.95);
       }
       .tc-btn.wide { grid-column: span 1; }
-      .tc-btn.lbl { font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
+      .tc-btn.lbl { font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
       .tc-row2 { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 8px; }
     }
 
@@ -287,12 +287,12 @@
     @media (max-width: 760px) {
       body { padding: 64px 8px 16px; gap: 10px; }
       .navbar { padding: 10px 14px; }
-      .nav-back { padding: 5px 10px; font-size: 10px; }
+      .nav-back { padding: 5px 10px; font-size: 11px; }
       .nav-game-title { font-size: 12px; }
       .nav-right { gap: 8px; }
       .nav-score-display { gap: 10px; padding: 5px 10px; }
       .nav-stat-val { font-size: 12px; }
-      .nav-stat-lbl { font-size: 7px; letter-spacing: 1px; }
+      .nav-stat-lbl { font-size: 11px; letter-spacing: 1px; }
       .nav-divider { height: 18px; }
 
       #wrapper { flex-direction: column; gap: 10px; align-items: center; }
@@ -304,11 +304,11 @@
       #right-panel { order: 2; }
 
       .panel-box { padding: 10px 12px; flex: 1 1 calc(33.333% - 6px); min-width: 80px; }
-      .panel-box h3 { font-size: 7px; letter-spacing: 2px; margin-bottom: 4px; }
+      .panel-box h2 { font-size: 11px; letter-spacing: 2px; margin-bottom: 4px; }
       .panel-box .value { font-size: 18px; letter-spacing: -0.5px; }
       #score-display { font-size: 17px; }
       #level-bar-wrap { margin-top: 6px; }
-      #mode-badge { margin-top: 6px; font-size: 7px; padding: 2px 6px; }
+      #mode-badge { margin-top: 6px; font-size: 11px; padding: 2px 6px; }
 
       /* Hide on-screen keyboard hint (replaced by touch buttons) */
       #controls-hint-box, .controls-hint-box { display: none; }
@@ -322,13 +322,13 @@
       canvas#board { width: 100% !important; height: 100% !important; touch-action: none; }
       #overlay { padding: 16px; }
       #overlay h1 { font-size: 26px; }
-      .mode-btn { padding: 9px 6px; font-size: 10px; }
-      .mode-btn small { font-size: 8px; }
+      .mode-btn { padding: 9px 6px; font-size: 11px; }
+      .mode-btn small { font-size: 11px; }
       .btn { padding: 12px 0; font-size: 13px; }
 
       /* High score list compact */
-      #hs-list { font-size: 10px; line-height: 1.7; min-height: 70px; }
-      #hs-mode-label { font-size: 7px; letter-spacing: 1.5px; margin-bottom: 6px; }
+      #hs-list { font-size: 11px; line-height: 1.7; min-height: 70px; }
+      #hs-mode-label { font-size: 11px; letter-spacing: 1.5px; margin-bottom: 6px; }
     }
 
     @media (max-width: 380px) {
@@ -374,25 +374,25 @@
 <div id="wrapper">
   <div id="left-panel">
     <div class="panel-box">
-      <h3>Score</h3>
+      <h2>Score</h2>
       <div class="value" id="score-display">0</div>
     </div>
     <div class="panel-box">
-      <h3>Level</h3>
+      <h2>Level</h2>
       <div class="value" id="level-display">1</div>
       <div id="level-bar-wrap"><div id="level-bar"></div></div>
       <div id="mode-badge" class="classic">Classic</div>
     </div>
     <div class="panel-box">
-      <h3>Lines</h3>
+      <h2>Lines</h2>
       <div class="value" id="lines-display">0</div>
     </div>
     <div class="panel-box">
-      <h3>Hold</h3>
+      <h2>Hold</h2>
       <canvas id="hold-canvas" width="100" height="80"></canvas>
     </div>
     <div class="panel-box controls-hint-box">
-      <h3>Controls</h3>
+      <h2>Controls</h2>
       <div id="controls-hint">
         ← → &nbsp;Move<br>
         ↑ / Z &nbsp;Rotate CW<br>
@@ -421,11 +421,11 @@
 
   <div id="right-panel">
     <div class="panel-box">
-      <h3>Next</h3>
+      <h2>Next</h2>
       <canvas id="next-canvas" width="100" height="260"></canvas>
     </div>
     <div class="panel-box">
-      <h3>High Scores</h3>
+      <h2>High Scores</h2>
       <div id="hs-mode-label">Standard</div>
       <div class="highscore-list" id="hs-list"></div>
     </div>
