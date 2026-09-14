@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Block Games — funkelnder Stern für Konfetti/Hintergrund. Farbe via currentColor. -->
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <path d="M32 3 L40 24 L62 24 L44 38 L51 60 L32 46 L13 60 L20 38 L2 24 L24 24 Z"
+        fill="currentColor"/>
+</svg>

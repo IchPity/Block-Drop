@@ -1,0 +1,27 @@
+{
+  "name": "block-games",
+  "version": "0.14.0",
+  "description": "Block Games — Party-Spiel im Mario-Party-Stil für die Block-Drop Arcade",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "Block-Drop Arcade",
+  "license": "UNLICENSED",
+  "build": {
+    "appId": "com.blockdrop.blockgames",
+    "productName": "Block Games",
+    "win": {
+      "icon": "renderer/assets/block-icon.ico"
+    },
+    "linux": {
+      "icon": "renderer/assets/block-icon.png"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}

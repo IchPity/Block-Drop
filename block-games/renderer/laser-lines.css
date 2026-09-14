@@ -1,0 +1,160 @@
+/* Laser Lines — Spiel-Optik (Canvas-Bühne, HUD, Map-Thumbs).
+   Greift auf die Arcade-Variablen aus style.css zu. Das Map-Voting-/Countdown-/
+   Ergebnis-/Ranking-Overlay ist generisch (.mg-* in style.css) — hier liegen
+   nur Bühne, In-Game-HUD und die Laser-Map-Vorschaubilder. */
+
+/* ── Bühne (3D-Canvas + HUD werden von main.js eingehängt) ─────────────── */
+#screen-laser-lines { padding: 0; justify-content: stretch; align-items: stretch; }
+
+.laser-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0c0a18;
+}
+.laser-canvas { display: block; width: 100% !important; height: 100% !important; }
+
+.laser-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: var(--font-display, sans-serif);
+  z-index: 2;
+}
+
+.laser-top {
+  position: absolute;
+  top: 18px; left: 0; right: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0 22px;
+}
+
+/* Leben je Spieler (Chips mit Herzen) */
+.laser-lives { display: flex; flex-wrap: wrap; gap: 8px; max-width: 62%; }
+.laser-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.9em; font-weight: 800;
+  color: #0c0a18;
+  background: var(--c, #fff);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+}
+.laser-chip.dead {
+  background: transparent;
+  color: var(--text-dim, #9a9abd);
+  border-color: var(--line, #3a3a66);
+  opacity: 0.6;
+}
+.laser-chip-lives { letter-spacing: 1px; color: #ff2747; }
+.laser-chip.dead .laser-chip-lives { color: var(--text-dim, #9a9abd); }
+.laser-life-lost { color: rgba(12, 10, 24, 0.35); }
+.laser-life-out { font-weight: 900; }
+
+/* Titel + Tempo/Timer rechts oben */
+.laser-info { text-align: right; }
+.laser-title {
+  font-size: 1.3em; font-weight: 900; color: #fff;
+  text-shadow: 0 0 14px rgba(255, 91, 208, 0.6);
+}
+.laser-meta {
+  margin-top: 4px;
+  font-size: 1.2em; font-weight: 900;
+  color: var(--text, #f2f2fa);
+  background: rgba(12, 10, 24, 0.6);
+  display: inline-block;
+  padding: 4px 12px; border-radius: 12px;
+  border: 2px solid var(--line, #3a3a66);
+}
+.laser-level { color: #ff5bd0; }
+
+/* Warnbanner */
+.laser-warn {
+  position: absolute;
+  top: 9%; left: 50%;
+  transform: translateX(-50%) scale(0.9);
+  font-size: 1.6em; font-weight: 900;
+  color: #fff;
+  background: rgba(255, 39, 71, 0.85);
+  padding: 6px 20px; border-radius: 12px;
+  border: 2px solid #fff;
+  box-shadow: 0 0 22px rgba(255, 39, 71, 0.8);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.12s;
+}
+.laser-warn.show { opacity: 1; animation: laserWarnPulse 0.5s infinite alternate; }
+@keyframes laserWarnPulse { to { transform: translateX(-50%) scale(1.04); } }
+
+/* Kurze Meldungen mittig */
+.laser-message {
+  position: absolute;
+  top: 17%; left: 50%;
+  transform: translateX(-50%);
+  font-size: 2.4em; font-weight: 900;
+  color: #fff;
+  text-shadow: 3px 3px 0 var(--bg-deep, #0d0d1e), 0 0 24px rgba(255, 91, 208, 0.6);
+  opacity: 0; white-space: nowrap;
+}
+.laser-message.show { animation: laserMsg 1.6s ease-out forwards; }
+@keyframes laserMsg {
+  0%   { opacity: 0; transform: translateX(-50%) scale(0.6); }
+  15%  { opacity: 1; transform: translateX(-50%) scale(1.1); }
+  75%  { opacity: 1; transform: translateX(-50%) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) scale(1); }
+}
+
+/* Namensschilder über den Köpfen */
+.laser-labels { position: absolute; inset: 0; }
+.laser-name-label {
+  position: absolute; top: 0; left: 0;
+  padding: 2px 10px; border-radius: 999px;
+  font-size: 0.85em; font-weight: 800;
+  color: #0c0a18;
+  background: var(--c, #fff);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  white-space: nowrap; will-change: transform;
+}
+.laser-name-label.eliminated { opacity: 0.45; text-decoration: line-through; }
+
+/* Treffer-Vignette (kurzes rotes Aufblitzen am Rand) */
+.laser-vignette {
+  position: absolute; inset: 0;
+  pointer-events: none; opacity: 0;
+  box-shadow: inset 0 0 160px 40px rgba(255, 39, 71, 0.75);
+}
+.laser-vignette.show { animation: laserVig 0.45s ease-out; }
+@keyframes laserVig { 0% { opacity: 0.9; } 100% { opacity: 0; } }
+
+/* Map-Vorstellung (Kamera-Flug-Intro) */
+.laser-map-intro-name {
+  position: absolute;
+  left: 50%; bottom: 14%;
+  transform: translateX(-50%) translateY(20px) scale(0.9);
+  font-family: var(--font-display, sans-serif);
+  font-size: 3.2em; font-weight: 900; color: #fff;
+  text-shadow: 4px 4px 0 var(--bg-deep, #0d0d1e), 0 0 30px rgba(255, 91, 208, 0.6);
+  opacity: 0; pointer-events: none; z-index: 3;
+  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+.laser-map-intro-name.show { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+.laser-map-intro-name.hide { opacity: 0; transition: opacity 0.5s ease-in; }
+
+/* Map-Thumbnails fürs generische Map-Voting — Laser-Lines-Maps. */
+.mg-thumb-laser-lines-spin {
+  background: radial-gradient(circle at 50% 50%, #2a2440 0 30%, #1a1630 31%),
+              conic-gradient(from 0deg, transparent 0 8%, rgba(255,39,71,0.55) 9% 12%, transparent 13% 58%, rgba(255,39,71,0.55) 59% 62%, transparent 63%);
+}
+.mg-thumb-laser-lines-grid {
+  background: linear-gradient(160deg, #20243a, #15182a),
+              repeating-linear-gradient(0deg, transparent 0 22px, rgba(255,91,208,0.28) 22px 25px),
+              repeating-linear-gradient(90deg, transparent 0 30px, rgba(255,39,71,0.22) 30px 33px);
+}
+.mg-thumb-laser-lines-sky {
+  background: linear-gradient(160deg, #1a1630, #2c2550),
+              repeating-linear-gradient(45deg, transparent 0 18px, rgba(255,91,208,0.2) 18px 22px);
+}
