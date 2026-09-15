@@ -7,16 +7,24 @@
 'use strict';
 
 // ── Minigame-Katalog ─────────────────────────────────────────────────
-// Platzhalter: `available: false` = ausgegraut mit "Bald"-Badge.
-// Sobald ein Minigame fertig ist, hier freischalten und `start` setzen.
-// `nav` = feste Navigations-ID für die Tastatur-Steuerung (siehe NAV_MAP).
+// Nur wirklich spielbare Minigames. Sobald ein neues fertig ist, hier
+// freischalten (`id`/`nav`/`start` wie unten). `nav` = feste
+// Navigations-ID für die Tastatur-Steuerung (siehe NAV_MENU).
+//
+// Spiele „in Arbeit" stehen NICHT hier als eigene, gleich gewichtete
+// Karten — vier gesperrte Karten neben zwei spielbaren machten die
+// Hauptmenü-Wahl auf 6 Optionen auf, obwohl nur 2 etwas taten. Sie laufen
+// stattdessen gesammelt in UPCOMING_MINIGAMES als EINE Sammel-Kachel.
 const MINIGAMES = [
-  { id: 'laser-lines',  nav: 'main_laserLines',  icon: '🔺', name: 'Laser Lines',  desc: 'Weiche den Lasern aus!',          available: true,  start: () => startTutorial('laser-lines') },
-  { id: 'coin-grab',    nav: 'main_coinGrab',    icon: '🪙', name: 'Coin Grab',    desc: 'Sammle die meisten Münzen',       available: false },
-  { id: 'memory-clash', nav: 'main_memoryClash', icon: '🧠', name: 'Memory Clash', desc: 'Wer merkt sich mehr?',            available: false },
-  { id: 'speed-tap',    nav: 'main_speedTap',    icon: '⚡', name: 'Speed Tap',    desc: 'Reaktion entscheidet',            available: false },
-  { id: 'block-bomb',   nav: 'main_blockBomb',   icon: '💣', name: 'Block Bomb',   desc: 'Berühr die anderen – wer mit der Bombe hochgeht, fliegt raus', available: true, start: () => startTutorial('block-bomb') },
-  { id: 'quiz-blocks',  nav: 'main_quizBlocks',  icon: '❓', name: 'Quiz Blocks',  desc: 'Wissen schlägt Würfelglück',      available: false },
+  { id: 'laser-lines', nav: 'main_laserLines', icon: '🔺', name: 'Laser Lines', desc: 'Weiche den Lasern aus!', available: true, start: () => startTutorial('laser-lines') },
+  { id: 'block-bomb',  nav: 'main_blockBomb',  icon: '💣', name: 'Block Bomb',  desc: 'Berühr die anderen – wer mit der Bombe hochgeht, fliegt raus', available: true, start: () => startTutorial('block-bomb') },
+];
+
+const UPCOMING_MINIGAMES = [
+  { icon: '🪙', name: 'Coin Grab' },
+  { icon: '🧠', name: 'Memory Clash' },
+  { icon: '⚡', name: 'Speed Tap' },
+  { icon: '❓', name: 'Quiz Blocks' },
 ];
 
 // ── Gast-Modus ───────────────────────────────────────────────────────
@@ -45,6 +53,16 @@ function showToast(msg) {
     t.classList.remove('show');
     setTimeout(() => { t.hidden = true; }, 300);
   }, 3200);
+}
+
+// Kurzer Hinweis DIREKT am betroffenen Element (Shake + roter Rand), damit
+// eine verpasste/verblasste Toast-Meldung nicht die einzige Spur bleibt.
+function flashInvalid(el) {
+  if (!el) return;
+  el.classList.remove('flash-invalid');
+  void el.offsetWidth; // Reflow erzwingen, damit die Animation neu startet
+  el.classList.add('flash-invalid');
+  setTimeout(() => el.classList.remove('flash-invalid'), 450);
 }
 
 // ── Animierter Bühnen-Hintergrund ────────────────────────────────────
@@ -119,6 +137,29 @@ function setupSfx() {
 
 // ── Auth-UI ──────────────────────────────────────────────────────────
 const authError = document.getElementById('authError');
+
+// Supabase liefert Fehlertexte auf Englisch — bekannte Fälle ins Deutsche
+// übersetzen. Unbekannte Fehler zeigen NIE den rohen englischen Text,
+// sondern den übergebenen deutschen Fallback (sonst rutscht mitten in der
+// sonst komplett deutschen Oberfläche Englisch durch).
+const AUTH_ERROR_MAP = [
+  [/invalid login credentials/i, 'Benutzername oder Passwort falsch.'],
+  [/(already registered|duplicate key value)/i, 'Dieser Name ist bereits vergeben.'],
+  [/email not confirmed/i, 'E-Mail noch nicht bestätigt.'],
+  [/new password should be different/i, 'Neues Passwort muss sich vom alten unterscheiden.'],
+  [/password should be at least/i, 'Passwort muss mindestens 6 Zeichen haben.'],
+  [/rate limit/i, 'Zu viele Versuche — kurz warten und nochmal.'],
+  [/(failed to fetch|network|timeout)/i, 'Keine Verbindung zum Server.'],
+];
+
+function translateError(error, fallback) {
+  const raw = error && error.message;
+  if (!raw) return fallback;
+  for (const [pattern, de] of AUTH_ERROR_MAP) {
+    if (pattern.test(raw)) return de;
+  }
+  return fallback;
+}
 
 function showAuthError(msg) {
   authError.textContent = msg;
@@ -252,7 +293,7 @@ function setupAuthForms() {
       document.getElementById('loginPw').value
     );
     btn.disabled = false;
-    if (error) showAuthError(error.message || 'Anmeldung fehlgeschlagen.');
+    if (error) showAuthError(translateError(error, 'Anmeldung fehlgeschlagen.'));
     else { RecentUsers.remember(loginId); Sfx.play('success'); }
     // Erfolg: onAuthStateChange wechselt automatisch ins Menü.
   });
@@ -273,7 +314,7 @@ function setupAuthForms() {
       username
     );
     btn.disabled = false;
-    if (error) showAuthError(error.message || 'Registrierung fehlgeschlagen.');
+    if (error) showAuthError(translateError(error, 'Registrierung fehlgeschlagen.'));
     else { RecentUsers.remember(username); Sfx.play('success'); }
   });
 
@@ -543,17 +584,14 @@ const NAV_MENU = {
   main_power:    { left: 'main_account',   down: 'main_play' },
   // Hauptaktion „Spielen"
   main_play:     { up: 'main_settings', down: 'main_laserLines' },
-  // Minigame-Karten, Reihe 1: Laser Lines · Coin Grab · Memory Clash · Speed Tap
-  main_laserLines:  { up: 'main_play', down: 'main_blockBomb', right: 'main_coinGrab' },
-  main_coinGrab:    { up: 'main_play', down: 'main_quizBlocks', left: 'main_laserLines', right: 'main_memoryClash' },
-  main_memoryClash: { up: 'main_play', down: 'main_quizBlocks', left: 'main_coinGrab',   right: 'main_speedTap' },
-  main_speedTap:    { up: 'main_play', down: 'main_quizBlocks', left: 'main_memoryClash' },
-  // Reihe 2: Bomb Pass · Quiz Blocks. ↓ führt zum Credits-Knopf — sonst wäre
-  // er nur per Tab erreichbar (kleine, bewusste Abweichung von „bleibt stehen").
-  main_blockBomb:   { up: 'main_laserLines', right: 'main_quizBlocks', down: 'main_credits' },
-  main_quizBlocks:  { up: 'main_coinGrab',  left: 'main_blockBomb',   down: 'main_credits' },
+  // Minigame-Karten: Laser Lines · Block Bomb · Sammel-Kachel „X weitere in
+  // Arbeit". ↓ führt direkt zum Credits-Knopf — sonst wäre er nur per Tab
+  // erreichbar (kleine, bewusste Abweichung von „bleibt stehen").
+  main_laserLines: { up: 'main_play', right: 'main_blockBomb', down: 'main_credits' },
+  main_blockBomb:  { up: 'main_play', left: 'main_laserLines', right: 'main_soonGames', down: 'main_credits' },
+  main_soonGames:  { up: 'main_play', left: 'main_blockBomb',  down: 'main_credits' },
   // Credits-Knopf in der Fußzeile
-  main_credits:     { up: 'main_quizBlocks' },
+  main_credits:    { up: 'main_soonGames' },
 };
 
 // Wird in buildLobbyNav() bei jedem renderLobby() neu erzeugt (dynamisch, weil
@@ -845,26 +883,37 @@ function renderMenu() {
   grid.innerHTML = '';
   MINIGAMES.forEach((game, i) => {
     // <button> statt <div>: per Tab/Pfeiltasten fokussierbar (Tastatur-Nav).
-    // Karten sind IMMER auswählbar/fokussierbar — auch noch nicht spielbare
-    // („Bald"). Klick/Enter auf ein „Bald"-Spiel zeigt nur einen Hinweis-Toast,
-    // gestartet wird (noch) nichts.
     const card = document.createElement('button');
     card.type = 'button';
-    card.className = `minigame-card ${game.available ? 'available' : 'locked'}`;
+    card.className = 'minigame-card available';
     card.dataset.nav = game.nav; // feste Navigations-ID für die Tastatur
     card.style.setProperty('--card-i', i);
     card.innerHTML = `
       <span class="minigame-icon">${game.icon}</span>
       <h3>${game.name}</h3>
       <p>${game.desc}</p>
-      <span class="badge">${game.available ? 'Spielen' : 'Bald'}</span>
+      <span class="badge">Spielen</span>
     `;
-    card.addEventListener('click', () => {
-      if (game.available && game.start) game.start();
-      else showToast(`🎮 „${game.name}" kommt bald!`);
-    });
+    card.addEventListener('click', () => game.start());
     grid.appendChild(card);
   });
+
+  // EINE Sammel-Kachel für alle „Bald"-Spiele statt vier vollwertiger,
+  // gleich gewichteter Karten (siehe /impeccable critique: 4 von 6 Karten
+  // waren Sackgassen — bewusst kleiner/gedämpfter als die spielbaren Karten).
+  const teaser = document.createElement('button');
+  teaser.type = 'button';
+  teaser.className = 'minigame-card minigame-teaser';
+  teaser.dataset.nav = 'main_soonGames';
+  teaser.style.setProperty('--card-i', MINIGAMES.length);
+  teaser.innerHTML = `
+    <span class="minigame-icon">${UPCOMING_MINIGAMES.map(g => g.icon).join('')}</span>
+    <h3>${UPCOMING_MINIGAMES.length} weitere in Arbeit</h3>
+    <p>${UPCOMING_MINIGAMES.map(g => g.name).join(' · ')}</p>
+    <span class="badge">Bald</span>
+  `;
+  teaser.addEventListener('click', () => showToast('🛠️ Weitere Minigames sind in Arbeit — bald mehr!'));
+  grid.appendChild(teaser);
 }
 
 // ── Credits ──────────────────────────────────────────────────────────
@@ -1660,7 +1709,7 @@ function setupAccount() {
 
     if (btn.dataset.add) {
       const { error } = await Auth.sendFriendRequest(btn.dataset.add);
-      showToast(error ? (error.message || 'Anfrage fehlgeschlagen.') : 'Anfrage gesendet! 🎉');
+      showToast(error ? translateError(error, 'Anfrage fehlgeschlagen.') : 'Anfrage gesendet! 🎉');
       Sfx.play(error ? 'error' : 'success');
       const box = document.getElementById('friendResults');
       box.hidden = true;
@@ -1669,11 +1718,11 @@ function setupAccount() {
       loadFriends();
     } else if (btn.dataset.accept) {
       const { error } = await Auth.acceptFriendRequest(btn.dataset.accept);
-      if (error) { showToast(error.message || 'Fehlgeschlagen.'); btn.disabled = false; }
+      if (error) { showToast(translateError(error, 'Fehlgeschlagen.')); btn.disabled = false; }
       else { Sfx.play('success'); loadFriends(); }
     } else if (btn.dataset.remove) {
       const { error } = await Auth.removeFriend(btn.dataset.remove);
-      if (error) { showToast(error.message || 'Fehlgeschlagen.'); btn.disabled = false; }
+      if (error) { showToast(translateError(error, 'Fehlgeschlagen.')); btn.disabled = false; }
       else loadFriends();
     }
   });
@@ -1733,20 +1782,20 @@ function setupAccountSettings() {
 
   wire('formName', async () => {
     const { error } = await Auth.updateUsername(document.getElementById('accName').value);
-    if (error) return { ok: false, msg: error.message || 'Name konnte nicht geändert werden.' };
+    if (error) return { ok: false, msg: translateError(error, 'Name konnte nicht geändert werden.') };
     return { ok: true, msg: 'Name aktualisiert.' };
   });
 
   wire('formEmail', async () => {
     const { error } = await Auth.updateContactEmail(document.getElementById('accMail').value);
-    if (error) return { ok: false, msg: error.message || 'E-Mail konnte nicht geändert werden.' };
+    if (error) return { ok: false, msg: translateError(error, 'E-Mail konnte nicht geändert werden.') };
     return { ok: true, msg: 'E-Mail gespeichert.' };
   });
 
   wire('formPw', async () => {
     const input = document.getElementById('accPw');
     const { error } = await Auth.updatePassword(input.value);
-    if (error) return { ok: false, msg: error.message || 'Passwort konnte nicht geändert werden.' };
+    if (error) return { ok: false, msg: translateError(error, 'Passwort konnte nicht geändert werden.') };
     input.value = '';
     return { ok: true, msg: 'Passwort geändert.' };
   });
@@ -1848,6 +1897,7 @@ function startSeries() {
   currentPlayers = buildMatchConfig();
   if (currentPlayers.length < 2) {
     showToast('Mindestens 2 Spieler — füge Bots hinzu.');
+    flashInvalid(document.getElementById('btnLobbyStart'));
     return;
   }
   const games = availableGames();

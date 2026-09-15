@@ -581,6 +581,55 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
 
 ## Änderungsprotokoll
 
+### v0.15.0 — 2026-09-14
+- **PRODUCT.md angelegt** (`/impeccable init`) — Zielgruppe (solo gegen Bots
+  UND Couch-Mehrspieler mit Bot-Auffüllung), spätere breitere Verteilung,
+  Kernprinzipien (volle Tastaturbedienbarkeit, Controller-Abstraktion,
+  Fairness der Bots) als dauerhafter Produktkontext festgehalten.
+- **`/impeccable critique` + `/impeccable polish` auf `renderer/` gelaufen**
+  (Detektor: 43 Funde; manuelle Design-Review). Ergebnis archiviert in
+  `.impeccable/critique/`. Umgesetzte Punkte:
+  - **Hauptmenü:** Die 4 „Bald"-Minigame-Karten (Coin Grab, Memory Clash,
+    Speed Tap, Quiz Blocks) sind keine eigenen, vollwertigen Karten mehr —
+    sie liefen der Wahl auf dem ersten Screen auf 6 Optionen auf, obwohl nur
+    2 etwas taten. Jetzt EINE gedämpfte Sammel-Kachel („X weitere in
+    Arbeit", `main_soonGames` in `NAV_MENU`/`MINIGAMES`→`UPCOMING_MINIGAMES`
+    in `app.js`, `.minigame-teaser` in `style.css`).
+  - **Kontrast (WCAG AA):** Neue Tokens `--blue-deep`/`--purple-deep` für
+    Flächen mit weißer Schrift (Spieler-Avatar-Verlauf, „Anfragen N"-Chip —
+    vorher 2.2:1/3.2:1 statt 4.5:1). `.btn-danger`-Textfarbe abgedunkelt
+    (`#3d0606` → `#1a0202`, vorher 4.1:1). `opacity: 0.7` auf
+    `.auth-form .hint`/`.account-form .hint` entfernt (vorher ~3.5:1) —
+    `--text-dim` allein reicht.
+  - **Supabase-Fehlertexte auf Deutsch:** neue `translateError()`-Zuordnung
+    (`app.js`) für bekannte Supabase-Fehlermeldungen; rohes Englisch
+    („Invalid login credentials" etc.) erscheint nicht mehr in der sonst
+    komplett deutschen Oberfläche, unbekannte Fehler zeigen weiter den
+    deutschen Fallback-Text statt `error.message`.
+  - **Toast-Feedback:** `#toast` hat jetzt `role="status"`/`aria-live="polite"`
+    (vorher für Screenreader unsichtbar). Neue Hilfsfunktion `flashInvalid()`
+    markiert zusätzlich kurz das betroffene Bedienelement direkt (Shake +
+    roter Rand) statt sich allein auf den nach 3.2s spurlos verschwindenden
+    Toast zu verlassen — aktuell verdrahtet für „Spiel starten" bei weniger
+    als 2 Spielern in der Lobby.
+- **Bewusst NICHT verändert:** der dunkle `border-bottom` auf abgerundeten
+  Karten/Buttons (3D-Sockel-Optik, `/* 3D-Sockel */`-Kommentare in
+  `style.css`) sowie Glow/Bounce-Easing/breite Schatten — beim Review als
+  durchgängiges, absichtliches Arcade-Stilmittel erkannt statt als Defekt.
+  Als `ignore-value` in `.impeccable/config.json` festgehalten (`side-tab`,
+  `border-accent-on-rounded`, `dark-glow`, `bounce-easing`, jeweils auf
+  `renderer/index.html` + `renderer/style.css` begrenzt), damit der
+  Design-Hook das nicht bei jeder künftigen Änderung erneut anmahnt.
+- **Nachgezogen nach erneutem Hook-Fund:** zu weite Buchstabenabstände auf
+  Fließtext entfernt (`.credits-made`, `.lobby-slot-no`,
+  `.party-btn-text strong`, `.overlay-card h2` — betraf keine
+  Großbuchstaben-Label, nur die reguläre `letter-spacing` bei denen). Fehlende
+  Zwischenebene in der Überschriften-Struktur behoben: `Platz wählen`/
+  `Farbe wählen` (Lobby-Popups) sowie `Anfragen`/`Freunde` (Konto-Overlay)
+  sind jetzt `<h2>` statt `<h3>` — jeweils direkt nach dem Screen-`<h1>` ohne
+  Zwischenebene, optisch unverändert (Klassen legen `font-size` explizit
+  fest).
+
 ### v0.14.0 — 2026-06-17
 - **Intelligentere Bots (beide Minigames).** Die taktische Entscheidungsebene wurde
   vertieft; Navigation/Fairness-Grundsätze (gleiches Tempo, nur sichtbare Infos,

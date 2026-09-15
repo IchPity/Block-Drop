@@ -20,6 +20,10 @@ desktop.ini
 # Lose Dateien, die nicht ins Repo sollen
 kurt_converted.jpg
 
+# Impeccable-Hook-Cache: session-lokale Edit-Historie übers ganze Repo,
+# kein Projekt-Zustand (im Gegensatz zu .impeccable/config.json + critique/)
+.impeccable/hook.cache.json
+
 # Private Diplomarbeits-Unterlagen (Unterschriften, personenbezogene Daten) —
 # lokal referenziert, aber nichts für ein öffentliches Repo
 DiplData/

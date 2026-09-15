@@ -1,0 +1,56 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "block-games/renderer/index.html"
+        ],
+        "createdAt": "2026-09-14T08:30:53.714Z",
+        "reason": "Agent - arcade card accent stripes, deliberate genre choice, disclosed to user"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "block-games/renderer/style.css"
+        ],
+        "createdAt": "2026-09-14T08:31:00.513Z",
+        "reason": "Agent - arcade card accent stripes, deliberate genre choice, disclosed to user"
+      },
+      {
+        "rule": "border-accent-on-rounded",
+        "value": "*",
+        "files": [
+          "block-games/renderer/index.html",
+          "block-games/renderer/style.css"
+        ],
+        "createdAt": "2026-09-14T08:31:00.553Z",
+        "reason": "Agent - repo's own named 3D-Sockel button pattern, 8x identical comment, deliberate not a defect, disclosed to user"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "block-games/renderer/index.html",
+          "block-games/renderer/style.css"
+        ],
+        "createdAt": "2026-09-14T08:31:00.590Z",
+        "reason": "Agent - warm glow matches this project's committed arcade/chalkboard design language, disclosed to user"
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "*",
+        "files": [
+          "block-games/renderer/index.html",
+          "block-games/renderer/style.css"
+        ],
+        "createdAt": "2026-09-14T08:31:00.626Z",
+        "reason": "Agent - bounce easing on dice/playful party-UI transitions is genre-appropriate here, disclosed to user"
+      }
+    ]
+  }
+}

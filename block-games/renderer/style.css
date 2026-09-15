@@ -19,6 +19,10 @@
   --orange: #ff944d;
   --cyan: #36d6e7;
   --pink: #ff6ec7;
+  /* Abgedunkelte Varianten für weißen Text darauf (WCAG AA 4.5:1) —
+     --blue/--purple selbst bleiben zu hell für weiße Schrift. */
+  --blue-deep: #1f6fae;
+  --purple-deep: #6a3ea8;
   --radius: 18px;
   --font-display: Impact, 'Arial Black', 'Segoe UI', sans-serif;
 
@@ -324,7 +328,7 @@ body::before {
   color: var(--text-dim);
 }
 
-.auth-form .hint { font-weight: 400; opacity: 0.7; }
+.auth-form .hint { font-weight: 400; }
 
 .auth-form input {
   padding: 11px 14px;
@@ -517,7 +521,7 @@ body::before {
   height: 38px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--purple), var(--blue));
+  background: linear-gradient(135deg, var(--purple-deep), var(--blue-deep));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -663,7 +667,6 @@ body::before {
   font-family: var(--font-display);
   font-weight: 400;
   font-size: 2.1em;
-  letter-spacing: 2px;
   text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
 }
 .party-btn-text small { opacity: 0.9; font-size: 0.95em; }
@@ -758,11 +761,22 @@ body::before {
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.45), 0 0 22px -4px var(--accent);
 }
 
-/* Gesperrte Karten sind dezent gedimmt (zeigt „Bald"), bleiben aber
-   auswählbar und reagieren auf Hover/Fokus. */
-.minigame-card.locked { opacity: 0.62; }
-.minigame-card.locked:hover,
-.minigame-card.locked:focus-visible { opacity: 0.85; }
+/* Sammel-Kachel für alle „Bald"-Spiele: deutlich gedämpfter als die
+   spielbaren Karten (gestrichelter Rand statt Akzentkante, kein Glow) —
+   sie ist eine Vorschau, keine gleichwertige sechste Wahlmöglichkeit. */
+.minigame-card.minigame-teaser {
+  opacity: 0.6;
+  border-style: dashed;
+}
+.minigame-card.minigame-teaser::before { display: none; }
+.minigame-card.minigame-teaser:hover,
+.minigame-card.minigame-teaser:focus-visible { opacity: 0.85; }
+.minigame-card.minigame-teaser .minigame-icon {
+  background: var(--bg-deep);
+  box-shadow: none;
+  font-size: 1.3em;
+  letter-spacing: 3px;
+}
 
 /* Icon sitzt in einer akzentfarbenen, leicht glänzenden Kachel */
 .minigame-icon {
@@ -929,7 +943,6 @@ body::before {
   text-align: center;
   color: var(--text-dim);
   font-size: 0.8em;
-  letter-spacing: 1px;
 }
 
 /* ── Einstellungen ──────────────────────────────────────────────────── */
@@ -1249,7 +1262,6 @@ body.reduced-fx .party-btn-go { transition: none; }
 .lobby-slot-no {
   font-family: var(--font-display);
   font-weight: 400;
-  letter-spacing: 1px;
   font-size: 1.1em;
   color: var(--text-dim);
 }
@@ -1598,7 +1610,6 @@ button:focus-visible:not(.minigame-card):not(.party-btn) {
   font-family: var(--font-display);
   font-weight: 400;
   font-size: 1.7em;
-  letter-spacing: 2px;
   color: var(--yellow);
   text-shadow: 2px 2px 0 var(--red);
   margin-bottom: 10px;
@@ -1621,7 +1632,7 @@ button:focus-visible:not(.minigame-card):not(.party-btn) {
 
 .btn-danger {
   background: linear-gradient(180deg, var(--red), #e04444);
-  color: #3d0606;
+  color: #1a0202;
   box-shadow: 0 5px 0 #a32626;
 }
 
@@ -1743,7 +1754,7 @@ button:focus-visible:not(.minigame-card):not(.party-btn) {
 }
 
 .count-chip {
-  background: var(--purple);
+  background: var(--purple-deep);
   color: #fff;
   font-size: 0.85em;
   font-weight: 800;
@@ -1813,7 +1824,7 @@ button:focus-visible:not(.minigame-card):not(.party-btn) {
   font-weight: 600;
   color: var(--text-dim);
 }
-.account-form .hint { font-weight: 400; opacity: 0.7; font-size: 0.88em; }
+.account-form .hint { font-weight: 400; font-size: 0.88em; }
 .account-field { display: flex; gap: 8px; margin-top: 2px; }
 .account-field input {
   flex: 1;
@@ -1861,6 +1872,20 @@ button:focus-visible:not(.minigame-card):not(.party-btn) {
 .toast.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+/* Kurzer Shake + roter Rand direkt am Steuerelement, das eine Aktion
+   verhindert hat — ergänzt den Toast, statt sich allein auf ihn zu
+   verlassen (der verblasst nach 3.2s spurlos). */
+@keyframes flashInvalid {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+.flash-invalid {
+  animation: flashInvalid 0.4s ease-in-out;
+  outline: 2px solid var(--red);
+  outline-offset: 3px;
 }
 
 /* ══ Generischer Minigame-Flow (Map-Voting / Countdown / Ergebnis / Ranking) ══

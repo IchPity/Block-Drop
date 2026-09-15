@@ -199,14 +199,14 @@
        Fokus bleibt bei offenem Popup im Popup (setupKeyboard). -->
   <div id="slotPicker" class="lobby-popup" hidden>
     <div class="lobby-popup-card" id="slotPickerCard">
-      <h3 class="lobby-popup-title" id="slotPickerTitle">Platz wählen</h3>
+      <h2 class="lobby-popup-title" id="slotPickerTitle">Platz wählen</h2>
       <div class="lobby-popup-body" id="slotPickerBody"></div>
     </div>
   </div>
 
   <div id="colorPicker" class="lobby-popup" hidden>
     <div class="lobby-popup-card" id="colorPickerCard">
-      <h3 class="lobby-popup-title">Farbe wählen</h3>
+      <h2 class="lobby-popup-title">Farbe wählen</h2>
       <div class="color-grid" id="colorPickerBody"></div>
     </div>
   </div>
@@ -368,12 +368,12 @@
           <div class="friend-results" id="friendResults" hidden></div>
         </div>
 
-        <h3 class="friends-title">Anfragen <span class="count-chip" id="reqCount" hidden>0</span></h3>
+        <h2 class="friends-title">Anfragen <span class="count-chip" id="reqCount" hidden>0</span></h2>
         <div class="friend-list" id="friendRequests">
           <p class="friend-empty">Keine offenen Anfragen.</p>
         </div>
 
-        <h3 class="friends-title">Freunde <span class="count-chip" id="friendCount" hidden>0</span></h3>
+        <h2 class="friends-title">Freunde <span class="count-chip" id="friendCount" hidden>0</span></h2>
         <div class="friend-list" id="friendList">
           <p class="friend-empty">Noch keine Freunde — such oben jemanden!</p>
         </div>
@@ -487,7 +487,7 @@
   </div>
 
   <!-- Toast für kurze Hinweise (statt alert) -->
-  <div id="toast" class="toast" hidden></div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="../node_modules/@supabase/supabase-js/dist/umd/supabase.js"></script>
   <script src="settings.js"></script>
