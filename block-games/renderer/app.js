@@ -759,11 +759,15 @@ const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), select:not([di
 // den Reitern zurück (Hoch landete schlimmstenfalls auf „Zurücksetzen"), und
 // ←/→ verstellte nur die Option, statt den Reiter zu wechseln. Diese Funktion
 // regelt die Navigation klar:
-//   • Auf einem Reiter:  ←/→ wechselt den Reiter, ↓/Enter springt in die Optionen.
+//   • Auf einem Reiter:  ←/→ wechselt den Reiter, ↓/Enter springt in die Optionen,
+//                        ↑ springt zu „Zurück" im Header.
 //   • Auf einer Option:  ↑/↓ wechselt die Option, an der obersten zurück zum Reiter.
 //                        ←/→ bleibt native (Regler verstellen / Auswahl wechseln).
+//   • Auf „Zurück"/„Zurücksetzen": ←/→ wechselt zwischen beiden, ↓ zurück zum Reiter.
 // Gibt true zurück, wenn die Taste behandelt wurde (dann kein moveFocus mehr).
-// Back/Reset im Header bleiben per Tab-Taste erreichbar (Tab ist nicht belegt).
+// Keine Tab-Taste-Ausnahme mehr: Header-Buttons sind seit Impeccable-Critique
+// 2026-09-15 (P2, verletzte sonst PRODUCT.md-Prinzip „keine Ausnahmen") auch
+// per Pfeiltasten erreichbar, nicht mehr nur per Tab.
 function handleSettingsKey(e, dir) {
   const tabs = [...document.querySelectorAll('.settings-tab')].filter(t => !t.hidden);
   if (!tabs.length) return false;
@@ -774,6 +778,23 @@ function handleSettingsKey(e, dir) {
     : [];
   const onTab = e.target.classList.contains('settings-tab');
   const ctlIndex = controls.indexOf(e.target);
+  const btnBack = document.getElementById('btnSettingsBack');
+  const btnReset = document.getElementById('btnSettingsReset');
+  const onHeaderBtn = e.target === btnBack || e.target === btnReset;
+
+  if (onHeaderBtn) {
+    if (dir === 'left' || dir === 'right') {
+      const other = e.target === btnBack ? btnReset : btnBack;
+      if (other) { other.focus(); Sfx.play('hover'); }
+      return true;
+    }
+    if (dir === 'down') {
+      activeTab.focus();
+      Sfx.play('hover');
+      return true;
+    }
+    return true; // ↑ ganz oben — nichts darüber
+  }
 
   if (onTab) {
     if (dir === 'left' || dir === 'right') {
@@ -785,7 +806,11 @@ function handleSettingsKey(e, dir) {
       if (controls[0]) { controls[0].focus(); Sfx.play('hover'); }
       return true;
     }
-    return true; // ↑ ganz oben — nichts darüber (kein Sprung auf „Zurücksetzen")
+    if (dir === 'up') {
+      if (btnBack) { btnBack.focus(); Sfx.play('hover'); }
+      return true;
+    }
+    return true;
   }
 
   if (ctlIndex !== -1) {
@@ -876,8 +901,8 @@ function renderMenu() {
   document.getElementById('guestBanner').hidden = !guest;
   document.getElementById('btnAccount').textContent = guest ? 'Anmelden' : 'Abmelden';
   document.getElementById('partyHint').textContent = guest
-    ? 'Brettspiel-Modus · du + 3 Bots · bald verfügbar'
-    : 'Brettspiel-Modus · 4 Spieler · bald verfügbar';
+    ? 'Minigame-Serie starten · du + 3 Bots'
+    : 'Minigame-Serie starten · bis zu 4 Spieler';
 
   const grid = document.getElementById('minigameGrid');
   grid.innerHTML = '';
@@ -2163,11 +2188,25 @@ function showRanking(isFinal) {
   if (btn) btn.focus();
 }
 
-// Ergebnis einer einzelnen Tutorial-Runde (kein Serien-Ranking).
+// Ergebnis einer einzelnen Tutorial-Runde (kein Serien-Ranking). Adressiert
+// explizit auch die verlierende Person, nicht nur den Sieger — sonst bleibt
+// der Peak-End-Moment für genau die Person stumm, die Rückmeldung am meisten
+// braucht (Impeccable-Critique 2026-09-15, P2).
 function showSingleResult(result) {
   const winner = result && result.winner;
-  document.getElementById('mgResultTitle').textContent =
-    winner ? `${winner.name} gewinnt!` : 'Unentschieden!';
+  const local = currentPlayers.find(p => p.isLocal);
+  let title;
+  if (!winner) {
+    title = 'Unentschieden!';
+  } else if (!local || winner.id === local.id) {
+    title = `${winner.name} gewinnt!`;
+  } else {
+    const rank = (result.placements || []).findIndex(p => p.id === local.id) + 1;
+    title = rank > 0
+      ? `${winner.name} gewinnt — du bist ausgeschieden (Platz ${rank}).`
+      : `${winner.name} gewinnt!`;
+  }
+  document.getElementById('mgResultTitle').textContent = title;
   document.getElementById('btnMgSecondary').textContent = 'Zum Menü';
   document.getElementById('mgResult').hidden = false;
   document.getElementById('btnMgAgain').focus();

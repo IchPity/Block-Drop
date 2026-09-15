@@ -50,6 +50,42 @@
         ],
         "createdAt": "2026-09-14T08:31:00.626Z",
         "reason": "Agent - bounce easing on dice/playful party-UI transitions is genre-appropriate here, disclosed to user"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "block-games/renderer/index.html"
+        ],
+        "createdAt": "2026-09-15T10:46:53.459Z",
+        "reason": "Agent - bereits in DOKUMENTATION.md v0.15.0 als bewusstes Arcade-Stilmittel akzeptiert; bestehender ignore-value-Eintrag griff nicht, erneut gesetzt"
+      },
+      {
+        "rule": "gpt-thin-border-wide-shadow",
+        "value": "*",
+        "files": [
+          "block-games/renderer/style.css"
+        ],
+        "createdAt": "2026-09-15T10:47:59.680Z",
+        "reason": "Agent - durchgesehen: alle Treffer sind die konsistente Karten-Elevation (1px Rand + echter Y-Offset 14-24px + weicher Blur 18-70px auf Schwarz), kein Zero-Offset-Glow; gleiches System auf auth-card/lobby-popup-card/overlay-card/toast, nicht Copy-Paste-Slop"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "block-games/renderer/laser-lines.css"
+        ],
+        "createdAt": "2026-09-15T10:47:59.742Z",
+        "reason": "Agent - Map-Vote-Thumbnails bilden die echte 3D-Kartengeometrie (Laser-Streifen/Gitter/Brücken) in Miniatur ab, funktional statt dekorativ generisch"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "block-games/renderer/block-bomb.css"
+        ],
+        "createdAt": "2026-09-15T10:47:59.805Z",
+        "reason": "Agent - Map-Vote-Thumbnail (Sky-Plattformen-Bruecken-Streifen), gleiche Begruendung wie laser-lines.css"
       }
     ]
   }

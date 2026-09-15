@@ -138,13 +138,20 @@ export function nearestWaypoint(self, world, opts = {}) {
 }
 
 // Wählt den "sichersten" Waypoint relativ zu einer Gefahr-Funktion
-// (z.B. world.laserDanger). Bewertet jeden Kandidaten nach Abstand zur
-// nächsten Gefahr (mehr Abstand = sicherer) minus etwas Reiseweg, damit
-// Bots nicht quer über die Karte zu einem minimal sichereren Punkt rennen.
-// Genutzt für proaktives "Safe-Zone-Seeking" im ROAM-Zustand.
+// (z.B. world.laserDanger) ODER einer Liste von Bedrohungspunkten
+// (z.B. der Bombenträger in Block Bomb). Bewertet jeden Kandidaten nach
+// Abstand zur nächsten Gefahr (mehr Abstand = sicherer) minus etwas Reiseweg,
+// damit Bots nicht quer über die Karte zu einem minimal sichereren Punkt
+// rennen — MINUS einem sanften Sackgassen-Malus für 'corner'-Waypoints
+// (Zonen mit nur einem Fluchtweg, z.B. Sky-Plattformen/Fabrikecken).
+// Bewusst ein Malus, kein Ausschluss (wie bei avoidTags): auf manchen Karten
+// (Sky Warning) sind 'corner'-Plattformen fast die einzigen sicheren Punkte —
+// ein harter Ausschluss würde Bots dann in die gefährlichste Zone zwingen.
+// Genutzt für proaktives "Safe-Zone-Seeking" (ROAM) UND für die Fluchtziel-
+// Wahl (FLEE) in botAI.js.
 export function safestWaypoint(self, world, dangerFn, opts = {}) {
   if (!world?.map?.waypoints?.length) return null;
-  const { avoidTags = ['edge-risk'] } = opts;
+  const { avoidTags = ['edge-risk'], threatPoints, cornerPenalty = 1.6 } = opts;
 
   let candidates = world.map.waypoints;
   if (avoidTags?.length) {
@@ -164,8 +171,13 @@ export function safestWaypoint(self, world, dangerFn, opts = {}) {
       if (dg && typeof dg.dist === 'number') {
         clearance = dg.dist - (dg.active ? 2.0 : 0);
       }
+    } else if (threatPoints?.length) {
+      clearance = Math.min(...threatPoints.map(tp =>
+        Math.hypot(wp.x - tp.x, wp.z - tp.z) / (tp.weight ?? 1)
+      ));
     }
-    const score = clearance - travel * 0.15;
+    const malus = wp.tags?.includes('corner') ? cornerPenalty : 0;
+    const score = clearance - travel * 0.15 - malus;
     if (!best || score > best.score) best = { wp, score };
   }
   return best?.wp || null;

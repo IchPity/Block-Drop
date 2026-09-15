@@ -117,7 +117,13 @@ function computeInterceptTarget(self, target, lastSeenPos, ep, world) {
   if (lastSeenPos) {
     const vx = target.x - lastSeenPos.x;
     const vz = target.z - lastSeenPos.z;
-    const lead = ep.interceptLead ?? 0.3;
+    // Vorhalt nach Entfernung skalieren: auf Distanz lohnt sich, auf den
+    // vorhergesagten Punkt zuzulaufen (mehr Zeit bis zum Zusammentreffen);
+    // kurz vor dem Ziel wird der Vorhalt zurückgenommen, sonst rennt der Bot
+    // knapp dran vorbei statt zuzupacken.
+    const dist = Math.hypot(target.x - self.x, target.z - self.z);
+    const distFactor = Math.max(0.4, Math.min(1.6, dist / 4));
+    const lead = (ep.interceptLead ?? 0.3) * distFactor;
     ax += vx * lead;
     az += vz * lead;
   }

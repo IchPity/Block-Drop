@@ -581,6 +581,82 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
 
 ## Änderungsprotokoll
 
+### v0.17.0 — 2026-09-15
+- **`/impeccable critique` + Fixes auf `renderer/` gelaufen** (Dual-Agent:
+  Design-Review + Detektor, isoliert). Score 30/40 → 34/40 ggü. dem letzten
+  Lauf vom 2026-09-14. Report archiviert in `.impeccable/critique/`.
+  Umgesetzte Punkte:
+  - **[P1] Haupt-CTA widersprach der eigenen Funktion:** `#btnParty` zeigte
+    „Brettspiel-Modus · bald verfügbar", startete aber voll funktionsfähig
+    die fertige Minigame-Serie. Text in `index.html` UND im
+    `renderMenu()`-Override (`app.js`, der den HTML-Text zur Laufzeit
+    überschreibt) auf „Minigame-Serie starten" geändert — der unfertige
+    Brettspiel-Modus wird nicht mehr auf dem auffälligsten Button beworben.
+  - **[P2] Settings-Kopfzeile per Pfeiltasten erreichbar:** „Zurück"/
+    „Zurücksetzen" waren nur per Tab-Taste erreichbar — eine Ausnahme vom
+    sonst durchgängigen Pfeiltasten-Modell, die PRODUCT.mds Prinzip „volle
+    Tastaturbedienbarkeit, keine Ausnahmen" verletzte.
+    `handleSettingsKey()` (`app.js`) behandelt die beiden Header-Buttons
+    jetzt explizit (←/→ wechselt zwischen ihnen, ↓ zurück zum Reiter) und
+    Hoch auf dem obersten Reiter springt jetzt zu „Zurück" statt den Fokus
+    stehen zu lassen.
+  - **[P2] Verlierende Spieler bekamen keine Rückmeldung:**
+    `showSingleResult()` (Tutorial-Ergebnis) zeigte nur „{Gewinner}
+    gewinnt!"/„Unentschieden!" — nichts für die ausgeschiedene Person. Zeigt
+    jetzt zusätzlich die eigene Platzierung („… gewinnt — du bist
+    ausgeschieden (Platz N)."), ermittelt über `result.placements`.
+  - **[P3] Icon-only-Buttons ohne `aria-label`:** ⚙️/⏻/←(×2)/✕ hatten nur
+    `title`, jetzt zusätzlich `aria-label` mit demselben Text.
+  - **[P3] 12 Detektor-Funde `gpt-thin-border-wide-shadow` einzeln
+    durchgesehen** (nicht pauschal freigegeben): alle betroffenen Stellen
+    (`.auth-card`, `.player-badge`, `.minigame-card`, `.lobby-popup-card`,
+    `.overlay-card`, Toast) nutzen konsequent echten Y-Offset (14-24px) +
+    weichen Blur (18-70px) auf Schwarz — das ist die im Projekt etablierte
+    Karten-Elevation, kein Zero-Offset-Glow-Slop. Als `ignore-value` auf
+    `renderer/style.css` festgehalten. Die 1 Fund `repeating-stripes-gradient`
+    sind Map-Vote-Thumbnails, die die echte 3D-Kartengeometrie (Laser-
+    Streifen/Brücken) in Miniatur abbilden — ebenfalls als `ignore-value`
+    auf `laser-lines.css`/`block-bomb.css` festgehalten.
+    Nebenbefund: der Detektor meldet Funde in `style.css`/`laser-lines.css`/
+    `block-bomb.css` fälschlich als `index.html:0` — Tool-Attributionsfehler,
+    kein Design-Problem (nicht behoben, liegt außerhalb dieses Projekts).
+  - **Bewusst offen gelassen** (nicht Teil der Fix-Liste, für später notiert):
+    fehlende `role="dialog"`/`aria-modal` auf Overlays, unverifizierter
+    `--text-dim`-Kontrast, redundante „Melde dich an…"-Texte auf zwei
+    Screens.
+
+### v0.16.0 — 2026-09-15
+- **Bot-KI deutlich klüger (Block Bomb + Laser Lines), Fokus: Sackgassen und
+  Fangen/Entkommen.** Alle Änderungen bleiben innerhalb der Fairness-Regel
+  (gleiche Geschwindigkeit, nur sichtbare Infos) — keine neuen Cheats, nur
+  bessere Entscheidungen.
+  - **`'corner'`-Waypoint-Tag endlich genutzt** (`game/bots/waypoints.js`,
+    `game/bots/botAI.js`): Die Maps markieren Sackgassen-Zonen mit nur einem
+    Fluchtweg (Sky-Plattformen-Ecken, Fabrikecken) schon lange als `'corner'`
+    — bisher hat kein Bot-Codepfad das Tag gelesen. Jetzt sanfter Malus (kein
+    harter Ausschluss, da auf manchen Karten fast nur Eck-Plattformen als
+    „sicher" getaggt sind) sowohl bei der Fluchtziel-Wahl
+    (`safestWaypoint()`, neu wiederverwendbar mit `threatPoints` statt nur
+    `dangerFn`) als auch bei der Kurzstrecken-Ausweich-Abtastung
+    (`chooseEscapeDirection()` → neue `cornerRisk()`-Funktion). Flüchtende
+    Bots suchen jetzt aktiv die offene Mitte statt sich in die Ecke zu
+    drängen.
+  - **`computeFleeDesired()` überarbeitet** (`botAI.js`): blendet jetzt den
+    bedrohungsbewussten `safestWaypoint()`-Zielpunkt ein statt eines simplen
+    „nächster safe-Tag, falls weiter vom Verfolger entfernt"-Fallbacks —
+    berücksichtigt dabei ALLE Bedrohungspunkte, nicht nur den einen Verfolger.
+  - **Vorausschauendere Bomben-Verfolgung** (`block-bomb/bots.js`,
+    `computeInterceptTarget()`): der Vorhalt beim Anpirschen/Abfangen skaliert
+    jetzt mit der Entfernung zum Ziel — auf Distanz wird stärker auf die
+    vorhergesagte Position zugelaufen (mehr Zeit bis zum Zusammentreffen),
+    kurz vor dem Ziel nimmt der Vorhalt ab, damit der Bot nicht knapp
+    vorbeirennt. Vorher fester Vorhalt-Faktor unabhängig von der Distanz.
+  - Verifiziert per Logik-Smoketest (kein Rendering nötig, `bots.js`/
+    `botAI.js`/`waypoints.js` sind reine JS-Module): Bot startet auf einer
+    Eck-Plattform mit Verfolger im Fluchtradius — Ø-Abstand zur Ecke steigt
+    über 10 simulierte Sekunden von 2.16 auf 3.17 (bewegt sich aktiv weg statt
+    zu verharren), keine Exceptions/Abstürze in Block Bomb oder Laser Lines.
+
 ### v0.15.0 — 2026-09-14
 - **PRODUCT.md angelegt** (`/impeccable init`) — Zielgruppe (solo gegen Bots
   UND Couch-Mehrspieler mit Bot-Auffüllung), spätere breitere Verteilung,

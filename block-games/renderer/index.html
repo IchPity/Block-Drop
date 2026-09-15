@@ -103,9 +103,9 @@
           <span class="avatar" id="menuAvatar">?</span>
           <span id="menuUsername">…</span>
         </button>
-        <button class="btn btn-ghost btn-gear" id="btnSettings" title="Einstellungen" data-nav="main_settings">⚙️</button>
+        <button class="btn btn-ghost btn-gear" id="btnSettings" title="Einstellungen" aria-label="Einstellungen" data-nav="main_settings">⚙️</button>
         <button class="btn btn-ghost" id="btnAccount" data-nav="main_account">Abmelden</button>
-        <button class="btn btn-ghost btn-gear btn-quit" id="btnQuit" title="Spiel beenden" data-nav="main_power">⏻</button>
+        <button class="btn btn-ghost btn-gear btn-quit" id="btnQuit" title="Spiel beenden" aria-label="Spiel beenden" data-nav="main_power">⏻</button>
       </div>
     </header>
 
@@ -125,7 +125,7 @@
         <span class="party-btn-icon" aria-hidden="true">🎲</span>
         <span class="party-btn-text">
           <strong>Spielen</strong>
-          <small id="partyHint">Brettspiel-Modus · 4 Spieler · bald verfügbar</small>
+          <small id="partyHint">Minigame-Serie starten · bis zu 4 Spieler</small>
         </span>
         <span class="party-btn-go" aria-hidden="true">▶</span>
       </button>
@@ -149,7 +149,7 @@
   <div id="screen-credits" class="screen">
     <div class="credits-wrap">
       <header class="credits-header">
-        <button class="btn btn-back" id="btnCreditsBack" title="Zurück zum Menü">←</button>
+        <button class="btn btn-back" id="btnCreditsBack" title="Zurück zum Menü" aria-label="Zurück zum Menü">←</button>
         <div class="credits-title">
           <h1 class="game-logo small">CREDITS</h1>
           <p class="credits-sub">Block Games · Party Arcade</p>
@@ -218,7 +218,7 @@
   <div id="screen-settings" class="screen">
     <div class="settings-wrap">
       <header class="settings-header">
-        <button class="btn btn-back" id="btnSettingsBack" title="Zurück zum Menü">←</button>
+        <button class="btn btn-back" id="btnSettingsBack" title="Zurück zum Menü" aria-label="Zurück zum Menü">←</button>
         <h1 class="game-logo small">EINSTELLUNGEN</h1>
         <button class="btn btn-ghost" id="btnSettingsReset">Zurücksetzen</button>
       </header>
@@ -358,7 +358,7 @@
           <strong id="accUsername">…</strong>
           <small id="accEmail"></small>
         </div>
-        <button class="btn btn-back account-close" id="btnAccountClose" title="Schließen">✕</button>
+        <button class="btn btn-back account-close" id="btnAccountClose" title="Schließen" aria-label="Schließen">✕</button>
       </header>
 
       <div class="account-body">

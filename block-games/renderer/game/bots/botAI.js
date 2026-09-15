@@ -8,7 +8,7 @@
 
 'use strict';
 
-import { pickWaypoint, nearestWaypoint, isAtWaypoint } from './waypoints.js';
+import { pickWaypoint, nearestWaypoint, isAtWaypoint, safestWaypoint } from './waypoints.js';
 
 export const BotState = Object.freeze({
   IDLE: 'idle',
@@ -234,20 +234,17 @@ export function createBotMover(profile) {
 
   function computeFleeDesired(self, world, decision, mover, profile) {
     if (!decision.targetPos) return updateWander(mover, profile);
-    let desired = norm(self.x - decision.targetPos.x, self.z - decision.targetPos.z);
-    // Blend in safe waypoint if available
+    const desired = norm(self.x - decision.targetPos.x, self.z - decision.targetPos.z);
+    // Kartenwissen statt blindem Rückwärtslaufen: den (mehrere Bedrohungen
+    // berücksichtigenden, sackgassen-gemiedenen) sichersten Waypoint mit
+    // einblenden statt nur nächstgelegenen "safe"-Tag zu nehmen.
     if (world.map.waypoints?.length) {
-      const safeWp = nearestWaypoint(self, world, { preferTags: ['safe'] });
+      const safeWp = safestWaypoint(self, world, decision.dangerFn || null, {
+        threatPoints: decision.threatPoints || [{ x: decision.targetPos.x, z: decision.targetPos.z, weight: 1 }],
+      });
       if (safeWp) {
-        const dToTarget = Math.hypot(safeWp.x - decision.targetPos.x, safeWp.z - decision.targetPos.z);
-        const dFromTarget = Math.hypot(self.x - decision.targetPos.x, self.z - decision.targetPos.z);
-        if (dToTarget > dFromTarget * 0.8) {
-          // Safe waypoint is further from target → bias toward it
-          const toSafe = norm(safeWp.x - self.x, safeWp.z - self.z);
-          desired.x = desired.x * 0.6 + toSafe.x * 0.4;
-          desired.z = desired.z * 0.6 + toSafe.z * 0.4;
-          desired = norm(desired.x, desired.z);
-        }
+        const toSafe = norm(safeWp.x - self.x, safeWp.z - self.z);
+        return norm(desired.x * 0.55 + toSafe.x * 0.45, desired.z * 0.55 + toSafe.z * 0.45);
       }
     }
     return desired;
@@ -277,12 +274,30 @@ export function createBotMover(profile) {
     return isFinite(minD) ? minD : 99;
   }
 
+  // Abstand zum nächsten 'corner'-Waypoint (Sackgassen-Zone mit nur einem
+  // Fluchtweg) an Punkt (x,z), normiert auf 0..1 (1 = direkt drauf). Sanfter
+  // Malus für die Fluchtabtastung — kein Ausschluss —, damit Bots beim
+  // Ausweichen nicht aus Versehen in eine Ecke rennen, wenn eine offenere
+  // Richtung vergleichbar sicher ist.
+  function cornerRisk(px, pz, world) {
+    const wps = world.map.waypoints;
+    if (!wps?.length) return 0;
+    let minD = Infinity;
+    for (const wp of wps) {
+      if (!wp.tags?.includes('corner')) continue;
+      const d = Math.hypot(px - wp.x, pz - wp.z);
+      if (d < minD) minD = d;
+    }
+    return isFinite(minD) ? Math.max(0, 2.5 - minD) / 2.5 : 0;
+  }
+
   // Sampling-basierte Fluchtrichtung: probt mehrere Richtungen, bewertet jede
   // nach Abstand zu ALLEN Bedrohungen am Probe-Punkt, verwirft Richtungen, die
-  // in den Abgrund oder gegen Wände führen, und meidet Kartenränder. Dadurch
-  // weicht der Bot SEITLICH aus statt blind rückwärts in einen zweiten Laser /
-  // über die Kante zu laufen. Fällt auf computeFleeDesired zurück, falls keine
-  // Richtung brauchbar ist.
+  // in den Abgrund oder gegen Wände führen, und meidet Kartenränder UND
+  // Sackgassen ('corner'-Waypoints). Dadurch weicht der Bot SEITLICH aus statt
+  // blind rückwärts in einen zweiten Laser / über die Kante / in eine Ecke zu
+  // laufen. Fällt auf computeFleeDesired zurück, falls keine Richtung brauchbar
+  // ist.
   function chooseEscapeDirection(self, world, decision, profile) {
     const away = computeFleeDesired(self, world, decision, mover, profile);
 
@@ -319,7 +334,7 @@ export function createBotMover(profile) {
         edgePen = Math.hypot(e.x, e.z);
       }
       const awayBias = dir.x * away.x + dir.z * away.z;
-      const score = clearance - edgePen * 2.0 + awayBias * 0.5;
+      const score = clearance - edgePen * 2.0 + awayBias * 0.5 - cornerRisk(px, pz, world) * 1.2;
       if (!best || score > best.score) best = { dir, score };
     }
 
