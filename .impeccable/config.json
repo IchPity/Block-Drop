@@ -10,7 +10,7 @@
           "block-games/renderer/index.html"
         ],
         "createdAt": "2026-09-14T08:30:53.714Z",
-        "reason": "Agent - arcade card accent stripes, deliberate genre choice, disclosed to user"
+        "reason": "Agent - bereits in DOKUMENTATION.md v0.15.0 als bewusstes Arcade-Stilmittel akzeptiert; bestehender ignore-value-Eintrag (2026-09-14) griff nicht, erneut gesetzt (gleiches Muster wie dark-glow heute)"
       },
       {
         "rule": "side-tab",
@@ -86,6 +86,33 @@
         ],
         "createdAt": "2026-09-15T10:47:59.805Z",
         "reason": "Agent - Map-Vote-Thumbnail (Sky-Plattformen-Bruecken-Streifen), gleiche Begruendung wie laser-lines.css"
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "*",
+        "files": [
+          "block-games/renderer/index.html"
+        ],
+        "createdAt": "2026-09-15T10:58:08.646Z",
+        "reason": "Agent - bereits in DOKUMENTATION.md v0.15.0 als bewusstes Arcade-Stilmittel akzeptiert; bestehender ignore-value-Eintrag (2026-09-14, nur als index.html+style.css-Sammel-Eintrag) griff nicht, jetzt einzeln pro Datei gesetzt"
+      },
+      {
+        "rule": "gpt-thin-border-wide-shadow",
+        "value": "*",
+        "files": [
+          "block-games/renderer/index.html"
+        ],
+        "createdAt": "2026-09-15T10:58:35.033Z",
+        "reason": "Agent - gleicher Fund wie vorhin auf style.css durchgesehen (Karten-Elevation-System), Detektor attribuiert CSS-Treffer wegen Tool-Bug faelschlich auf index.html:0"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "block-games/renderer/index.html"
+        ],
+        "createdAt": "2026-09-15T10:58:35.095Z",
+        "reason": "Agent - gleicher Fund wie vorhin auf laser-lines.css/block-bomb.css durchgesehen (funktionale Map-Thumbnails), Detektor attribuiert faelschlich auf index.html:0"
       }
     ]
   }
