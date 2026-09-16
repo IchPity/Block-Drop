@@ -51,7 +51,8 @@ Hinweis: Node.js liegt portabel auf `D:\` (`D:\node.exe`).
 | `renderer/block-bomb.css` | Optik **Block Bomb**: Canvas-Bühne + In-Game-HUD (Timer/Namensschilder/Meldungen, Map-Intro) + Block-Bomb-Map-Thumbnails (`.mg-thumb-block-bomb-*`). Die Voting-/Countdown-/Ergebnis-Overlays sind generisch (`.mg-*` in `style.css`) |
 | `renderer/laser-lines.css` | Optik **Laser Lines**: Canvas-Bühne + In-Game-HUD (Leben/Tempo/Warnbanner/Treffer-Vignette/Namensschilder, Map-Intro) + Laser-Map-Thumbnails (`.mg-thumb-laser-lines-*`) |
 | `renderer/game/` | **Spiel-agnostische, von ALLEN Minigames geteilte Bausteine**: `characters.js` (blockige 3D-Figur `BlockCharacter` + `setHolderGlow/flash/explode/setInvulnBlink/setEliminated`), `controllers.js` (`LocalHumanController`/`RemoteController` + generischer `BotController(brain)`), `bots/botAI.js`, `bots/waypoints.js` |
-| `renderer/game/bots/botAI.js` | **Generische, wiederverwendbare Bot-KI** (für alle Minigames): Zustandsautomaten (CHASE/FLEE/ROAM/AVOID_EDGE/UNSTUCK), Anti-Stuck-Erkennung, Wand-/Ecken-Vermeidung, Steering, optionaler Debug-Modus |
+| `renderer/game/bots/botAI.js` | **Generische, wiederverwendbare Bot-KI** (für alle Minigames): Zustandsautomaten (CHASE/FLEE/ROAM/AVOID_EDGE/UNSTUCK), Anti-Stuck-Erkennung, Wand-/Ecken-Vermeidung, Steering, optionaler Debug-Modus, **Utility-Scoring für Zielwahl**, **Gefahren-Lookahead** (`decision.predictedHazards`), **leichtgewichtige Bot-Koordination** (Ziel-Claims über `world.map`) |
+| `renderer/game/bots/memory.js` | **Räumliches Match-Gedächtnis** (`createZoneMemory`): Bots merken sich WÄHREND eines Matches erlebte Gefahrenzonen (z.B. Stellen, an denen sie feststeckten) mit sanftem, abklingendem Malus — ergänzt die statischen `corner`-Kartentags um echtes Laufzeit-Lernen. Pro Bot-Mover = automatisch pro Match frisch |
 | `renderer/block-bomb/` | **Block-Bomb-Spielkern** (ES-Module): `main.js` (Szene/Renderer/Schleife/Runden + HUD + Map-Intro + Platzierungen), `maps.js` (3 Maps), `bomb.js` (Bombe), `bots.js` (per-Game Adapter für `botAI.js`). Figur + Controller kommen aus `renderer/game/` |
 | `renderer/laser-lines/` | **Laser-Lines-Spielkern** (ES-Module): `main.js` (Szene/Schleife/Leben/Treffer/HUD, `window.LaserLines`), `maps.js` (3 Maps + `LASER_MAP_META` + Laser-Configs), `lasers.js` (Laser-System `warning→active→cooldown` + `LaserDirector`), `bots.js` (per-Game Adapter für `botAI.js`). Figur + Controller aus `renderer/game/` |
 | `renderer/vendor/three.module.js` | Lokal eingebundenes **Three.js (r160)** für die 3D-Darstellung (kein CDN — CSP `default-src 'self'`, offline-fähig) |
@@ -580,6 +581,39 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
   Klartext — gleicher Key wie die Website, RLS schützt die Daten.
 
 ## Änderungsprotokoll
+
+### v0.18.0 — 2026-09-16
+- **Bot-KI Phase 1 — Kern-Modul (`botAI.js`), ohne Adapter-Änderungen:**
+  - **Utility-Scoring für Zielwahl:** Neuer, optionaler `decision.candidateGoals`-
+    Kanal (`[{id, position, baseValue}]`). Meldet ein Adapter Kandidaten, wählt
+    ROAM/CHASE den nach Distanz, gelernter Gefahr und Koordinations-Malus am
+    besten bewerteten statt des ersten Treffers. Ohne `candidateGoals` (aktuell
+    beide Spiele) unverändertes Verhalten.
+  - **Gefahren-Lookahead:** Neuer, optionaler `decision.predictedHazards`-Kanal
+    (`[{zone:{x,z,radius}, severity, expiresAt}]`) nach dem Adapter-Contract aus
+    Abschnitt 6 des Umsetzungsauftrags. FLEE-Sampling, AVOID_EDGE und die
+    allgemeine Gefahren-Abstoßung (`computeDanger`) bewerten künftig auch
+    prognostizierte statt nur aktuelle Gefahrenquellen — wird erst mit Phase 2/3
+    (Block Bomb: Kettenexplosionen; Laser Lines: Lookahead-Anbindung) aktiv befüllt.
+  - **Räumliches Match-Gedächtnis (`memory.js`, neu):** Ergänzt die statischen
+    `corner`-Kartentags aus v0.16.0 um echtes Laufzeit-Lernen — steckt ein Bot
+    wiederholt fest und wird per Hard-Stuck-Eskalation teleportiert, merkt er
+    sich die alte Stelle für den Rest des Matches als Falle (sanfter, mit der Zeit
+    abklingender Malus in Zielwahl/Flucht/Teleport-Ziel). Pro Bot-Mover-Instanz,
+    dadurch automatisch pro Match frisch.
+  - **Leichtgewichtige Bot-Koordination:** Gemeinsames, kurzlebiges Ziel-Claim-
+    Register an `world.map` (über ein ganzes Match hinweg dieselbe Instanz,
+    anders als `world` selbst). Visiert ein Bot gerade ein Ziel an, das ein
+    anderer Bot desselben Matches ebenfalls anvisiert, bekommt es einen leichten
+    Malus — verhindert, dass sich Bots auf demselben Wegpunkt stapeln. Kein
+    Multi-Agent-Pathfinding.
+  - **Verifiziert per Logik- + Adapter-Regressionstest ohne Rendering:** neue
+    Kern-Mechanik (Utility-Scoring, Gedächtnis-Markierung, Hazard-Ausweichen,
+    Koordination) sowie 200-Frame-Läufe beider **unveränderter** Adapter
+    (Block Bomb, Laser Lines) auf allen drei Schwierigkeitsgraden — keine
+    Crashes/NaN, bestehendes Verhalten bleibt erhalten.
+  - Adapter (`block-bomb/bots.js`, `laser-lines/bots.js`) bewusst **nicht**
+    angefasst — folgt getrennt in Phase 2/3 des Umsetzungsauftrags.
 
 ### v0.17.0 — 2026-09-15
 - **`/impeccable critique` + Fixes auf `renderer/` gelaufen** (Dual-Agent:

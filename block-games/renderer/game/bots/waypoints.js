@@ -30,6 +30,8 @@ export function pickWaypoint(self, world, opts = {}) {
     preferTags,
     avoidDirection,
     randomness = 0,
+    zoneMemory,
+    claims,
   } = opts;
 
   let candidates = world.map.waypoints;
@@ -64,7 +66,15 @@ export function pickWaypoint(self, world, opts = {}) {
       }
     }
 
-    return { wp, d, weight: weight + bonus };
+    // Gelernter Malus (Sackgassen/Fallen aus dieser Match-Session) — weicher
+    // Abzug, kein Ausschluss, gleiches Prinzip wie der 'corner'-Tag-Malus.
+    let malus = 0;
+    if (zoneMemory) malus += zoneMemory.penaltyAt(wp.x, wp.z) * 0.25;
+    // Koordination: von einem anderen Bot gerade anvisierte Ziele leicht meiden,
+    // damit sich Bots nicht auf demselben Wegpunkt stapeln.
+    if (claims && isClaimedByOther(claims, wp.id, opts.selfId)) malus += 0.25;
+
+    return { wp, d, weight: Math.max(0.01, weight + bonus - malus) };
   });
 
   // Decide: prefer-bucket or all?
@@ -96,7 +106,30 @@ export function pickWaypoint(self, world, opts = {}) {
     }
   }
 
+  if (chosen?.wp && claims) claim(claims, chosen.wp.id, opts.selfId);
   return chosen?.wp || null;
+}
+
+// ─── Leichtgewichtige Bot-Koordination ──────────────────────────────
+// Ein gemeinsames claims-Register (z.B. an world.map gehängt, damit alle
+// Bots eines Matches dieselbe Instanz sehen) merkt sich kurzzeitig, welcher
+// Bot zuletzt welches Ziel anvisiert hat. Kein Pathfinding, nur ein sanfter
+// Malus gegen "alle rennen zum selben Wegpunkt/Item".
+export function createClaimRegistry() {
+  return new Map(); // id -> { botId, t }
+}
+
+function isClaimedByOther(claims, id, selfId) {
+  if (id == null) return false;
+  const c = claims.get(id);
+  if (!c) return false;
+  if (Date.now() - c.t > 2000) { claims.delete(id); return false; }
+  return c.botId !== selfId;
+}
+
+function claim(claims, id, selfId) {
+  if (id == null || selfId == null) return;
+  claims.set(id, { botId: selfId, t: Date.now() });
 }
 
 export function nearestWaypoint(self, world, opts = {}) {
@@ -151,7 +184,7 @@ export function nearestWaypoint(self, world, opts = {}) {
 // Wahl (FLEE) in botAI.js.
 export function safestWaypoint(self, world, dangerFn, opts = {}) {
   if (!world?.map?.waypoints?.length) return null;
-  const { avoidTags = ['edge-risk'], threatPoints, cornerPenalty = 1.6 } = opts;
+  const { avoidTags = ['edge-risk'], threatPoints, cornerPenalty = 1.6, zoneMemory } = opts;
 
   let candidates = world.map.waypoints;
   if (avoidTags?.length) {
@@ -176,7 +209,8 @@ export function safestWaypoint(self, world, dangerFn, opts = {}) {
         Math.hypot(wp.x - tp.x, wp.z - tp.z) / (tp.weight ?? 1)
       ));
     }
-    const malus = wp.tags?.includes('corner') ? cornerPenalty : 0;
+    let malus = wp.tags?.includes('corner') ? cornerPenalty : 0;
+    if (zoneMemory) malus += zoneMemory.penaltyAt(wp.x, wp.z);
     const score = clearance - travel * 0.15 - malus;
     if (!best || score > best.score) best = { wp, score };
   }

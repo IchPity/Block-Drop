@@ -9,6 +9,7 @@
 'use strict';
 
 import { pickWaypoint, nearestWaypoint, isAtWaypoint, safestWaypoint } from './waypoints.js';
+import { createZoneMemory } from './memory.js';
 
 export const BotState = Object.freeze({
   IDLE: 'idle',
@@ -49,6 +50,85 @@ function shuffle(arr) {
   return a;
 }
 
+function nowMs() {
+  return (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+}
+
+// Bewertet einen Punkt gegen vom Adapter gemeldete PROGNOSTIZIERTE Gefahren
+// (decision.predictedHazards, Form: { zone: {x,z,radius}, severity, expiresAt }
+// — siehe Adapter-Contract). Größer = gefährlicher, 0 = keine bekannte
+// zukünftige Gefahr an diesem Punkt. Rein additiv zur aktuellen Gefahrenlage
+// (world.obstacles/dangerFn) — Adapter, die predictedHazards nicht melden,
+// verhalten sich unverändert.
+function predictedHazardPenalty(x, z, predictedHazards) {
+  if (!predictedHazards?.length) return 0;
+  const t = nowMs();
+  let malus = 0;
+  for (const h of predictedHazards) {
+    if (h.expiresAt != null && h.expiresAt < t) continue;
+    const zone = h.zone;
+    if (!zone) continue;
+    const r = zone.radius ?? 1;
+    const eff = r + 1.2;
+    const d = Math.hypot(x - zone.x, z - zone.z);
+    if (d < eff) malus += (h.severity ?? 1) * (1 - d / eff);
+  }
+  return malus;
+}
+
+// ─── Leichtgewichtige Ziel-Koordination zwischen Bots ───────────────
+// world.map ist (anders als world selbst, das jeden Frame neu gebaut wird)
+// über ein ganzes Match hinweg dieselbe Instanz und wird von allen Bots
+// geteilt — idealer Ort für ein kurzlebiges "wer visiert gerade was an"-
+// Register, ohne dass Adapter dafür etwas Eigenes verdrahten müssen.
+function getClaims(world) {
+  if (!world?.map) return null;
+  if (!world.map._botGoalClaims) world.map._botGoalClaims = new Map();
+  return world.map._botGoalClaims;
+}
+
+function isClaimedByOther(world, goalId, selfId) {
+  if (goalId == null) return false;
+  const claims = getClaims(world);
+  if (!claims) return false;
+  const c = claims.get(goalId);
+  if (!c) return false;
+  if (nowMs() - c.t > 2000) { claims.delete(goalId); return false; }
+  return c.botId !== selfId;
+}
+
+function claimGoal(world, goalId, selfId) {
+  if (goalId == null || selfId == null) return;
+  const claims = getClaims(world);
+  if (!claims) return;
+  claims.set(goalId, { botId: selfId, t: nowMs() });
+}
+
+// ─── Utility-Scoring für Zielwahl (ROAM/CHASE) ──────────────────────
+// Ersetzt "erster Treffer nach fester Priorität" durch eine gewichtete
+// Bewertung mehrerer Kandidaten. Adapter melden Kandidaten über
+// decision.candidateGoals = [{ id, position:{x,z}, baseValue }]; ohne
+// candidateGoals bleibt das bisherige Waypoint-/Zielverhalten unverändert.
+function scoreCandidateGoal(self, world, candidate, profile, memory) {
+  const d = Math.hypot(candidate.position.x - self.x, candidate.position.z - self.z);
+  const distPenalty = d * (profile.goalDistanceWeight ?? 0.15);
+  const hazardMalus = memory.penaltyAt(candidate.position.x, candidate.position.z) * (profile.goalHazardWeight ?? 1.5);
+  const claimMalus = isClaimedByOther(world, candidate.id, self.id) ? (profile.goalClaimPenalty ?? 0.8) : 0;
+  const noise = (Math.random() * 2 - 1) * (profile.scoringNoise ?? 0);
+  return (candidate.baseValue ?? 1) - distPenalty - hazardMalus - claimMalus + noise;
+}
+
+function pickBestGoal(self, world, candidates, profile, memory) {
+  if (!candidates?.length) return null;
+  let best = null;
+  for (const c of candidates) {
+    const score = scoreCandidateGoal(self, world, c, profile, memory);
+    if (!best || score > best.score) best = { candidate: c, score };
+  }
+  if (best) claimGoal(world, best.candidate.id, self.id);
+  return best;
+}
+
 const DIRS_8 = [
   { x: 1, z: 0 },
   { x: 1, z: 1 },
@@ -61,6 +141,11 @@ const DIRS_8 = [
 ].map(d => norm(d.x, d.z));
 
 export function createBotMover(profile) {
+  // Läuft so lange wie dieser Mover (= ein Bot für ein Match) — dadurch
+  // automatisch pro Match frisch, ohne dass Adapter explizit zurücksetzen
+  // müssen (siehe _initPlayers()/makeBotBrain() in den Spiel-mains).
+  const memory = createZoneMemory();
+
   const mover = {
     state: BotState.IDLE,
     velocity: { x: 0, z: 0 },
@@ -109,7 +194,7 @@ export function createBotMover(profile) {
     return getRandomFreeDirection(self, world);
   }
 
-  function computeDanger(self, world, profile) {
+  function computeDanger(self, world, profile, decision) {
     let ax = 0, az = 0;
     const list = world.obstacles || [];
     for (const o of list) {
@@ -118,6 +203,22 @@ export function createBotMover(profile) {
       const safe = o.r + 1.4;
       if (d < safe && d > 1e-3) {
         const push = (safe - d) / safe;
+        ax += (dx / d) * push;
+        az += (dz / d) * push;
+      }
+    }
+    // Prognostizierte Gefahren (z.B. Bomben-Explosionsradius, sich
+    // ausbreitende Laserwand) wirken wie Hindernisse mit weichem Rand —
+    // Bots weichen ihnen schon aus, bevor sie aktiv werden.
+    for (const h of decision?.predictedHazards || []) {
+      if (h.expiresAt != null && h.expiresAt < nowMs()) continue;
+      const zone = h.zone;
+      if (!zone) continue;
+      const dx = self.x - zone.x, dz = self.z - zone.z;
+      const d = Math.hypot(dx, dz);
+      const safe = (zone.radius ?? 1) + 1.4;
+      if (d < safe && d > 1e-3) {
+        const push = ((safe - d) / safe) * (h.severity ?? 1);
         ax += (dx / d) * push;
         az += (dz / d) * push;
       }
@@ -199,6 +300,12 @@ export function createBotMover(profile) {
   }
 
   function computeRoamDesired(self, world, mover, profile, decision = {}) {
+    // Adapter meldet mehrere valide Ziele (Items, Wegpunkte, Gegner) mit
+    // Grundwert → Utility-Scoring wählt das beste statt des ersten Treffers.
+    if (decision.candidateGoals?.length) {
+      const best = pickBestGoal(self, world, decision.candidateGoals, profile, memory);
+      if (best) return norm(best.candidate.position.x - self.x, best.candidate.position.z - self.z);
+    }
     // Adapter-vorgegebenes Ziel (z.B. Safe-Zone-Seeking in Laser Lines):
     // direkt ansteuern, bis erreicht — überschreibt die Zufalls-Waypoints.
     if (decision.preferredWaypoint) {
@@ -219,6 +326,9 @@ export function createBotMover(profile) {
           avoidTags: ['edge-risk'],
           randomness: profile.waypointRandomness ?? 0.25,
           avoidDirection: decision.avoidDirection,
+          zoneMemory: memory,
+          claims: getClaims(world),
+          selfId: self.id,
         });
       }
       if (mover.currentWaypoint) {
@@ -241,6 +351,7 @@ export function createBotMover(profile) {
     if (world.map.waypoints?.length) {
       const safeWp = safestWaypoint(self, world, decision.dangerFn || null, {
         threatPoints: decision.threatPoints || [{ x: decision.targetPos.x, z: decision.targetPos.z, weight: 1 }],
+        zoneMemory: memory,
       });
       if (safeWp) {
         const toSafe = norm(safeWp.x - self.x, safeWp.z - self.z);
@@ -334,22 +445,36 @@ export function createBotMover(profile) {
         edgePen = Math.hypot(e.x, e.z);
       }
       const awayBias = dir.x * away.x + dir.z * away.z;
-      const score = clearance - edgePen * 2.0 + awayBias * 0.5 - cornerRisk(px, pz, world) * 1.2;
+      // Gegen prognostizierte Gefahren bewerten (z.B. Kettenexplosion, sich
+      // ausbreitende Laserwand), nicht nur die aktuelle Lage — plus das
+      // gelernte Match-Gedächtnis (Fallen aus früheren Stuck-Eskalationen).
+      const hazardPen = predictedHazardPenalty(px, pz, decision.predictedHazards);
+      const memoryPen = memory.penaltyAt(px, pz);
+      const score = clearance - edgePen * 2.0 + awayBias * 0.5
+        - cornerRisk(px, pz, world) * 1.2 - hazardPen * 1.5 - memoryPen;
       if (!best || score > best.score) best = { dir, score };
     }
 
     return best ? best.dir : away;
   }
 
-  function computeAvoidEdgeDesired(self, world, mover) {
+  function computeAvoidEdgeDesired(self, world, mover, decision = {}) {
     if (world.map.steerToSafety) {
       const edge = world.map.steerToSafety(self.x, self.z);
       const l = Math.hypot(edge.x, edge.z);
-      if (l > 1e-3) return norm(edge.x, edge.z);
+      // Gegen prognostizierte Gefahren bewerten: läuft der reine Kanten-Steer
+      // geradewegs in eine vorhergesagte Gefahrenzone, lieber den (gedächtnis-
+      // bewussten) sichersten Waypoint nehmen statt blind der Kante zu folgen.
+      const runsIntoHazard = l > 1e-3
+        && predictedHazardPenalty(self.x + edge.x, self.z + edge.z, decision.predictedHazards) > 0.3;
+      if (l > 1e-3 && !runsIntoHazard) return norm(edge.x, edge.z);
     }
     // Fallback: toward nearest safe waypoint
     if (world.map.waypoints?.length) {
-      const safeWp = nearestWaypoint(self, world, { preferTags: ['safe'] });
+      const safeWp = safestWaypoint(self, world, decision.dangerFn || null, {
+        threatPoints: decision.threatPoints,
+        zoneMemory: memory,
+      });
       if (safeWp) {
         return norm(safeWp.x - self.x, safeWp.z - self.z);
       }
@@ -365,6 +490,10 @@ export function createBotMover(profile) {
       case BotState.ROAM:
         return computeRoamDesired(self, world, mover, profile, decision);
       case BotState.CHASE:
+        if (decision.candidateGoals?.length) {
+          const best = pickBestGoal(self, world, decision.candidateGoals, profile, memory);
+          if (best) return norm(best.candidate.position.x - self.x, best.candidate.position.z - self.z);
+        }
         if (decision.targetPos) {
           return norm(decision.targetPos.x - self.x, decision.targetPos.z - self.z);
         }
@@ -377,7 +506,7 @@ export function createBotMover(profile) {
       case BotState.FLEE:
         return chooseEscapeDirection(self, world, decision, profile);
       case BotState.AVOID_EDGE:
-        return computeAvoidEdgeDesired(self, world, mover);
+        return computeAvoidEdgeDesired(self, world, mover, decision);
       case BotState.UNSTUCK:
         return mover.recoveryDir || getRandomFreeDirection(self, world);
       default:
@@ -421,8 +550,19 @@ export function createBotMover(profile) {
       if (mover.recoveryTimer <= 0) {
         // Recovery period ended
         if (mover.repeatedStuckCount >= (profile.hardStuckThreshold ?? 3)) {
-          // Hard stuck → teleport to safe waypoint
-          const safeWp = nearestWaypoint(self, world, { preferTags: ['safe'] });
+          // Gelerntes räumliches Gedächtnis: diese Stelle hat den Bot wiederholt
+          // feststecken lassen — merken, damit Ziel-/Fluchtwahl sie künftig in
+          // dieser Match-Session meidet, statt sie bei jedem erneuten Betreten
+          // neu zu "entdecken".
+          memory.markZone(
+            `trap_${Math.round(self.x)}_${Math.round(self.z)}`,
+            self.x, self.z, 'trap', 45000, 1.4,
+          );
+          // Hard stuck → zum sichersten Waypoint teleportieren (gedächtnis-
+          // bewusst, damit nicht in dieselbe oder eine andere bekannte Falle
+          // teleportiert wird).
+          const safeWp = safestWaypoint(self, world, null, { zoneMemory: memory })
+            || nearestWaypoint(self, world, { preferTags: ['safe'] });
           if (safeWp) {
             self.x = safeWp.x;
             self.z = safeWp.z;
@@ -461,7 +601,7 @@ export function createBotMover(profile) {
     let desired = computeDesiredForState(mover.state, self, world, decision, mover, profile);
 
     // Danger (obstacle/edge repulsion)
-    const danger = computeDanger(self, world, profile);
+    const danger = computeDanger(self, world, profile, decision);
     desired = applyWallGliding(desired, danger);
 
     // For PASS_BOMB, reduce danger contribution (more committed approach)
@@ -498,6 +638,7 @@ export function createBotMover(profile) {
         repeatedStuckCount: mover.repeatedStuckCount,
         desired: { x: desired.x, z: desired.z },
         actual: { x: mover.velocity.x, z: mover.velocity.z },
+        memoryZones: memory.size(),
       };
     }
 
@@ -505,5 +646,8 @@ export function createBotMover(profile) {
     return norm(mover.velocity.x, mover.velocity.z);
   }
 
-  return { update, setDebugBots };
+  // markHazard: Adapter-Hook, um Ereignisse (z.B. eigene Explosion, Tod an
+  // dieser Stelle) direkt ins Match-Gedächtnis zu melden, ohne dass der
+  // Adapter selbst eine Zonen-Datenstruktur verwalten muss.
+  return { update, setDebugBots, markHazard: memory.markZone };
 }
