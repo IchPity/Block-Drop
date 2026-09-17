@@ -77,6 +77,22 @@ const Sfx = (() => {
                      ['triangle', 1047,1047,0.30, 0.20, 0.34]],
     // Schwierigkeit steigt: kurzer Aufwärts-Sweep.
     laserSpeedUp:   [['triangle', 600, 1100, 0, 0.16, 0.26]],
+
+    // ── Block Rush ──────────────────────────────────────────────────────
+    // Teil rastet ein: trockener, kurzer Klopfer.
+    rushLock:     [['square', 200, 140, 0, 0.06, 0.28]],
+    // Turm stürzt ein: tiefes, polterndes Rumpeln (mehrschichtig).
+    rushCollapse: [['sawtooth', 180, 40, 0,    0.5,  0.34],
+                   ['square',   110, 30, 0.05, 0.45, 0.26],
+                   ['sawtooth', 70,  25, 0.12, 0.4,  0.2]],
+    // Spell eingesetzt: kurzer magischer Funkel-Sweep.
+    rushSpell:    [['triangle', 500, 1200, 0, 0.14, 0.3],
+                   ['sine',     1200, 900, 0.05, 0.1, 0.18]],
+    // Sieg: aufsteigendes Arpeggio (wie die anderen Spiele, eigene Tonlage).
+    rushWin:      [['triangle', 494, 494, 0,    0.10, 0.34],
+                   ['triangle', 622, 622, 0.10, 0.10, 0.34],
+                   ['triangle', 740, 740, 0.20, 0.10, 0.34],
+                   ['triangle', 988, 988, 0.30, 0.20, 0.34]],
   };
 
   function play(name, channel = 'sfx') {

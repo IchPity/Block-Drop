@@ -79,7 +79,7 @@ am Ende in die Repo-Struktur integriert wird.
 | ID | Name | Idee | Status |
 |----|------|------|--------|
 | block-bomb | Block Bomb | Bombe weitergeben, wer hochgeht fliegt raus | ✅ v0.10.0 |
-| block-rush | Block Rush | Blöcke schneller stapeln als die Gegner | Platzhalter |
+| block-rush | Block Rush | Blöcke schneller stapeln als die Gegner | ✅ v0.22.0 |
 | coin-grab | Coin Grab | In begrenzter Zeit Münzen einsammeln | Platzhalter |
 | memory-clash | Memory Clash | Sequenzen merken, wer zuerst patzt fliegt | Platzhalter |
 | speed-tap | Speed Tap | Reaktionsduell | Platzhalter |

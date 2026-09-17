@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="block-bomb.css">
   <link rel="stylesheet" href="laser-lines.css">
+  <link rel="stylesheet" href="block-rush.css">
 </head>
 <body>
 
@@ -456,6 +457,9 @@
   <div id="screen-laser-lines" class="screen">
     <div id="laserStage" class="laser-stage"></div>
   </div>
+  <div id="screen-block-rush" class="screen">
+    <div id="rushStage" class="rush-stage"></div>
+  </div>
 
   <!-- Generisches Map-Voting: 3 Maps des aktuellen Spiels. Echte Spieler wählen,
        Bots zufällig, Mehrheit gewinnt, Gleichstand → zufällig. Tastaturbedienbar. -->
@@ -557,5 +561,6 @@
        nach app.js. -->
   <script type="module" src="block-bomb/main.js"></script>
   <script type="module" src="laser-lines/main.js"></script>
+  <script type="module" src="block-rush/main.js"></script>
 </body>
 </html>

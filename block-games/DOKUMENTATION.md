@@ -694,6 +694,44 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
 
 ## Änderungsprotokoll
 
+### v0.22.0 — 2026-09-17
+- **Block Rush spielbar (drittes Minigame).** Tricky-Towers-artiges Party-
+  Minigame: alle Spieler bauen GLEICHZEITIG, nebeneinander in einer 3D-Szene,
+  aus fallenden Teilen einen Turm auf ihrem eigenen Podest. Eigene,
+  vereinfachte Kipp-/Kollaps-Simulation statt Physik-Engine (`block-rush/
+  tower.js`); wer einstürzt oder überläuft, scheidet sofort aus
+  (Last-Man-Standing), bei Zeitlimit gewinnt der höchste/stabilste Turm.
+  Vier Spells (Kleber/Wachstum/Erdbeben/Blitzsturz, `block-rush/spells.js`)
+  greifen ins eigene oder gegnerische Spiel ein. Keine Line-Clears in v1 —
+  der Turm wächst nur.
+  - Neue Dateien `renderer/block-rush/{main,pieces,tower,maps,spells,bots}.js`
+    + `renderer/block-rush.css`; folgt demselben Aufbau wie Block Bomb
+    (Steuerungs-Abstraktion, Lobby-Farben = Spielerfarben, 3 Maps + Voting:
+    Ruhige Halle/Sturmklippe/Wackelplattform).
+  - **Neuer Controller-Typ, weil kein `{x,z}`-Bewegungsintent passt:**
+    `LocalPieceController` (`renderer/game/controllers.js`) liefert pro Frame
+    einen Ereignis-Zähler (`{dx,rot,hard,cast,cycle,soft,seq}`) statt eines
+    Zustands, hört auf `e.code` (QWERTZ-fest) und regelt Links/Rechts per
+    DAS/ARR selbst. `RemoteController` bekommt dafür einen optionalen
+    zweiten Konstruktor-Parameter `adapter` (`initial/merge/drain`) — ohne
+    Adapter unverändertes Verhalten für Block Bomb/Laser Lines. Grund:
+    das bestehende 20-Hz-Polling (`getMyInput()`) würde bei einem reinen
+    Zustands-Intent Drehungen/Hard-Drops zwischen zwei Abfragen verschlucken.
+  - Eigene Bot-KI in `block-rush/bots.js` (`makeBlockRushBotBrain`).
+  - Vier neue Soundeffekte in `renderer/audio.js` (`rushLock`, `rushCollapse`,
+    `rushSpell`, `rushWin`).
+  - Verdrahtet wie Block Bomb/Laser Lines: `MINIGAMES`-Eintrag +
+    `GAME_REGISTRY['block-rush']` (`renderer/app.js`), Screen
+    `#screen-block-rush`/`#rushStage` + CSS-Link + Modul-Script
+    (`renderer/index.html`). Läuft über denselben generischen Match-Flow
+    (Tutorial-Schnellstart, Lobby/Serien-Modus, Online-Snapshot/Input) ohne
+    Sonderfälle.
+  - Verifiziert per Playwright (`_electron`): Tutorial-Match startet,
+    Tastatursteuerung (links/rechts/drehen/softdrop/hard-drop/cast/cycle)
+    reagiert, Türme rendern, Bot-Kollaps löst Ausscheiden aus, Ergebnis-
+    Screen zeigt korrekten Sieger — keine Konsolenfehler.
+  - Version auf 0.22.0 (package.json, preload.js).
+
 ### v0.21.0 — 2026-09-17
 - **Update-Check vor dem Login.** Beim Start fragt der Hauptprozess
   (`main.js`, IPC `update:check`) einmalig `GET /repos/IchPity/Block-Drop/

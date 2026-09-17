@@ -18,6 +18,7 @@
 const MINIGAMES = [
   { id: 'laser-lines', nav: 'main_laserLines', icon: '🔺', name: 'Laser Lines', desc: 'Weiche den Lasern aus!', available: true, start: () => startTutorial('laser-lines') },
   { id: 'block-bomb',  nav: 'main_blockBomb',  icon: '💣', name: 'Block Bomb',  desc: 'Berühr die anderen – wer mit der Bombe hochgeht, fliegt raus', available: true, start: () => startTutorial('block-bomb') },
+  { id: 'block-rush',  nav: 'main_blockRush',  icon: '🧱', name: 'Block Rush',  desc: 'Baut gleichzeitig Türme – wer einstürzt, fliegt raus', available: true, start: () => startTutorial('block-rush') },
 ];
 
 const UPCOMING_MINIGAMES = [
@@ -707,7 +708,7 @@ function setupKeyboard() {
       if (mgRankingOpen()) { return; }                               // Ranking nur per Knopf
       if (mgResultOpen()) { return; }                                // Ergebnis nur per Knopf
       if (mgPauseOpen()) { resumeGame(); return; }                   // Pause → weiter
-      if (isActive('screen-block-bomb') || isActive('screen-laser-lines')) { pauseGame(); return; } // im Spiel → Pause
+      if (isActive('screen-block-bomb') || isActive('screen-laser-lines') || isActive('screen-block-rush')) { pauseGame(); return; } // im Spiel → Pause
       // Esc schließt erst offene Overlays (Beenden / Konto), sonst führt es
       // aus Einstellungen bzw. der Credits-Seite zurück ins Hauptmenü.
       if (quitOpen) closeQuitDialog();
@@ -2260,6 +2261,13 @@ const LASER_MAP_META = [
   { id: 'sky',  name: 'Sky Warning',  desc: 'Warnfelder, dann Laser — nicht von den Plattformen fallen!' },
 ];
 
+// Map-Metadaten von Block Rush (Geometrie liegt in block-rush/maps.js).
+const RUSH_MAP_META = [
+  { id: 'halle', name: 'Ruhige Halle',    desc: 'Klassische Bühne, keine Umgebungsgefahr — gute Einsteiger-Map.' },
+  { id: 'sturm', name: 'Sturmklippe',     desc: 'Böen schieben ungeklebte Blöcke zur Seite.' },
+  { id: 'wippe', name: 'Wackelplattform', desc: 'Die Podeste schaukeln ständig — baue mittig!' },
+];
+
 // Minigame-Registry: bindet jedes spielbare Minigame entkoppelt an den
 // generischen Match-Flow. windowKey = globales Spiel-Objekt (window.BlockBomb /
 // window.LaserLines, beide mit start/pause/resume/stop/isRunning), mapMeta =
@@ -2269,6 +2277,8 @@ const GAME_REGISTRY = {
                   mapMeta: BOMB_MAP_META, screenId: 'screen-block-bomb', stageId: 'bombStage' },
   'laser-lines': { id: 'laser-lines', name: 'Laser Lines', windowKey: 'LaserLines',
                    mapMeta: LASER_MAP_META, screenId: 'screen-laser-lines', stageId: 'laserStage' },
+  'block-rush': { id: 'block-rush', name: 'Block Rush', windowKey: 'BlockRush',
+                  mapMeta: RUSH_MAP_META, screenId: 'screen-block-rush', stageId: 'rushStage' },
 };
 // Alle spielbaren Spiele (für den Serien-Modus), in der MINIGAMES-Reihenfolge.
 function availableGames() {
