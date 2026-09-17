@@ -34,19 +34,27 @@ function normalize(x, z) {
 // ── Lokaler Mensch: gedrückte Tasten → Richtung ──────────────────────────
 // Hört global auf keydown/keyup und merkt sich, welche Tasten GEHALTEN werden
 // (kein einzelner Tastendruck). Damit läuft die Figur flüssig, solange die
-// Taste unten ist. WASD und Pfeiltasten sind gleichwertig.
+// Taste unten ist.
+//
+// Couch-Koop (2 lokale Menschen am selben PC): das `layout`-Argument trennt
+// WASD und Pfeiltasten auf zwei UNABHÄNGIGE Controller-Instanzen, statt beide
+// (wie früher) gleichwertig auf dieselbe Figur zu legen. P1 = 'wasd' (Default),
+// P2 = 'arrows'. Beide Instanzen hören global auf `window`, ignorieren aber
+// Tasten außerhalb ihres eigenen Layouts — mapKey() gibt dafür pro Layout
+// gezielt null zurück.
 export class LocalHumanController {
-  constructor() {
+  constructor(layout = 'wasd') {
+    this.layout = layout === 'arrows' ? 'arrows' : 'wasd';
     this.keys = new Set();
     this._onDown = (e) => {
-      const k = mapKey(e.key);
+      const k = mapKey(e.key, this.layout);
       if (!k) return;
       // Pfeiltasten nicht die Seite scrollen lassen.
       e.preventDefault();
       this.keys.add(k);
     };
     this._onUp = (e) => {
-      const k = mapKey(e.key);
+      const k = mapKey(e.key, this.layout);
       if (k) this.keys.delete(k);
     };
     this.attached = false;
@@ -80,12 +88,24 @@ export class LocalHumanController {
   }
 }
 
-function mapKey(key) {
+// layout 'wasd' → WASD, layout 'arrows' → Pfeiltasten. Jedes Layout hört NUR
+// auf seine eigenen Tasten, damit zwei LocalHumanController gleichzeitig
+// angehängt sein können, ohne sich gegenseitig zu steuern.
+function mapKey(key, layout) {
+  if (layout === 'arrows') {
+    switch (key) {
+      case 'ArrowLeft':  return 'left';
+      case 'ArrowRight': return 'right';
+      case 'ArrowUp':    return 'up';
+      case 'ArrowDown':  return 'down';
+      default: return null;
+    }
+  }
   switch (key) {
-    case 'ArrowLeft':  case 'a': case 'A': return 'left';
-    case 'ArrowRight': case 'd': case 'D': return 'right';
-    case 'ArrowUp':    case 'w': case 'W': return 'up';
-    case 'ArrowDown':  case 's': case 'S': return 'down';
+    case 'a': case 'A': return 'left';
+    case 'd': case 'D': return 'right';
+    case 'w': case 'W': return 'up';
+    case 's': case 'S': return 'down';
     default: return null;
   }
 }

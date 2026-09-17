@@ -57,6 +57,12 @@ const Auth = {
   // Eigene User-ID (für Freundes-Abfragen).
   get userId() { return this.user?.id || null; },
 
+  // Roher Supabase-Client — für Online-Sessions (renderer/net/session.js),
+  // die Realtime-Channels über dieselbe Verbindung/Auth öffnen (RLS-taugliche
+  // private Channels via realtime.setAuth(), das supabase-js intern schon bei
+  // jedem Auth-Change nachzieht). Absichtlich read-only nach außen gereicht.
+  get client() { return client; },
+
   // Optionale Kontakt-E-Mail (liegt nur in user_metadata, nie als Auth-Mail).
   // Synthetische `@blockdrop.local`-Adressen werden bewusst nicht angezeigt.
   get contactEmail() {

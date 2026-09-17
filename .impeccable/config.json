@@ -113,6 +113,15 @@
         ],
         "createdAt": "2026-09-15T10:58:35.095Z",
         "reason": "Agent - gleicher Fund wie vorhin auf laser-lines.css/block-bomb.css durchgesehen (funktionale Map-Thumbnails), Detektor attribuiert faelschlich auf index.html:0"
+      },
+      {
+        "rule": "border-accent-on-rounded",
+        "value": "*",
+        "files": [
+          "block-games/renderer/style.css"
+        ],
+        "createdAt": "2026-09-16T11:16:09.436Z",
+        "reason": "matches the project's existing beveled-card pattern (.overlay-card, .lobby-card, .mg-map-card all pair a thick border-bottom accent with border-radius) -- established Kreidetafel-Arcade design language, not a new pattern"
       }
     ]
   }

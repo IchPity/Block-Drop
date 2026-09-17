@@ -167,10 +167,13 @@
 
   <!-- ── Lobby (Vorbereitungsscreen, geöffnet vom „Spielen"-Button) ──────
        Vier große Playercards: P1 ist immer man selbst, P2–P4 sind frei
-       (Leer/Bot/Freund). Karten + Popups (Platz-/Farbwahl) werden per JS
-       aus dem lobbyState gebaut (app.js → renderLobby). Komplett ohne Maus:
-       Pfeile/WASD bewegen den Fokus, Enter/Leertaste löst aus, Esc schließt
-       erst Popups, sonst zurück ins Menü (siehe setupKeyboard in app.js). -->
+       (Leer/2. Spieler/Bot/Freund). Karten + Popups (Platz-/Farbwahl) werden
+       per JS aus dem lobbyState gebaut (app.js → renderLobby). Die
+       Bot-ANZAHL (nicht mehr die Schwierigkeit) wird über den Stepper im
+       Footer geregelt — es sind immer mindestens 3 Spieler insgesamt.
+       Komplett ohne Maus: Pfeile/WASD bewegen den Fokus, Enter/Leertaste
+       löst aus, Esc schließt erst Popups, sonst zurück ins Menü (siehe
+       setupKeyboard in app.js). -->
   <div id="screen-lobby" class="screen">
     <div class="lobby-wrap">
       <header class="lobby-header">
@@ -183,6 +186,12 @@
 
       <footer class="lobby-footer">
         <button class="btn btn-pill" id="btnLobbyBack" data-nav="lobby_back">← Zurück</button>
+        <div class="lobby-bot-stepper">
+          <button class="btn btn-pill lobby-stepper-btn" id="btnBotsMinus" data-nav="lobby_botsMinus" aria-label="Weniger Bots">−</button>
+          <span class="lobby-stepper-label">🤖 Bots: <strong id="lobbyBotCount">2</strong></span>
+          <button class="btn btn-pill lobby-stepper-btn" id="btnBotsPlus" data-nav="lobby_botsPlus" aria-label="Mehr Bots">+</button>
+        </div>
+        <button class="btn btn-pill" id="btnLobbyOnline" data-nav="lobby_online">🌐 Online</button>
         <button class="btn btn-pill" id="btnLobbyReset" data-nav="lobby_reset">↺ Lobby zurücksetzen</button>
         <button class="party-btn party-btn-sm" id="btnLobbyStart" data-nav="lobby_start">
           <span class="party-btn-icon" aria-hidden="true">🎲</span>
@@ -208,6 +217,17 @@
     <div class="lobby-popup-card" id="colorPickerCard">
       <h2 class="lobby-popup-title">Farbe wählen</h2>
       <div class="color-grid" id="colorPickerBody"></div>
+    </div>
+  </div>
+
+  <!-- Online-Sessions: Session hosten (Code + Einladen + Mitspielerliste)
+       oder per Code beitreten. Zentriertes Overlay (nicht kartengebunden wie
+       Slot-/Farb-Popup), Inhalt wird je Zustand von renderOnlinePicker() in
+       app.js neu gebaut. -->
+  <div id="onlinePicker" class="overlay" hidden>
+    <div class="overlay-card online-card">
+      <h2>Online spielen</h2>
+      <div id="onlinePickerBody"></div>
     </div>
   </div>
 
@@ -438,8 +458,23 @@
       <h2>Pause</h2>
       <div class="overlay-actions">
         <button class="btn btn-primary" id="btnMgResume" data-nav="mg_resume">Weiter</button>
+        <button class="btn btn-pill" id="btnMgAbort" data-nav="mg_abort">Match abbrechen</button>
         <button class="btn btn-back" id="btnMgQuit" data-nav="mg_quit">Zum Menü</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Match-Abbruch-Abstimmung: bewusst KEIN Modal — kleines, nicht
+       blockierendes Fenster am linken Rand, vertikal zentriert. Das Match
+       läuft währenddessen weiter; gesteuert ausschließlich per F5/F6 (siehe
+       app.js → startAbortVote/castLocalAbortVote). -->
+  <div id="mgAbortVote" class="mg-abort-vote" hidden>
+    <h3 class="mg-abort-title">Match abbrechen?</h3>
+    <p class="mg-abort-sub" id="mgAbortSub"></p>
+    <div class="mg-abort-tally" id="mgAbortTally"></div>
+    <div class="mg-abort-keys">
+      <span><kbd>F5</kbd> Ja, abbrechen</span>
+      <span><kbd>F6</kbd> Nein, weiterspielen</span>
     </div>
   </div>
 
@@ -493,6 +528,7 @@
   <script src="settings.js"></script>
   <script src="audio.js"></script>
   <script src="auth.js"></script>
+  <script src="net/session.js"></script>
   <script src="app.js"></script>
   <!-- Minigame-Spielkerne als ES-Module (laden Three.js aus vendor/).
        Registrieren window.BlockBomb bzw. window.LaserLines; laufen deferred

@@ -1336,6 +1336,52 @@ body.reduced-fx .party-btn-go { transition: none; }
 }
 .lobby-mini-btn:hover { border-color: var(--slot); transform: translateY(-1px); }
 
+.lobby-online-hint {
+  display: block;
+  font-size: 0.76em;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 8px 4px;
+}
+
+/* ── Online-Sessions (Host/Join-Popup, #onlinePicker) ──────────────────── */
+.online-card { text-align: center; }
+.online-code {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 2em;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--yellow);
+  margin: 6px 0 14px;
+}
+.online-divider {
+  color: var(--text-dim);
+  font-size: 0.82em;
+  margin: 14px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.online-peer-list { display: flex; flex-direction: column; gap: 6px; margin: 10px 0 16px; text-align: left; }
+.online-peer-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px; border-radius: 10px;
+  background: var(--bg-deep);
+  font-weight: 600; font-size: 0.9em;
+}
+.online-peer-empty { color: var(--text-dim); font-size: 0.85em; text-align: center; padding: 6px 0; }
+.online-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+.online-error { color: var(--red); font-weight: 600; font-size: 0.85em; margin-top: 8px; }
+
+/* Als Online-Gast ist die Lobby nur ein Spiegel des Host-Stands — Stepper,
+   Zurücksetzen, Online-Menü und „Spiel starten" ergeben keinen Sinn, weil
+   nur der Host sie bedienen kann (siehe renderGuestWaitingRoom() in app.js). */
+#screen-lobby.online-guest .lobby-bot-stepper,
+#screen-lobby.online-guest #btnLobbyOnline,
+#screen-lobby.online-guest #btnLobbyReset,
+#screen-lobby.online-guest #btnLobbyStart {
+  display: none;
+}
+
 .lobby-color-dot {
   display: inline-block;
   width: 13px; height: 13px;
@@ -1354,6 +1400,31 @@ body.reduced-fx .party-btn-go { transition: none; }
   align-items: center;
   margin-top: 26px;
 }
+
+/* Bot-Anzahl-Stepper im Lobby-Footer (ersetzt die frühere Pro-Bot-Schwierigkeit) */
+.lobby-bot-stepper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lobby-stepper-btn {
+  padding: 9px 15px;
+  font-weight: 700;
+  line-height: 1;
+}
+.lobby-stepper-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  box-shadow: none;
+  border-color: var(--line);
+  color: var(--text);
+}
+.lobby-stepper-label {
+  font-size: 0.95em;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.lobby-stepper-label strong { color: var(--yellow); }
 
 /* Kompakter „Spiel starten"-Button (nutzt den Party-Button-Look) */
 .party-btn.party-btn-sm {
@@ -1975,6 +2046,56 @@ button:focus-visible:not(.minigame-card):not(.party-btn) {
 }
 .mg-rank-name { flex: 1; text-align: left; color: var(--text, #f2f2fa); }
 .mg-rank-pts { color: var(--cyan, #36d6e7); font-weight: 900; }
+
+/* ── Match-Abbruch-Abstimmung ──────────────────────────────────────────
+   Bewusst KEIN .overlay: kein Backdrop, kein Vollbild — ein kleines,
+   NICHT blockierendes Fenster am linken Rand, vertikal zentriert. Das
+   Match läuft dahinter weiter (siehe app.js), darum z-index knapp über
+   dem Spielcanvas, aber unter den echten .overlay-Modals. */
+.mg-abort-vote {
+  position: fixed;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 22;
+  width: min(280px, 80vw);
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-bottom: 4px solid var(--bg-deep);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  animation: riseIn 0.2s ease-out both;
+  pointer-events: none; /* rein informativ — Steuerung nur per F5/F6 */
+}
+.mg-abort-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.15em;
+  color: var(--yellow);
+  margin-bottom: 6px;
+}
+.mg-abort-sub { font-size: 0.85em; color: var(--text-dim); margin-bottom: 10px; }
+.mg-abort-tally { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.mg-abort-row { display: flex; align-items: center; gap: 8px; font-size: 0.9em; font-weight: 600; }
+.mg-abort-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--c, #fff); border: 1px solid rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
+}
+.mg-abort-keys { display: flex; flex-direction: column; gap: 4px; font-size: 0.82em; color: var(--text-dim); }
+.mg-abort-keys kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 1px 6px;
+  margin-right: 6px;
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  font-family: inherit;
+  font-weight: 800;
+  color: var(--text);
+}
 
 /* ── Lobby-Krone (letzter Gesamtsieger der Serie) ── */
 .lobby-crown {

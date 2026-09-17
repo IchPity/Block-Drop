@@ -58,25 +58,37 @@ Umbau des Spielkerns.
   und jedes Overlay muss komplett ohne Maus bedienbar sein (Pfeiltasten
   oder WASD navigieren, Enter/Leertaste löst aus, Esc geht zurück) —
   gilt für jedes aktuelle und künftige Minigame/Menü.
-- **Nur ein lokaler menschlicher Controller existiert aktuell**
-  (`LocalHumanController`, WASD/Pfeile, ein Tastatur-Layout). Mehrere
-  gleichzeitige lokale Menschen auf einem PC (Couch-Multiplayer mit
-  getrennten Tastenbelegungen) ist laut Nutzer ein bestätigtes Ziel, aber
-  **noch nicht implementiert** — aktuell steuert nur P1, weitere Slots sind
-  Bot oder (perspektivisch) Freund/Remote.
-- **Bot-Schwierigkeit immer Mittel oder Schwer**, nie „Leicht" — Ausnahme:
-  der Tutorial-Schnellstart aus dem Hauptmenü erzwingt bewusst „Easy"-Bots
-  zum Erlernen des Spiels.
+- **Zwei lokale menschliche Controller sind möglich (seit v0.19.0):**
+  `LocalHumanController(layout)` trennt WASD (P1) und Pfeiltasten (2.
+  Spieler, Lobby-Slot-Typ `local`) auf zwei unabhängige Instanzen. Mehr als
+  2 gleichzeitige lokale Menschen (3./4. Tastenlayout) sind noch nicht
+  vorgesehen; weitere Slots sind Bot oder (perspektivisch) Freund/Remote.
+- **Immer mindestens 3, höchstens 4 Spieler pro Match** (seit v0.19.0) —
+  fehlende Menschen werden automatisch durch Bots aufgefüllt
+  (`minBotCount()`/`maxBotCount()` in `app.js`).
+- **Bot-Schwierigkeit immer Mittel oder Schwer**, nie „Leicht" — seit v0.19.0
+  **zufällig pro Match** vergeben, nicht mehr pro Bot-Slot in der Lobby
+  einstellbar. Ausnahme bleibt der Tutorial-Schnellstart aus dem Hauptmenü,
+  der bewusst „Easy"-Bots erzwingt, zum Erlernen des Spiels.
+- **Ein laufendes Match lässt sich per Abstimmung abbrechen** (seit
+  v0.19.0, F5/F6, 15s-Timeout, Schein-Abstimmung solo gegen Bots) — zählt
+  bisher nur lokale Menschen, siehe unten zum Online-Stand.
 - **Jeder Spielmodus bekommt genau 3 Maps** plus Map-Voting vor der Runde
   (Mehrheit entscheidet, Gleichstand zufällig).
 - Zwei Minigames aktuell im Registry-basierten, generischen Match-Flow:
   Block Bomb (Bombe weitergeben, Last-Man-Standing) und Laser Lines (Laser
   ausweichen, 3 Leben). Teilen sich Bot-KI (`botAI.js`), Controller-
   Abstraktion, Farbsystem aus der Lobby und die `#mg*`-Overlays.
-- Online-/Freundes-Spiel ist architektonisch vorbereitet (Freunde-API gegen
-  Supabase, `RemoteController`-Stub, Einladungs-Overlay mit Test-Trigger),
-  aber **noch nicht verdrahtet** — Lobby-Freundeseinladung ist bisher rein
-  lokale Konfiguration ohne echte Netzwerkverbindung.
+- **Online-/Freundes-Spiel ist seit v0.20.0 echt verdrahtet** (host-
+  autoritativ über Supabase Realtime Broadcast+Presence, `renderer/net/
+  session.js`): Session hosten/per Code beitreten, Freundes-Einladung über
+  den echten Einladungs-Channel, `RemoteController` wird tatsächlich
+  gefüttert. Die alte, rein lokale Freund-Einladung im Platz-Popup der Lobby
+  (ohne Netzbezug) existiert davon UNABHÄNGIG weiter (bewegt sich im Spiel
+  nicht) — siehe DOKUMENTATION.md „Online-Sessions" für den Unterschied.
+  Bewusste v1-Lücken: keine Client-Prediction, keine Host-Migration, Gäste
+  stimmen beim Map-Voting weiterhin zufällig mit, und die Abbruch-
+  Abstimmung zählt Online-Mitspieler (`type === 'remote'`) noch nicht mit.
 - Kein Obfuskieren des Codes in `block-games/` (im Gegensatz zur Website)
   — bleibt immer Klartext. Jede Code-Änderung wird in `DOKUMENTATION.md`
   protokolliert.

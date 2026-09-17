@@ -50,19 +50,30 @@ am Ende in die Repo-Struktur integriert wird.
 ## Noch zu bauen
 
 ### Party-Modus (Kernfeature)
-- **Einstieg steht schon:** Die Lobby (v0.8.0) liefert die Partie-Konfiguration
-  (Spieler/Bots/Freunde + Farben). „Spiel starten" muss daraus später die
-  echte Partie erzeugen (aktuell nur Toast).
+- **✅ Erledigt (v0.13.0/v0.19.0):** „Spiel starten" erzeugt die echte
+  Party-Serie über alle Minigames (`startSeries()`, s. DOKUMENTATION.md
+  „Party-Serie & Gesamt-Ranking"). Die Lobby liefert dafür Spieler/Bots/
+  Freunde + Farben.
 - Brettspiel-Runden wie Mario Party: Würfeln → Feld-Events → nach jeder Runde ein Minigame
-- **Immer 4 Spieler pro Partie.** Fehlende menschliche Spieler werden durch
-  KI-Gegner aufgefüllt (1 Mensch → 3 KIs usw.)
+  (bleibt offen — bisher reine Minigame-Serie ohne Brett/Würfel).
+- **✅ Erledigt (v0.19.0): Mindestens 3, höchstens 4 Spieler pro Partie.**
+  Fehlende menschliche Spieler werden durch Bots aufgefüllt (1 Mensch → min.
+  2 Bots, 2 Menschen → min. 1 Bot); die genaue Anzahl regelt der Bot-Stepper
+  in der Lobby (`minBotCount()`/`maxBotCount()` in `app.js`).
 - KI braucht pro Minigame eine eigene einfache Spiellogik (reagieren mit
   zufälliger menschenähnlicher Verzögerung, Fehlerquote je Schwierigkeit)
-- **Bot-Schwierigkeit (festgelegt):** Es soll **immer mindestens „Mittel" und
-  „Schwer"** geben — **keine leichten Bots**. In der Lobby ist der Grad pro Bot
-  einstellbar (`BOT_DIFFICULTIES` in `app.js`, `slot.difficulty`, Default
-  `medium`); die Minigame-KI muss diese Grade später per Fehlerquote/Tempo
-  umsetzen.
+- **✅ Erledigt (v0.19.0): Bot-Schwierigkeit ist nicht mehr pro Slot in der
+  Lobby einstellbar**, sondern wird **zufällig pro Match** vergeben
+  (`randomBotDifficulty()` in `app.js`) — weiterhin nur „Mittel"/„Schwer",
+  nie „Leicht".
+- **✅ Erledigt (v0.19.0): Couch-Koop.** Ein zweiter lokaler Mensch kann über
+  den Lobby-Slot-Typ `local` mitspielen (Pfeiltasten, P1 bleibt bei WASD) —
+  siehe DOKUMENTATION.md „Couch-Koop". Mehr als 2 lokale Menschen (3./4.
+  Tastenlayout) sind noch nicht vorgesehen.
+- **✅ Erledigt (v0.19.0): Match-Abbruch per Abstimmung** (F5/F6, 15s-Timeout,
+  Schein-Abstimmung solo gegen Bots) — siehe DOKUMENTATION.md „Match-Abbruch
+  per Abstimmung". Zählt bisher nur lokale Menschen; Online-Mitspieler folgen
+  zusammen mit dem Abschnitt „Online-Spiel" unten.
 
 ### Minigames
 | ID | Name | Idee | Status |
@@ -86,14 +97,23 @@ als Vorlage für Aufbau, Map-Voting und die Steuerungs-Abstraktion.
 - **Steuerungs-Abstraktion** (`controllers.js`-Muster): Spielkern liest nur
   Bewegungs-Intents, damit lokal/Bot/Online austauschbar sind.
 
-### Online-Spiel über verschiedene Netzwerke (Langfristziel)
-- Spieler aus unterschiedlichen Netzwerken sollen zusammen spielen können, voll
-  tastaturbedienbar. Die **Steuerungs-Abstraktion** (`RemoteController` in
-  `block-bomb/controllers.js`) ist dafür vorbereitet — es fehlt der Netz-Layer
-  (Kandidat: Supabase Realtime), der Intents synchronisiert.
-- **Einladungsfenster** (`#inviteOverlay` in `index.html`, Logik in `app.js`):
-  UI + Tastatur + Warteschlange stehen; echte Lobby-Anbindung folgt, gekoppelt an
-  `isOnlineAllowed()`.
+### Online-Spiel über verschiedene Netzwerke — ✅ Grundversion erledigt (v0.20.0)
+- **Erledigt:** Spieler aus unterschiedlichen Netzwerken können zusammen
+  spielen (host-autoritativ, Supabase Realtime Broadcast+Presence, `renderer/
+  net/session.js`). Beitritt per Session-Code (auch als Gast) oder per
+  Freundes-Einladung über `#inviteOverlay` (jetzt echt verdrahtet, nicht mehr
+  nur UI-Stub). `RemoteController` (`renderer/game/controllers.js`) wird
+  wirklich gefüttert statt nur vorbereitet zu sein. Details:
+  DOKUMENTATION.md, Änderungsprotokoll v0.20.0.
+- **Noch offen für später:**
+  - Client-Prediction (Gäste spüren aktuell eine kleine Eingabelatenz).
+  - Host-Migration (fällt der Host aus, endet die Session für alle statt
+    dass jemand anders übernimmt).
+  - Echte Gast-Beteiligung am Map-Voting (Gäste stimmen bisher zufällig wie
+    Bots mit) und an der Match-Abbruch-Abstimmung (zählt bisher nur lokale
+    Menschen mit — s. DOKUMENTATION.md „Match-Abbruch per Abstimmung").
+  - Mehr als 4 Spieler gesamt (aktuell hart an die 4 Lobby-Plätze/Map-Spawns
+    gekoppelt).
 
 **Pflichten für jedes Minigame (Einstellungen):**
 - **Eigenes, kleineres Einstellungs-Fenster im Spiel** (z.B. Pause-Overlay,

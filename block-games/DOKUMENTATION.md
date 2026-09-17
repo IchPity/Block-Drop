@@ -42,19 +42,20 @@ Hinweis: Node.js liegt portabel auf `D:\` (`D:\node.exe`).
 |---|---|
 | `main.js` | Electron-Hauptprozess: Fenster (Vollbild), F11-Toggle, kein App-Menü, IPC für Anzeige-Einstellungen + `app:quit` |
 | `preload.js` | Brücke Main↔Renderer: Version/Plattform, Anzeige-Steuerung (Vollbild, Fenstergröße, Display-Infos), `quitApp()` |
-| `renderer/index.html` | Alle Screens: Laden, Login/Registrierung, Hauptmenü, **Lobby** (4 Playercards + Slot-/Farb-Popups), Einstellungen (**in Kategorie-Reitern**: Konto/Anzeige/Grafik/Audio), **Credits** + Beenden-Overlay + **Konto/Freunde-Overlay**; Bühnen-Hintergrund-Layer |
-| `renderer/app.js` | UI-Logik: Screen-Wechsel, Gast-Modus, Menü-Rendering, **Lobby (Slots/Bots/Farben + 300 Bot-Namen)**, **Credits-Rendering**, Einstellungs-UI, **Konto/Freunde-Overlay + Konto-Bearbeitung**, **Login-Vorschläge zuletzt angemeldeter Nutzer (`RecentUsers`)**, Toast, Sound-Verdrahtung, Beenden-Dialog (**mit optionalem Abmelden**), **feste navId-Tastatur-Navigation (`NAV_MENU`/`buildLobbyNav`) + Fokus-Gedächtnis**, animierter Hintergrund (Blöcke/Würfel/Sterne) |
+| `renderer/index.html` | Alle Screens: Laden, Login/Registrierung, Hauptmenü, **Lobby** (4 Playercards + Bot-Stepper + Slot-/Farb-Popups), Einstellungen (**in Kategorie-Reitern**: Konto/Anzeige/Grafik/Audio), **Credits** + Beenden-Overlay + **Konto/Freunde-Overlay**, **Match-Abbruch-Abstimmung** (`#mgAbortVote`), **Online-Sessions** (`#onlinePicker`: Hosten/Beitreten); Bühnen-Hintergrund-Layer |
+| `renderer/app.js` | UI-Logik: Screen-Wechsel, Gast-Modus, Menü-Rendering, **Lobby (Slots/Bot-Anzahl-Stepper/Farben + 300 Bot-Namen, Couch-Koop-Slot, Online-Peer-Slots)**, **Match-Abbruch-Abstimmung** (F5/F6, Schein-Abstimmung gegen Bots), **Online-Sessions** (Host/Beitreten, Lobby-Sync, Netzwerk-Match-Loop), **Credits-Rendering**, Einstellungs-UI, **Konto/Freunde-Overlay + Konto-Bearbeitung**, **Login-Vorschläge zuletzt angemeldeter Nutzer (`RecentUsers`)**, Toast, Sound-Verdrahtung, Beenden-Dialog (**mit optionalem Abmelden**), **feste navId-Tastatur-Navigation (`NAV_MENU`/`buildLobbyNav`) + Fokus-Gedächtnis**, animierter Hintergrund (Blöcke/Würfel/Sterne) |
+| `renderer/net/session.js` | **`NetSession`** (neu, v0.20.0): Online-Sessions über Supabase Realtime Broadcast + Presence — Hosten/Beitreten per Code, Einladungs-Channel pro Nutzer, generisches `on(type, handler)`/`send(type, payload)`. Kennt weder Lobby noch Spielkerne — reine Transport-Schicht, von app.js angesprochen |
 | `renderer/settings.js` | Zentraler Einstellungs-Store (localStorage, onChange-Events, `effectiveVolume()`) |
 | `renderer/audio.js` | Sound-System `Sfx`: UI- + **Block-Bomb-Effekte** (`bombTick/bombPass/bombExplode/count/go`) + **Laser-Lines-Effekte** (`laserWarn/laserFire/laserHit/laserEliminate/laserWin/laserSpeedUp`) per WebAudio synthetisiert (keine Audio-Dateien), Lautstärke aus dem Settings-Store |
-| `renderer/auth.js` | Supabase-Auth + **Freundes- und Konto-API** (gleiches Backend wie die Website) |
-| `renderer/style.css` | Arcade-Look: Farben (inkl. `--orange/--cyan/--pink`), Animationen, Layout, unsichtbare Scrollbalken, Kompakt-Stufen, **Lobby-/Playercard-/Popup-Styling**, Credits-Styling, Bühnen-Hintergrund, **generischer Minigame-Flow (`.mg-*`: Map-Voting/Countdown/Ergebnis/Ranking) + Lobby-Krone** |
+| `renderer/auth.js` | Supabase-Auth + **Freundes- und Konto-API** (gleiches Backend wie die Website) + **`Auth.client`-Getter** (neu, für `net/session.js`) |
+| `renderer/style.css` | Arcade-Look: Farben (inkl. `--orange/--cyan/--pink`), Animationen, Layout, unsichtbare Scrollbalken, Kompakt-Stufen, **Lobby-/Playercard-/Bot-Stepper-/Popup-Styling**, Credits-Styling, Bühnen-Hintergrund, **generischer Minigame-Flow (`.mg-*`: Map-Voting/Countdown/Ergebnis/Ranking) + Lobby-Krone**, **Match-Abbruch-Panel (`.mg-abort-vote`, links/vertikal zentriert, nicht blockierend)** |
 | `renderer/block-bomb.css` | Optik **Block Bomb**: Canvas-Bühne + In-Game-HUD (Timer/Namensschilder/Meldungen, Map-Intro) + Block-Bomb-Map-Thumbnails (`.mg-thumb-block-bomb-*`). Die Voting-/Countdown-/Ergebnis-Overlays sind generisch (`.mg-*` in `style.css`) |
 | `renderer/laser-lines.css` | Optik **Laser Lines**: Canvas-Bühne + In-Game-HUD (Leben/Tempo/Warnbanner/Treffer-Vignette/Namensschilder, Map-Intro) + Laser-Map-Thumbnails (`.mg-thumb-laser-lines-*`) |
-| `renderer/game/` | **Spiel-agnostische, von ALLEN Minigames geteilte Bausteine**: `characters.js` (blockige 3D-Figur `BlockCharacter` + `setHolderGlow/flash/explode/setInvulnBlink/setEliminated`), `controllers.js` (`LocalHumanController`/`RemoteController` + generischer `BotController(brain)`), `bots/botAI.js`, `bots/waypoints.js` |
+| `renderer/game/` | **Spiel-agnostische, von ALLEN Minigames geteilte Bausteine**: `characters.js` (blockige 3D-Figur `BlockCharacter` + `setHolderGlow/flash/explode/setInvulnBlink/setEliminated`), `controllers.js` (`LocalHumanController(layout)` — **WASD/Pfeiltasten trennbar für Couch-Koop** —, `RemoteController` — **jetzt echt gefüttert, s. Online-Sessions** —, generischer `BotController(brain)`), `bots/botAI.js`, `bots/waypoints.js` |
 | `renderer/game/bots/botAI.js` | **Generische, wiederverwendbare Bot-KI** (für alle Minigames): Zustandsautomaten (CHASE/FLEE/ROAM/AVOID_EDGE/UNSTUCK), Anti-Stuck-Erkennung, Wand-/Ecken-Vermeidung, Steering, optionaler Debug-Modus, **Utility-Scoring für Zielwahl**, **Gefahren-Lookahead** (`decision.predictedHazards`), **leichtgewichtige Bot-Koordination** (Ziel-Claims über `world.map`) |
 | `renderer/game/bots/memory.js` | **Räumliches Match-Gedächtnis** (`createZoneMemory`): Bots merken sich WÄHREND eines Matches erlebte Gefahrenzonen (z.B. Stellen, an denen sie feststeckten) mit sanftem, abklingendem Malus — ergänzt die statischen `corner`-Kartentags um echtes Laufzeit-Lernen. Pro Bot-Mover = automatisch pro Match frisch |
-| `renderer/block-bomb/` | **Block-Bomb-Spielkern** (ES-Module): `main.js` (Szene/Renderer/Schleife/Runden + HUD + Map-Intro + Platzierungen), `maps.js` (3 Maps), `bomb.js` (Bombe), `bots.js` (per-Game Adapter für `botAI.js`). Figur + Controller kommen aus `renderer/game/` |
-| `renderer/laser-lines/` | **Laser-Lines-Spielkern** (ES-Module): `main.js` (Szene/Schleife/Leben/Treffer/HUD, `window.LaserLines`), `maps.js` (3 Maps + `LASER_MAP_META` + Laser-Configs), `lasers.js` (Laser-System `warning→active→cooldown` + `LaserDirector`), `bots.js` (per-Game Adapter für `botAI.js`). Figur + Controller aus `renderer/game/` |
+| `renderer/block-bomb/` | **Block-Bomb-Spielkern** (ES-Module): `main.js` (Szene/Renderer/Schleife/Runden + HUD + Map-Intro + Platzierungen, **`role`-Split Host/Gast + `getSnapshot/applySnapshot/feedRemoteInput/convertToBot`**), `maps.js` (3 Maps), `bomb.js` (Bombe), `bots.js` (per-Game Adapter für `botAI.js`). Figur + Controller kommen aus `renderer/game/` |
+| `renderer/laser-lines/` | **Laser-Lines-Spielkern** (ES-Module): `main.js` (Szene/Schleife/Leben/Treffer/HUD, `window.LaserLines`, **`role`-Split Host/Gast + `getSnapshot/applySnapshot/feedRemoteInput/convertToBot`**), `maps.js` (3 Maps + `LASER_MAP_META` + Laser-Configs), `lasers.js` (Laser-System `warning→active→cooldown` + `LaserDirector`), `bots.js` (per-Game Adapter für `botAI.js`). Figur + Controller aus `renderer/game/` |
 | `renderer/vendor/three.module.js` | Lokal eingebundenes **Three.js (r160)** für die 3D-Darstellung (kein CDN — CSP `default-src 'self'`, offline-fähig) |
 | `renderer/assets/` | Eigene lokale Assets: `block-icon.svg/.png/.ico` (Marken-Block), `cube.svg`/`star.svg` (Deko-Masken) |
 | `Block Games starten.bat` | Doppelklick-Start der App |
@@ -181,7 +182,43 @@ einzelnen Runde (`startSeries()` in `app.js`):
   zeigt eine 👑 auf dessen Playercard. Sie **verschwindet bei „Lobby zurücksetzen"**
   (`resetLobby()`) bzw. wenn ihr Slot leer wird.
 - Die entkoppelte Spielerliste kommt unverändert aus `buildMatchConfig()` (Lobby-Farben
-  + Bot-Schwierigkeit werden übernommen) — das Spiel kennt die Lobby NICHT.
+  werden übernommen, Bot-Schwierigkeit jetzt zufällig pro Match) — das Spiel kennt die
+  Lobby NICHT.
+
+### Match-Abbruch per Abstimmung
+
+Im Pausemenü (`#mgPause`, Esc im Spiel) gibt es neben „Weiter"/„Zum Menü" einen
+dritten Knopf **„Match abbrechen"** (`startAbortVote()` in `app.js`):
+
+- **Bewusst nicht blockierend:** Das Öffnen der Abstimmung hebt die Pause sofort
+  wieder auf (`window[currentGame.windowKey].resume()`) — das Match läuft während
+  der ganzen Abstimmung normal weiter. Das Fenster (`#mgAbortVote`, `.mg-abort-vote`
+  in `style.css`) ist deshalb **kein** `.overlay`-Modal, sondern ein kleines, am
+  **linken Bildschirmrand vertikal zentriertes** Panel ohne Backdrop und ohne
+  Fokus-Diebstahl.
+- **Steuerung ausschließlich über F5/F6**, global in `setupKeyboard()` abgefangen
+  (noch vor der Escape-/Container-Kaskade, weil das Panel keinen Fokus hat):
+  **F5 = Ja, abbrechen**, **F6 = Nein, weiterspielen**. Beide Tasten waren frei —
+  `main.js` entfernt das Standardmenü, nur F11 ist sonst belegt.
+- **Wer startet, stimmt sofort mit Ja** (`abortVotes[initiator.id] = 'yes'`). Nur
+  echte Menschen stimmen ab (`currentPlayers.filter(p => p.type === 'human')`),
+  Bots werden bei der Mehrheitsberechnung ignoriert. Bei mehreren lokalen Menschen
+  (Couch-Koop) gilt der erste Mensch in `currentPlayers` (= P1) als Initiator, weil
+  Menü-Aktionen — anders als die Spielfigur-Bewegung — noch keinem bestimmten
+  Controller zugeordnet sind; alle anderen müssen per F5/F6 selbst abstimmen
+  (`castLocalAbortVote()`, `abortPendingIds` als Warteschlange).
+- **15 s ohne Antwort = Nein** (`armAbortTimeout()`) — verhindert, dass eine
+  hängende Abstimmung das Match blockiert.
+- **Spielt man nur gegen Bots** (kein zweiter Mensch), läuft stattdessen eine
+  **Schein-Abstimmung** (`runFakeAbortVote()`): die Bots „stimmen" zeitversetzt
+  (~400–900 ms) sichtbar ab, das Ergebnis ist **immer Ja**.
+- **Bei Mehrheit Ja** (`resolveAbortVote()` → `abortMatchToLobby()`) endet das
+  Match sofort: zurück in die Lobby bei einer Party-Serie, zurück ins Menü bei
+  einem Tutorial (das keine Lobby kennt). Bei Mehrheit Nein schließt sich das
+  Panel und das Match läuft unverändert weiter.
+- **Online-Mitspieler zählen noch nicht mit** (`type === 'remote'`) — sie senden
+  heute keine echten Eingaben (siehe ROADMAP „Online-Spiel"), eine Netz-Abstimmung
+  folgt zusammen mit der echten Online-Anbindung.
 
 ### Laser Lines (Minigame)
 
@@ -405,65 +442,132 @@ und die Haupt-Einstellungsseite immer synchron bleiben.
   (Initiale, 🤖 für Bots, „+" für leere Slots), Name, Status-Badge
   („Du/Freund/Bot/Leer"), die gewählte **Farbe als leuchtende Oberkante + Rahmen**
   und Aktions-Buttons. Gleicher Arcade-/Bühnen-Look wie das Menü.
-- **Slot-Regeln** (`lobbyState.slots`, Typen `self`|`friend`|`bot`|`empty`):
+- **Slot-Regeln** (`lobbyState.slots`, Typen `self`|`local`|`friend`|`bot`|`empty`):
   - **P1 ist immer man selbst** (`self`): angemeldet der Username, sonst „Gast".
     Nicht entfernbar — nur die **Farbe** ist änderbar.
-  - **P2–P4** sind frei: **Leer**, **Bot** oder **Freund**. Auswahl über ein
-    kleines Arcade-Popup über der Karte (`openSlotPicker()`), nicht per `alert()`.
-  - **Gast-Regel:** Ohne Konto sind nur **Leer/Bot** erlaubt. Die Freund-Option
-    ist sichtbar, löst aber den Toast „Melde dich an, um Freunde einzuladen."
-    aus. Alle Freundes-Funktionen sind über `isOnlineAllowed()` gegated.
-  - **Angemeldet:** „Freund auswählen" lädt über die bestehende
+  - **P2–P4** sind frei: **Leer**, **2. Spieler** (`local`), **Freund** oder
+    (indirekt über den Footer-Stepper) **Bot**. Auswahl über ein kleines
+    Arcade-Popup über der Karte (`openSlotPicker()`), nicht per `alert()`.
+  - **Couch-Koop:** höchstens **ein** `local`-Slot gleichzeitig — die Option
+    ist im Popup deaktiviert, sobald es schon einen gibt. `local` steuert mit
+    **Pfeiltasten**, während P1 bei **WASD** bleibt (`isLocal:true` +
+    `keys:'arrows'` in `buildMatchConfig()`, s. Abschnitt „Couch-Koop").
+  - **Gast-Regel:** Ohne Konto sind im Platz-Popup nur **Leer/2. Spieler**
+    erlaubt. Die Freund-Option ist sichtbar, löst aber den Toast „Melde dich
+    an, um Freunde einzuladen." aus. Alle Freundes-Funktionen sind über
+    `isOnlineAllowed()` gegated. **Online-Sessions per Code (🌐-Knopf) sind
+    davon ausgenommen** — Hosten und Beitreten per Code funktioniert auch als
+    Gast, nur die Freundes-basierte Einladung braucht ein Konto (siehe
+    Abschnitt „Online-Sessions").
+  - **Angemeldet:** „Freund einladen" im Platz-Popup lädt über die bestehende
     `Auth.getFriendOverview()` **nur akzeptierte** Freunde in dieselbe
     Popup-Ansicht (`openFriendPicker()`). Keine Freunde → Empty-State
     „Noch keine Freunde gefunden." Ein bereits in einem anderen Slot
     eingeladener Freund ist deaktiviert/markiert (**keine Doppelauswahl**).
-    Keine neuen Supabase-Tabellen, **keine Realtime/Online-Einladungen** — die
-    Lobby ist eine rein **lokale** Konfiguration.
-- **Bot-System:** Jeder freie Slot lässt sich auf **Bot** stellen. Bots bekommen
-  einen zufälligen Namen aus dem Array **`BOT_NAMES` (300 kurze, lustige
-  Party-Namen)** via `getRandomBotName()` — in derselben Lobby möglichst ohne
-  Dopplung. Bot-Cards haben zusätzlich „🎲 Neuer Name" zum Neu-Würfeln.
-  - **Schwierigkeit statt Farbe:** Bots haben **keine Farbwahl** — ihre Farbe ist
-    **immer zufällig** (`getRandomFreeColor()`, bevorzugt eine freie, sonst eine
-    nicht von Menschen belegte Farbe). Stattdessen ist die **Schwierigkeit**
-    einstellbar: ein „⚙️"-Button schaltet zwischen **Mittel** und **Schwer** um
-    (`cycleBotDifficulty()`), der Status-Badge zeigt den Grad an („Bot · Mittel").
-    Bewusst **nur Mittel/Schwer**, keine leichten Bots (`BOT_DIFFICULTIES`,
-    Default `medium`). Die Bot-KI selbst kommt erst mit den Minigames; vorerst
-    wird nur der gewählte Grad im `lobbyState` (`slot.difficulty`) gehalten.
+    **Wichtig:** Das ist weiterhin der alte, rein lokale Weg ohne Netzbezug
+    (der Slot bleibt lokale Deko, bewegt sich im Spiel nicht) — für eine
+    ECHTE Online-Einladung gibt es seit v0.20.0 den separaten 🌐-„Online"-
+    Knopf im Lobby-Footer mit eigenem Freund-Einladen (`openOnlineFriendPicker()`,
+    sendet echt über `NetSession.sendInvite()`). Peer-Slots aus einer
+    laufenden Online-Session (Typ `friend` **mit** `peerId`) sind in der
+    Karte nicht mehr über „Ändern" editierbar (Status-Badge „Online" statt
+    „Freund") — sonst holt die nächste Presence-Synchronisation eine
+    „entfernte" Person sofort zurück. Ein `friend`-Slot **ohne** `peerId`
+    (aus dem alten Platz-Popup) bleibt wie bisher rein lokale Deko ohne
+    Netzbezug — siehe „Online-Sessions" für den Unterschied.
+- **Bot-ANZAHL statt Pro-Bot-Schwierigkeit (Footer-Stepper):** Bots werden
+  nicht mehr manuell pro Slot hinzugefügt, sondern über „🤖 Bots: − N +" im
+  Footer geregelt (`adjustBotCount()`/`setBotCount()`). Der Stepper füllt/leert
+  automatisch freie Slots und klemmt auf `[minBotCount(), maxBotCount()]` —
+  siehe „Mindestens 3 Spieler" unten. Bots bekommen weiterhin einen
+  zufälligen Namen aus **`BOT_NAMES`** (300 Namen, `getRandomBotName()`, ohne
+  Dopplung) und eine zufällige Farbe (`getRandomFreeColor()`); die
+  Bot-Card behält „🎲 Neuer Name" zum Neu-Würfeln.
+  - **Schwierigkeit ist nicht mehr in der Lobby einstellbar.** Jeder Bot
+    bekommt sie **zufällig pro Match** (`randomBotDifficulty()` in
+    `buildMatchConfig()`, weiterhin nur Mittel/Schwer, nie Leicht) — dieselbe
+    Lobby-Konfiguration kann also von Match zu Match unterschiedlich starke
+    Bots ergeben.
+- **Mindestens 3 Spieler insgesamt** (Menschen + Bots), höchstens 4 Plätze:
+  `minBotCount() = max(0, 3 − Menschen)`, `maxBotCount() = 4 − Menschen`.
+  Verlässt ein Mensch die Lobby (Slot auf „Leer") oder wird ein Bot manuell
+  geleert, ruft `ensureBotCount()` automatisch `setBotCount()` auf und füllt
+  wieder auf. `startSeries()` prüft die Regel zusätzlich als Sicherheitsnetz.
 - **Farbauswahl** (`openColorPicker()`, feste Palette `LOBBY_COLORS`: Rot, Blau,
-  Grün, Gelb, Lila, Orange, Cyan, Pink). Nur für **Menschen** (P1 + Freunde) —
-  Bots erscheinen nicht im Picker. Popup mit Farbfeld **+ Name** je Farbe:
+  Grün, Gelb, Lila, Orange, Cyan, Pink). Nur für **Menschen** (P1, 2. Spieler,
+  Freunde — `isHumanSlot()`) — Bots erscheinen nicht im Picker. Popup mit
+  Farbfeld **+ Name** je Farbe:
   - Jeder aktive Slot hat eine Farbe (Menschen via `getNextFreeColor()`, Bots
     zufällig via `getRandomFreeColor()`).
-  - **Von Menschen** (P1 + Freunde) belegte Farben sind für andere Menschen
-    **gesperrt** — deutlich mit **✕** überlagert und deaktiviert, aber sichtbar.
-    Die aktuell gewählte Farbe trägt ein **✓** + Glow.
+  - **Von Menschen** belegte Farben sind für andere Menschen **gesperrt** —
+    deutlich mit **✕** überlagert und deaktiviert, aber sichtbar. Die aktuell
+    gewählte Farbe trägt ein **✓** + Glow.
   - **Bots werden verdrängt:** Wählt ein Mensch eine Farbe, die gerade ein Bot
     hat, wechselt der Bot automatisch auf die nächste freie Farbe
     (`resolveColorConflicts()`, mehrere Bots ohne Dopplung). Beispiel: Bot P2
     hat Rot, P1 wählt Rot → P1 bekommt Rot, P2 rückt z.B. auf Blau, UI
     aktualisiert sofort. Ist **keine** freie Farbe mehr da → Toast
     „Keine freie Farbe verfügbar."
-- **Lobby-Aktionen** (Footer): „← Zurück" (→ Menü), „↺ Lobby zurücksetzen"
-  (`resetLobby()` — Slots 2–4 auf Leer, P1 bleibt) und „Spiel starten". Letzteres
-  zeigt vorerst den Toast „Spielstart kommt als Nächstes." (noch kein Minigame)
-  und loggt die Lobby-Konfig **ohne sensible Daten** (nur Slot/Typ/Name/Farbe,
-  keine User-IDs) in die Konsole.
+- **Lobby-Aktionen** (Footer): „← Zurück" (→ Menü), Bot-Stepper, „↺ Lobby
+  zurücksetzen" (`resetLobby()` — Slots 2–4 auf Leer, P1 bleibt, danach wieder
+  mit Bots auf Minimum aufgefüllt) und „Spiel starten" (`startSeries()` — die
+  echte Party-Serie über alle Minigames, s. „Party-Serie & Gesamt-Ranking").
 - **Tastatur (ohne Maus):** Die Lobby ist in `setupKeyboard()` eingehängt und
   navigiert über **feste navIds** (`buildLobbyNav()`, bei jedem `renderLobby()`
   neu erzeugt): ↑/↓ wechselt innerhalb einer Karte, ←/→ zur Nachbarkarte,
-  unten führt ↓ in die Fußzeile; der Bot-Grad-Knopf verstellt mit ←/→ die
-  Schwierigkeit (`adjustBotDifficulty()`). Die **Popups** (`#slotPicker` /
-  `#colorPicker`) haben **Vorrang** im Container-Cascade und nutzen die
-  geometrische `moveFocus()` — der Fokus bleibt im Popup, springt nicht in die
-  Lobby/das Menü dahinter. **Esc** schließt erst ein offenes Popup, sonst geht es
-  von der Lobby zurück ins Menü. Enter/Leertaste lösen aus, alle Karten-/Popup-
-  Elemente sind echte `<button>`.
+  unten führt ↓ in die Fußzeile. Der Bot-Stepper sitzt als **zwei echte
+  Knöpfe** (`lobby_botsMinus`/`lobby_botsPlus`) zwischen „Zurück" und
+  „Zurücksetzen" — bewusst keine ←/→-Wertverstellung wie früher beim
+  Schwierigkeits-Knopf, damit die Fußzeile durchgängig mit ←/→ navigierbar
+  bleibt. Die **Popups** (`#slotPicker` / `#colorPicker`) haben **Vorrang** im
+  Container-Cascade und nutzen die geometrische `moveFocus()` — der Fokus
+  bleibt im Popup, springt nicht in die Lobby/das Menü dahinter. **Esc**
+  schließt erst ein offenes Popup, sonst geht es von der Lobby zurück ins
+  Menü. Enter/Leertaste lösen aus, alle Karten-/Popup-Elemente sind echte
+  `<button>`.
+
+### Couch-Koop (2. lokaler Mensch)
+
+- Ein zweiter Mensch kann am selben PC mitspielen, ohne Konto oder
+  Netzwerk — Lobby-Slot-Typ `local` (siehe oben). P1 steuert mit **WASD**,
+  der 2. Spieler mit **Pfeiltasten**. Das ist ein bewusster **Breaking
+  Change**: vorher steuerten WASD UND Pfeiltasten gleichwertig P1 alleine;
+  Solo-Spielen geht jetzt nur noch mit WASD.
+- Technisch trennt `LocalHumanController(layout)` in `renderer/game/
+  controllers.js` die beiden Tastensätze auf zwei unabhängige Instanzen —
+  jede hört global auf `window`, ignoriert aber Tasten außerhalb des eigenen
+  Layouts (`mapKey(key, layout)`). Beide Spielkerne reichen dafür nur ein
+  zusätzliches Feld durch: `new LocalHumanController(p.keys || 'wasd')`
+  (`block-bomb/main.js`/`laser-lines/main.js`, `_initPlayers()`).
+  `buildMatchConfig()` setzt `keys: 'arrows'` für den `local`-Slot, sonst
+  `'wasd'`. Der Tutorial-Schnellstart (immer nur 1 Mensch) ist unberührt.
 - **Responsiv & scrollfrei:** Eigene Regeln in den Kompakt-Stufen
   (`@media max-height: 900px / 680px`) verkleinern Karten/Avatare; sieht in
   Vollbild, 1280×800 und 960×640 gut aus, Scrollbalken bleiben unsichtbar.
+
+### Online-Sessions (Host-autoritativ, seit v0.20.0)
+
+Transport, Protokoll und Netcode-Details stehen ausführlich im
+Änderungsprotokoll-Eintrag v0.20.0 oben — hier nur der Überblick als
+Einstiegspunkt für „wie geht das jetzt".
+
+- **Einstieg:** 🌐-„Online"-Knopf im Lobby-Footer (`#onlinePicker`, JS in
+  `app.js`). Zwei Wege zum Beitreten: **Session-Code** eintippen (funktioniert
+  auch als Gast, kein Konto nötig) oder eine **Freundes-Einladung** annehmen
+  (`#inviteOverlay`, braucht ein Konto — `isOnlineAllowed()`).
+- **Host:** sieht seine normale Lobby, in der beigetretene Peers automatisch
+  einen Bot- oder Leer-Slot belegen (Status-Badge „Online"). Startet die
+  Serie ganz normal über „Spiel starten".
+- **Gast:** sieht statt der editierbaren Lobby einen Warteraum (Spiegel des
+  Host-Stands), tritt dem eigentlichen Match automatisch bei, wenn der Host
+  startet, und steuert seine Figur normal — die Bewegung wird aber vom Host
+  simuliert, der Gast rendert nur, was ankommt (kleine Eingabelatenz, keine
+  Client-Prediction in v1).
+- **Verbindung verloren:** in der Lobby-Phase wird der Slot einfach frei
+  (Bots füllen automatisch nach); mitten im Match übernimmt ein Bot die
+  Figur, ohne das Match zu unterbrechen.
+- Modul: `renderer/net/session.js` (`NetSession`). Transport: Supabase
+  Realtime Broadcast + Presence, keine neuen Tabellen.
 
 ### App-Icon
 
@@ -492,10 +596,9 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
 - **Feste navId-Navigation (Hauptmenü + Lobby):** Diese beiden Screens laufen
   **nicht** über die DOM-Reihenfolge/Geometrie, sondern über eine feste Tabelle.
   Jedes Element trägt eine `data-nav`-ID (z.B. `main_play`, `main_coinGrab`,
-  `lobby_p1_color`, `lobby_p2_difficulty`); `NAV_MENU` (statisch) bzw.
+  `lobby_p1_color`, `lobby_botsMinus`); `NAV_MENU` (statisch) bzw.
   `buildLobbyNav()` (dynamisch, weil die Karten je nach Slot-Typ andere Knöpfe
-  haben) sagen pro Richtung das Ziel. Werte-Knöpfe (z.B. der Bot-Grad) verstellen
-  mit ←/→ den Wert statt zu navigieren. **Start-Fokus:** Hauptmenü → „Spielen",
+  haben) sagen pro Richtung das Ziel. **Start-Fokus:** Hauptmenü → „Spielen",
   Lobby → „P1 · Farbe". Das Hauptmenü **merkt sich das zuletzt fokussierte
   Element** (`menuFocusNav`) und stellt es beim Zurückkehren wieder her
   (`goToMenu()`).
@@ -542,6 +645,15 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
   keinen Ring.
 - **Esc**: schließt das offene Overlay (Beenden / Konto) bzw. führt von den
   Einstellungen **oder der Credits-Seite** zurück ins Menü.
+- **F5/F6 — Match-Abbruch-Abstimmung:** einzige Ausnahme von „alles läuft über
+  Fokus/Container" — wirken global, sobald `#mgAbortVote` offen ist, unabhängig
+  davon, was gerade fokussiert ist (das Panel selbst ist bewusst fokuslos, s.
+  Abschnitt „Match-Abbruch per Abstimmung"). **F5** = Ja, abbrechen, **F6** =
+  Nein, weiterspielen.
+- **Couch-Koop (2 lokale Menschen):** nur die **Spielfigur-Bewegung** im
+  laufenden Match ist pro Spieler getrennt (P1 WASD, 2. Spieler Pfeiltasten,
+  siehe `LocalHumanController`-Layout) — alle Menüs/Overlays bleiben über die
+  normale, geteilte WASD-ODER-Pfeiltasten-Navigation bedienbar.
 
 ### UI / Design
 - Arcade-Party-Look: Impact-Schriftzug mit Versatz-Schatten **und Glow**,
@@ -581,6 +693,129 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
   Klartext — gleicher Key wie die Website, RLS schützt die Daten.
 
 ## Änderungsprotokoll
+
+### v0.20.0 — 2026-09-17
+- **Online-Sessions (host-autoritativ) — echte Netz-Anbindung, kein Stub
+  mehr.** Schließt den ROADMAP-Abschnitt „Online-Spiel über verschiedene
+  Netzwerke" ab. Kandidat war Supabase Realtime, ist es geworden — Broadcast
+  + Presence, **keine neuen Tabellen**.
+  - **Transport (`renderer/net/session.js`, neu):** `NetSession` (globales
+    Objekt wie `Auth`/`Settings`/`Sfx`). Ein Sitzungscode (6 Zeichen, ohne
+    `0/O/1/I`) identifiziert den Channel `blockgames:session:<CODE>`; jeder
+    Teilnehmer trackt sich per Presence (`peerId` = eigene User-ID, sonst
+    eine zufällige Gast-ID). Nachrichten laufen als ein Broadcast-Event `msg`
+    mit `{type, payload, from}`, damit `NetSession.on(type, handler)`
+    generisch dispatchen kann. `Auth.client`-Getter (neu in `auth.js`) reicht
+    den bisher modul-privaten Supabase-Client nach außen, weil `session.js`
+    denselben Client (und dieselbe Auth) für seine Channels braucht.
+  - **Beitritt: Freundes-Einladung UND Session-Code.** Jeder angemeldete
+    Client abonniert `blockgames:user:<userId>` (`listenForInvites()`); eine
+    Einladung öffnet kurz den Ziel-Channel, sendet und schließt wieder
+    (`sendInvite()`). Das lange vorbereitete `#inviteOverlay` (UI + Tastatur
+    + Warteschlange standen schon seit v0.5.0) ist damit endlich echt
+    verdrahtet — `acceptInvite()` tritt jetzt wirklich der Session bei statt
+    nur einen Toast zu zeigen. Alternativ: Code eintippen im neuen
+    🌐-„Online"-Lobby-Popup (`#onlinePicker`).
+  - **Lobby-Sync:** Der Host broadcastet seinen `lobbyState` bei jedem
+    `renderLobby()` (`broadcastLobbyState()`); neue Peers werden per
+    Presence automatisch einem Bot- oder Leer-Slot zugewiesen
+    (`assignPeerSlot()`, Typ `friend` + echtes `peerId`) und die Bot-Anzahl
+    passt sich automatisch an (`ensureBotCount()`). Verlässt ein Peer die
+    Lobby-Phase, wird sein Slot frei und wieder mit Bots aufgefüllt
+    (`freePeerSlot()`). Peer-Slots sind in der Host-UI **nicht** editierbar
+    (kein „Ändern"/Farbe) — sonst holt die nächste Presence-Synchronisation
+    eine „entfernte" Person sofort zurück; Trennen geht nur über 🌐 Online.
+    Ein Gast sieht statt der editierbaren Lobby einen reinen Warteraum
+    (`renderGuestWaitingRoom()`, gespiegelt aus dem Host-Broadcast) — „← Zurück"
+    heißt für ihn „✕ Verbindung trennen".
+  - **Host-autoritative Simulation.** Beide Spielkerne (`block-bomb/main.js`,
+    `laser-lines/main.js`) bekommen ein `role: 'host'|'guest'` in `start()`.
+    Host simuliert wie bisher UND liefert `getSnapshot()` (Position/Facing/
+    Flags/Extra pro Spieler, gerundet, ~20 Hz von app.js gepollt). Gast
+    überspringt Physik/Kollision/Spielregeln komplett (`_stepReplica()`) und
+    zieht die Figuren nur weich zum letzten `applySnapshot()`-Stand nach
+    (~80 ms Angleichung) — **keine Client-Prediction in v1**, spürbar als
+    kleine Eingabelatenz beim Gast. Der eigene Intent des Gasts wird trotzdem
+    lokal berechnet (`getMyInput()`, denselben `LocalHumanController` wie
+    sonst) und ~20 Hz an den Host gesendet, der ihn per `feedRemoteInput()`
+    an den passenden `RemoteController` weiterreicht — `RemoteController`
+    wird dafür jetzt mit der echten `peerId` statt der Lobby-Slot-Id
+    konstruiert. Ergebnis + Zwischen-/Gesamt-Ranking laufen über den
+    bestehenden generischen Flow: der Host broadcastet `result`, der Gast
+    ruft **dieselbe** `onGameResult()` lokal auf — dadurch bleiben
+    `seriesIndex`/`seriesStandings` bei allen identisch, ohne Sonderpfad.
+  - **Bekannte v1-Einschränkungen (bewusst, siehe ROADMAP für „später"):**
+    Online-Mitspieler stimmen beim Map-Voting weiterhin **zufällig** ab wie
+    Bots (keine eigene Gast-Abstimmungs-UI); die **Match-Abbruch-Abstimmung**
+    zählt Online-Mitspieler noch **nicht** mit (nur lokale Menschen, s.u.);
+    **keine Client-Prediction**; **keine Host-Migration** — fällt der Host
+    aus, endet die Session für alle Gäste; höchstens **4 Spieler gesamt**
+    (Host + 3), da Lobby und Maps auf 4 Plätze ausgelegt sind.
+  - **Verlorene Verbindung mitten im Match → Bot übernimmt.** Neue Methode
+    `convertToBot(peerId)` in beiden Spielkernen tauscht nur den Controller
+    (Figur/Position/HUD bleiben unverändert); ausgelöst, sobald die Presence
+    des Peers verschwindet, während `inSeries` läuft
+    (`handlePeerDisconnectMidMatch()`). In der Lobby-Phase (nicht `inSeries`)
+    wird der Slot stattdessen einfach frei (`freePeerSlot()`).
+  - Zwischen-/Gesamt-Ranking: In einer Online-Session entscheidet **nur der
+    Host**, wann's weitergeht — ein Gast-Klick auf „Weiter"/„Nochmal"/„Zur
+    Lobby" ist ein No-op mit Toast („Nur der Host kann das."), sonst würden
+    `seriesIndex` bei Host und Gast unabhängig verändert und auseinanderlaufen.
+    „Zum Menü" bleibt für den Gast ein persönlicher Rückzug (verlässt nur die
+    eigene Teilnahme, die Serie läuft für die anderen weiter).
+  - **Verifiziert per Playwright, zwei echte Electron-Instanzen** (getrennte
+    `--user-data-dir`, echtes Supabase-Realtime-Netzwerk, kein Mock): Hosten +
+    Beitreten per Code, Peer-Zuweisung + Lobby-Sync, Serie starten mit
+    korrektem Rollen-Split, Snapshot/Eingabe-Austausch, identisches Ranking
+    auf beiden Seiten nach einem Ergebnis, Slot-Freigabe beim Verlassen der
+    Lobby-Phase, Bot-Übernahme bei Verbindungsverlust mitten im Match.
+
+### v0.19.0 — 2026-09-16
+- **Lobby: nur noch Bot-ANZAHL statt Pro-Bot-Schwierigkeit, immer mindestens
+  3 Spieler.** Der ⚙️-Grad-Knopf pro Bot-Karte ist weg; Bots bekommen ihre
+  Schwierigkeit (Mittel/Schwer, weiter nie Leicht) jetzt zufällig **pro
+  Match** zugewiesen (`randomBotDifficulty()` in `buildMatchConfig()`), nicht
+  mehr pro Slot in der Lobby. Stattdessen regelt ein neuer Footer-Stepper
+  („🤖 Bots: − N +") die **Anzahl**: er klemmt automatisch auf
+  `[max(0, 3 − Menschen), 4 − Menschen]` (`minBotCount()`/`maxBotCount()` in
+  `app.js`), damit es immer mindestens 3 und höchstens 4 Spieler insgesamt
+  gibt. Verlässt ein Mensch die Lobby oder wird ein Bot manuell auf „Leer"
+  gesetzt, füllt `ensureBotCount()` automatisch wieder auf.
+- **Couch-Koop: zweiter lokaler Mensch am selben PC.** Neuer Lobby-Slot-Typ
+  `'local'` (Slot-Picker: „🎮 2. Spieler", höchstens einer gleichzeitig) —
+  steuert mit **Pfeiltasten**, während P1 bei **WASD** bleibt.
+  `LocalHumanController` (`renderer/game/controllers.js`) nimmt dafür ein
+  `layout`-Argument (`'wasd'` | `'arrows'`) und ignoriert Tasten außerhalb des
+  eigenen Layouts, statt wie bisher beide Tastensätze gleichwertig auf eine
+  Figur zu legen — **Breaking Change:** Solo-Spielen geht jetzt nur noch mit
+  WASD, nicht mehr zusätzlich mit den Pfeiltasten. Zwei Instanzen können
+  gleichzeitig angehängt sein, ohne sich gegenseitig zu steuern (per
+  Playwright-Test verifiziert: `d`/`ArrowUp` bewegen jeweils nur ihre eigene
+  Instanz). `buildMatchConfig()` gibt pro Spieler jetzt `keys: 'wasd'|'arrows'`
+  mit; beide Minigame-Kerne reichen das 1:1 an den Konstruktor weiter
+  (`new LocalHumanController(p.keys || 'wasd')`).
+- **Match-Abbruch per Abstimmung.** Im Pausemenü (Esc im Spiel) neuer Knopf
+  „Match abbrechen" — öffnet ein kleines, bewusst **nicht blockierendes**
+  Fenster am **linken Rand, vertikal zentriert** (`#mgAbortVote`,
+  `.mg-abort-vote` in `style.css`): kein Backdrop, kein Fokus-Diebstahl, das
+  Match läuft während der Abstimmung normal weiter (Pause wird beim Öffnen
+  sofort wieder aufgehoben). Gesteuert ausschließlich über **F5 = Ja,
+  abbrechen** / **F6 = Nein, weiterspielen** (beide Tasten waren frei — kein
+  Electron-Menü, das sie belegt). Wer die Abstimmung startet, zählt sofort als
+  Ja; nur echte Menschen stimmen ab (Bots ignoriert), bei mehreren lokalen
+  Menschen gilt der erste Mensch in `currentPlayers` (= P1) als Initiator, die
+  übrigen müssen selbst per F5/F6 abstimmen. **15 s ohne Antwort = Nein**
+  (verhindert eine hängende Abstimmung). Spielt man nur gegen Bots, läuft
+  stattdessen eine **Schein-Abstimmung** (`runFakeAbortVote()`): die Bots
+  „stimmen" zeitversetzt ab, das Ergebnis ist immer Ja. Bei Mehrheit Ja endet
+  das Match und es geht zurück in die Lobby (Tutorial-Runden, die keine Lobby
+  kennen, gehen zurück ins Menü). Per Playwright end-to-end verifiziert:
+  Schein-Abstimmung, echte Abstimmung mit Timeout→Nein, echte Abstimmung mit
+  F5→Ja→Abbruch.
+- **Noch offen (siehe ROADMAP):** echte Online-Sessions (Host lädt bis zu 3
+  weitere Spieler ein, `RemoteController` wird tatsächlich gefüttert) sind
+  weiterhin **nicht** verdrahtet — nur die lokale Seite (Solo + Couch-Koop)
+  dieser Änderung ist umgesetzt.
 
 ### v0.18.0 — 2026-09-16
 - **Bot-KI Phase 1 — Kern-Modul (`botAI.js`), ohne Adapter-Änderungen:**

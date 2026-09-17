@@ -43,6 +43,13 @@ class BlockBombGame {
   constructor(config) {
     this.config = config;
     this.host = config.host;
+    // Online-Sessions (siehe app.js/net/session.js): 'host' simuliert normal
+    // UND liefert getSnapshot() zum Broadcasten; 'guest' überspringt Physik/
+    // Regeln komplett und rendert nur, was applySnapshot() liefert — der
+    // Spielkern kennt NetSession dabei nicht, app.js reicht nur `role` durch.
+    this.role = config.role === 'guest' ? 'guest' : 'host';
+    this._netSnap = null;      // letzter über applySnapshot() erhaltener Stand (Gast)
+    this._myIntent = { x: 0, z: 0 }; // eigener Intent, den app.js für 'input' abgreift
     this.running = false;
     this.paused = false;
     this.ended = false;
@@ -136,8 +143,8 @@ class BlockBombGame {
       char.group.position.set(spawn.x, this.map.groundY, spawn.z);
 
       let controller;
-      if (p.isLocal && p.type === 'human') controller = new LocalHumanController();
-      else if (p.type === 'remote') controller = new RemoteController(p.id);
+      if (p.isLocal && p.type === 'human') controller = new LocalHumanController(p.keys || 'wasd');
+      else if (p.type === 'remote') controller = new RemoteController(p.peerId || p.id);
       else controller = new BotController(makeBotBrain(p.difficulty || 'medium'));
       if (controller.attach) controller.attach();
 
@@ -290,7 +297,8 @@ class BlockBombGame {
     if (this.introActive) {
       this._updateIntro(dt);
     } else if (!this.paused && this.running) {
-      this._step(dt);
+      if (this.role === 'guest') this._stepReplica(dt);
+      else this._step(dt);
     }
     this._animate(dt);
     if (this.debugBots) {
@@ -353,6 +361,78 @@ class BlockBombGame {
 
     // Explosion bei Ablauf
     if (this.timeLeft <= 0 && !this.ended) this._explodeHolder();
+  }
+
+  // ── Gast-Wiedergabe (Online-Session) ────────────────────────────────
+  // KEINE Physik/Kollision/Spielregeln — nur weiches Nachziehen der Figuren
+  // zum letzten per applySnapshot() empfangenen Stand des Hosts. Der eigene
+  // Intent wird trotzdem berechnet (LocalHumanController braucht dafür kein
+  // Wissen über Netzwerk), aber NICHT auf die eigene Figur angewandt: die
+  // bewegt sich erst, wenn der Host den Intent verarbeitet hat und seinen
+  // nächsten Snapshot schickt — bewusst ohne Client-Prediction in v1
+  // (spürbar als Eingabelatenz, siehe DOKUMENTATION.md).
+  _stepReplica(dt) {
+    const world = this._world();
+    for (const p of this.players) {
+      if (p.isLocal) this._myIntent = p.controller.update(p, world, dt) || { x: 0, z: 0 };
+    }
+    if (!this._netSnap) return;
+
+    this.timeLeft = this._netSnap.timeLeft;
+    const urgency = 1 - Math.max(0, Math.min(1, this.timeLeft / 6));
+    this.bomb.setUrgency(urgency);
+    this.elTimer.textContent = Math.max(0, this.timeLeft).toFixed(1);
+    this.elTimerBox.classList.toggle('urgent', this.timeLeft < 3);
+
+    const lerp = Math.min(1, dt * 12); // ~80ms Angleichung — glättet 20Hz-Snapshots
+    const byId = new Map(this._netSnap.p.map(row => [row[0], row]));
+    for (const p of this.players) {
+      const row = byId.get(p.id);
+      if (!row) continue;
+      const [, x, z, facing, flags] = row;
+      const wasAlive = p.alive;
+      p.alive = !!(flags & 1);
+      const isHolder = !!(flags & 2);
+      p.x += (x - p.x) * lerp; p.z += (z - p.z) * lerp;
+      p.char.group.position.x = p.x; p.char.group.position.z = p.z;
+      p.facing = facing;
+      if (wasAlive && !p.alive) { p.char.explode(); this.config.sfx('bombExplode'); }
+      if (isHolder !== p.isHolder) { p.isHolder = isHolder; p.char.setHolderGlow(isHolder); }
+      if (isHolder) this.bomb.group.position.set(p.x, this.map.groundY + 2.5, p.z);
+    }
+  }
+
+  // Host: kompakter Stand für den 20Hz-Broadcast (app.js pollt das). Flags-
+  // Bitfeld: 1 = lebt, 2 = trägt die Bombe. Koordinaten gerundet, damit die
+  // Nachricht klein bleibt (Supabase-Realtime-Ratenbudget, s. DOKUMENTATION.md).
+  getSnapshot() {
+    return {
+      timeLeft: Math.round(this.timeLeft * 10) / 10,
+      p: this.players.map(p => [
+        p.id, Math.round(p.x * 100) / 100, Math.round(p.z * 100) / 100,
+        Math.round(p.facing * 100) / 100,
+        (p.alive ? 1 : 0) | (p.id === this.holderId ? 2 : 0),
+      ]),
+    };
+  }
+  // Gast: letzten Host-Stand übernehmen (von app.js bei jeder 'snap'-Nachricht gerufen).
+  applySnapshot(payload) { this._netSnap = payload; }
+  // Host: Eingabe eines entfernten Spielers an dessen RemoteController weiterreichen.
+  feedRemoteInput(peerId, intent) {
+    const p = this.players.find(pl => pl.controller && pl.controller.peerId === peerId);
+    if (p) p.controller.feed(intent);
+  }
+  // Gast: eigener Intent, den app.js für die 'input'-Nachricht an den Host abgreift.
+  getMyInput() { return this._myIntent; }
+
+  // Host: verlorene Verbindung eines Online-Mitspielers → Bot übernimmt die
+  // Figur, damit die laufende Serie nicht abbricht (Disconnect-Regel, s.
+  // DOKUMENTATION.md). Nur der Controller wechselt, Figur/Position/HUD bleiben.
+  convertToBot(peerId) {
+    const p = this.players.find(pl => pl.controller && pl.controller.peerId === peerId);
+    if (!p) return;
+    if (p.controller.detach) p.controller.detach();
+    p.controller = new BotController(makeBotBrain('medium'));
   }
 
   _tickSound(dt, urgency) {
@@ -609,6 +689,12 @@ window.BlockBomb = {
   resume() { if (current) current.resume(); },
   stop() { if (current) { current.destroy(); current = null; } },
   isRunning() { return !!current && current.running; },
+  // ── Online-Sessions (app.js/net/session.js) ──────────────────────────
+  getSnapshot() { return current ? current.getSnapshot() : null; },
+  applySnapshot(payload) { if (current) current.applySnapshot(payload); },
+  feedRemoteInput(peerId, intent) { if (current) current.feedRemoteInput(peerId, intent); },
+  getMyInput() { return current ? current.getMyInput() : { x: 0, z: 0 }; },
+  convertToBot(peerId) { if (current) current.convertToBot(peerId); },
   getPlayers() {
     if (!current) return [];
     return current.players.map(p => ({
