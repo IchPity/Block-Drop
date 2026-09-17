@@ -694,6 +694,35 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
 
 ## Änderungsprotokoll
 
+### v0.22.1 — 2026-09-17
+- **Impeccable-Polish-Durchgang über die ganze App** (Hauptmenü, Einstellungen,
+  Credits, Konto-Overlay, Lobby + kurzer Anspieltest in allen drei
+  Minigames per Playwright-`_electron`-Rundgang). Drei reale Befunde
+  behoben, keine Konsolenfehler:
+  - **Toast überlappte das Menü-Footer.** `.toast` war `position: fixed;
+    bottom: 36px` — auf `#screen-menu` lag das genau über dem
+    Credits-Button/der Versionsnummer im Footer (z.B. sichtbar bei der
+    Gast-Modus-„kein Konto"-Meldung). `bottom` auf `96px` angehoben, damit
+    der Toast immer oberhalb des Footers schwebt (`renderer/style.css`).
+  - **`.credit-card` nutzte einen 5px farbigen `border-left`** als
+    einzige Stelle im ganzen Frontend mit diesem Muster — inkonsistent zur
+    etablierten Akzent-Sprache der `.minigame-card`s (leuchtender Strich
+    oben, per `::before`). `.credit-card` auf dieselbe
+    `::before`-Top-Leiste umgestellt statt der Rand-Variante
+    (`renderer/style.css`).
+  - **Einstellungen/Credits klebten oben im Vollbild-Fenster**, darunter
+    bis zu 60–70% reine Leerfläche (Sternenhintergrund) — Fensterhöhe
+    1080px, Panel-Inhalt kaum 300px hoch, ohne jeden Bezug zum restlichen
+    Screen-Raum. `.settings-panels` (Flex-Spalte, `justify-content:
+    center`) und `.credits-grid` (`align-content: center`) zentrieren den
+    Inhalt jetzt vertikal im verfügbaren Raum unter Kopfzeile/Reitern,
+    statt oben zu kleben (`renderer/style.css`).
+  - Verifiziert per Playwright-Rundgang (alle Einstellungs-Reiter, Credits,
+    Konto-Overlay, Minigame-Grid, je ein Match in Block Bomb/Block
+    Rush/Laser Lines) — keine Konsolenfehler, Screenshots vor/nach
+    verglichen.
+  - Version auf 0.22.1 (package.json, preload.js).
+
 ### v0.22.0 — 2026-09-17
 - **Block Rush spielbar (drittes Minigame).** Tricky-Towers-artiges Party-
   Minigame: alle Spieler bauen GLEICHZEITIG, nebeneinander in einer 3D-Szene,
