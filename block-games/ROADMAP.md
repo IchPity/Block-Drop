@@ -128,10 +128,17 @@ als Vorlage für Aufbau, Map-Voting und die Steuerungs-Abstraktion.
   (0 = unbegrenzt), z.B. im requestAnimationFrame-Loop drosseln.
 
 ### Verteilung / Download über die Website
+- **✅ Erledigt (v0.21.0): Update-Check vor dem Login.** Die App fragt beim
+  Start die GitHub-Releases-API ab und bietet bei einer neueren Version
+  einen Screen vor Login/Menü an — „Jetzt herunterladen" öffnet nur die
+  Release-Seite im Browser (kein Auto-Download). Siehe DOKUMENTATION.md,
+  Änderungsprotokoll v0.21.0.
 - `electron-builder` einrichten → Windows-Installer (NSIS) bauen
 - Installer auf der Website zum Download anbieten (z.B. neue Seite
   `app/download/` oder Button auf der Startseite)
-- Releases versionieren; später evtl. Auto-Update (electron-updater)
+- Releases versionieren (Tag `vX.Y.Z` + GitHub Release erstellen — nötig,
+  damit der Update-Check oben überhaupt etwas findet); später evtl. echter
+  Auto-Updater (`electron-updater`) statt nur des Browser-Links
 
 ### Integration in die Repo-Struktur (ganz am Ende)
 - Ordner ggf. umziehen/umbenennen gemäß Repo-Konvention

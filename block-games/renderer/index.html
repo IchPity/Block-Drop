@@ -32,6 +32,28 @@
     </div>
   </div>
 
+  <!-- ── Update-Hinweis (nur wenn beim Start eine neuere GitHub-Release
+       gefunden wurde; s. renderer/app.js → checkForUpdate). Erscheint VOR
+       dem Login-Screen. „Später" führt normal weiter in Login/Menü,
+       „Jetzt herunterladen" öffnet die Release-Seite im Standardbrowser
+       (kein Auto-Download — noch keine Installer-Pipeline, s. ROADMAP.md). -->
+  <div id="screen-update" class="screen">
+    <div class="auth-wrap">
+      <h1 class="game-logo small">UPDATE!</h1>
+      <div class="auth-card update-card">
+        <p class="update-lead">Es gibt eine neue Version von Block Games.</p>
+        <p class="update-version">
+          Version <strong id="updateVersion">–</strong>
+          <span class="update-current">(du hast <span id="updateCurrentVersion">–</span>)</span>
+        </p>
+        <div class="overlay-actions">
+          <button class="btn btn-primary" id="btnUpdateDownload">⬇ Jetzt herunterladen</button>
+          <button class="btn btn-back" id="btnUpdateSkip">Später</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Login / Registrierung (überspringbar → Gast-Modus) ──────────── -->
   <div id="screen-auth" class="screen">
     <div class="auth-wrap">

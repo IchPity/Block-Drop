@@ -422,6 +422,12 @@ body::before {
 
 .auth-note { margin-top: 14px; color: var(--text-dim); font-size: 0.8em; }
 
+/* ── Update-Hinweis (vor dem Login) ────────────────────────────────── */
+.update-card { width: min(400px, 92vw); }
+.update-lead { font-weight: 700; margin-bottom: 6px; }
+.update-version { color: var(--text-dim); font-size: 0.9em; }
+.update-current { font-size: 0.9em; }
+
 /* ── Buttons ────────────────────────────────────────────────────────── */
 .btn {
   border: none;

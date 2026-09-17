@@ -1,8 +1,65 @@
 // Block Games — Electron-Hauptprozess.
 // Erstellt das Fenster (startet immer im Vollbild) und lädt das Renderer-UI.
 // Anzeige-Einstellungen (Vollbild, Fenstergröße) steuert der Renderer per IPC.
-const { app, BrowserWindow, Menu, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, screen, shell } = require('electron');
 const path = require('path');
+const { version: APP_VERSION } = require('./package.json');
+
+// ── Update-Check gegen GitHub Releases ────────────────────────────────
+// Rein informativ: fragt beim Start die Releases-API ab und vergleicht mit
+// der eigenen Version. Kein Auto-Download/-Install (noch keine
+// electron-builder/Publish-Pipeline, s. ROADMAP.md) — der Renderer bietet
+// bei einer neueren Version nur den Link zur GitHub-Release-Seite an.
+const UPDATE_REPO = 'IchPity/Block-Drop';
+const UPDATE_CHECK_TIMEOUT_MS = 5000;
+
+function parseVersionParts(v) {
+  return String(v || '').trim().replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
+}
+
+function isNewerVersion(remote, local) {
+  const r = parseVersionParts(remote), l = parseVersionParts(local);
+  for (let i = 0; i < Math.max(r.length, l.length); i++) {
+    const rv = r[i] || 0, lv = l[i] || 0;
+    if (rv !== lv) return rv > lv;
+  }
+  return false;
+}
+
+ipcMain.handle('update:check', async () => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), UPDATE_CHECK_TIMEOUT_MS);
+  try {
+    const res = await fetch(`https://api.github.com/repos/${UPDATE_REPO}/releases/latest`, {
+      headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'block-games-update-check' },
+      signal: controller.signal
+    });
+    if (!res.ok) return { available: false };
+    const data = await res.json();
+    const tag = data.tag_name || '';
+    if (!tag || !isNewerVersion(tag, APP_VERSION)) return { available: false };
+    return {
+      available: true,
+      version: tag.replace(/^v/i, ''),
+      url: typeof data.html_url === 'string' ? data.html_url : `https://github.com/${UPDATE_REPO}/releases`,
+      notes: data.name || tag
+    };
+  } catch {
+    // Kein Internet, Rate-Limit, noch kein Release, etc. — Start darf davon
+    // nie blockiert werden.
+    return { available: false };
+  } finally {
+    clearTimeout(timer);
+  }
+});
+
+// Nur Links auf das eigene Repo öffnen (Renderer schickt uns die URL aus
+// der Releases-API-Antwort, die stammt also nicht von einer beliebigen Quelle).
+ipcMain.handle('update:open', (e, url) => {
+  if (typeof url === 'string' && url.startsWith(`https://github.com/${UPDATE_REPO}`)) {
+    shell.openExternal(url);
+  }
+});
 
 // Eigenes Marken-Icon (goldener "Block Games"-Power-Block). Auf Windows
 // bevorzugt die .ico (mehrere Auflösungen für die Taskleiste), sonst die .png.

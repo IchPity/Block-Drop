@@ -58,7 +58,7 @@
           "block-games/renderer/index.html"
         ],
         "createdAt": "2026-09-15T10:46:53.459Z",
-        "reason": "Agent - bereits in DOKUMENTATION.md v0.15.0 als bewusstes Arcade-Stilmittel akzeptiert; bestehender ignore-value-Eintrag griff nicht, erneut gesetzt"
+        "reason": "reuses existing .game-logo.small class (glow is the established site-wide Arcade design system, not new styling added here)"
       },
       {
         "rule": "gpt-thin-border-wide-shadow",

@@ -281,6 +281,38 @@ function showAuth() {
   document.getElementById('loginId').focus();
 }
 
+// ── Update-Check (vor dem Login) ────────────────────────────────────
+// Fragt beim Start einmalig main.js (→ GitHub Releases API), ob es eine
+// neuere Version gibt. Ohne Ergebnis oder ohne Update passiert nichts —
+// der Boot-Flow läuft direkt weiter zu Login/Menü. Mit Update wartet der
+// Boot-Flow (await), bis der Spieler „Jetzt herunterladen" oder „Später"
+// gewählt hat.
+function checkForUpdate() {
+  return new Promise(async (resolve) => {
+    let info;
+    try { info = await window.blockGames?.checkForUpdate(); } catch { info = null; }
+    if (!info || !info.available) return resolve();
+
+    document.getElementById('updateVersion').textContent = info.version;
+    document.getElementById('updateCurrentVersion').textContent = window.blockGames?.version || '?';
+    const btnDownload = document.getElementById('btnUpdateDownload');
+    const btnSkip = document.getElementById('btnUpdateSkip');
+
+    const finish = () => {
+      btnDownload.removeEventListener('click', onDownload);
+      btnSkip.removeEventListener('click', onSkip);
+      resolve();
+    };
+    const onDownload = () => { window.blockGames?.openUpdateUrl(info.url); finish(); };
+    const onSkip = () => finish();
+    btnDownload.addEventListener('click', onDownload);
+    btnSkip.addEventListener('click', onSkip);
+
+    showScreen('screen-update');
+    btnDownload.focus();
+  });
+}
+
 function setupAuthForms() {
   document.getElementById('formLogin').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -682,6 +714,7 @@ function setupKeyboard() {
       else if (accountOpen()) closeAccount();
       else if (onlinePickerOpen()) closeOnlinePicker();
       else if (lobbyPopupOpen()) { closeColorPicker(); closeSlotPicker(); }
+      else if (isActive('screen-update')) document.getElementById('btnUpdateSkip').click();
       else if (isActive('screen-settings') || isActive('screen-credits') || isActive('screen-lobby')) {
         if (NetSession.state === 'guest') leaveOnlineSession();
         goToMenu();
@@ -721,6 +754,7 @@ function setupKeyboard() {
     else if (onlinePickerOpen()) container = document.getElementById('onlinePicker');
     else if (colorPickerOpen()) container = document.getElementById('colorPicker');
     else if (slotPickerOpen()) container = document.getElementById('slotPicker');
+    else if (isActive('screen-update')) container = document.getElementById('screen-update');
     else if (isActive('screen-auth')) container = document.getElementById('screen-auth');
     else if (isActive('screen-settings')) container = document.getElementById('screen-settings');
     else if (isActive('screen-lobby')) container = document.getElementById('screen-lobby');
@@ -2923,6 +2957,8 @@ async function boot() {
       if (!guestMode) showAuth();
     }
   });
+
+  await checkForUpdate();
 
   const user = await Auth.init();
   if (user) {

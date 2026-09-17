@@ -4,7 +4,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('blockGames', {
-  version: '0.20.0',
+  version: '0.21.0',
   platform: process.platform,
 
   // App beenden (Bestätigungs-Dialog macht der Renderer)
@@ -16,4 +16,9 @@ contextBridge.exposeInMainWorld('blockGames', {
   setWindowSize: (width, height) => ipcRenderer.invoke('display:set-size', { width, height }),
   // cb(true/false) — feuert auch bei F11, damit die UI synchron bleibt.
   onFullscreenChange: (cb) => ipcRenderer.on('display:fullscreen-changed', (_e, on) => cb(on)),
+
+  // Update-Check gegen GitHub Releases (siehe IPC-Handler in main.js).
+  // { available, version, url, notes } bzw. { available: false }.
+  checkForUpdate: () => ipcRenderer.invoke('update:check'),
+  openUpdateUrl: (url) => ipcRenderer.invoke('update:open', url),
 });

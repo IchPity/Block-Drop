@@ -694,6 +694,29 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
 
 ## Änderungsprotokoll
 
+### v0.21.0 — 2026-09-17
+- **Update-Check vor dem Login.** Beim Start fragt der Hauptprozess
+  (`main.js`, IPC `update:check`) einmalig `GET /repos/IchPity/Block-Drop/
+  releases/latest` der GitHub-API ab (5s-Timeout via `AbortController`, jeder
+  Fehler — kein Internet, noch kein Release, Rate-Limit — fällt still auf
+  „kein Update" zurück, blockiert den Start nie). `tag_name` wird gegen die
+  eigene `package.json`-Version verglichen (`isNewerVersion()`, simpler
+  Zahlen-Vergleich statt einer semver-Library, reicht für `MAJOR.MINOR.PATCH`
+  -Tags wie `v0.21.0`).
+  - Neuer Screen `#screen-update` (`renderer/index.html`, gleicher Auth-Karten-
+    Look) erscheint — falls eine neuere Version gefunden wurde — nach dem
+    Lade-Screen und VOR Login/Menü (`checkForUpdate()` in `app.js`, awaited
+    in `boot()` vor `Auth.init()`). Zwei Aktionen: **„Jetzt herunterladen"**
+    öffnet die Release-Seite im Standardbrowser (`shell.openExternal` in
+    main.js, IPC `update:open` — whitelisted auf `github.com/IchPity/
+    Block-Drop`-URLs), **„Später"** führt normal weiter. Esc = „Später".
+  - Kein Auto-Download/-Install — dafür fehlt noch die Publish-Pipeline
+    (`electron-builder`, s. ROADMAP „Verteilung/Download"). Der Check findet
+    erst etwas, sobald auf GitHub ein Release veröffentlicht wird (Tag
+    `vX.Y.Z` + „Release erstellen", nicht nur ein `git tag`).
+  - `preload.js` reicht `checkForUpdate()`/`openUpdateUrl()` an den Renderer
+    durch. Version auf 0.21.0 (package.json, preload.js).
+
 ### v0.20.0 — 2026-09-17
 - **Online-Sessions (host-autoritativ) — echte Netz-Anbindung, kein Stub
   mehr.** Schließt den ROADMAP-Abschnitt „Online-Spiel über verschiedene
