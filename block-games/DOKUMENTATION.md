@@ -378,7 +378,11 @@ und die Haupt-Einstellungsseite immer synchron bleiben.
   `openQuitDialog()`). Er läuft `Auth.signOut()` und beendet danach — die Session
   wird beendet, sodass der nächste Start wieder den Login zeigt. Der rechte
   „Beenden"-Button hält die Session (nächster Start direkt im Menü). Reihenfolge
-  im Dialog: **Abbrechen · Abmelden & Beenden · Beenden**.
+  im Dialog: **Abbrechen · Abmelden & Beenden · Beenden**. Layout: „Abmelden &
+  Beenden" bekommt per `order: -1; flex: 1 1 100%` eine eigene volle Zeile über
+  den anderen zwei Buttons — mit allen drei Buttons in einer Reihe ragte der
+  lange Text über den Kartenrand hinaus (`.overlay-actions` braucht dafür
+  `flex-wrap: wrap`, `renderer/style.css`).
 
 ### Konto & Freunde
 
@@ -693,6 +697,15 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
   Klartext — gleicher Key wie die Website, RLS schützt die Daten.
 
 ## Änderungsprotokoll
+
+### v0.22.2 — 2026-09-17
+- **Beenden-Dialog überlief bei angemeldeten Nutzern.** Mit allen drei
+  Buttons („Abbrechen · Abmelden & Beenden · Beenden") in einer Reihe war die
+  Karte zu schmal für den langen Text — Buttons ragten über den Kartenrand
+  hinaus. „Abmelden & Beenden" bekommt jetzt per `order: -1; flex: 1 1 100%`
+  eine eigene Zeile oberhalb von Abbrechen/Beenden, `.overlay-actions` dafür
+  auf `flex-wrap: wrap` (`renderer/style.css`).
+  - Version auf 0.22.2 (package.json, preload.js).
 
 ### v0.22.1 — 2026-09-17
 - **Impeccable-Polish-Durchgang über die ganze App** (Hauptmenü, Einstellungen,

@@ -1711,12 +1711,19 @@ button:focus-visible:not(.minigame-card):not(.party-btn) {
 
 /* „Abmelden & Beenden" — mittlerer Button im Beenden-Dialog (nur angemeldet
    sichtbar). Gelb-akzentuiert, damit er sich von „Abbrechen" (neutral) und
-   „Beenden" (rot) klar abhebt. */
-.btn-quit-logout { color: var(--yellow); }
+   „Beenden" (rot) klar abhebt. Eigene Zeile (order + flex-basis 100%), weil
+   der lange Text zusammen mit den anderen zwei Buttons sonst über den
+   Kartenrand hinausragt. */
+.btn-quit-logout {
+  color: var(--yellow);
+  order: -1;
+  flex: 1 1 100%;
+}
 .btn-quit-logout:hover { border-color: var(--yellow); }
 
 .overlay-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 14px;
   justify-content: center;
   margin-top: 22px;
