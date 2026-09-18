@@ -17,6 +17,15 @@ export const COLS = 6;
 export const ROWS = 16;
 export const CELL = 0.5;
 
+// Fallintervalle (Sekunden pro Reihe bei gravityScale=1). BASE_FALL_INTERVAL
+// war früher 0.80 — bei 90s Rundenzeit brauchte ein Teil dadurch bis zu ~9.6s
+// vom Spawn bis zum Boden, unassistiertes Spielen war praktisch unmöglich und
+// Hard-Drop der einzige gangbare Weg (ohne jede Anleitung dazu). Halbiert auf
+// 0.42, sodass reine Schwerkraft innerhalb der Rundenzeit eine echte Option
+// bleibt, Hard-Drop aber weiterhin deutlich schneller ist.
+export const BASE_FALL_INTERVAL = 0.42;
+export const SOFT_FALL_INTERVAL = 0.045;
+
 // Jede Form: 4 Rotationen, je eine Liste von [x,y] in einer 4x4-Box.
 const SHAPES = {
   I: [
@@ -195,12 +204,21 @@ export class Playfield {
     return this._lock();
   }
 
+  // Landevorschau (Geisterteil): wohin würde das aktuelle Teil bei einem
+  // Hard-Drop JETZT fallen — ohne das Feld zu verändern. Nutzt exakt dieselbe
+  // dropRow()-Logik wie hardDrop() selbst, damit Vorschau und echte Landung
+  // nie auseinanderlaufen.
+  previewDropRow() {
+    if (!this.piece || this.overflow) return -1;
+    return this.dropRow(this.piece.type, this.piece.rot, this.piece.col);
+  }
+
   // step: normale Schwerkraft. gravityScale > 1 = schneller fallen
   // (Blitzsturz-Spell/Windkanal), soft = Spieler hält „runter".
   step(dt, gravityScale, soft, lockDelay = 0.25) {
     if (!this.piece || this.overflow) return 'none';
     const p = this.piece;
-    const interval = (soft ? 0.045 : 0.80) / Math.max(0.1, gravityScale);
+    const interval = (soft ? SOFT_FALL_INTERVAL : BASE_FALL_INTERVAL) / Math.max(0.1, gravityScale);
     const resting = !this._fits(p.type, p.rot, p.col, p.row + 1);
 
     if (resting) {

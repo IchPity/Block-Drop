@@ -152,12 +152,6 @@
         </span>
         <span class="party-btn-go" aria-hidden="true">▶</span>
       </button>
-
-      <!-- Minigame-Auswahl -->
-      <h2 class="section-title">Minigames</h2>
-      <div class="minigame-grid" id="minigameGrid">
-        <!-- Karten werden per JS aus der Minigame-Liste erzeugt -->
-      </div>
     </main>
 
     <footer class="menu-footer">
@@ -189,11 +183,11 @@
   </div>
 
   <!-- ── Lobby (Vorbereitungsscreen, geöffnet vom „Spielen"-Button) ──────
-       Vier große Playercards: P1 ist immer man selbst, P2–P4 sind frei
-       (Leer/2. Spieler/Bot/Freund). Karten + Popups (Platz-/Farbwahl) werden
-       per JS aus dem lobbyState gebaut (app.js → renderLobby). Die
-       Bot-ANZAHL (nicht mehr die Schwierigkeit) wird über den Stepper im
-       Footer geregelt — es sind immer mindestens 3 Spieler insgesamt.
+       Vier große Playercards: P1 ist immer man selbst, P2–P4 sind frei über
+       den „+"-Knopf des jeweiligen Platzes (Leer/2. Spieler/Bot/Freund).
+       Karten + Popups (Platz-/Farbwahl) werden per JS aus dem lobbyState
+       gebaut (app.js → renderLobby). Es sind immer mindestens 3 Spieler
+       insgesamt — leere Plätze füllt ensureBotCount() automatisch mit Bots.
        Komplett ohne Maus: Pfeile/WASD bewegen den Fokus, Enter/Leertaste
        löst aus, Esc schließt erst Popups, sonst zurück ins Menü (siehe
        setupKeyboard in app.js). -->
@@ -209,11 +203,6 @@
 
       <footer class="lobby-footer">
         <button class="btn btn-pill" id="btnLobbyBack" data-nav="lobby_back">← Zurück</button>
-        <div class="lobby-bot-stepper">
-          <button class="btn btn-pill lobby-stepper-btn" id="btnBotsMinus" data-nav="lobby_botsMinus" aria-label="Weniger Bots">−</button>
-          <span class="lobby-stepper-label">🤖 Bots: <strong id="lobbyBotCount">2</strong></span>
-          <button class="btn btn-pill lobby-stepper-btn" id="btnBotsPlus" data-nav="lobby_botsPlus" aria-label="Mehr Bots">+</button>
-        </div>
         <button class="btn btn-pill" id="btnLobbyOnline" data-nav="lobby_online">🌐 Online</button>
         <button class="btn btn-pill" id="btnLobbyReset" data-nav="lobby_reset">↺ Lobby zurücksetzen</button>
         <button class="party-btn party-btn-sm" id="btnLobbyStart" data-nav="lobby_start">
@@ -271,6 +260,7 @@
       <div class="settings-tabs" role="tablist" aria-label="Einstellungs-Kategorien">
         <button class="settings-tab" id="stabAccount" data-panel="panel-account" role="tab" aria-selected="false" hidden>👤 Konto</button>
         <button class="settings-tab active" id="stabDisplay" data-panel="panel-display" role="tab" aria-selected="true">🖥️ Anzeige</button>
+        <button class="settings-tab" id="stabControls" data-panel="panel-controls" role="tab" aria-selected="false">🎮 Steuerung</button>
         <button class="settings-tab" id="stabGraphics" data-panel="panel-graphics" role="tab" aria-selected="false">✨ Grafik</button>
         <button class="settings-tab" id="stabAudio" data-panel="panel-audio" role="tab" aria-selected="false">🔊 Audio</button>
       </div>
@@ -327,6 +317,38 @@
               <small>gilt nur im Fenstermodus · ←/→ ändert die Auswahl</small>
             </div>
             <select id="setResolution"></select>
+          </div>
+        </section>
+
+        <!-- Steuerung: Tastenbelegung pro Spieler. Spieler 1 wählt ein Standard-
+             Layout (WASD/Pfeiltasten), Spieler 2 bekommt automatisch das jeweils
+             andere; einzelne Aktionen lassen sich zusätzlich per „Belegen"-Knopf
+             umlegen (app.js → renderKeybindRows/startKeyCapture, Store:
+             renderer/keybinds.js). -->
+        <section class="settings-panel" id="panel-controls" role="tabpanel" aria-labelledby="stabControls" hidden>
+          <div class="setting-row">
+            <div class="setting-label">
+              <strong>Spieler bearbeiten</strong>
+              <small>gilt für die Belegung unten und für „Steuerung zurücksetzen"</small>
+            </div>
+            <div class="controls-player-switch" role="group" aria-label="Spieler wählen">
+              <button type="button" class="btn-sm controls-player-btn active" id="ctlPlayer1" data-player="p1">Spieler 1</button>
+              <button type="button" class="btn-sm controls-player-btn" id="ctlPlayer2" data-player="p2">Spieler 2</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label">
+              <strong>Standard-Layout (Spieler 1)</strong>
+              <small id="ctlPresetHint">Spieler 2 bekommt automatisch Pfeiltasten.</small>
+            </div>
+            <select id="setKeysPreset">
+              <option value="wasd">WASD</option>
+              <option value="arrows">Pfeiltasten</option>
+            </select>
+          </div>
+          <div class="controls-keybind-groups" id="controlsKeybindGroups"></div>
+          <div class="setting-row controls-reset-row">
+            <button type="button" class="btn btn-back btn-sm" id="btnKeysReset">Steuerung zurücksetzen</button>
           </div>
         </section>
 
@@ -461,6 +483,20 @@
     <div id="rushStage" class="rush-stage"></div>
   </div>
 
+  <!-- Spiel-Voting: nur vor dem ERSTEN Spiel der Serie. Echte Spieler wählen,
+       Bots/Remote zufällig, Mehrheit gewinnt, Gleichstand → zufällig. Alle
+       weiteren Spiele der Serie laufen danach randomisiert aus der
+       Warteschlange (kein erneutes Spiel-Voting, nur noch Map-Voting je
+       Runde). Tastaturbedienbar. -->
+  <div id="mgGameVote" class="overlay" hidden>
+    <div class="overlay-card mg-vote-card">
+      <h2>Spiel wählen</h2>
+      <p class="mg-vote-sub" id="mgGameVoteSub">Stimmt für das erste Spiel ab — der Rest kommt danach zufällig.</p>
+      <div class="mg-game-grid" id="mgGameGrid"></div>
+      <p class="mg-vote-hint">Pfeile/WASD wählen · Enter bestätigt · Esc zurück</p>
+    </div>
+  </div>
+
   <!-- Generisches Map-Voting: 3 Maps des aktuellen Spiels. Echte Spieler wählen,
        Bots zufällig, Mehrheit gewinnt, Gleichstand → zufällig. Tastaturbedienbar. -->
   <div id="mgMapVote" class="overlay" hidden>
@@ -482,6 +518,7 @@
   <div id="mgPause" class="overlay" hidden>
     <div class="overlay-card">
       <h2>Pause</h2>
+      <p class="mg-pause-hint" id="mgPauseHint"></p>
       <div class="overlay-actions">
         <button class="btn btn-primary" id="btnMgResume" data-nav="mg_resume">Weiter</button>
         <button class="btn btn-pill" id="btnMgAbort" data-nav="mg_abort">Match abbrechen</button>
@@ -501,18 +538,6 @@
     <div class="mg-abort-keys">
       <span><kbd>F5</kbd> Ja, abbrechen</span>
       <span><kbd>F6</kbd> Nein, weiterspielen</span>
-    </div>
-  </div>
-
-  <!-- Ergebnis einer Tutorial-Runde (Einzelspiel) -->
-  <div id="mgResult" class="overlay" hidden>
-    <div class="overlay-card mg-result-card">
-      <div class="mg-result-crown" aria-hidden="true">👑</div>
-      <h2 id="mgResultTitle">P1 gewinnt!</h2>
-      <div class="overlay-actions">
-        <button class="btn btn-primary" id="btnMgAgain" data-nav="mg_again">Nochmal</button>
-        <button class="btn btn-back" id="btnMgSecondary" data-nav="mg_secondary">Zum Menü</button>
-      </div>
     </div>
   </div>
 
@@ -547,11 +572,25 @@
     </div>
   </div>
 
+  <!-- Tasten-Belegen: öffnet ein Klick/Enter auf einen Tasten-Knopf im
+       Steuerung-Reiter (app.js → startKeyCapture). Fängt die NÄCHSTE Taste
+       exklusiv in der Capture-Phase ab (window, { capture: true }), bevor sie
+       die normale Menü-Navigation erreicht — sonst würden Pfeiltasten/WASD
+       beim Belegen als Navigation statt als Tastenbelegung verarbeitet. -->
+  <div id="keyCapture" class="overlay" hidden>
+    <div class="overlay-card key-capture-card">
+      <h2>Taste drücken</h2>
+      <p id="keyCaptureText">Drücke jetzt eine Taste.</p>
+      <p class="key-capture-hint">Esc bricht ab.</p>
+    </div>
+  </div>
+
   <!-- Toast für kurze Hinweise (statt alert) -->
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="../node_modules/@supabase/supabase-js/dist/umd/supabase.js"></script>
   <script src="settings.js"></script>
+  <script src="keybinds.js"></script>
   <script src="audio.js"></script>
   <script src="auth.js"></script>
   <script src="net/session.js"></script>

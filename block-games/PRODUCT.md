@@ -22,10 +22,10 @@ nur der enge Freundeskreis — siehe Evidence/Constraints zu electron-builder.
 ## Product Purpose
 
 Party-Minigame-Sammlung im Mario-Party-Stil ("Block Games", Teil der
-"Block-Drop Arcade") für gemeinsames Spielen an einem PC — aktuell zwei
-Last-Man-Standing-Minigames (Block Bomb, Laser Lines), weitere geplant
-(siehe ROADMAP.md). Erfolg bedeutet: jederzeit sofort spielbar, egal ob
-allein, zu zweit oder in voller Runde, ohne dass Technik oder Bedienung im
+"Block-Drop Arcade") für gemeinsames Spielen an einem PC — aktuell drei
+Last-Man-Standing-Minigames (Block Bomb, Laser Lines, Block Rush), weitere
+geplant (siehe ROADMAP.md). Erfolg bedeutet: jederzeit sofort spielbar, egal
+ob allein, zu zweit oder in voller Runde, ohne dass Technik oder Bedienung im
 Weg steht.
 
 ## Positioning
@@ -59,26 +59,45 @@ Umbau des Spielkerns.
   oder WASD navigieren, Enter/Leertaste löst aus, Esc geht zurück) —
   gilt für jedes aktuelle und künftige Minigame/Menü.
 - **Zwei lokale menschliche Controller sind möglich (seit v0.19.0):**
-  `LocalHumanController(layout)` trennt WASD (P1) und Pfeiltasten (2.
-  Spieler, Lobby-Slot-Typ `local`) auf zwei unabhängige Instanzen. Mehr als
-  2 gleichzeitige lokale Menschen (3./4. Tastenlayout) sind noch nicht
-  vorgesehen; weitere Slots sind Bot oder (perspektivisch) Freund/Remote.
+  `LocalHumanController`/`LocalPieceController` trennen zwei unabhängige
+  Instanzen auf zwei Tastensätze. **Seit v0.23.0 frei einstellbar** statt
+  fest WASD/Pfeiltasten: Spieler 1 wählt ein Preset im „Steuerung"-Reiter
+  der Einstellungen, Spieler 2 (Lobby-Slot-Typ `local`) bekommt automatisch
+  das jeweils andere, und jede Aktion lässt sich einzeln umbelegen
+  (`Keybinds`, `renderer/keybinds.js`). Mehr als 2 gleichzeitige lokale
+  Menschen (3./4. Tastenlayout) sind noch nicht vorgesehen; weitere Slots
+  sind Bot oder (perspektivisch) Freund/Remote.
+- **Splitscreen für zwei lokale Menschen (seit v0.23.0):** Ist „Zwei Bilder"
+  in der Lobby aktiv, rendert jedes Minigame zwei eigene Kamera-Hälften statt
+  eines gemeinsamen Bildes (nicht verfügbar als Online-Gast — siehe
+  DOKUMENTATION.md „Couch-Koop").
 - **Immer mindestens 3, höchstens 4 Spieler pro Match** (seit v0.19.0) —
   fehlende Menschen werden automatisch durch Bots aufgefüllt
   (`minBotCount()`/`maxBotCount()` in `app.js`).
 - **Bot-Schwierigkeit immer Mittel oder Schwer**, nie „Leicht" — seit v0.19.0
   **zufällig pro Match** vergeben, nicht mehr pro Bot-Slot in der Lobby
-  einstellbar. Ausnahme bleibt der Tutorial-Schnellstart aus dem Hauptmenü,
-  der bewusst „Easy"-Bots erzwingt, zum Erlernen des Spiels.
+  einstellbar. **Seit v0.23.0 ausnahmslos**: den früheren Tutorial-
+  Schnellstart mit erzwungenen „Easy"-Bots gibt es nicht mehr — jede Partie
+  läuft über die Lobby.
+- **Kein Einzelspiel-Einstieg mehr im Hauptmenü (seit v0.23.0):** „Spielen"
+  führt ausschließlich in die Lobby; jede Runde läuft über die Party-Serie
+  (Spiel-Voting fürs erste Spiel, danach zufällig, Map immer gewählt).
 - **Ein laufendes Match lässt sich per Abstimmung abbrechen** (seit
   v0.19.0, F5/F6, 15s-Timeout, Schein-Abstimmung solo gegen Bots) — zählt
   bisher nur lokale Menschen, siehe unten zum Online-Stand.
+- **Pause (Esc) hält lokale Matches wirklich an, Online-Matches nicht (seit
+  v0.23.0):** Ist kein Online-Mitspieler beteiligt, friert Esc die Simulation
+  komplett ein (inkl. Intro-Kamera); ist ein Online-Mitspieler dabei, läuft
+  das Match im Hintergrund weiter und das Pause-Overlay zeigt einen
+  entsprechenden Hinweis — ein einzelner Gast kann ein Match nicht für alle
+  anhalten.
 - **Jeder Spielmodus bekommt genau 3 Maps** plus Map-Voting vor der Runde
   (Mehrheit entscheidet, Gleichstand zufällig).
-- Zwei Minigames aktuell im Registry-basierten, generischen Match-Flow:
-  Block Bomb (Bombe weitergeben, Last-Man-Standing) und Laser Lines (Laser
-  ausweichen, 3 Leben). Teilen sich Bot-KI (`botAI.js`), Controller-
-  Abstraktion, Farbsystem aus der Lobby und die `#mg*`-Overlays.
+- Drei Minigames im Registry-basierten, generischen Match-Flow: Block Bomb
+  (Bombe weitergeben, Last-Man-Standing), Laser Lines (Laser ausweichen,
+  3 Leben) und Block Rush (Türme stapeln, Last-Man-Standing, kein
+  Reihen-Räumen). Teilen sich Bot-KI-Grundlage, Controller-Abstraktion,
+  Farbsystem aus der Lobby und die `#mg*`-Overlays.
 - **Online-/Freundes-Spiel ist seit v0.20.0 echt verdrahtet** (host-
   autoritativ über Supabase Realtime Broadcast+Presence, `renderer/net/
   session.js`): Session hosten/per Code beitreten, Freundes-Einladung über

@@ -27,12 +27,46 @@ import { LocalHumanController, BotController, RemoteController } from '../game/c
 import { buildMap, LASER_MAP_META } from './maps.js';
 import { LaserDirector } from './lasers.js';
 import { makeLaserBotBrain } from './bots.js';
+import { applyMood, addLightRig } from '../game/theme.js';
 
 const SPEED = 6.4;        // Basistempo (gleich für alle — Fairness)
 const PLAYER_R = 0.55;    // Kollisionsradius
 const START_LIVES = 3;
 const INVULN = 1.5;       // Sekunden Unverwundbarkeit nach Treffer
 const ROUND_TIME = 60;    // Sekunden bis Zeitlimit
+
+// Sprung (s. Steuerung/Einstellungen „walk.jump") — identische Physik wie
+// Block Bomb (~0.45s Flugzeit, ~0.5 Einheiten Höhe), s. dortiger Kommentar.
+// Der eigentliche Zweck hier: tiefe, überspringbare Laser (lasers.js
+// LASER_CLEAR_Y) ausweichen können, ohne seitlich wegzulaufen.
+const JUMP_GRAVITY = 20;
+const JUMP_V = 4.5;
+// Ab dieser Höhe gilt eine Figur als „in der Luft" — s. block-bomb/main.js
+// für die identische Begründung; hier zusätzlich von Maps mit Sprunglücken
+// genutzt (Sky Warning), nicht nur vom Laser-Y-Check in lasers.js.
+const JUMP_AIRBORNE_Y = 0.12;
+
+// Splitscreen (2 lokale Menschen, Lobby-Toggle "Zwei Bilder", s. app.js
+// buildMatchConfig/startRound) — s. block-bomb/main.js für die identische
+// Begründung der drei Konstanten (dort ausführlicher kommentiert).
+const SPLIT_ZOOM = 0.62;
+const SPLIT_FOLLOW_CLAMP = 8;
+const SPLIT_FOLLOW_LAG = 3;
+
+// Adapter für RemoteController — s. block-bomb/main.js WALK_REMOTE_ADAPTER
+// (identisch, je Spielkern lokal definiert nach dem RUSH_REMOTE_ADAPTER-Muster).
+const WALK_REMOTE_ADAPTER = {
+  initial: () => ({ x: 0, z: 0, jump: 0 }),
+  merge: (pending, incoming) => ({
+    x: incoming.x || 0,
+    z: incoming.z || 0,
+    jump: pending.jump + (incoming.jump || 0),
+  }),
+  drain: (pending) => ({
+    value: pending,
+    next: { x: pending.x, z: pending.z, jump: 0 },
+  }),
+};
 
 class LaserLinesGame {
   constructor(config) {
@@ -43,7 +77,7 @@ class LaserLinesGame {
     // Regeln komplett und rendert nur, was applySnapshot() liefert.
     this.role = config.role === 'guest' ? 'guest' : 'host';
     this._netSnap = null;
-    this._myIntent = { x: 0, z: 0 };
+    this._myIntent = WALK_REMOTE_ADAPTER.initial();
     this.running = false;
     this.paused = false;
     this.ended = false;
@@ -59,6 +93,7 @@ class LaserLinesGame {
     this._initThree();
     this._initMap();
     this._initPlayers();
+    this._initViews();
     this._initHud();
     this._onResize = () => this._resize();
     window.addEventListener('resize', this._onResize);
@@ -67,9 +102,11 @@ class LaserLinesGame {
   // ── Three.js-Grundgerüst ───────────────────────────────────────────
   _initThree() {
     const reduced = this.config.reducedFx();
+    // Hintergrund/Nebel/Licht kommen jetzt aus dem mood-Objekt der Map
+    // (s. game/theme.js), gesetzt in _initMap() NACHDEM die Map gebaut ist —
+    // hier nur das Three.js-Grundgerüst, s. block-bomb/main.js für dasselbe
+    // Muster.
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0c0a18);
-    this.scene.fog = new THREE.Fog(0x0c0a18, 30, 56);
 
     const w = this.host.clientWidth || window.innerWidth;
     const h = this.host.clientHeight || window.innerHeight;
@@ -81,38 +118,28 @@ class LaserLinesGame {
     this.camera.lookAt(0, 1, 0);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: !reduced, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, reduced ? 1 : 2));
+    // Splitscreen rendert die Szene zweimal pro Frame — Pixel-Ratio dann auf
+    // 1 deckeln, sonst verdoppelt sich die Fill-Rate-Last unnötig.
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, (reduced || this.config.split) ? 1 : 2));
     this.renderer.setSize(w, h);
     this.renderer.shadowMap.enabled = !reduced;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.canvas = this.renderer.domElement;
     this.canvas.className = 'laser-canvas';
     this.host.appendChild(this.canvas);
-
-    this.scene.add(new THREE.AmbientLight(0x8a82b0, 0.8));
-    const key = new THREE.DirectionalLight(0xffffff, 1.1);
-    key.position.set(10, 24, 12);
-    if (!reduced) {
-      key.castShadow = true;
-      key.shadow.mapSize.set(1024, 1024);
-      const sz = 24;
-      key.shadow.camera.left = -sz; key.shadow.camera.right = sz;
-      key.shadow.camera.top = sz; key.shadow.camera.bottom = -sz;
-      key.shadow.camera.far = 80;
-    }
-    this.scene.add(key);
-    const rim = new THREE.DirectionalLight(0xff5bd0, 0.35);
-    rim.position.set(-10, 8, -12);
-    this.scene.add(rim);
   }
 
   _initMap() {
     const reduced = this.config.reducedFx();
     this.map = buildMap(this.config.mapId, reduced);
     this.scene.add(this.map.group);
+    applyMood(this.scene, this.map.mood);
+    // castShadow hängt vom Live-reducedFx-Wert ab (Performance-Schalter),
+    // nicht von der Map — deshalb hier statt im mood-Objekt überschrieben.
+    addLightRig(this.scene, { ...this.map.mood, castShadow: !reduced });
     this.director = new LaserDirector(
       this.map.laserConfig, this.map.groundY, this.scene, reduced,
-      (name) => this.config.sfx(name),
+      (name) => this.config.sfx(name), PLAYER_R,
     );
     this.director.onLevelUp = (lvl) => { if (this.elLevel) this.elLevel.textContent = 'Tempo ' + lvl; };
     this.scene.add(this.director.group);
@@ -128,8 +155,8 @@ class LaserLinesGame {
       char.group.position.set(spawn.x, this.map.groundY, spawn.z);
 
       let controller;
-      if (p.isLocal && p.type === 'human') controller = new LocalHumanController(p.keys || 'wasd');
-      else if (p.type === 'remote') controller = new RemoteController(p.peerId || p.id);
+      if (p.isLocal && p.type === 'human') controller = new LocalHumanController(p.bindings?.walk || p.keys || 'wasd');
+      else if (p.type === 'remote') controller = new RemoteController(p.peerId || p.id, WALK_REMOTE_ADAPTER);
       else controller = new BotController(makeLaserBotBrain(p.difficulty || 'medium'));
       if (controller.attach) controller.attach();
 
@@ -138,10 +165,27 @@ class LaserLinesGame {
         controller, char,
         x: spawn.x, z: spawn.z, facing: 0,
         alive: true, lives: START_LIVES, invuln: 0, eliminated: false,
-        lastHitT: -1,
+        lastHitT: -1, jumpY: 0, jumpVy: 0,
       };
     });
     this.aliveStart = this.players.length;
+  }
+
+  // Splitscreen-Views — s. block-bomb/main.js _initViews() für die
+  // ausführliche Begründung (identisches Muster in allen drei Spielkernen).
+  _initViews() {
+    const localIds = this.players.filter((p) => p.isLocal).map((p) => p.id);
+    const split = this.config.split && localIds.length === 2;
+    this.host.classList.toggle('split-h', !!split);
+    if (split) {
+      const cam2 = this.camera.clone();
+      this.views = [
+        { playerId: localIds[0], camera: this.camera, rect: { x: 0, y: 0.5, w: 1, h: 0.5 }, base: this.camBase.clone().multiplyScalar(SPLIT_ZOOM) },
+        { playerId: localIds[1], camera: cam2, rect: { x: 0, y: 0, w: 1, h: 0.5 }, base: this.camBase.clone().multiplyScalar(SPLIT_ZOOM) },
+      ];
+    } else {
+      this.views = [{ playerId: localIds[0] ?? null, camera: this.camera, rect: { x: 0, y: 0, w: 1, h: 1 } }];
+    }
   }
 
   // ── HUD ─────────────────────────────────────────────────────────────
@@ -213,8 +257,9 @@ class LaserLinesGame {
   _startIntro() {
     this.introActive = true;
     this.introT = 0;
-    this.camera.position.copy(this.camOverview);
-    this.camera.lookAt(0, 1, 0);
+    // Ein gemeinsamer introT für alle Views — beide Splitscreen-Hälften
+    // fliegen synchron ein und landen gleichzeitig (s. _updateIntro).
+    for (const v of this.views) { v.camera.position.copy(this.camOverview); v.camera.lookAt(0, 1, 0); }
     const meta = LASER_MAP_META.find(m => m.id === this.config.mapId);
     const el = document.createElement('div');
     el.className = 'laser-map-intro-name';
@@ -228,11 +273,13 @@ class LaserLinesGame {
     this.introT += dt;
     const t = Math.min(1, this.introT / this.introDuration);
     const eased = 1 - Math.pow(1 - t, 3);
-    this.camera.position.lerpVectors(this.camOverview, this.camBase, eased);
-    this.camera.lookAt(0, 1, 0);
+    for (const v of this.views) {
+      v.camera.position.lerpVectors(this.camOverview, this.camBase, eased);
+      v.camera.lookAt(0, 1, 0);
+    }
     if (t >= 1) {
       this.introActive = false;
-      this.camera.position.copy(this.camBase);
+      for (const v of this.views) v.camera.position.copy(this.camBase);
       if (this.introEl) {
         const el = this.introEl;
         el.classList.remove('show'); el.classList.add('hide');
@@ -256,19 +303,24 @@ class LaserLinesGame {
   _loop(now) {
     this.raf = requestAnimationFrame((t) => this._loop(t));
     const elapsed = now - this.last;
-    const fps = this.config.fpsLimit();
+    let fps = this.config.fpsLimit();
+    // Splitscreen rendert zweimal pro Frame — ein unbegrenztes Limit wäre
+    // dann ein echtes Perf-Risiko, deshalb intern auf 60 klemmen.
+    if (this.config.split && fps === 0) fps = 60;
     if (fps > 0 && elapsed < 1000 / fps - 0.5) return;
     this.last = now;
     const dt = Math.min(0.05, elapsed / 1000);
 
-    if (this.introActive) this._updateIntro(dt);
-    else if (!this.paused && this.running) {
-      if (this.role === 'guest') this._stepReplica(dt);
-      else this._step(dt);
+    if (!this.paused) {
+      if (this.introActive) this._updateIntro(dt);
+      else if (this.running) {
+        if (this.role === 'guest') this._stepReplica(dt);
+        else this._step(dt);
+      }
     }
 
     this._animate(dt);
-    this.renderer.render(this.scene, this.camera);
+    this._renderViews();
     this._updateLabels();
   }
 
@@ -293,9 +345,17 @@ class LaserLinesGame {
         if (p.invuln === 0) p.char.setInvulnBlink(false);
       }
       const intent = p.controller.update(p, world, dt) || { x: 0, z: 0 };
+      if (p.jumpY <= 0 && (intent.jump || 0) > 0) p.jumpVy = JUMP_V;
+      if (p.jumpY > 0 || p.jumpVy > 0) {
+        p.jumpY += p.jumpVy * dt;
+        p.jumpVy -= JUMP_GRAVITY * dt;
+        if (p.jumpY <= 0) { p.jumpY = 0; p.jumpVy = 0; }
+      }
+      p.char.setJumpOffset(p.jumpY);
+      const airborne = p.jumpY > JUMP_AIRBORNE_Y;
       const vx = intent.x * SPEED, vz = intent.z * SPEED;
       const nx = p.x + vx * dt, nz = p.z + vz * dt;
-      const r = this.map.resolve(nx, nz, PLAYER_R);
+      const r = this.map.resolve(nx, nz, PLAYER_R, airborne);
       if (r.fell) { this._hit(p, true); continue; }
       p.x = r.x; p.z = r.z;
       if (intent.x || intent.z) p.facing = Math.atan2(intent.x, intent.z);
@@ -304,8 +364,9 @@ class LaserLinesGame {
       p._speed01 = Math.min(1, Math.hypot(vx, vz) / SPEED);
     }
 
-    // Laser-Treffer
-    const data = this.players.map(p => ({ ref: p, x: p.x, z: p.z, alive: p.alive, invuln: p.invuln }));
+    // Laser-Treffer (jumpY: s. lasers.js LASER_CLEAR_Y — überspringbare
+    // Speichen der Spin Arena treffen nicht, solange man hoch genug ist)
+    const data = this.players.map(p => ({ ref: p, x: p.x, z: p.z, alive: p.alive, invuln: p.invuln, jumpY: p.jumpY }));
     const hits = this.director.checkHits(data, PLAYER_R);
     for (const d of hits) this._hit(d.ref, false);
 
@@ -335,11 +396,14 @@ class LaserLinesGame {
     for (const p of this.players) {
       const row = byId.get(p.id);
       if (!row) continue;
-      const [, x, z, facing, flags, lives] = row;
+      // row[6] (jumpY) ist neu (v0.23.0) — defensiv lesen, damit ein älterer
+      // Host (ohne Sprung-Feld im Snapshot) einen neueren Gast nicht bricht.
+      const [, x, z, facing, flags, lives, jumpY] = row;
       const wasAlive = p.alive;
       p.alive = !!(flags & 1);
       p.x += (x - p.x) * lerp; p.z += (z - p.z) * lerp;
       p.char.group.position.x = p.x; p.char.group.position.z = p.z;
+      p.char.setJumpOffset(jumpY ?? 0);
       p.facing = facing;
       if (p.lives !== lives) { p.lives = lives; livesChanged = true; }
       if (wasAlive && !p.alive) {
@@ -360,6 +424,7 @@ class LaserLinesGame {
       p: this.players.map(p => [
         p.id, Math.round(p.x * 100) / 100, Math.round(p.z * 100) / 100,
         Math.round(p.facing * 100) / 100, (p.alive ? 1 : 0), p.lives,
+        Math.round(p.jumpY * 100) / 100, // neu (v0.23.0), s. applySnapshot()
       ]),
     };
   }
@@ -471,6 +536,10 @@ class LaserLinesGame {
       p.char.update(dt, p.facing, sp, false);
     }
 
+    if (this.views.length > 1) {
+      this._updateSplitCameras(dt);
+      return;
+    }
     if (this.shake > 0) {
       this.shake = Math.max(0, this.shake - dt * 2.2);
       const s = this.shake;
@@ -486,14 +555,74 @@ class LaserLinesGame {
     }
   }
 
+  // Splitscreen-Kameras — s. block-bomb/main.js für die ausführliche
+  // Begründung (identisches Muster), hier mit der laser-eigenen Shake-Rate
+  // (dt*2.2, s. Einzelbild-Pfad oben).
+  _updateSplitCameras(dt) {
+    if (this.introActive) return;
+    if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 2.2);
+    const s = this.shake;
+    const jitter = s > 0
+      ? new THREE.Vector3((Math.random() * 2 - 1) * s, (Math.random() * 2 - 1) * s, (Math.random() * 2 - 1) * s)
+      : null;
+    for (const v of this.views) {
+      const p = this.players.find((pl) => pl.id === v.playerId);
+      const cx = p ? Math.max(-SPLIT_FOLLOW_CLAMP, Math.min(SPLIT_FOLLOW_CLAMP, p.x)) : 0;
+      const cz = p ? Math.max(-SPLIT_FOLLOW_CLAMP, Math.min(SPLIT_FOLLOW_CLAMP, p.z)) : 0;
+      const target = new THREE.Vector3(v.base.x + cx * 0.4, v.base.y, v.base.z + cz * 0.4);
+      v.camera.position.lerp(target, Math.min(1, dt * SPLIT_FOLLOW_LAG));
+      if (jitter) v.camera.position.add(jitter);
+      v.camera.lookAt(cx, 1, cz);
+    }
+  }
+
+  // Rendert entweder die volle Bühne (Einzelbild, exakt der alte Aufruf) oder
+  // teilt Viewport+Scissor pro Splitscreen-Hälfte auf — s. block-bomb/main.js
+  // _renderViews() für die Begründung des Bottom-Up-rect (kein Flip hier).
+  _renderViews() {
+    if (this.views.length < 2) {
+      this.renderer.setScissorTest(false);
+      this.renderer.render(this.scene, this.views[0].camera);
+      return;
+    }
+    const w = this.host.clientWidth || window.innerWidth;
+    const h = this.host.clientHeight || window.innerHeight;
+    this.renderer.setScissorTest(true);
+    for (const v of this.views) {
+      const vx = Math.round(v.rect.x * w);
+      const vy = Math.round(v.rect.y * h);
+      const vw = Math.round(v.rect.w * w);
+      const vh = Math.round(v.rect.h * h);
+      this.renderer.setViewport(vx, vy, vw, vh);
+      this.renderer.setScissor(vx, vy, vw, vh);
+      this.renderer.render(this.scene, v.camera);
+    }
+    this.renderer.setScissorTest(false);
+  }
+
+  // rect (Bottom-Up, s. _renderViews) → Bildschirm-Pixel-Rechteck von OBEN
+  // gezählt, für die DOM-Label-Platzierung in _updateLabels.
+  _viewPixelRect(v, w, h) {
+    return {
+      left: v.rect.x * w,
+      top: (1 - v.rect.y - v.rect.h) * h,
+      width: v.rect.w * w,
+      height: v.rect.h * h,
+    };
+  }
+
   _updateLabels() {
     const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
-    const v = new THREE.Vector3();
+    const vec = new THREE.Vector3();
     for (const p of this.players) {
       const el = this.labels.get(p.id);
-      v.set(p.x, this.map.groundY + 2.4, p.z).project(this.camera);
-      const sx = (v.x * 0.5 + 0.5) * w;
-      const sy = (-v.y * 0.5 + 0.5) * h;
+      // Splitscreen: Label folgt der Kamera-Hälfte des jeweiligen Spielers;
+      // Bots/Remote (keine eigene Hälfte) werden immer über views[0] projiziert.
+      const view = this.views.find((vw) => vw.playerId === p.id) || this.views[0];
+      const rect = this._viewPixelRect(view, w, h);
+      vec.set(p.x, this.map.groundY + 2.4, p.z).project(view.camera);
+      const sx = rect.left + (vec.x * 0.5 + 0.5) * rect.width;
+      const sy = rect.top + (-vec.y * 0.5 + 0.5) * rect.height;
       el.style.transform = `translate(-50%,-100%) translate(${sx}px,${sy}px)`;
       el.classList.toggle('eliminated', p.eliminated);
     }
@@ -513,8 +642,10 @@ class LaserLinesGame {
   _resize() {
     const w = this.host.clientWidth || window.innerWidth;
     const h = this.host.clientHeight || window.innerHeight;
-    this.camera.aspect = w / h;
-    this.camera.updateProjectionMatrix();
+    for (const v of this.views) {
+      v.camera.aspect = (w * v.rect.w) / (h * v.rect.h);
+      v.camera.updateProjectionMatrix();
+    }
     this.renderer.setSize(w, h);
   }
 
@@ -544,10 +675,11 @@ window.LaserLines = {
   resume() { if (current) current.resume(); },
   stop() { if (current) { current.destroy(); current = null; } },
   isRunning() { return !!current && current.running; },
+  isPaused() { return !!current && current.paused; },
   // ── Online-Sessions (app.js/net/session.js) ──────────────────────────
   getSnapshot() { return current ? current.getSnapshot() : null; },
   applySnapshot(payload) { if (current) current.applySnapshot(payload); },
   feedRemoteInput(peerId, intent) { if (current) current.feedRemoteInput(peerId, intent); },
-  getMyInput() { return current ? current.getMyInput() : { x: 0, z: 0 }; },
+  getMyInput() { return current ? current.getMyInput() : WALK_REMOTE_ADAPTER.initial(); },
   convertToBot(peerId) { if (current) current.convertToBot(peerId); },
 };

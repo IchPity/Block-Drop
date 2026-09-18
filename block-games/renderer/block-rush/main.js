@@ -33,13 +33,17 @@
 
 import * as THREE from '../vendor/three.module.js';
 import { LocalPieceController, BotController, RemoteController } from '../game/controllers.js';
-import { ROWS, CELL, Playfield, makeBag, hashSeed, PIECE_TYPES, PIECE_COLORS } from './pieces.js';
+import { COLS, ROWS, CELL, Playfield, makeBag, hashSeed, shapeCells, PIECE_TYPES, PIECE_COLORS } from './pieces.js';
 import { TowerSim } from './tower.js';
 import { buildMap, BLOCK_RUSH_MAP_META } from './maps.js';
 import { SpellSystem, SPELL_META } from './spells.js';
 import { makeBlockRushBotBrain } from './bots.js';
 
 const ROUND_TIME = 90; // Sekunden bis Zeitlimit (länger als Laser Lines — Stapeln ist langsamer als Ausweichen)
+
+// Splitscreen (2 lokale Menschen, Lobby-Toggle "Zwei Bilder", s. app.js
+// buildMatchConfig/startRound): links/rechts, weil die Podeste hoch/schmal
+// sind (anders als Block Bomb/Laser Lines, die oben/unten splitten).
 
 function round1(v) { return Math.round(v * 10) / 10; }
 function round2(v) { return Math.round(v * 100) / 100; }
@@ -64,6 +68,130 @@ const RUSH_REMOTE_ADAPTER = {
     next: { dx: 0, rot: 0, hard: 0, cast: 0, cycle: 0, soft: pending.soft, seq: pending.seq },
   }),
 };
+
+// ── Fallendes Teil sichtbar machen (Kernfehler, s. Plan Phase 9) ──────────
+// TowerSim (tower.js) zeichnet NUR bereits eingerastete Blöcke — ohne dies
+// bewegt der Spieler ein komplett unsichtbares Teil. Eine PieceView-Instanz
+// pro Spieler, am TOWER-PIVOT aufgehängt (dieselbe lokale Koordinatenformel
+// wie TowerSim.lock()) — dadurch teilt sich das fallende Teil automatisch
+// Position UND Kippwinkel mit dem eigenen Turm, ohne eigene Transform-Logik.
+class PieceView {
+  constructor(pivot, ghost = false) {
+    this._ghost = ghost;
+    this.group = new THREE.Group();
+    this.cubes = [];
+    this._geo = new THREE.BoxGeometry(CELL * 0.92, CELL * 0.92, CELL * 0.92);
+    for (let i = 0; i < 4; i++) {
+      const mat = ghost
+        ? new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.32, depthWrite: false })
+        : new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0.08 });
+      const mesh = new THREE.Mesh(this._geo, mat);
+      if (!ghost) mesh.castShadow = true;
+      this.group.add(mesh);
+      this.cubes.push(mesh);
+    }
+    this.group.visible = false;
+    pivot.add(this.group);
+    if (ghost) {
+      // Spaltenmarkierung auf dem Podest, unter der Landeposition.
+      this.marker = new THREE.Mesh(
+        new THREE.BoxGeometry(CELL, 0.03, CELL * 3),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.16, depthWrite: false }),
+      );
+      this.marker.visible = false;
+      pivot.add(this.marker);
+    }
+    this._smoothCol = null;
+    this._smoothRow = null;
+  }
+
+  setColor(hex) {
+    for (const m of this.cubes) m.material.color.setHex(hex);
+    if (this.marker) this.marker.material.color.setHex(hex);
+  }
+
+  _place(col, row, type, rot) {
+    const cells = shapeCells(type, rot);
+    for (let i = 0; i < 4; i++) {
+      const [dx, dy] = cells[i];
+      const x = (col + dx - (COLS - 1) / 2) * CELL;
+      const y = (ROWS - 1 - (row + dy)) * CELL + CELL / 2;
+      this.cubes[i].position.set(x, y, 0);
+    }
+  }
+
+  hide() {
+    this.group.visible = false;
+    this._smoothCol = null;
+    this._smoothRow = null;
+    if (this.marker) this.marker.visible = false;
+  }
+
+  // Fallendes Teil: sanft zur logischen col/row interpolieren — sonst würde
+  // jeder Zeilenschritt/Sidestep im 3D-Blick hart "springen".
+  update(piece, dt) {
+    if (!piece) { this.hide(); return; }
+    this.group.visible = true;
+    if (this._smoothCol === null) { this._smoothCol = piece.col; this._smoothRow = piece.row; }
+    const t = Math.min(1, dt * 18);
+    this._smoothCol += (piece.col - this._smoothCol) * t;
+    this._smoothRow += (piece.row - this._smoothRow) * t;
+    this._place(this._smoothCol, this._smoothRow, piece.type, piece.rot);
+  }
+
+  // Geisterteil: KEINE Glättung — die Landevorschau muss exakt sitzen.
+  updateGhost(piece, landRow) {
+    if (!piece || landRow < 0) { this.hide(); return; }
+    this.group.visible = true;
+    this._place(piece.col, landRow, piece.type, piece.rot);
+    if (this.marker) {
+      const cells = shapeCells(piece.type, piece.rot);
+      let minDx = Infinity, maxDx = -Infinity;
+      for (const [dx] of cells) { if (dx < minDx) minDx = dx; if (dx > maxDx) maxDx = dx; }
+      const spanCols = maxDx - minDx + 1;
+      const centerCol = piece.col + (minDx + maxDx) / 2;
+      this.marker.scale.x = spanCols;
+      this.marker.position.set((centerCol - (COLS - 1) / 2) * CELL, 0.02, 0);
+      this.marker.visible = true;
+    }
+  }
+
+  dispose() {
+    this._geo.dispose();
+    for (const m of this.cubes) m.material.dispose();
+    if (this.marker) {
+      this.marker.geometry.dispose();
+      this.marker.material.dispose();
+      if (this.marker.parent) this.marker.parent.remove(this.marker);
+    }
+    if (this.group.parent) this.group.parent.remove(this.group);
+  }
+}
+
+// Kurze Tastenbeschriftung für den Steuerungs-Hinweis im Intro. Die App-Ebene
+// (renderer/keybinds.js) ist ein klassisches Script und für dieses ES-Modul
+// nicht erreichbar (kein window.Keybinds) — wie schon in game/controllers.js
+// (LEGACY_*) halten wir hier eine EIGENE, unabhängige Kurzkopie nur für die
+// Beschriftung. Bei Änderungen an keybinds.js LABELS ggf. auch hier nachziehen.
+const KEY_LABELS = {
+  Space: 'Leertaste', ShiftRight: 'Shift rechts', ShiftLeft: 'Shift links',
+  ControlRight: 'Strg rechts', ControlLeft: 'Strg links',
+  ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
+  Slash: '-/#',
+};
+function labelKey(code) {
+  if (!code) return '–';
+  if (KEY_LABELS[code]) return KEY_LABELS[code];
+  if (/^Key[A-Z]$/.test(code)) return code.slice(3);
+  if (/^Digit[0-9]$/.test(code)) return code.slice(5);
+  return code;
+}
+function pieceControlHint(bindings) {
+  const b = bindings || {};
+  const k = labelKey;
+  return `${k(b.left)}/${k(b.right)} Bewegen · ${k(b.rotate)} Drehen · ${k(b.down)} Sinken · `
+    + `${k(b.hard)} Fallen · ${k(b.cast)} Zauber · ${k(b.cycle)} Ziel`;
+}
 
 class BlockRushGame {
   constructor(config) {
@@ -92,6 +220,7 @@ class BlockRushGame {
     this._initThree();
     this._initMap();
     this._initPlayers();
+    this._initViews();
     this.spellSystem = new SpellSystem(this.players.map((p) => p.id));
     for (const p of this.players) p.spells = this.spellSystem.stateOf(p.id);
     this._initHud();
@@ -116,7 +245,9 @@ class BlockRushGame {
     this.camera.lookAt(0, 1, 0);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: !reduced, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, reduced ? 1 : 2));
+    // Splitscreen rendert die Szene zweimal pro Frame — Pixel-Ratio dann auf
+    // 1 deckeln, sonst verdoppelt sich die Fill-Rate-Last unnötig.
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, (reduced || this.config.split) ? 1 : 2));
     this.renderer.setSize(w, h);
     this.renderer.shadowMap.enabled = !reduced;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -141,7 +272,7 @@ class BlockRushGame {
       const tower = new TowerSim(this.scene, new THREE.Vector3(pos.x, this.map.podiumY, pos.z), reduced);
 
       let controller;
-      if (p.isLocal && p.type === 'human') controller = new LocalPieceController(p.keys || 'wasd');
+      if (p.isLocal && p.type === 'human') controller = new LocalPieceController(p.bindings?.piece || p.keys || 'wasd');
       else if (p.type === 'remote') controller = new RemoteController(p.peerId || p.id, RUSH_REMOTE_ADAPTER);
       else controller = new BotController(makeBlockRushBotBrain(p.difficulty || 'medium'));
       if (controller.attach) controller.attach();
@@ -151,11 +282,41 @@ class BlockRushGame {
         controller, field, tower, podiumIndex: i,
         driftX: 0, alive: true, eliminated: false,
         gridVer: 0, _lastSentGridVer: -1,
+        pieceView: new PieceView(tower.pivot, false),
+        ghostView: new PieceView(tower.pivot, true),
+        // Gast: letztes vom Host übertragenes {col,row,type,rot} dieses
+        // Spielers (s. getSnapshot/_stepReplica) — auf einem Gast läuft
+        // KEINE eigene Playfield-Simulation (auch nicht für den eigenen
+        // lokalen Spieler, s. Kommentar bei _stepReplica), field.piece ist
+        // dort also dauerhaft veraltet und darf für die Optik nicht benutzt
+        // werden.
+        _netPiece: null,
       };
     });
   }
 
+  // Splitscreen-Views (links/rechts statt oben/unten, s. Kommentar oben) —
+  // sonst identisches Muster zu block-bomb/main.js _initViews().
+  _initViews() {
+    const localIds = this.players.filter((p) => p.isLocal).map((p) => p.id);
+    const split = this.config.split && localIds.length === 2;
+    this.host.classList.toggle('split-v', !!split);
+    if (split) {
+      const cam2 = this.camera.clone();
+      this.views = [
+        { playerId: localIds[0], camera: this.camera, rect: { x: 0, y: 0, w: 0.5, h: 1 } },
+        { playerId: localIds[1], camera: cam2, rect: { x: 0.5, y: 0, w: 0.5, h: 1 } },
+      ];
+    } else {
+      this.views = [{ playerId: localIds[0] ?? null, camera: this.camera, rect: { x: 0, y: 0, w: 1, h: 1 } }];
+    }
+  }
+
   // ── HUD ─────────────────────────────────────────────────────────────
+  // Chip-DOM wird EINMAL pro Spieler gebaut (_initHud) und danach nur noch
+  // gezielt aktualisiert (_renderHud) — vorher baute _renderHud() jeden
+  // Frame die komplette Chip-Reihe per innerHTML neu, was mehr kostete als
+  // das eigentliche Spiel (s. Plan Phase 9 Punkt 8).
   _initHud() {
     const hud = document.createElement('div');
     hud.className = 'rush-hud';
@@ -166,15 +327,18 @@ class BlockRushGame {
       </div>
       <div class="rush-chips" id="rushChips"></div>
       <div class="rush-message" id="rushMessage"></div>
-      <div class="rush-labels" id="rushLabels"></div>`;
+      <div class="rush-labels" id="rushLabels"></div>
+      <div class="rush-controls-hint" id="rushControlsHint"></div>`;
     this.host.appendChild(hud);
     this.hud = hud;
     this.elTimer = hud.querySelector('#rushTimer');
     this.elChips = hud.querySelector('#rushChips');
     this.elMessage = hud.querySelector('#rushMessage');
     this.elLabels = hud.querySelector('#rushLabels');
+    this.elControlsHint = hud.querySelector('#rushControlsHint');
 
     this.labels = new Map();
+    this.chips = new Map();
     for (const p of this.players) {
       const el = document.createElement('div');
       el.className = 'rush-name-label';
@@ -182,23 +346,87 @@ class BlockRushGame {
       el.textContent = p.name;
       this.elLabels.appendChild(el);
       this.labels.set(p.id, el);
+
+      const chip = document.createElement('div');
+      chip.className = 'rush-chip';
+      chip.style.setProperty('--c', p.colorHex);
+      chip.innerHTML = `
+        <span class="rush-chip-name"></span>
+        <span class="rush-chip-bar"><span class="rush-chip-fill"></span></span>
+        <span class="rush-chip-stab"></span>
+        <span class="rush-chip-spells"></span>
+        <span class="rush-chip-next" title="Nächstes Teil"><span class="rush-mini-grid"></span></span>
+        <span class="rush-chip-cursor"></span>`;
+      chip.querySelector('.rush-chip-name').textContent = p.name;
+      this.elChips.appendChild(chip);
+      const miniCells = [];
+      const miniGrid = chip.querySelector('.rush-mini-grid');
+      for (let i = 0; i < 16; i++) {
+        const cell = document.createElement('span');
+        cell.className = 'rush-mini-cell';
+        miniGrid.appendChild(cell);
+        miniCells.push(cell);
+      }
+      this.chips.set(p.id, {
+        root: chip,
+        fill: chip.querySelector('.rush-chip-fill'),
+        stab: chip.querySelector('.rush-chip-stab'),
+        spells: chip.querySelector('.rush-chip-spells'),
+        cursor: chip.querySelector('.rush-chip-cursor'),
+        miniCells,
+        _h: -1, _s: '', _sp: '', _cu: '', _next: undefined, _warn: null, _dead: null,
+      });
     }
     this._renderHud();
   }
 
   _renderHud() {
-    this.elChips.innerHTML = this.players.map((p) => {
-      const heightPct = Math.round(((ROWS - p.field.topRow) / ROWS) * 100);
-      const stabPct = Math.round(p.tower.stability * 100);
+    const aliveIds = this.players.filter((p) => p.alive).map((p) => p.id);
+    for (const p of this.players) {
+      const c = this.chips.get(p.id);
+      if (!c) continue;
+      const dead = p.eliminated;
+      if (dead !== c._dead) { c.root.classList.toggle('dead', dead); c._dead = dead; }
       const warn = p.alive && p.tower.state === 'lean';
+      if (warn !== c._warn) { c.root.classList.toggle('warn', warn); c._warn = warn; }
+
+      const heightPct = Math.round(((ROWS - p.field.topRow) / ROWS) * 100);
+      if (heightPct !== c._h) { c.fill.style.width = heightPct + '%'; c._h = heightPct; }
+
+      const stabText = dead ? '✕' : Math.round(p.tower.stability * 100) + '%';
+      if (stabText !== c._s) { c.stab.textContent = stabText; c._s = stabText; }
+
       const spellIcons = (p.spells ? p.spells.inventory : []).map((id) => SPELL_META[id].icon).join(' ') || '—';
-      return `<div class="rush-chip ${p.eliminated ? 'dead' : ''} ${warn ? 'warn' : ''}" style="--c:${p.colorHex}">
-        <span class="rush-chip-name">${p.name}</span>
-        <span class="rush-chip-bar"><span class="rush-chip-fill" style="width:${heightPct}%"></span></span>
-        <span class="rush-chip-stab">${p.eliminated ? '✕' : stabPct + '%'}</span>
-        <span class="rush-chip-spells">${spellIcons}</span>
-      </div>`;
-    }).join('');
+      if (spellIcons !== c._sp) { c.spells.textContent = spellIcons; c._sp = spellIcons; }
+
+      // Nächstes Teil (4x4-Mini-Raster) — bisher nirgends sichtbar.
+      const nextType = !dead && p.field.next ? p.field.next : null;
+      if (nextType !== c._next) {
+        c._next = nextType;
+        const cells = nextType ? shapeCells(nextType, 0) : [];
+        const filled = new Set(cells.map(([dx, dy]) => dy * 4 + dx));
+        const colorHex = nextType ? '#' + PIECE_COLORS[nextType].toString(16).padStart(6, '0') : '';
+        c.miniCells.forEach((cell, i) => {
+          const on = filled.has(i);
+          cell.classList.toggle('on', on);
+          cell.style.background = on ? colorHex : '';
+        });
+      }
+
+      // Zauber-Cursor: armierter Zauber + Ziel — bisher nirgends sichtbar
+      // (spells.cursor existierte, wurde aber nie angezeigt).
+      let cursorText = '';
+      if (!dead && p.spells && p.spells.inventory.length) {
+        const action = this.spellSystem.currentAction(p.id, aliveIds);
+        if (action) {
+          const target = this.players.find((q) => q.id === action.targetId);
+          const meta = SPELL_META[action.spellId];
+          const targetName = target ? (target.id === p.id ? 'Selbst' : target.name) : '?';
+          cursorText = `${meta.icon} ${meta.name} → ${targetName}`;
+        }
+      }
+      if (cursorText !== c._cu) { c.cursor.textContent = cursorText; c._cu = cursorText; }
+    }
   }
 
   _message(text) {
@@ -220,8 +448,11 @@ class BlockRushGame {
   _startIntro() {
     this.introActive = true;
     this.introT = 0;
-    this.camera.position.copy(this.camOverview);
-    this.camera.lookAt(0, 1, 0);
+    // Ein gemeinsamer introT für alle Views — beide Splitscreen-Hälften
+    // fliegen synchron ein und landen zunächst gemeinsam auf camBase; danach
+    // dollyt jede Hälfte per _updateSplitCameras() sanft auf ihr EIGENES
+    // Podest auseinander (s. dort).
+    for (const v of this.views) { v.camera.position.copy(this.camOverview); v.camera.lookAt(0, 1, 0); }
     const meta = BLOCK_RUSH_MAP_META.find((m) => m.id === this.config.mapId);
     const el = document.createElement('div');
     el.className = 'rush-map-intro-name';
@@ -229,23 +460,38 @@ class BlockRushGame {
     this.host.appendChild(el);
     this.introEl = el;
     requestAnimationFrame(() => el.classList.add('show'));
+
+    // Kurzer Tastenhinweis, generiert aus den TATSÄCHLICHEN Bindings des
+    // jeweiligen Spielers (Keybinds/Presets, s. Phase 5/6) — kein hart
+    // codierter Text. Blendet mit dem Intro-Ende wieder aus.
+    if (this.elControlsHint) {
+      const localHumans = this.config.players.filter((p) => p.isLocal && p.type === 'human');
+      this.elControlsHint.innerHTML = localHumans.map((p) => {
+        const prefix = localHumans.length > 1 ? `<b>${p.name}:</b> ` : '';
+        return `<div>${prefix}${pieceControlHint(p.bindings?.piece)}</div>`;
+      }).join('');
+      this.elControlsHint.classList.toggle('show', localHumans.length > 0);
+    }
   }
 
   _updateIntro(dt) {
     this.introT += dt;
     const t = Math.min(1, this.introT / this.introDuration);
     const eased = 1 - Math.pow(1 - t, 3);
-    this.camera.position.lerpVectors(this.camOverview, this.camBase, eased);
-    this.camera.lookAt(0, 1, 0);
+    for (const v of this.views) {
+      v.camera.position.lerpVectors(this.camOverview, this.camBase, eased);
+      v.camera.lookAt(0, 1, 0);
+    }
     if (t >= 1) {
       this.introActive = false;
-      this.camera.position.copy(this.camBase);
+      for (const v of this.views) v.camera.position.copy(this.camBase);
       if (this.introEl) {
         const el = this.introEl;
         el.classList.remove('show'); el.classList.add('hide');
         setTimeout(() => el.remove(), 600);
         this.introEl = null;
       }
+      if (this.elControlsHint) this.elControlsHint.classList.remove('show');
     }
   }
 
@@ -263,20 +509,49 @@ class BlockRushGame {
   _loop(now) {
     this.raf = requestAnimationFrame((t) => this._loop(t));
     const elapsed = now - this.last;
-    const fps = this.config.fpsLimit();
+    let fps = this.config.fpsLimit();
+    // Splitscreen rendert zweimal pro Frame — ein unbegrenztes Limit wäre
+    // dann ein echtes Perf-Risiko, deshalb intern auf 60 klemmen.
+    if (this.config.split && fps === 0) fps = 60;
     if (fps > 0 && elapsed < 1000 / fps - 0.5) return;
     this.last = now;
     const dt = Math.min(0.05, elapsed / 1000);
 
-    if (this.introActive) this._updateIntro(dt);
-    else if (!this.paused && this.running) {
-      if (this.role === 'guest') this._stepReplica(dt);
-      else this._step(dt);
+    if (!this.paused) {
+      if (this.introActive) this._updateIntro(dt);
+      else if (this.running) {
+        if (this.role === 'guest') this._stepReplica(dt);
+        else this._step(dt);
+      }
     }
 
     this._animate(dt);
-    this.renderer.render(this.scene, this.camera);
+    this._updatePieceViews(dt);
+    this._renderViews();
     this._updateLabels();
+  }
+
+  // Fallendes Teil + Geistervorschau JEDER Spieler, jeden Frame — unabhängig
+  // von Pause (sitzt dann einfach unverändert an der letzten Position).
+  // Host: Playfield.piece ist live. Gast: Playfield läuft für NIEMANDEN lokal
+  // (auch nicht für den eigenen Spieler, s. Kommentar bei _netPiece) — dort
+  // kommt piece IMMER aus dem zuletzt empfangenen Snapshot.
+  _updatePieceViews(dt) {
+    for (const p of this.players) {
+      const piece = this.role === 'guest' ? p._netPiece : p.field.piece;
+      if (p.eliminated || !piece) { p.pieceView.hide(); p.ghostView.hide(); continue; }
+      const color = PIECE_COLORS[piece.type] || 0xffffff;
+      p.pieceView.setColor(color);
+      p.pieceView.update(piece, dt);
+      // dropRow() ist eine reine Funktion von (type,rot,col) gegen das
+      // aktuelle Zellenraster — beim Gast ist das Raster über die Grid-
+      // Snapshots (s. _applyGridString) synchron, auch wenn field.piece
+      // selbst dort nicht mitläuft. Funktioniert daher für Host UND Gast
+      // identisch, ohne den Sonderfall gesondert zu behandeln.
+      const landRow = p.field.dropRow(piece.type, piece.rot, piece.col);
+      p.ghostView.setColor(color);
+      p.ghostView.updateGhost(piece, landRow);
+    }
   }
 
   _gravityScale(p) {
@@ -416,12 +691,10 @@ class BlockRushGame {
     this.elTimer.textContent = Math.max(0, this.timeLeft).toFixed(1);
 
     const lerp = Math.min(1, dt * 10);
-    let changed = false;
     for (const row of this._netSnap.p) {
-      const [id, flags, angle, stability, topRow] = row;
+      const [id, flags, angle, stability, topRow, pCol, pRow, pTypeIdx, pRot] = row;
       const p = this.players.find((pl) => pl.id === id);
       if (!p) continue;
-      const wasAlive = p.alive;
       p.alive = !!(flags & 1);
       const falling = !!(flags & 2);
       p.tower.angle += (angle - p.tower.angle) * lerp;
@@ -429,12 +702,20 @@ class BlockRushGame {
       p.tower.stability = stability;
       p.field.topRow = topRow;
       if (falling && p.tower.state !== 'falling') p.tower.collapse();
-      if (wasAlive && !p.alive) { p.eliminated = true; changed = true; }
+      if (!p.alive) p.eliminated = true;
+      // Fallendes Teil des Spielers für die Optik (s. PieceView/_updatePieceViews)
+      // — trailing Felder, defensiv geprüft (ältere Host-Snapshots ohne diese
+      // vier Felder liefern einfach kein Teil, statt zu crashen).
+      p._netPiece = (pTypeIdx !== undefined && pTypeIdx >= 0)
+        ? { col: pCol, row: pRow, type: PIECE_TYPES[pTypeIdx], rot: pRot || 0 }
+        : null;
     }
     if (this._netSnap.g) {
       for (const id in this._netSnap.g) this._applyGridString(id, this._netSnap.g[id]);
     }
-    if (changed) this._renderHud();
+    // Jetzt billig (gecachtes DOM, s. _renderHud) — läuft deshalb wie beim
+    // Host bedenkenlos jeden Frame, statt nur bei einer Alive-Änderung.
+    this._renderHud();
   }
 
   _applyGridString(id, str) {
@@ -450,11 +731,18 @@ class BlockRushGame {
   getSnapshot() {
     return {
       t: round1(this.timeLeft),
-      p: this.players.map((p) => [
-        p.id,
-        (p.alive ? 1 : 0) | (p.tower.state === 'falling' ? 2 : 0),
-        round2(p.tower.angle), round2(p.tower.stability), p.field.topRow,
-      ]),
+      p: this.players.map((p) => {
+        const piece = p.field.piece;
+        return [
+          p.id,
+          (p.alive ? 1 : 0) | (p.tower.state === 'falling' ? 2 : 0),
+          round2(p.tower.angle), round2(p.tower.stability), p.field.topRow,
+          // Trailing: fallendes Teil (für PieceView beim Gast, s. _stepReplica).
+          // typeIdx -1 = kein Teil (eliminiert/gerade eingerastet).
+          piece ? piece.col : 0, piece ? piece.row : 0,
+          piece ? PIECE_TYPES.indexOf(piece.type) : -1, piece ? piece.rot : 0,
+        ];
+      }),
       g: this._changedGrids(),
     };
   }
@@ -487,6 +775,10 @@ class BlockRushGame {
 
   // ── reine Optik ─────────────────────────────────────────────────────
   _animate(dt) {
+    if (this.views.length > 1) {
+      this._updateSplitCameras(dt);
+      return;
+    }
     let tallest = 0;
     for (const p of this.players) tallest = Math.max(tallest, (ROWS - p.field.topRow) * CELL);
     if (!this.introActive) {
@@ -498,15 +790,73 @@ class BlockRushGame {
     }
   }
 
+  // Splitscreen-Kameras: jede Hälfte dollyt auf den EIGENEN Turm (statt wie
+  // im Einzelbild-Pfad auf den global höchsten) und schaut aufs eigene
+  // Podest statt auf den Ursprung — sonst identische Dolly-Formel wie oben,
+  // nur um das eigene Podest statt (0,0) zentriert.
+  _updateSplitCameras(dt) {
+    if (this.introActive) return;
+    for (const v of this.views) {
+      const p = this.players.find((pl) => pl.id === v.playerId);
+      if (!p) continue;
+      const pos = this.podiumPositions[p.podiumIndex % this.podiumPositions.length];
+      const height = (ROWS - p.field.topRow) * CELL;
+      const dolly = Math.min(10, height * 0.35);
+      const riseY = Math.min(6, height * 0.25);
+      const target = new THREE.Vector3(pos.x + this.camBase.x, this.camBase.y + riseY, pos.z + this.camBase.z + dolly);
+      v.camera.position.lerp(target, Math.min(1, dt * 2));
+      v.camera.lookAt(pos.x, Math.min(6, height * 0.5), pos.z);
+    }
+  }
+
+  // Rendert entweder die volle Bühne (Einzelbild, exakt der alte Aufruf) oder
+  // teilt Viewport+Scissor pro Splitscreen-Hälfte auf — s. block-bomb/main.js
+  // _renderViews() für die Begründung des Bottom-Up-rect (kein Flip hier).
+  _renderViews() {
+    if (this.views.length < 2) {
+      this.renderer.setScissorTest(false);
+      this.renderer.render(this.scene, this.views[0].camera);
+      return;
+    }
+    const w = this.host.clientWidth || window.innerWidth;
+    const h = this.host.clientHeight || window.innerHeight;
+    this.renderer.setScissorTest(true);
+    for (const v of this.views) {
+      const vx = Math.round(v.rect.x * w);
+      const vy = Math.round(v.rect.y * h);
+      const vw = Math.round(v.rect.w * w);
+      const vh = Math.round(v.rect.h * h);
+      this.renderer.setViewport(vx, vy, vw, vh);
+      this.renderer.setScissor(vx, vy, vw, vh);
+      this.renderer.render(this.scene, v.camera);
+    }
+    this.renderer.setScissorTest(false);
+  }
+
+  // rect (Bottom-Up, s. _renderViews) → Bildschirm-Pixel-Rechteck von OBEN
+  // gezählt, für die DOM-Label-Platzierung in _updateLabels.
+  _viewPixelRect(v, w, h) {
+    return {
+      left: v.rect.x * w,
+      top: (1 - v.rect.y - v.rect.h) * h,
+      width: v.rect.w * w,
+      height: v.rect.h * h,
+    };
+  }
+
   _updateLabels() {
     const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
-    const v = new THREE.Vector3();
+    const vec = new THREE.Vector3();
     for (const p of this.players) {
       const el = this.labels.get(p.id);
       const height = (ROWS - p.field.topRow) * CELL;
-      v.set(p.tower.pivot.position.x, this.map.podiumY + height + 1.0, p.tower.pivot.position.z).project(this.camera);
-      const sx = (v.x * 0.5 + 0.5) * w;
-      const sy = (-v.y * 0.5 + 0.5) * h;
+      // Splitscreen: Label folgt der Kamera-Hälfte des jeweiligen Spielers;
+      // Bots/Remote (keine eigene Hälfte) werden immer über views[0] projiziert.
+      const view = this.views.find((vw) => vw.playerId === p.id) || this.views[0];
+      const rect = this._viewPixelRect(view, w, h);
+      vec.set(p.tower.pivot.position.x, this.map.podiumY + height + 1.0, p.tower.pivot.position.z).project(view.camera);
+      const sx = rect.left + (vec.x * 0.5 + 0.5) * rect.width;
+      const sy = rect.top + (-vec.y * 0.5 + 0.5) * rect.height;
       el.style.transform = `translate(-50%,-100%) translate(${sx}px,${sy}px)`;
       el.classList.toggle('eliminated', p.eliminated);
     }
@@ -523,8 +873,10 @@ class BlockRushGame {
   _resize() {
     const w = this.host.clientWidth || window.innerWidth;
     const h = this.host.clientHeight || window.innerHeight;
-    this.camera.aspect = w / h;
-    this.camera.updateProjectionMatrix();
+    for (const v of this.views) {
+      v.camera.aspect = (w * v.rect.w) / (h * v.rect.h);
+      v.camera.updateProjectionMatrix();
+    }
     this.renderer.setSize(w, h);
   }
 
@@ -536,6 +888,8 @@ class BlockRushGame {
     for (const p of this.players) {
       if (p.controller.detach) p.controller.detach();
       p.tower.dispose();
+      p.pieceView.dispose();
+      p.ghostView.dispose();
     }
     if (this.map.dispose) this.map.dispose();
     if (this.renderer) this.renderer.dispose();
@@ -556,6 +910,7 @@ window.BlockRush = {
   resume() { if (current) current.resume(); },
   stop() { if (current) { current.destroy(); current = null; } },
   isRunning() { return !!current && current.running; },
+  isPaused() { return !!current && current.paused; },
   getSnapshot() { return current ? current.getSnapshot() : null; },
   applySnapshot(payload) { if (current) current.applySnapshot(payload); },
   getMyInput() { return current ? current.getMyInput() : RUSH_REMOTE_ADAPTER.initial(); },

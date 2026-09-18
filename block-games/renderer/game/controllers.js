@@ -16,8 +16,10 @@
 //   RemoteController      — Online-Spiel über Netzwerke; optionaler `adapter`
 //                            für Intents, die kein {x,z} sind (s. dort)
 //
-// Ein Bewegungs-Intent ist { x, z } mit x,z ∈ [-1,1] und Länge ≤ 1. Andere
-// Genres (Block Rush) definieren ihre eigene Intent-Form — der Vertrag
+// Ein Bewegungs-Intent ist { x, z } mit x,z ∈ [-1,1] und Länge ≤ 1, optional
+// zusätzlich `jump` (Anzahl neuer Sprung-Tastendrücke seit dem letzten Poll —
+// Laufspiele, s. Sprung-Mechanik in block-bomb/main.js + laser-lines/main.js).
+// Andere Genres (Block Rush) definieren ihre eigene Intent-Form — der Vertrag
 // „Controller liefert pro Frame etwas, Spielkern kennt die Herkunft nicht"
 // gilt trotzdem unverändert.
 //
@@ -38,30 +40,66 @@ function normalize(x, z) {
   return { x: x / len, z: z / len };
 }
 
+// ── Tastenbelegung: Bindings-Objekt ODER Layout-String ───────────────────
+// Beide lokalen Controller akzeptieren entweder das von Keybinds.resolve()
+// aufgelöste Bindings-Objekt ({left,right,...} → Tastencode) ODER — für
+// Aufrufer, die (noch) keine Bindings mitgeben — einen alten Layout-String
+// ('wasd'|'arrows'). Der Spielkern selbst kennt Keybinds NICHT (App-Ebene) —
+// deshalb liegt hier eine EIGENE, unabhängige Kopie der Referenz-Layouts als
+// Fallback. Bei Änderungen an renderer/keybinds.js PRESETS immer auch hier
+// nachziehen.
+const LEGACY_WALK = Object.freeze({
+  wasd:   Object.freeze({ left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS', jump: 'Space' }),
+  arrows: Object.freeze({ left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown', jump: 'ShiftRight' }),
+});
+const LEGACY_PIECE = Object.freeze({
+  wasd:   Object.freeze({ left: 'KeyA', right: 'KeyD', rotate: 'KeyW', down: 'KeyS', hard: 'KeyQ', cast: 'KeyE', cycle: 'KeyR' }),
+  arrows: Object.freeze({ left: 'ArrowLeft', right: 'ArrowRight', rotate: 'ArrowUp', down: 'ArrowDown', hard: 'ShiftRight', cast: 'ControlRight', cycle: 'Slash' }),
+});
+
+function resolveBindingMap(bindingsOrLayout, legacyTable) {
+  if (typeof bindingsOrLayout === 'string') {
+    return legacyTable[bindingsOrLayout === 'arrows' ? 'arrows' : 'wasd'];
+  }
+  return bindingsOrLayout || legacyTable.wasd;
+}
+
+// { aktion: code } → { code: aktion } — einmalig pro Controller-Instanz.
+function reverseMap(map) {
+  const rev = new Map();
+  for (const action of Object.keys(map)) rev.set(map[action], action);
+  return rev;
+}
+
 // ── Lokaler Mensch: gedrückte Tasten → Richtung ──────────────────────────
-// Hört global auf keydown/keyup und merkt sich, welche Tasten GEHALTEN werden
-// (kein einzelner Tastendruck). Damit läuft die Figur flüssig, solange die
-// Taste unten ist.
+// Hört global auf keydown/keyup (event.code, QWERTZ-fest) und merkt sich,
+// welche Aktionen GEHALTEN werden (kein einzelner Tastendruck). Damit läuft
+// die Figur flüssig, solange die Taste unten ist.
 //
-// Couch-Koop (2 lokale Menschen am selben PC): das `layout`-Argument trennt
-// WASD und Pfeiltasten auf zwei UNABHÄNGIGE Controller-Instanzen, statt beide
-// (wie früher) gleichwertig auf dieselbe Figur zu legen. P1 = 'wasd' (Default),
-// P2 = 'arrows'. Beide Instanzen hören global auf `window`, ignorieren aber
-// Tasten außerhalb ihres eigenen Layouts — mapKey() gibt dafür pro Layout
-// gezielt null zurück.
+// Couch-Koop (2 lokale Menschen am selben PC): jede Instanz bekommt ihre
+// EIGENE Bindings-Map (Keybinds.resolve('p1'|'p2').walk) und hört nur auf die
+// darin enthaltenen Codes — zwei Instanzen können so gleichzeitig angehängt
+// sein, ohne sich gegenseitig zu steuern.
 export class LocalHumanController {
-  constructor(layout = 'wasd') {
-    this.layout = layout === 'arrows' ? 'arrows' : 'wasd';
+  constructor(bindings = 'wasd') {
+    this._rev = reverseMap(resolveBindingMap(bindings, LEGACY_WALK));
     this.keys = new Set();
+    // Sprung ist ein Tastendruck-Ereignis (Flanke), keine gehaltene Richtung —
+    // wie LocalPieceControllers `seq`, damit ein kurzer Tipp zwischen zwei
+    // 20-Hz-Netzwerk-Polls nicht verschluckt wird (s. update()).
+    this._jumpAcc = 0;
     this._onDown = (e) => {
-      const k = mapKey(e.key, this.layout);
+      const k = this._rev.get(e.code);
       if (!k) return;
-      // Pfeiltasten nicht die Seite scrollen lassen.
+      // Belegte Tasten (auch Pfeiltasten/Leertaste) nicht die Seite scrollen lassen.
       e.preventDefault();
+      // Browser-Auto-Repeat bei gehaltener Sprungtaste ignorieren — sonst
+      // würde ein Halten wie Dauerfeuer-Springen zählen.
+      if (k === 'jump' && !this.keys.has('jump')) this._jumpAcc++;
       this.keys.add(k);
     };
     this._onUp = (e) => {
-      const k = mapKey(e.key, this.layout);
+      const k = this._rev.get(e.code);
       if (k) this.keys.delete(k);
     };
     this.attached = false;
@@ -83,7 +121,7 @@ export class LocalHumanController {
 
   // Tasten leeren, ohne die Listener zu lösen (z.B. beim Pausieren, damit die
   // Figur nicht „weiterläuft", wenn man im Pausemenü eine Taste loslässt).
-  clear() { this.keys.clear(); }
+  clear() { this.keys.clear(); this._jumpAcc = 0; }
 
   update(/* self, world, dt */) {
     let x = 0, z = 0;
@@ -91,29 +129,13 @@ export class LocalHumanController {
     if (this.keys.has('right')) x += 1;
     if (this.keys.has('up'))    z -= 1; // -Z = „nach hinten/oben" in die Szene
     if (this.keys.has('down'))  z += 1;
-    return normalize(x, z);
-  }
-}
-
-// layout 'wasd' → WASD, layout 'arrows' → Pfeiltasten. Jedes Layout hört NUR
-// auf seine eigenen Tasten, damit zwei LocalHumanController gleichzeitig
-// angehängt sein können, ohne sich gegenseitig zu steuern.
-function mapKey(key, layout) {
-  if (layout === 'arrows') {
-    switch (key) {
-      case 'ArrowLeft':  return 'left';
-      case 'ArrowRight': return 'right';
-      case 'ArrowUp':    return 'up';
-      case 'ArrowDown':  return 'down';
-      default: return null;
-    }
-  }
-  switch (key) {
-    case 'a': case 'A': return 'left';
-    case 'd': case 'D': return 'right';
-    case 'w': case 'W': return 'up';
-    case 's': case 'S': return 'down';
-    default: return null;
+    const dir = normalize(x, z);
+    // jump: Anzahl neuer Sprung-Tastendrücke seit dem letzten update()-Aufruf
+    // (0 = keiner). Wird hier geleert („gedraint"), damit derselbe Sprung nicht
+    // mehrfach ausgewertet wird.
+    const jump = this._jumpAcc;
+    this._jumpAcc = 0;
+    return { x: dir.x, z: dir.z, jump };
   }
 }
 
@@ -172,40 +194,14 @@ export class RemoteController {
 // ── Lokales Teil-Stapeln (Block Rush): kein {x,z}-Bewegungsintent, sondern
 // ein Ereignis-Zähler seit der letzten Abfrage — sonst würden bei 20-Hz-
 // Online-Polling (app.js) Drehungen/Hard-Drops zwischen zwei Abfragen
-// verschluckt. Hört wie LocalHumanController global auf `window`, mappt aber
-// auf `e.code` (nicht `e.key` — QWERTZ-fest) und regelt Links/Rechts selbst
-// per DAS/ARR (Verzögerung bis Wiederholung / Wiederholrate).
+// verschluckt. Hört wie LocalHumanController global auf `window` und regelt
+// Links/Rechts selbst per DAS/ARR (Verzögerung bis Wiederholung / Wiederholrate).
 const DAS = 0.16; // s, bis eine gehaltene Links/Rechts-Taste zu wiederholen beginnt
 const ARR = 0.04; // s zwischen zwei automatischen Wiederholungen
 
-function mapPieceCode(code, layout) {
-  if (layout === 'arrows') {
-    switch (code) {
-      case 'ArrowLeft':  return 'left';
-      case 'ArrowRight': return 'right';
-      case 'ArrowUp':    return 'rotate';
-      case 'ArrowDown':  return 'down';
-      case 'ShiftRight': return 'hard';
-      case 'ControlRight': return 'cast';
-      case 'Slash':      return 'cycle';
-      default: return null;
-    }
-  }
-  switch (code) {
-    case 'KeyA': return 'left';
-    case 'KeyD': return 'right';
-    case 'KeyW': return 'rotate';
-    case 'KeyS': return 'down';
-    case 'KeyQ': return 'hard';
-    case 'KeyE': return 'cast';
-    case 'KeyR': return 'cycle';
-    default: return null;
-  }
-}
-
 export class LocalPieceController {
-  constructor(layout = 'wasd') {
-    this.layout = layout === 'arrows' ? 'arrows' : 'wasd';
+  constructor(bindings = 'wasd') {
+    this._rev = reverseMap(resolveBindingMap(bindings, LEGACY_PIECE));
     this.held = new Set();
     this._acc = { dx: 0, rot: 0, hard: 0, cast: 0, cycle: 0 };
     this.soft = false;
@@ -214,7 +210,7 @@ export class LocalPieceController {
     this.attached = false;
 
     this._onDown = (e) => {
-      const a = mapPieceCode(e.code, this.layout);
+      const a = this._rev.get(e.code);
       if (!a) return;
       e.preventDefault();
       if (this.held.has(a)) return; // Browser-Auto-Repeat ignorieren, DAS/ARR macht das selbst
@@ -222,7 +218,7 @@ export class LocalPieceController {
       this._press(a);
     };
     this._onUp = (e) => {
-      const a = mapPieceCode(e.code, this.layout);
+      const a = this._rev.get(e.code);
       if (!a) return;
       this.held.delete(a);
       if (a === 'left' || a === 'right') { this._dasDir = 0; this._dasTimer = 0; this._arrTimer = 0; }

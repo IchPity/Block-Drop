@@ -14,8 +14,15 @@
 
 'use strict';
 
-import { COLS, ROWS, shapeCells } from './pieces.js';
+import { COLS, ROWS, CELL, shapeCells } from './pieces.js';
 import { SPELL_META } from './spells.js';
+
+// Mindestabstand zwischen zwei Dreh-/Verschiebe-Eingaben eines Bots — bisher
+// gab es keine Bremse, `think()` läuft mit jedem gerenderten Frame, ein Bot
+// konnte also bis zu 60 Eingaben/s absetzen (deutlich schneller, als ein
+// Mensch physisch tippen kann; menschliches ARR in controllers.js liegt bei
+// 0.04s). 0.08s hält Bots klar im menschlich plausiblen Bereich.
+const ACTION_INTERVAL = 0.08;
 
 const PROFILES = {
   easy: {
@@ -72,13 +79,25 @@ function evaluatePlacement(field, type, rot, col) {
   return { holes, bump, topRow, flat, comApprox };
 }
 
-function pickPlacement(field, type, ep) {
+// `tower` (optional): TowerSim des Bots — ermöglicht Rebalancing statt reinem
+// Zentrieren. Ohne `tower` (z.B. in Tests) verhält sich das exakt wie zuvor.
+function pickPlacement(field, type, ep, tower) {
+  // comX ist in Welteinheiten (tower.js), comApprox unten in Rasterspalten —
+  // durch CELL teilen, um beide vergleichbar zu machen. leanFactor 0..1 sagt,
+  // wie stark der Turm schon schief steht (auf die halbe Feldbreite normiert);
+  // bei leanFactor≈0 verhält sich targetCenter wie vorher (reines Zentrieren).
+  const towerComCol = tower ? tower.comX / CELL : 0;
+  const leanFactor = tower ? Math.min(1, Math.abs(towerComCol) / (COLS / 2)) : 0;
+  // Turm steht schon schief → die "gute Mitte" verschiebt sich Richtung
+  // Gegengewicht, statt immer bei comApprox=0 zu bleiben — sonst bauen Bots
+  // ewig nur mittig und balancieren einen kippenden Turm nie zurück.
+  const targetCenter = -towerComCol * leanFactor;
   const candidates = [];
   for (let rot = 0; rot < 4; rot++) {
     for (let col = -2; col < COLS; col++) {
       const r = evaluatePlacement(field, type, rot, col);
       if (!r) continue;
-      const center = Math.abs(r.comApprox) / (COLS / 2);
+      const center = Math.abs(r.comApprox - targetCenter) / (COLS / 2);
       const heightPenalty = (ROWS - r.topRow) / ROWS;
       const score = -ep.w.holes * r.holes - ep.w.bump * r.bump
         - ep.w.height * heightPenalty - ep.w.com * center + ep.w.flat * r.flat;
@@ -137,6 +156,8 @@ export function makeBlockRushBotBrain(difficulty) {
     plan: null, planType: null,
     spellCd: 1 + Math.random() * ep.spellDelay,
     spellGoal: null,
+    actionT: Math.random() * ACTION_INTERVAL, // Eingabe-Cooldown (Dreh/Verschieb)
+    dropPause: 0,                             // zusätzliche Denkpause vor Hard-/Soft-Drop
   };
 
   function think(self, world, dt) {
@@ -144,24 +165,38 @@ export function makeBlockRushBotBrain(difficulty) {
     const field = self.field;
     if (!field) return out;
 
+    state.actionT -= dt;
+
     // ── Teil-Platzierung ──────────────────────────────────────────────
     state.reactT -= dt;
     const type = field.piece ? field.piece.type : null;
     if (type && (state.reactT <= 0 || state.planType !== type)) {
       state.reactT = ep.reactionInterval;
-      state.plan = pickPlacement(field, type, ep);
+      state.plan = pickPlacement(field, type, ep, self.tower);
       state.planType = type;
+      // Neuer Plan → neue Denkpause, bevor der Bot droppt (proportional zur
+      // Reaktionszeit, s. Plan Phase 9 Punkt 4 — ohne diese Pause würde der
+      // Bot im selben Moment droppen, in dem Drehung/Spalte zufällig schon
+      // passen, was sich instant statt reagierend anfühlt).
+      state.dropPause = ep.reactionInterval * 0.5;
     }
     if (field.piece && state.plan) {
       const p = field.piece;
-      if (p.rot !== state.plan.rot) {
-        out.rot = 1;
-      } else if (p.col !== state.plan.col) {
-        out.dx = p.col < state.plan.col ? 1 : -1;
-      } else if (Math.random() < ep.hardDropChance) {
-        out.hard = 1;
+      const misaligned = p.rot !== state.plan.rot || p.col !== state.plan.col;
+      if (misaligned) {
+        // Höchstens EINE Dreh-/Verschiebe-Eingabe pro ACTION_INTERVAL — vorher
+        // lief das ungebremst mit jedem Frame (s. Kommentar bei ACTION_INTERVAL).
+        if (state.actionT <= 0) {
+          state.actionT = ACTION_INTERVAL;
+          if (p.rot !== state.plan.rot) out.rot = 1;
+          else out.dx = p.col < state.plan.col ? 1 : -1;
+        }
       } else {
-        out.soft = true;
+        state.dropPause -= dt;
+        if (state.dropPause <= 0) {
+          if (Math.random() < ep.hardDropChance) out.hard = 1;
+          else out.soft = true;
+        }
       }
     }
 

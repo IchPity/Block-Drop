@@ -19,6 +19,31 @@
 'use strict';
 
 import * as THREE from '../vendor/three.module.js';
+import { PALETTE } from '../game/theme.js';
+
+// mood pro Map (s. game/theme.js) — abgeleitet aus den bisherigen Hex-
+// Literalen jeder Map (Spin=Pink/Magenta wie der Rand, Grid=warmes
+// Industrie-Licht wie die Kisten, Sky=kühles Void-Blau mit weiterem Nebel
+// wie in Block Bomb „sky", aber eigene Akzentfarbe, damit die drei Spiele
+// nicht optisch verschmelzen).
+const MOODS = {
+  spin: {
+    bg: 0x0c0a18, fogNear: 26, fogFar: 52,
+    ambientColor: 0x8a5a8a, ambientIntensity: 0.78,
+    accent: PALETTE.pink, rimIntensity: 0.45,
+  },
+  grid: {
+    bg: 0x100e1a, fogNear: 18, fogFar: 40,
+    ambientColor: 0x9a8060, ambientIntensity: 0.8,
+    keyColor: 0xffe8c0, keyIntensity: 1.05,
+    accent: PALETTE.orange, rimIntensity: 0.3,
+  },
+  sky: {
+    bg: 0x0a0c22, fogNear: 24, fogFar: 66,
+    ambientColor: 0x7078b0, ambientIntensity: 0.72,
+    accent: PALETTE.pink, rimIntensity: 0.5,
+  },
+};
 
 export const LASER_MAP_META = [
   { id: 'spin', name: 'Spin Arena',   desc: 'Runde Arena — rotierende Laser werden immer schneller. Gute Einsteiger-Map.' },
@@ -88,7 +113,21 @@ export function buildMap(id, reducedFx = false) {
 }
 
 // ── Map 1: Spin Arena ───────────────────────────────────────────────────────
-function buildSpin() {
+// Fairness-Kennzahlen (Herleitung s. DOKUMENTATION.md „Unreleased" /
+// Änderungsprotokoll v0.23.0):
+//   SPIN_HUB_RADIUS — Speichen beginnen erst hier, Zentrum ist nie tödlich.
+//   SPIN_MIN_SECTOR — garantierte Mindest-Sektorbreite zwischen Nachbar-
+//     Speichen zu JEDEM Zeitpunkt (s. lasers.js LaserDirector._spokeAngle;
+//     rechnerisch bewiesen, kein Zufall).
+//   SPIN_MAX_OMEGA  — Deckel für angularSpeed(level): bei SPEED=6.4 (main.js)
+//     ist ein Radius bis SPEED/SPIN_MAX_OMEGA ≈ 10.3 sicher einholbar (mit
+//     spürbarer Marge, da die Arena bei R=13 endet) — „auf mittlerem Radius
+//     einholbar", nicht nur am äußersten Rand.
+const SPIN_HUB_RADIUS = 2.4;
+const SPIN_MIN_SECTOR = 0.5; // rad, ≈28.6°
+const SPIN_MAX_OMEGA = 0.62; // rad/s
+
+function buildSpin(reducedFx) {
   const group = new THREE.Group();
   const R = 13, groundY = 0.5;
 
@@ -104,24 +143,34 @@ function buildSpin() {
   rim.rotation.x = Math.PI / 2; rim.position.y = groundY;
   group.add(rim);
 
-  // dezenter Mittel-Hub (optischer Ankerpunkt der Rotation)
-  const hub = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.8, 1.0, 0.6, 20),
-    new THREE.MeshStandardMaterial({ color: 0x3a2f55, emissive: 0xff2747, emissiveIntensity: 0.25 }),
+  // Sicherer Nabenbereich — genau SPIN_HUB_RADIUS groß, damit die Grenze für
+  // Spieler klar erkennbar ist (cyan = „sicher", Kontrast zur pinken Gefahr-
+  // farbe der Speichen/des Rands). Ersetzt den vorherigen rein dekorativen,
+  // viel kleineren Hub-Zylinder (0.8–1.0), der nichts über die reale
+  // Sicherheitszone aussagte.
+  const hubMat = new THREE.MeshStandardMaterial({
+    color: 0x1f4a45, emissive: 0x36d6e7, emissiveIntensity: 0.35, roughness: 0.6,
+  });
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(SPIN_HUB_RADIUS, SPIN_HUB_RADIUS, 0.12, 40), hubMat);
+  hub.position.y = groundY + 0.06; group.add(hub);
+  const hubRing = new THREE.Mesh(
+    new THREE.TorusGeometry(SPIN_HUB_RADIUS, 0.08, 8, 48),
+    new THREE.MeshStandardMaterial({ color: 0x36d6e7, emissive: 0x36d6e7, emissiveIntensity: 0.9 }),
   );
-  hub.position.y = groundY + 0.3; group.add(hub);
+  hubRing.rotation.x = Math.PI / 2; hubRing.position.y = groundY + 0.13;
+  group.add(hubRing);
 
   const spawns = ringSpawns(8.5);
-  // Sichere Waypoints: Ring im mittleren Radius (Mitte ist gefährlich = Nabe der
-  // Speichen), gleichmäßig verteilt.
-  const waypoints = [];
+  // Sichere Waypoints: Ring im mittleren Radius, gleichmäßig verteilt.
+  const waypoints = [{ id: 'hub', x: 0, z: 0, tags: ['center', 'safe'] }];
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2;
     waypoints.push({ id: 'r' + i, x: Math.cos(a) * 7.5, z: Math.sin(a) * 7.5, tags: ['safe'] });
   }
 
+  let t = 0;
   return {
-    group, groundY, spawns, obstacles: [], waypoints,
+    group, groundY, spawns, obstacles: [], waypoints, mood: MOODS.spin,
     resolve(x, z, r) {
       const d = Math.hypot(x, z);
       const max = R - r - 0.3;
@@ -133,18 +182,23 @@ function buildSpin() {
       if (d > R * 0.82) return { x: -x / d, z: -z / d };
       return { x: 0, z: 0 };
     },
-    update() {},
+    update(dt) {
+      if (reducedFx) return;
+      t += dt;
+      hubRing.material.emissiveIntensity = 0.7 + Math.sin(t * 2) * 0.2;
+    },
     laserConfig: {
       kind: 'spin', radius: R, halfWidth: 0.55, maxBeams: 5,
+      innerRadius: SPIN_HUB_RADIUS, minSector: SPIN_MIN_SECTOR,
       beams: (lvl) => 1 + Math.floor((lvl - 1) / 1),
-      angularSpeed: (lvl) => 0.55 + lvl * 0.18,
+      angularSpeed: (lvl) => Math.min(SPIN_MAX_OMEGA, 0.30 + lvl * 0.055),
       levelEvery: 9,
     },
   };
 }
 
 // ── Map 2: Factory Grid ──────────────────────────────────────────────────────
-function buildGrid() {
+function buildGrid(reducedFx) {
   const group = new THREE.Group();
   const HW = 12, HD = 9, groundY = 0.5;
 
@@ -172,6 +226,21 @@ function buildGrid() {
     obstacles.push({ x: c.x, z: c.z, r: 1.1 });
   }
 
+  // Bewegliche Deckung: eine Kiste gleitet langsam hin und her (einzige Map
+  // mit Kulissenbewegung bisher war Block Bomb „factory"; hier die
+  // Entsprechung für Laser Lines). Referenz `movingCrate` wird unten in
+  // `obstacles` gehalten, sodass Kollision/Bot-Ausweichen automatisch
+  // mitzieht (dieselbe Objektreferenz, nur x wird pro Frame verändert).
+  const movingCrateMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(1.6, 1.6, 1.6), [crateMat, crateMat, crateTop, crateMat, crateMat, crateMat],
+  );
+  const movingCrateBase = { x: 0, z: -6.5 };
+  movingCrateMesh.position.set(movingCrateBase.x, groundY + 0.8, movingCrateBase.z);
+  movingCrateMesh.castShadow = true; movingCrateMesh.receiveShadow = true;
+  group.add(movingCrateMesh);
+  const movingCrate = { x: movingCrateBase.x, z: movingCrateBase.z, r: 1.1 };
+  obstacles.push(movingCrate);
+
   const spawns = [
     { x: -9, z: -6 }, { x: 9, z: -6 }, { x: -9, z: 6 }, { x: 9, z: 6 },
   ];
@@ -188,8 +257,9 @@ function buildGrid() {
     { id: 'se', x: 9,  z: 6,  tags: ['safe', 'corner'] },
   ];
 
+  let gridT = 0;
   return {
-    group, groundY, spawns, obstacles, waypoints,
+    group, groundY, spawns, obstacles, waypoints, mood: MOODS.grid,
     resolve(x, z, r) {
       const p = pushOutOfObstacles(x, z, r, obstacles);
       p.x = Math.max(-HW + 0.6 + r, Math.min(HW - 0.6 - r, p.x));
@@ -202,7 +272,14 @@ function buildGrid() {
       if (z < -HD + 2) sz = 1; else if (z > HD - 2) sz = -1;
       return { x: sx, z: sz };
     },
-    update() {},
+    update(dt) {
+      // Bewegliche Deckung — bei reducedFx steht sie an ihrer Basis fest
+      // (kein neues bewegtes Element, s. Phase-10-Vorgabe).
+      if (reducedFx) return;
+      gridT += dt;
+      movingCrate.x = movingCrateBase.x + Math.sin(gridT * 0.5) * 3.5;
+      movingCrateMesh.position.x = movingCrate.x;
+    },
     laserConfig: {
       kind: 'lane', hw: HW, hd: HD, margin: 1.6, beamLength: 2 * HW + 3, halfWidth: 0.55,
       active: 0.5, firstDelay: 1.2, levelEvery: 9,
@@ -213,7 +290,7 @@ function buildGrid() {
 }
 
 // ── Map 3: Sky Warning ───────────────────────────────────────────────────────
-function buildSky() {
+function buildSky(reducedFx) {
   const group = new THREE.Group();
   const groundY = 0.5;
   const plates = [
@@ -226,15 +303,27 @@ function buildSky() {
     { x: 6.5, z: -4, w: 5, d: 2.4 },
     { x: -6.5, z: 4, w: 5, d: 2.4 },
     { x: 6.5, z: 4, w: 5, d: 2.4 },
+    // Bonus-Plattform, nur per Sprung erreichbar (s. jumpLanes unten) —
+    // wie block-bomb/maps.js „sky": taktischer Rückzugsort, kein Pflichtweg.
+    { x: 11, z: 16, w: 4, d: 4, jumpBonus: true },
   ];
+  // Sprunglücke SE-Eckplattform → Bonus-Plattform (Gap ≈ 2.5 Einheiten,
+  // s. block-bomb/maps.js für die identische Herleitung aus SPEED·Flugzeit).
+  const jumpLanes = [{ x: 11, z: 12.75, w: 4.4, d: 3.2 }];
+  function inJumpLane(x, z) {
+    return jumpLanes.some((l) => Math.abs(x - l.x) <= l.w / 2 && Math.abs(z - l.z) <= l.d / 2);
+  }
   const matA = new THREE.MeshStandardMaterial({ color: 0x352f55, roughness: 0.7 });
   const matSide = new THREE.MeshStandardMaterial({ color: 0x201d3a, roughness: 0.85 });
   const matEdge = new THREE.MeshStandardMaterial({ color: 0xff5bd0, emissive: 0xff5bd0, emissiveIntensity: 0.8 });
+  const matBonusEdge = new THREE.MeshStandardMaterial({ color: 0x36d6e7, emissive: 0x36d6e7, emissiveIntensity: 0.9 });
+  const bobPlates = [];
   for (const p of plates) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(p.w, 0.6, p.d),
       [matSide, matSide, matA, matSide, matSide, matSide]);
     m.position.set(p.x, 0.2, p.z); m.receiveShadow = true; group.add(m);
-    addRimFrame(group, p, matEdge, 0.52);
+    addRimFrame(group, p, p.jumpBonus ? matBonusEdge : matEdge, 0.52);
+    if (p.jumpBonus) bobPlates.push({ mesh: m, baseY: 0.2 });
   }
 
   const margin = 0.5;
@@ -277,10 +366,15 @@ function buildSky() {
     { x: 0, z: 0, w: 9, d: 3 },
   ];
 
+  let skyT = 0;
   return {
-    group, groundY, spawns, obstacles: [], waypoints,
-    resolve(x, z) {
-      return { x, z, fell: !onPlate(x, z) };
+    group, groundY, spawns, obstacles: [], waypoints, mood: MOODS.sky,
+    resolve(x, z, r, airborne) {
+      // Wie block-bomb/maps.js „sky": fell=true außer in der Luft UND im
+      // Sprung-Korridor (jumpLanes) — der einzige Weg zur Bonus-Plattform.
+      const grounded = onPlate(x, z);
+      const safe = grounded || (airborne && inJumpLane(x, z));
+      return { x, z, fell: !safe };
     },
     steerToSafety(x, z) {
       const threshold = 1.4;
@@ -298,7 +392,14 @@ function buildSky() {
       return { x: sx, z: sz };
     },
     respawn() { return { x: 0, z: 0 }; }, // Mitte der großen Mittelplattform
-    update() {},
+    update(dt) {
+      // Sanftes Schweben der Bonus-Plattform — Ambient-Bewegung war vorher
+      // bei allen drei Laser-Lines-Maps null (leeres update()). Bei
+      // reducedFx steht sie still (kein neues bewegtes Element).
+      if (reducedFx) return;
+      skyT += dt;
+      for (const b of bobPlates) b.mesh.position.y = b.baseY + Math.sin(skyT * 1.4) * 0.15;
+    },
     laserConfig: {
       kind: 'zone', zones, active: 0.7, firstDelay: 1.2, levelEvery: 9,
       warn: (lvl) => Math.max(0.7, 1.25 - lvl * 0.08),

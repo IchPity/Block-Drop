@@ -8,24 +8,13 @@
 
 // ── Minigame-Katalog ─────────────────────────────────────────────────
 // Nur wirklich spielbare Minigames. Sobald ein neues fertig ist, hier
-// freischalten (`id`/`nav`/`start` wie unten). `nav` = feste
-// Navigations-ID für die Tastatur-Steuerung (siehe NAV_MENU).
-//
-// Spiele „in Arbeit" stehen NICHT hier als eigene, gleich gewichtete
-// Karten — vier gesperrte Karten neben zwei spielbaren machten die
-// Hauptmenü-Wahl auf 6 Optionen auf, obwohl nur 2 etwas taten. Sie laufen
-// stattdessen gesammelt in UPCOMING_MINIGAMES als EINE Sammel-Kachel.
+// freischalten (`id`/`available` wie unten). Es gibt keinen Einzelspiel-
+// Einstieg im Hauptmenü mehr — die Liste dient nur noch als Registry-Quelle
+// für die Party-Serie (Reihenfolge + Spiel-Voting aus der Lobby).
 const MINIGAMES = [
-  { id: 'laser-lines', nav: 'main_laserLines', icon: '🔺', name: 'Laser Lines', desc: 'Weiche den Lasern aus!', available: true, start: () => startTutorial('laser-lines') },
-  { id: 'block-bomb',  nav: 'main_blockBomb',  icon: '💣', name: 'Block Bomb',  desc: 'Berühr die anderen – wer mit der Bombe hochgeht, fliegt raus', available: true, start: () => startTutorial('block-bomb') },
-  { id: 'block-rush',  nav: 'main_blockRush',  icon: '🧱', name: 'Block Rush',  desc: 'Baut gleichzeitig Türme – wer einstürzt, fliegt raus', available: true, start: () => startTutorial('block-rush') },
-];
-
-const UPCOMING_MINIGAMES = [
-  { icon: '🪙', name: 'Coin Grab' },
-  { icon: '🧠', name: 'Memory Clash' },
-  { icon: '⚡', name: 'Speed Tap' },
-  { icon: '❓', name: 'Quiz Blocks' },
+  { id: 'laser-lines', icon: '🔺', name: 'Laser Lines', desc: 'Weiche den Lasern aus!', available: true },
+  { id: 'block-bomb',  icon: '💣', name: 'Block Bomb',  desc: 'Berühr die anderen – wer mit der Bombe hochgeht, fliegt raus', available: true },
+  { id: 'block-rush',  icon: '🧱', name: 'Block Rush',  desc: 'Baut gleichzeitig Türme – wer einstürzt, fliegt raus', available: true },
 ];
 
 // ── Gast-Modus ───────────────────────────────────────────────────────
@@ -417,17 +406,162 @@ function setupSettingsTabs() {
   });
 }
 
+// Welcher Spieler wird im Steuerung-Reiter bearbeitet, und wohin führt Esc/
+// „Zurück" zurück (Menü — Standard — oder, wenn aus der Lobby geöffnet, direkt
+// wieder in die Lobby, s. leaveSettings()).
+let settingsCtx = { player: 'p1', returnTo: 'menu' };
+
 // Einstellungen öffnen und einen Start-Reiter wählen. `tabId` ist optional;
 // ist der gewünschte Reiter ausgeblendet (z.B. Konto im Gast-Modus), fällt
 // die Auswahl auf „Anzeige" zurück. Der aktive Reiter bekommt den Fokus,
-// damit man sofort per Tastatur weiterblättern kann.
-function openSettings(tabId) {
+// damit man sofort per Tastatur weiterblättern kann. `ctx` (optional):
+// { player: 'p1'|'p2', returnTo: 'menu'|'lobby' } — steuert den Steuerung-
+// Reiter und wohin man zurückkommt (s. leaveSettings()).
+function openSettings(tabId, ctx) {
+  settingsCtx = { player: 'p1', returnTo: 'menu', ...(ctx || {}) };
   syncAccountCard(); // Konto-Reiter/Panel je nach Login ein-/ausblenden
+  syncControlsPlayerUi();
+  renderKeybindRows();
   const wanted = tabId && document.getElementById(tabId);
   const target = (wanted && !wanted.hidden) ? wanted : document.getElementById('stabDisplay');
   activateSettingsTab(target);
   showScreen('screen-settings');
   target.focus();
+}
+
+// Einstellungen verlassen: aus der Lobby geöffnet → zurück in die Lobby
+// (Fokus auf den „Steuerung"-Knopf des bearbeiteten Spielers, sonst auf die
+// erste Karte); sonst wie bisher zurück ins Hauptmenü.
+function leaveSettings() {
+  if (settingsCtx.returnTo === 'lobby') {
+    renderLobby();
+    showScreen('screen-lobby');
+    const idx = settingsCtx.player === 'p2'
+      ? lobbyState.slots.findIndex(s => s.type === 'local')
+      : 0;
+    const safeIdx = idx === -1 ? 0 : idx;
+    const slot = lobbyState.slots[safeIdx];
+    if (!focusByNav(`lobby_p${slot.id}_controls`)) focusSlotCard(safeIdx);
+  } else {
+    goToMenu();
+  }
+}
+
+// ── Steuerung (Tastenbelegung) ────────────────────────────────────────────
+// Reiter „Steuerung": Spieler-Umschalter + Preset-Auswahl (nur P1, P2 bekommt
+// automatisch das Gegenteil) + eine Zeile pro Aktion mit einem Tasten-Knopf.
+// Neu gerendert bei jedem openSettings()-Aufruf und nach jeder Änderung
+// (Belegen, Preset-Wechsel, Spieler-Wechsel, Zurücksetzen).
+const KEYBIND_GROUPS = [
+  { group: 'walk', title: 'Laufspiele (Block Bomb · Laser Lines)' },
+  { group: 'piece', title: 'Block Rush' },
+];
+
+function syncControlsPlayerUi() {
+  const p1Btn = document.getElementById('ctlPlayer1');
+  const p2Btn = document.getElementById('ctlPlayer2');
+  if (p1Btn) p1Btn.classList.toggle('active', settingsCtx.player !== 'p2');
+  if (p2Btn) p2Btn.classList.toggle('active', settingsCtx.player === 'p2');
+  const selPreset = document.getElementById('setKeysPreset');
+  if (selPreset) selPreset.value = Settings.get('keysPreset');
+  const hint = document.getElementById('ctlPresetHint');
+  if (hint) {
+    const p2Layout = Keybinds.basePreset('p2') === 'arrows' ? 'Pfeiltasten' : 'WASD';
+    hint.textContent = `Spieler 2 bekommt automatisch ${p2Layout}.`;
+  }
+}
+
+function renderKeybindRows() {
+  const host = document.getElementById('controlsKeybindGroups');
+  if (!host) return; // Reiter existiert (noch) nicht im DOM, z.B. vor dem Boot
+  const player = settingsCtx.player === 'p2' ? 'p2' : 'p1';
+  const bound = Keybinds.resolve(player);
+  host.innerHTML = '';
+  KEYBIND_GROUPS.forEach(({ group, title }) => {
+    const h = document.createElement('div');
+    h.className = 'controls-group-title';
+    h.textContent = title;
+    host.appendChild(h);
+    Keybinds.ACTIONS[group].forEach((action) => {
+      const row = document.createElement('div');
+      row.className = 'setting-row';
+      const label = document.createElement('div');
+      label.className = 'setting-label';
+      label.innerHTML = `<strong>${Keybinds.actionLabel(group, action)}</strong>`;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'key-btn';
+      btn.dataset.act = `${group}.${action}`;
+      btn.textContent = Keybinds.label(bound[group][action]);
+      btn.addEventListener('click', () => startKeyCapture(player, group, action));
+      row.append(label, btn);
+      host.appendChild(row);
+    });
+  });
+}
+
+function setupControlsTab() {
+  document.getElementById('ctlPlayer1').addEventListener('click', () => {
+    settingsCtx.player = 'p1';
+    syncControlsPlayerUi();
+    renderKeybindRows();
+  });
+  document.getElementById('ctlPlayer2').addEventListener('click', () => {
+    settingsCtx.player = 'p2';
+    syncControlsPlayerUi();
+    renderKeybindRows();
+  });
+  document.getElementById('setKeysPreset').addEventListener('change', (e) => {
+    Settings.set('keysPreset', e.target.value);
+    syncControlsPlayerUi();
+    renderKeybindRows();
+  });
+  document.getElementById('btnKeysReset').addEventListener('click', () => {
+    Keybinds.clearOverrides(settingsCtx.player);
+    renderKeybindRows();
+    showToast('Steuerung zurückgesetzt.');
+  });
+}
+
+// ── Tasten belegen ─────────────────────────────────────────────────────────
+// Ein Klick/Enter/Leertaste auf einen Tasten-Knopf öffnet den Belegen-Modus:
+// die NÄCHSTE Taste wird exklusiv in der CAPTURE-Phase auf `window` abgefangen
+// (bevor sie setupKeyboard()s Navigation oder die native Knopf-Aktivierung
+// erreicht) und der Aktion zugewiesen. Esc bricht ab, ohne etwas zu ändern.
+let keyCapture = null; // { player, group, action }
+
+function startKeyCapture(player, group, action) {
+  keyCapture = { player, group, action };
+  document.getElementById('keyCaptureText').innerHTML =
+    `Drücke jetzt eine Taste für <strong>${Keybinds.actionLabel(group, action)}</strong> ` +
+    `(Spieler ${player === 'p2' ? 2 : 1}) — Esc bricht ab.`;
+  document.getElementById('keyCapture').hidden = false;
+  window.addEventListener('keydown', onCaptureKey, true);
+}
+
+function stopKeyCapture() {
+  window.removeEventListener('keydown', onCaptureKey, true);
+  document.getElementById('keyCapture').hidden = true;
+  keyCapture = null;
+}
+
+function onCaptureKey(e) {
+  if (!keyCapture) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  const { player, group, action } = keyCapture;
+  if (e.code === 'Escape') { stopKeyCapture(); return; }
+  if (Keybinds.BLOCKED.has(e.code)) { showToast('Diese Taste ist gesperrt.'); return; }
+  const result = Keybinds.set(player, group, action, e.code);
+  if (!result.ok) {
+    showToast('Diese Taste hat der andere Spieler schon belegt.');
+    return; // Overlay bleibt offen — eine andere Taste versuchen
+  }
+  stopKeyCapture();
+  renderKeybindRows();
+  showToast(result.swapped
+    ? `„${Keybinds.actionLabel(group, action)}" neu belegt — „${Keybinds.actionLabel(group, result.swapped)}" bekam die alte Taste.`
+    : `„${Keybinds.actionLabel(group, action)}" neu belegt.`);
 }
 
 async function setupSettings() {
@@ -458,12 +592,22 @@ async function setupSettings() {
     selFps.appendChild(opt);
   });
 
+  // Fenstergröße bleibt IMMER fokussierbar (auch im Vollbild) — nur optisch
+  // gedämpft, statt disabled zu sein (sonst wäre sie per Tastatur nie
+  // erreichbar, solange Vollbild aktiv ist, s. „Alles ohne Maus bedienbar").
+  // Der Wert wird trotzdem gespeichert und erst beim Verlassen des Vollbilds
+  // per applyResolution() angewandt.
+  function setResolutionInactive(on) {
+    const row = selRes.closest('.setting-row');
+    if (row) row.classList.toggle('is-inactive', on);
+  }
+
   // Store → UI (beim Öffnen und nach "Zurücksetzen")
   function syncUi() {
     chkFull.checked = Settings.get('fullscreen');
     selRes.value = Settings.get('resolution');
     if (!selRes.value) selRes.value = selRes.options[0]?.value || ''; // gespeicherte Größe passt nicht mehr
-    selRes.disabled = chkFull.checked;
+    setResolutionInactive(chkFull.checked);
     selFps.value = String(Settings.get('fpsLimit'));
     chkFx.checked = Settings.get('reducedFx');
     volumes.forEach(([inputId, valId, key]) => {
@@ -480,7 +624,7 @@ async function setupSettings() {
 
   chkFull.addEventListener('change', () => {
     Settings.set('fullscreen', chkFull.checked);
-    selRes.disabled = chkFull.checked;
+    setResolutionInactive(chkFull.checked);
     window.blockGames.setFullscreen(chkFull.checked);
   });
 
@@ -517,7 +661,7 @@ async function setupSettings() {
   window.blockGames.onFullscreenChange((on) => {
     Settings.set('fullscreen', on);
     chkFull.checked = on;
-    selRes.disabled = on;
+    setResolutionInactive(on);
     if (!on) applyResolution();
   });
 
@@ -526,13 +670,16 @@ async function setupSettings() {
     syncUi();
     applyReducedFx();
     window.blockGames.setFullscreen(Settings.get('fullscreen'));
+    syncControlsPlayerUi();
+    renderKeybindRows();
     showToast('Einstellungen zurückgesetzt.');
   });
 
   // Zahnrad → allgemeine Einstellungen (Anzeige zuerst).
   document.getElementById('btnSettings').addEventListener('click', () => openSettings('stabDisplay'));
-  document.getElementById('btnSettingsBack').addEventListener('click', goToMenu);
-  // Esc → zurück ins Menü übernimmt der zentrale Tastatur-Handler (setupKeyboard).
+  document.getElementById('btnSettingsBack').addEventListener('click', leaveSettings);
+  // Esc → zurück ins Menü/in die Lobby übernimmt der zentrale Tastatur-Handler
+  // (setupKeyboard → leaveSettings()).
 
   // Start IMMER im Vollbild — wie bei anderen Videospielen, ohne Taskleiste.
   // Das Fenster startet bereits im Vollbild (main.js); hier erzwingen wir es
@@ -542,7 +689,7 @@ async function setupSettings() {
   // jederzeit per Schalter oder F11 erreichbar.
   Settings.set('fullscreen', true);
   chkFull.checked = true;
-  selRes.disabled = true;
+  setResolutionInactive(true);
   window.blockGames.setFullscreen(true);
   applyReducedFx();
 }
@@ -615,16 +762,10 @@ const NAV_MENU = {
   main_settings: { left: 'main_profile',  right: 'main_account', down: 'main_play' },
   main_account:  { left: 'main_settings', right: 'main_power',   down: 'main_play' },
   main_power:    { left: 'main_account',   down: 'main_play' },
-  // Hauptaktion „Spielen"
-  main_play:     { up: 'main_settings', down: 'main_laserLines' },
-  // Minigame-Karten: Laser Lines · Block Bomb · Sammel-Kachel „X weitere in
-  // Arbeit". ↓ führt direkt zum Credits-Knopf — sonst wäre er nur per Tab
-  // erreichbar (kleine, bewusste Abweichung von „bleibt stehen").
-  main_laserLines: { up: 'main_play', right: 'main_blockBomb', down: 'main_credits' },
-  main_blockBomb:  { up: 'main_play', left: 'main_laserLines', right: 'main_soonGames', down: 'main_credits' },
-  main_soonGames:  { up: 'main_play', left: 'main_blockBomb',  down: 'main_credits' },
+  // Hauptaktion „Spielen" — einziger Einstieg, führt in die Lobby.
+  main_play:     { up: 'main_settings', down: 'main_credits' },
   // Credits-Knopf in der Fußzeile
-  main_credits:    { up: 'main_soonGames' },
+  main_credits:    { up: 'main_play' },
 };
 
 // Wird in buildLobbyNav() bei jedem renderLobby() neu erzeugt (dynamisch, weil
@@ -698,15 +839,20 @@ function setupKeyboard() {
       return;
     }
 
+    // Tasten-Belegen läuft — dessen eigener Capture-Phase-Listener auf
+    // `window` übernimmt exklusiv (stopImmediatePropagation). Diese Prüfung
+    // ist zusätzliche Absicherung, falls der Event doch hier ankommt.
+    if (keyCapture) return;
+
     const quitOpen = !document.getElementById('quitOverlay').hidden;
     const isActive = (id) => document.getElementById(id).classList.contains('active');
 
     if (e.key === 'Escape') {
       // Minigame-Flow / Einladung haben Vorrang vor dem übrigen Esc-Verhalten.
       if (inviteOpen()) { declineInvite(); return; }                 // Einladung ablehnen
+      if (mgGameVoteOpen()) { cancelMgFlow(); return; }              // Spiel-Voting → zurück in die Lobby
       if (mgVoteOpen()) { cancelMgFlow(); return; }                  // Voting → zurück (Lobby/Menü)
       if (mgRankingOpen()) { return; }                               // Ranking nur per Knopf
-      if (mgResultOpen()) { return; }                                // Ergebnis nur per Knopf
       if (mgPauseOpen()) { resumeGame(); return; }                   // Pause → weiter
       if (isActive('screen-block-bomb') || isActive('screen-laser-lines') || isActive('screen-block-rush')) { pauseGame(); return; } // im Spiel → Pause
       // Esc schließt erst offene Overlays (Beenden / Konto), sonst führt es
@@ -716,7 +862,13 @@ function setupKeyboard() {
       else if (onlinePickerOpen()) closeOnlinePicker();
       else if (lobbyPopupOpen()) { closeColorPicker(); closeSlotPicker(); }
       else if (isActive('screen-update')) document.getElementById('btnUpdateSkip').click();
-      else if (isActive('screen-settings') || isActive('screen-credits') || isActive('screen-lobby')) {
+      // Einstellungen haben einen EIGENEN Rückweg (leaveSettings(): zurück in
+      // die Lobby, wenn von dort geöffnet — sonst ins Menü) und dürfen NIE
+      // leaveOnlineSession() auslösen, auch nicht als Gast (die Lobby bleibt
+      // dabei online). Muss deshalb vor dem gemeinsamen Credits/Lobby-Zweig
+      // stehen, nicht Teil davon sein.
+      else if (isActive('screen-settings')) leaveSettings();
+      else if (isActive('screen-credits') || isActive('screen-lobby')) {
         if (NetSession.state === 'guest') leaveOnlineSession();
         goToMenu();
       }
@@ -746,9 +898,9 @@ function setupKeyboard() {
     // Container der aktuellen Ansicht (offene Overlays haben Vorrang).
     let container = null;
     if (inviteOpen()) container = document.getElementById('inviteOverlay');
+    else if (mgGameVoteOpen()) container = document.getElementById('mgGameVote');
     else if (mgVoteOpen()) container = document.getElementById('mgMapVote');
     else if (mgPauseOpen()) container = document.getElementById('mgPause');
-    else if (mgResultOpen()) container = document.getElementById('mgResult');
     else if (mgRankingOpen()) container = document.getElementById('mgRanking');
     else if (quitOpen) container = document.getElementById('quitOverlay');
     else if (accountOpen()) container = document.getElementById('accountOverlay');
@@ -954,42 +1106,6 @@ function renderMenu() {
   document.getElementById('partyHint').textContent = guest
     ? 'Minigame-Serie starten · du + 3 Bots'
     : 'Minigame-Serie starten · bis zu 4 Spieler';
-
-  const grid = document.getElementById('minigameGrid');
-  grid.innerHTML = '';
-  MINIGAMES.forEach((game, i) => {
-    // <button> statt <div>: per Tab/Pfeiltasten fokussierbar (Tastatur-Nav).
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'minigame-card available';
-    card.dataset.nav = game.nav; // feste Navigations-ID für die Tastatur
-    card.style.setProperty('--card-i', i);
-    card.innerHTML = `
-      <span class="minigame-icon">${game.icon}</span>
-      <h3>${game.name}</h3>
-      <p>${game.desc}</p>
-      <span class="badge">Spielen</span>
-    `;
-    card.addEventListener('click', () => game.start());
-    grid.appendChild(card);
-  });
-
-  // EINE Sammel-Kachel für alle „Bald"-Spiele statt vier vollwertiger,
-  // gleich gewichteter Karten (siehe /impeccable critique: 4 von 6 Karten
-  // waren Sackgassen — bewusst kleiner/gedämpfter als die spielbaren Karten).
-  const teaser = document.createElement('button');
-  teaser.type = 'button';
-  teaser.className = 'minigame-card minigame-teaser';
-  teaser.dataset.nav = 'main_soonGames';
-  teaser.style.setProperty('--card-i', MINIGAMES.length);
-  teaser.innerHTML = `
-    <span class="minigame-icon">${UPCOMING_MINIGAMES.map(g => g.icon).join('')}</span>
-    <h3>${UPCOMING_MINIGAMES.length} weitere in Arbeit</h3>
-    <p>${UPCOMING_MINIGAMES.map(g => g.name).join(' · ')}</p>
-    <span class="badge">Bald</span>
-  `;
-  teaser.addEventListener('click', () => showToast('🛠️ Weitere Minigames sind in Arbeit — bald mehr!'));
-  grid.appendChild(teaser);
 }
 
 // ── Credits ──────────────────────────────────────────────────────────
@@ -1038,11 +1154,12 @@ function setupCredits() {
 
 // ── Lobby (Vorbereitungsscreen vor einer Partie) ─────────────────────
 // Geöffnet über den „Spielen"-Button. Vier Playercards: P1 ist IMMER man
-// selbst (nicht entfernbar, nur Farbe änderbar), P2–P4 sind frei wählbar
-// (Leer / 2. Spieler / Bot / Freund). Freunde nur angemeldet — jede
-// Freundes-Funktion hängt an isOnlineAllowed(). Die Bot-ANZAHL wird über
-// den Footer-Stepper geregelt (nicht mehr pro Slot); es sind immer
-// mindestens 3 Spieler insgesamt (Mensch + Bot zusammen).
+// selbst (nicht entfernbar, nur Farbe änderbar), P2–P4 sind über den
+// „+"-Knopf des jeweiligen Platzes frei wählbar (Leer / 2. Spieler / Bot /
+// Freund). Freunde nur angemeldet — jede Freundes-Funktion hängt an
+// isOnlineAllowed(). Es sind immer mindestens 3 Spieler insgesamt (Mensch +
+// Bot zusammen) — ensureBotCount() füllt leere Plätze automatisch mit Bots
+// auf, sobald zu wenige Menschen da sind.
 
 // Bot-Schwierigkeitsgrade, die zufällig (nie einstellbar) vergeben werden —
 // siehe randomBotDifficulty(). Bewusst nur MITTEL und SCHWER, kein „Leicht"
@@ -1237,9 +1354,12 @@ function renderLobby() {
 
     const st = document.createElement('span');
     st.className = 'lobby-status';
+    // P2-Layout ist nicht mehr fix "Pfeiltasten" — es ist immer das GEGENTEIL
+    // des in den Einstellungen gewählten P1-Presets (Keybinds.basePreset).
+    const p2Layout = Keybinds.basePreset('p2') === 'arrows' ? 'Pfeiltasten' : 'WASD';
     st.textContent = slot.peerId
       ? 'Online'
-      : { self: 'Du', local: '2. Spieler · Pfeiltasten', friend: 'Freund', bot: 'Bot', empty: 'Leer' }[slot.type];
+      : { self: 'Du', local: `2. Spieler · ${p2Layout}`, friend: 'Freund', bot: 'Bot', empty: 'Leer' }[slot.type];
 
     // navId-Präfix der Karte: lobby_p1 … lobby_p4 (feste Tastatur-Navigation).
     const p = `lobby_p${slot.id}`;
@@ -1263,9 +1383,9 @@ function renderLobby() {
           renderLobby();
           focusSlotCard(i);
         }, `${p}_newName`));
-        // Bots bekommen KEINE Farbwahl (Farbe ist immer zufällig) — ihre Menge
-        // wird über den Footer-Stepper geregelt, ihre Schwierigkeit zufällig
-        // pro Match vergeben (randomBotDifficulty in buildMatchConfig).
+        // Bots bekommen KEINE Farbwahl (Farbe ist immer zufällig) — ihre
+        // Schwierigkeit wird zufällig pro Match vergeben (randomBotDifficulty
+        // in buildMatchConfig).
       } else {
         // self / local / friend (Menschen) → Farbe frei wählbar
         const cbtn = document.createElement('button');
@@ -1275,6 +1395,18 @@ function renderLobby() {
         cbtn.innerHTML = '<span class="lobby-color-dot"></span>Farbe';
         cbtn.addEventListener('click', () => openColorPicker(i));
         actions.appendChild(cbtn);
+
+        if (slot.type === 'self') {
+          actions.appendChild(miniBtn('⚙ Steuerung', () => openSettings('stabControls', { player: 'p1', returnTo: 'lobby' }), `${p}_controls`));
+        } else if (slot.type === 'local') {
+          actions.appendChild(miniBtn('⚙ Steuerung', () => openSettings('stabControls', { player: 'p2', returnTo: 'lobby' }), `${p}_controls`));
+          const split = Settings.get('splitScreen');
+          actions.appendChild(miniBtn(split ? '🖵 Zwei Bilder' : '🖵 Ein Bild', () => {
+            Settings.set('splitScreen', !split);
+            renderLobby();
+            focusByNav(`${p}_split`);
+          }, `${p}_split`));
+        }
       }
     }
 
@@ -1296,13 +1428,6 @@ function renderLobby() {
   const crownSlot = lobbyState.slots.find(s => s.id === lobbyCrownSlotId);
   if (lobbyCrownSlotId != null && (!crownSlot || crownSlot.type === 'empty')) lobbyCrownSlotId = null;
 
-  // Bot-Stepper (Footer) synchron zum lobbyState halten: Anzeige + Klemmung
-  // an den Rändern (Mindestens-3-Spieler-Regel bzw. 4 Plätze insgesamt).
-  const bc = botCount();
-  document.getElementById('lobbyBotCount').textContent = bc;
-  document.getElementById('btnBotsMinus').disabled = bc <= minBotCount();
-  document.getElementById('btnBotsPlus').disabled = bc >= maxBotCount();
-
   buildLobbyNav(); // Navigations-Tabelle passend zu den aktuellen Karten neu bauen
   broadcastLobbyState(); // No-op, solange nicht gehostet wird
 }
@@ -1321,7 +1446,7 @@ function buildLobbyNav() {
   const top  = (ci) => btns[ci] && btns[ci][0];
   const last = (ci) => btns[ci] && btns[ci][btns[ci].length - 1];
   // Welcher Fußzeilen-Knopf liegt „unter" Spalte 0…3:
-  const footerDown = ['lobby_back', 'lobby_botsMinus', 'lobby_reset', 'lobby_start'];
+  const footerDown = ['lobby_back', 'lobby_online', 'lobby_reset', 'lobby_start'];
 
   btns.forEach((list, ci) => {
     list.forEach((nav, bi) => {
@@ -1334,15 +1459,11 @@ function buildLobbyNav() {
     });
   });
 
-  // Fußzeile: ↑ führt zum untersten Knopf der zugehörigen Spalte. Der
-  // Bot-Stepper sitzt zwischen Zurück und Zurücksetzen (zwei echte Knöpfe,
-  // keine ←/→-Wertverstellung — so bleibt die Fußzeile durchgängig navigierbar).
-  map.lobby_back       = { up: last(0), right: 'lobby_botsMinus' };
-  map.lobby_botsMinus  = { up: last(1), left: 'lobby_back', right: 'lobby_botsPlus' };
-  map.lobby_botsPlus   = { up: last(1), left: 'lobby_botsMinus', right: 'lobby_online' };
-  map.lobby_online     = { up: last(1), left: 'lobby_botsPlus', right: 'lobby_reset' };
-  map.lobby_reset      = { up: last(2), left: 'lobby_online', right: 'lobby_start' };
-  map.lobby_start      = { up: last(3), left: 'lobby_reset' };
+  // Fußzeile: ↑ führt zum untersten Knopf der zugehörigen Spalte.
+  map.lobby_back   = { up: last(0), right: 'lobby_online' };
+  map.lobby_online = { up: last(1), left: 'lobby_back', right: 'lobby_reset' };
+  map.lobby_reset  = { up: last(2), left: 'lobby_online', right: 'lobby_start' };
+  map.lobby_start  = { up: last(3), left: 'lobby_reset' };
 
   lobbyNav = map;
 }
@@ -1392,9 +1513,9 @@ function openSlotPicker(i) {
   Sfx.play('tab');
 }
 
-// Die Grund-Optionen (auch nach „Zurück" aus der Freundesliste). Bots werden
-// nicht mehr hier, sondern über den Footer-Stepper hinzugefügt/entfernt —
-// dieser Slot-Picker regelt nur noch Menschen (2. Spieler / Freund) bzw. Leer.
+// Die Grund-Optionen (auch nach „Zurück" aus der Freundesliste). Jeder Platz
+// regelt seinen Typ selbst — Leer / 2. Spieler / Bot / Freund — statt Bots
+// über einen globalen Footer-Stepper zu zählen.
 function showSlotOptions(i) {
   document.getElementById('slotPickerTitle').textContent = `Platz P${i + 1}`;
   const body = document.getElementById('slotPickerBody');
@@ -1407,6 +1528,7 @@ function showSlotOptions(i) {
     () => { setSlotLocal(i); closeSlotPicker(); },
     hasLocal
   ));
+  body.appendChild(slotOpt('🤖 Bot', 'Zufälliger Name & Schwierigkeit', () => { setSlotBot(i); closeSlotPicker(); }));
   body.appendChild(slotOpt(
     '👥 Freund einladen',
     isOnlineAllowed() ? 'Aus deiner Freundesliste' : 'Nur angemeldet',
@@ -1519,12 +1641,24 @@ function setSlotFriend(i, friend) {
   renderLobby();
 }
 
-// ── Bot-Anzahl (Footer-Stepper) ─────────────────────────────────────────
-// Reine State-Mutation, OHNE renderLobby() — Aufrufer rendern selbst, damit
-// ensureBotCount() (von den Menschen-Settern gebraucht) nicht doppelt rendert.
-// n wird immer in [minBotCount(), maxBotCount()] geklemmt, darum reicht
-// ensureBotCount() = setBotCount(botCount()) zum Nachziehen nach einer
-// Änderung der Menschenzahl.
+// Bot auf Slot i setzen (über den „+"/„Ändern"-Platz-Picker). Name & Farbe
+// sind wie immer zufällig — Bots haben keine wählbare Farbe oder Schwierigkeit
+// (die wird pro Match zufällig vergeben, randomBotDifficulty in buildMatchConfig).
+function setSlotBot(i) {
+  const s = lobbyState.slots[i];
+  s.type = 'bot'; s.userId = null; s.peerId = null;
+  s.name = getRandomBotName();
+  s.color = getRandomFreeColor(i);
+  renderLobby();
+}
+
+// ── Bot-Mindestzahl (Sicherheitsnetz) ────────────────────────────────────
+// Bots werden jetzt normalerweise direkt pro Platz gesetzt (setSlotBot).
+// setBotCount/ensureBotCount bleiben als Auto-Auffüllung: sobald ein Mensch
+// entfernt wird (setSlotEmpty) und dadurch die Mindestzahl von 3 Spielern
+// unterschritten würde, füllt ensureBotCount() automatisch mit Bots auf.
+// Reine State-Mutation, OHNE renderLobby() — Aufrufer rendern selbst.
+// n wird immer in [minBotCount(), maxBotCount()] geklemmt.
 function setBotCount(n) {
   const lo = minBotCount(), hi = maxBotCount();
   n = Math.max(lo, Math.min(hi, n));
@@ -1548,13 +1682,6 @@ function setBotCount(n) {
   }
 }
 function ensureBotCount() { setBotCount(botCount()); }
-// Footer-Stepper (+/−): Die Knöpfe selbst sind statisches HTML (kein
-// renderLobby() nötig für sie), nur die Karten müssen neu gebaut werden.
-function adjustBotCount(delta) {
-  setBotCount(botCount() + delta);
-  renderLobby();
-  Sfx.play('tab');
-}
 
 // ── Farb-Popup ───────────────────────────────────────────────────────────
 function openColorPicker(i) {
@@ -1636,8 +1763,6 @@ function setupLobby() {
     if (NetSession.state === 'guest') leaveOnlineSession();
     goToMenu();
   });
-  document.getElementById('btnBotsMinus').addEventListener('click', () => adjustBotCount(-1));
-  document.getElementById('btnBotsPlus').addEventListener('click', () => adjustBotCount(+1));
   document.getElementById('btnLobbyOnline').addEventListener('click', openOnlinePicker);
   document.getElementById('btnLobbyReset').addEventListener('click', () => {
     resetLobby();
@@ -1932,7 +2057,7 @@ function setupNetworking() {
     currentPlayers = payload.players;
     seriesQueue = payload.gameIds.map(id => GAME_REGISTRY[id]);
     seriesIndex = 0;
-    isTutorial = false; inSeries = true; seriesStandings = {};
+    inSeries = true; seriesStandings = {};
     for (const pl of currentPlayers) seriesStandings[pl.id] = { id: pl.id, name: pl.name, colorHex: pl.colorHex, points: 0 };
   });
   NetSession.on('round_setup', (payload) => { currentGame = GAME_REGISTRY[payload.gameId]; });
@@ -2306,34 +2431,39 @@ function colorHex(id) {
 // Bots bekommen ihre Schwierigkeit hier zufällig zugewiesen (nie in der
 // Lobby einstellbar, s. randomBotDifficulty()).
 function buildMatchConfig() {
-  return lobbyState.slots.filter(isActiveSlot).map(s => ({
-    id: s.id,
-    name: s.name || ('P' + s.id),
-    colorId: s.color,
-    colorHex: colorHex(s.color),
-    type: (s.type === 'self' || s.type === 'local') ? 'human' : s.type === 'friend' ? 'remote' : 'bot',
-    difficulty: randomBotDifficulty(),
-    isLocal: s.type === 'self' || s.type === 'local',
-    keys: s.type === 'local' ? 'arrows' : 'wasd',
-    userId: s.userId || null,
-    peerId: s.peerId || null,
-  }));
+  return lobbyState.slots.filter(isActiveSlot).map(s => {
+    const isLocalHuman = s.type === 'self' || s.type === 'local';
+    return {
+      id: s.id,
+      name: s.name || ('P' + s.id),
+      colorId: s.color,
+      colorHex: colorHex(s.color),
+      type: (s.type === 'self' || s.type === 'local') ? 'human' : s.type === 'friend' ? 'remote' : 'bot',
+      difficulty: randomBotDifficulty(),
+      isLocal: isLocalHuman,
+      keys: s.type === 'local' ? 'arrows' : 'wasd', // Fallback für Aufrufer ohne bindings
+      // Aufgelöste Tastenbelegung (Preset + Übersteuerungen, renderer/keybinds.js).
+      // self → Spieler 1, local → Spieler 2 (bekommt automatisch das andere Preset).
+      bindings: isLocalHuman ? Keybinds.resolve(s.type === 'local' ? 'p2' : 'p1') : null,
+      userId: s.userId || null,
+      peerId: s.peerId || null,
+    };
+  });
 }
 
 // Overlay-Status-Helfer (für setupKeyboard).
 const inviteOpen     = () => !document.getElementById('inviteOverlay').hidden;
+const mgGameVoteOpen = () => !document.getElementById('mgGameVote').hidden;
 const mgVoteOpen     = () => !document.getElementById('mgMapVote').hidden;
 const mgPauseOpen    = () => !document.getElementById('mgPause').hidden;
-const mgResultOpen   = () => !document.getElementById('mgResult').hidden;
 const mgRankingOpen  = () => !document.getElementById('mgRanking').hidden;
 
 // ── Zustand des generischen Match-Flows ───────────────────────────────────
 let currentGame = null;     // Registry-Eintrag des gerade laufenden Spiels
-let currentPlayers = [];    // entkoppelte Spielerliste (aus Lobby oder Tutorial)
+let currentPlayers = [];    // entkoppelte Spielerliste (aus der Lobby)
 let currentMapId = null;
 let voteLocked = false;
-// true = einzelne Tutorial-Runde aus dem „Games"-Bereich (kein Serien-Ranking).
-let isTutorial = false;
+let gameVoteLocked = false;
 // Serien-/Party-Modus
 let inSeries = false;
 let seriesQueue = [];       // [Registry-Einträge] in zufälliger Reihenfolge
@@ -2343,35 +2473,30 @@ let lastGameResult = null;  // letztes Spielergebnis (für Gleichstand-Tiebreak)
 let lobbyCrownSlotId = null; // Slot-Id des letzten Gesamtsiegers (Lobby-Krone)
 
 // ── Serien-/Party-Modus (Einstieg aus der Lobby) ──────────────────────────
-// „Spiel starten" spielt ALLE verfügbaren Minigames in zufälliger Reihenfolge
-// hintereinander, wertet platzierungsbasiert über alle Spiele und zeigt am
-// Ende ein Gesamt-Ranking. Der Gesamtsieger bekommt danach die Lobby-Krone.
+// „Spiel starten" lässt zuerst das ERSTE Spiel der Serie abstimmen
+// (openGameVote()); alle weiteren Spiele laufen danach randomisiert aus der
+// Warteschlange (kein erneutes Spiel-Voting, nur noch Map-Voting je Runde).
+// Am Ende wertet die Serie platzierungsbasiert über alle Spiele und zeigt ein
+// Gesamt-Ranking. Der Gesamtsieger bekommt danach die Lobby-Krone.
 function startSeries() {
+  // Sicherheitsnetz: die Lobby hält sich über ensureBotCount() (in jedem
+  // Platz-Setter) eigentlich immer an die Mindestens-3-Spieler-Regel, aber
+  // wir füllen hier vor dem Start trotzdem nochmal defensiv auf.
+  ensureBotCount();
   currentPlayers = buildMatchConfig();
-  // Sicherheitsnetz: die Lobby hält sich über ensureBotCount() eigentlich
-  // immer an die Mindestens-3-Spieler-Regel, aber wir prüfen hier trotzdem.
   if (currentPlayers.length < 3) {
-    showToast('Mindestens 3 Spieler — erhöhe die Bot-Anzahl.');
+    showToast('Mindestens 3 Spieler nötig — füll einen Platz.');
     flashInvalid(document.getElementById('btnLobbyStart'));
     return;
   }
   const games = availableGames();
   if (!games.length) { showToast('Kein Minigame verfügbar.'); return; }
-  isTutorial = false;
   inSeries = true;
-  seriesQueue = shuffled(games);
-  seriesIndex = 0;
   seriesStandings = {};
   for (const p of currentPlayers) {
     seriesStandings[p.id] = { id: p.id, name: p.name, colorHex: p.colorHex, points: 0 };
   }
-  // Online-Session: Gäste bekommen dieselbe Spielerliste + Spielreihenfolge,
-  // damit `seriesIndex`/`seriesQueue` (und damit showRanking()) bei allen
-  // identisch mitlaufen (siehe setupNetworking()'s 'series_start'-Handler).
-  if (NetSession.state === 'hosting') {
-    NetSession.send('series_start', { players: currentPlayers, gameIds: seriesQueue.map(g => g.id) });
-  }
-  startSeriesGame();
+  openGameVote();
 }
 
 function startSeriesGame() {
@@ -2381,78 +2506,88 @@ function startSeriesGame() {
   openMapVote();
 }
 
-// ── Tutorial-Schnellstart (aus dem „Games"-Bereich des Hauptmenüs) ────────
-// Klick auf eine Minigame-Karte startet DIESES Spiel als Tutorial: SOFORT eine
-// einzelne Runde — ohne Lobby, ohne Bot-Auswahl, ohne Map-Voting, ohne Serien-
-// Ranking. Es spielen IMMER 3 Bots auf dem EINFACHSTEN Grad ('easy'), die Map
-// wird zufällig gewählt. Bewusste Ausnahme zur Bot-Regel „immer Mittel/Schwer":
-// im Tutorial soll man das Spiel in Ruhe gegen schwache Gegner lernen können.
-const TUTORIAL_BOT_COUNT = 3;
-const TUTORIAL_DIFFICULTY = 'easy';
-
-function startTutorial(gameId) {
-  const game = GAME_REGISTRY[gameId];
-  if (!game) return;
-  if (!window[game.windowKey]) { showToast(game.name + ' lädt noch — gleich nochmal.'); return; }
-  isTutorial = true;
-  inSeries = false;
-  currentGame = game;
-  currentPlayers = buildTutorialPlayers();
-  currentMapId = game.mapMeta[Math.floor(Math.random() * game.mapMeta.length)].id;
-  runCountdown(); // direkt in den Countdown — kein Voting
-}
-
-// Baut die Spielerliste fürs Tutorial: man selbst + 3 Bots. Farben werden
-// (auch die eigene) zufällig und ohne Dopplung vergeben, Bot-Namen ebenso.
-// Liefert dasselbe Format wie buildMatchConfig().
-function buildTutorialPlayers() {
-  const usedColors = new Set();
-  const pickColor = () => {
-    const pool = LOBBY_COLORS.filter(c => !usedColors.has(c.id));
-    const src = pool.length ? pool : LOBBY_COLORS;
-    const c = src[Math.floor(Math.random() * src.length)];
-    usedColors.add(c.id);
-    return c.id;
-  };
-  const usedNames = new Set();
-  const pickBotName = () => {
-    for (let i = 0; i < 40; i++) {
-      const n = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
-      if (!usedNames.has(n)) { usedNames.add(n); return n; }
-    }
-    return BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
-  };
-
-  const selfColor = pickColor();
-  const players = [{
-    id: 1,
-    name: Auth.user ? Auth.username : 'Gast',
-    colorId: selfColor,
-    colorHex: colorHex(selfColor),
-    type: 'human',
-    difficulty: 'medium',
-    isLocal: true,
-  }];
-  for (let i = 0; i < TUTORIAL_BOT_COUNT; i++) {
-    const colorId = pickColor();
-    players.push({
-      id: i + 2,
-      name: pickBotName(),
-      colorId,
-      colorHex: colorHex(colorId),
-      type: 'bot',
-      difficulty: TUTORIAL_DIFFICULTY,
-      isLocal: false,
-    });
-  }
-  return players;
-}
-
 // Kleiner HTML-Escaper für Namen (Freund-/Self-Usernamen sind nicht
 // vertrauenswürdig) — fürs Ranking, das per innerHTML gebaut wird.
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// ── Spiel-Voting (nur vor dem ersten Spiel der Serie) ─────────────────────
+// Ab dem zweiten Spiel entscheidet allein die zufällig gemischte
+// `seriesQueue` (s. castGameVote()) — es gibt kein zweites Spiel-Voting.
+function openGameVote() {
+  gameVoteLocked = false;
+  const grid = document.getElementById('mgGameGrid');
+  grid.innerHTML = '';
+  MINIGAMES.filter(m => m.available && GAME_REGISTRY[m.id]).forEach((m) => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'mg-game-card';
+    card.dataset.game = m.id;
+    card.innerHTML = `
+      <div class="mg-game-icon">${m.icon}</div>
+      <h3>${escapeHtml(m.name)}</h3>
+      <p>${escapeHtml(m.desc)}</p>
+      <div class="mg-map-votes" data-votes="${m.id}"></div>`;
+    card.addEventListener('click', () => castGameVote(m.id));
+    grid.appendChild(card);
+  });
+  document.getElementById('mgGameVoteSub').textContent = currentPlayers.length > 1
+    ? 'Stimmt für das erste Spiel ab — der Rest kommt danach zufällig.'
+    : 'Wähle das erste Spiel — der Rest kommt danach zufällig.';
+  document.getElementById('mgGameVote').hidden = false;
+  const first = grid.querySelector('.mg-game-card');
+  if (first) first.focus();
+}
+
+// Der lokale Mensch wählt das erste Spiel; Bots (+ vorerst Remote) wählen
+// zufällig; Mehrheit gewinnt, Gleichstand → zufällig unter den Bestplatzierten.
+// Danach steht die komplette Serien-Reihenfolge fest: [gewähltes Spiel,
+// ...gemischter Rest] — das ist `seriesQueue`, ab jetzt unveränderlich.
+function castGameVote(humanChoice) {
+  if (gameVoteLocked) return;
+  gameVoteLocked = true;
+  const games = availableGames();
+
+  const tally = {}; // gameId → Liste der Wähler-Farben (für die Punkte-Anzeige)
+  for (const p of currentPlayers) {
+    const choice = p.type === 'human'
+      ? humanChoice
+      : games[Math.floor(Math.random() * games.length)].id;
+    (tally[choice] || (tally[choice] = [])).push(p.colorHex);
+  }
+  for (const g of games) {
+    const box = document.querySelector(`#mgGameGrid [data-votes="${g.id}"]`);
+    const voters = tally[g.id] || [];
+    if (box) box.innerHTML = voters.map(c => `<span class="mg-vote-dot" style="--c:${c}"></span>`).join('');
+  }
+  let max = 0;
+  for (const k in tally) max = Math.max(max, tally[k].length);
+  const winners = Object.keys(tally).filter(k => tally[k].length === max);
+  const chosenId = winners[Math.floor(Math.random() * winners.length)];
+
+  const winCard = document.querySelector(`.mg-game-card[data-game="${chosenId}"]`);
+  if (winCard) winCard.classList.add('selected');
+  Sfx.play('success');
+
+  seriesQueue = [GAME_REGISTRY[chosenId], ...shuffled(games.filter(g => g.id !== chosenId))];
+  seriesIndex = 0;
+
+  // Online-Session: Gäste bekommen dieselbe Spielerliste + die jetzt
+  // feststehende Spielreihenfolge, damit `seriesIndex`/`seriesQueue` (und
+  // damit showRanking()) bei allen identisch mitlaufen (s.
+  // setupNetworking()'s 'series_start'-Handler) — dasselbe Ereignis wie vor
+  // dem Spiel-Voting, nur jetzt mit der abgestimmten statt einer rein
+  // zufälligen Reihenfolge; kein eigenes 'game_result'-Event nötig.
+  if (NetSession.state === 'hosting') {
+    NetSession.send('series_start', { players: currentPlayers, gameIds: seriesQueue.map(g => g.id) });
+  }
+
+  setTimeout(() => {
+    document.getElementById('mgGameVote').hidden = true;
+    startSeriesGame();
+  }, 1300);
 }
 
 // ── Map-Voting (generisch, für currentGame) ───────────────────────────────
@@ -2524,8 +2659,9 @@ function castMapVote(humanChoice) {
   }, 1300);
 }
 
-// Esc im Map-Voting/Countdown: Serie abbrechen → Lobby, sonst Tutorial → Menü.
+// Esc im Spiel-/Map-Voting/Countdown: Serie abbrechen → zurück in die Lobby.
 function cancelMgFlow() {
+  document.getElementById('mgGameVote').hidden = true;
   document.getElementById('mgMapVote').hidden = true;
   document.getElementById('mgCountdown').hidden = true;
   if (inSeries) { inSeries = false; showScreen('screen-lobby'); focusByNav('lobby_start'); }
@@ -2552,17 +2688,27 @@ function runCountdown() {
 
 // ── Runde starten (übergibt an den 3D-Kern des aktuellen Spiels) ──────────
 function startRound() {
+  // Sonst löst z.B. die Leertaste (Sprung) den noch fokussierten Lobby-/
+  // Vote-/Countdown-Button aus, sobald der erste Frame läuft.
+  document.activeElement?.blur();
   showScreen(currentGame.screenId);
   const host = document.getElementById(currentGame.stageId);
   // Online-Session: 'guest' überspringt Physik/Regeln im Spielkern komplett
   // und rendert nur Snapshots (s. _stepReplica() in beiden Spielkernen).
   // Solo/Couch-Koop bleiben unverändert 'host' (== volle lokale Simulation).
   const role = NetSession.state === 'guest' ? 'guest' : 'host';
+  // Splitscreen: nur bei genau 2 lokalen Menschen, nie als Gast (dessen
+  // getMyInput() liefert genau EINEN Intent-Strom — zwei lokale Menschen auf
+  // einem Gast-Rechner bräuchten zwei eigene RemoteController-Identitäten
+  // beim Host, die es nicht gibt).
+  const localHumanCount = currentPlayers.filter(p => p.isLocal).length;
+  const split = localHumanCount === 2 && role !== 'guest' && Settings.get('splitScreen');
   window[currentGame.windowKey].start({
     host,
     players: currentPlayers,
     mapId: currentMapId,
     role,
+    split,
     fpsLimit: () => Settings.get('fpsLimit'),
     reducedFx: () => Settings.get('reducedFx'),
     sfx: (name) => Sfx.play(name),
@@ -2586,14 +2732,10 @@ function onGameResult(result) {
   // (über den 'result'-Netz-Handler in setupNetworking()) aufrufen — dadurch
   // laufen `seriesIndex`/`seriesStandings` bei allen identisch mit.
   if (NetSession.state === 'hosting') NetSession.send('result', result);
-  if (inSeries) {
-    awardSeriesPoints(result);
-    if (window[currentGame.windowKey]) window[currentGame.windowKey].stop();
-    seriesIndex++;
-    showRanking(seriesIndex >= seriesQueue.length);
-  } else {
-    showSingleResult(result);
-  }
+  awardSeriesPoints(result);
+  if (window[currentGame.windowKey]) window[currentGame.windowKey].stop();
+  seriesIndex++;
+  showRanking(seriesIndex >= seriesQueue.length);
 }
 
 // Platzierungspunkte: bei N Spielern bekommt der 1. N Punkte … der letzte 1.
@@ -2644,46 +2786,30 @@ function showRanking(isFinal) {
   if (btn) btn.focus();
 }
 
-// Ergebnis einer einzelnen Tutorial-Runde (kein Serien-Ranking). Adressiert
-// explizit auch die verlierende Person, nicht nur den Sieger — sonst bleibt
-// der Peak-End-Moment für genau die Person stumm, die Rückmeldung am meisten
-// braucht (Impeccable-Critique 2026-09-15, P2).
-function showSingleResult(result) {
-  const winner = result && result.winner;
-  const local = currentPlayers.find(p => p.isLocal);
-  let title;
-  if (!winner) {
-    title = 'Unentschieden!';
-  } else if (!local || winner.id === local.id) {
-    title = `${winner.name} gewinnt!`;
-  } else {
-    const rank = (result.placements || []).findIndex(p => p.id === local.id) + 1;
-    title = rank > 0
-      ? `${winner.name} gewinnt — du bist ausgeschieden (Platz ${rank}).`
-      : `${winner.name} gewinnt!`;
-  }
-  document.getElementById('mgResultTitle').textContent = title;
-  document.getElementById('btnMgSecondary').textContent = 'Zum Menü';
-  document.getElementById('mgResult').hidden = false;
-  document.getElementById('btnMgAgain').focus();
-}
-
 // ── Pause (Esc im Spiel) ─────────────────────────────────────────────────
+// Lokal (auch mit 2. Spieler am selben Gerät) hält Escape das Match wirklich
+// an — sobald ein ECHTER Online-Mitspieler dabei ist (Host mit einem
+// Remote-Peer oder man selbst ist Gast), pausiert nur das eigene Overlay:
+// das Match läuft für alle anderen unverändert weiter (kein Anhalten fremder
+// Rechner möglich, und ein Gast hat sowieso nur eine Zuschauer-Replik).
 function pauseGame() {
   if (!currentGame) return;
   const g = window[currentGame.windowKey];
   if (!g || !g.isRunning()) return;
-  g.pause();
+  const online = currentPlayers.some(p => p.type === 'remote') || NetSession.state === 'guest';
+  if (!online) g.pause();
   document.getElementById('mgPause').hidden = false;
+  document.getElementById('mgPauseHint').textContent = online
+    ? 'Online-Match läuft im Hintergrund weiter.' : '';
   document.getElementById('btnMgResume').focus();
 }
 function resumeGame() {
   document.getElementById('mgPause').hidden = true;
-  if (currentGame && window[currentGame.windowKey]) window[currentGame.windowKey].resume();
+  const g = currentGame && window[currentGame.windowKey];
+  if (g && g.isPaused()) g.resume();
 }
 function quitGameToMenu() {
   document.getElementById('mgPause').hidden = true;
-  document.getElementById('mgResult').hidden = true;
   document.getElementById('mgRanking').hidden = true;
   if (currentGame && window[currentGame.windowKey]) window[currentGame.windowKey].stop();
   inSeries = false;
@@ -2822,10 +2948,6 @@ function abortMatchToLobby() {
   if (currentGame && window[currentGame.windowKey]) window[currentGame.windowKey].stop();
   inSeries = false;
   showToast('Match abgebrochen.');
-  // Tutorial-Runden kennen keine Lobby (siehe startTutorial) — dorthin zurück
-  // wie beim normalen „Zum Menü"; nur eine echte Party-Serie geht zurück in
-  // die Lobby, wo man sie neu zusammenstellen kann.
-  if (isTutorial) { goToMenu(); return; }
   showScreen('screen-lobby');
   focusByNav('lobby_start');
 }
@@ -2871,18 +2993,6 @@ function setupGameFlow() {
   document.getElementById('btnMgResume').addEventListener('click', resumeGame);
   document.getElementById('btnMgAbort').addEventListener('click', startAbortVote);
   document.getElementById('btnMgQuit').addEventListener('click', quitGameToMenu);
-
-  // Ergebnis einer Tutorial-Runde
-  document.getElementById('btnMgAgain').addEventListener('click', () => {
-    document.getElementById('mgResult').hidden = true;
-    if (currentGame && window[currentGame.windowKey]) window[currentGame.windowKey].stop();
-    startTutorial(currentGame.id); // neue Schnellstart-Runde (neue Random-Map)
-  });
-  document.getElementById('btnMgSecondary').addEventListener('click', () => {
-    document.getElementById('mgResult').hidden = true;
-    if (currentGame && window[currentGame.windowKey]) window[currentGame.windowKey].stop();
-    goToMenu(); // Tutorial hat keine Lobby → zurück ins Hauptmenü
-  });
 
   // Zwischen-/Gesamt-Ranking: In einer Online-Session entscheidet nur der
   // Host, wann's weitergeht (sonst würden Host und Gast unabhängig
@@ -2930,6 +3040,7 @@ async function boot() {
   setupAccount();
   setupAccountSettings();
   setupSettingsTabs();
+  setupControlsTab();
   setupGameFlow();
   setupNetworking();
   setupKeyboard();

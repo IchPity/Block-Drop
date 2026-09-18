@@ -16,6 +16,26 @@
 'use strict';
 
 import * as THREE from '../vendor/three.module.js';
+import { PALETTE } from '../game/theme.js';
+
+// mood pro Map (s. game/theme.js) — abgeleitet aus den bisherigen Hex-
+// Literalen jeder Map (Arena=Cyan-Rand, Sky=violette Rahmen/kühles Void-
+// Gefühl mit weiterem Nebel, Factory=warmes Industrie-Licht/enger Nebel wie
+// in einer Halle) statt sie hart im Spielkern zu wiederholen.
+const MOODS = {
+  arena: { accent: PALETTE.cyan },
+  sky: {
+    bg: 0x0a0c1c, fogNear: 22, fogFar: 64,
+    ambientColor: 0x7078a8, ambientIntensity: 0.72,
+    accent: PALETTE.purple, rimIntensity: 0.5,
+  },
+  factory: {
+    bg: 0x14121c, fogNear: 16, fogFar: 38,
+    ambientColor: 0x9a7f5c, ambientIntensity: 0.8,
+    keyColor: 0xffe3b0, keyIntensity: 1.05,
+    accent: PALETTE.orange, rimIntensity: 0.35,
+  },
+};
 
 export const BOMB_MAPS = [
   { id: 'arena',   name: 'Bomb Arena',    desc: 'Runde Arena mit leuchtendem Rand und Säulen zum Ausweichen.' },
@@ -62,7 +82,7 @@ export function buildMap(id, reducedFx = false) {
 }
 
 // ── Map 1: Bomb Arena ──────────────────────────────────────────────────
-function buildArena() {
+function buildArena(reducedFx) {
   const group = new THREE.Group();
   const R = 13, groundY = 0.5;
 
@@ -111,7 +131,7 @@ function buildArena() {
   ];
 
   return {
-    group, groundY, spawns, obstacles, waypoints,
+    group, groundY, spawns, obstacles, waypoints, mood: MOODS.arena,
     resolve(x, z, r) {
       const p = pushOutOfObstacles(x, z, r, obstacles);
       const d = Math.hypot(p.x, p.z);
@@ -130,7 +150,7 @@ function buildArena() {
 }
 
 // ── Map 2: Sky Platforms ───────────────────────────────────────────────
-function buildSky() {
+function buildSky(reducedFx) {
   const group = new THREE.Group();
   const groundY = 0.5;
   // Plattformen + Brücken als Rechtecke { x, z, w, d }.
@@ -145,15 +165,44 @@ function buildSky() {
     { x: 6.5, z: -4, w: 5, d: 2.4 },
     { x: -6.5, z: 4, w: 5, d: 2.4 },
     { x: 6.5, z: 4, w: 5, d: 2.4 },
+    // Bonus-Plattform, nur per Sprung erreichbar (s. jumpLanes unten) —
+    // taktischer Rückzugsort, kein Pflichtweg.
+    { x: 11, z: -16, w: 4, d: 4, jumpBonus: true },
   ];
+  // Sprunglücke: Korridor zwischen dem NE-Eckfeld und der Bonus-Plattform,
+  // in dem `fell` unterdrückt wird, SOLANGE die Figur gerade in der Luft ist
+  // (s. main.js: airborne = jumpY > JUMP_AIRBORNE_Y). Breite ≈ die reale
+  // maximale Sprungweite (SPEED·Flugzeit ≈ 6.4·0.45 ≈ 2.9 Einheiten) —
+  // knapp genug, dass ein gut getimter Sprung nötig ist, kein Dauerfliegen.
+  const jumpLanes = [
+    { x: 11, z: -12.75, w: 4.4, d: 3.2 },
+  ];
+  function inJumpLane(x, z) {
+    return jumpLanes.some((l) =>
+      Math.abs(x - l.x) <= l.w / 2 && Math.abs(z - l.z) <= l.d / 2);
+  }
   const matA = new THREE.MeshStandardMaterial({ color: 0x3b3f6e, roughness: 0.7 });
   const matSide = new THREE.MeshStandardMaterial({ color: 0x24264a, roughness: 0.85 });
   const matEdge = new THREE.MeshStandardMaterial({ color: 0xb06dff, emissive: 0xb06dff, emissiveIntensity: 0.9 });
+  const matBonusEdge = new THREE.MeshStandardMaterial({ color: 0xffc93c, emissive: 0xffc93c, emissiveIntensity: 0.9 });
   for (const p of plates) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(p.w, 0.6, p.d),
       [matSide, matSide, matA, matSide, matSide, matSide]); // nur Oberseite hell
     m.position.set(p.x, 0.2, p.z); m.receiveShadow = true; group.add(m);
-    addRimFrame(group, p, matEdge, 0.52); // leuchtender Rahmen am Plattformrand
+    addRimFrame(group, p, p.jumpBonus ? matBonusEdge : matEdge, 0.52); // Rahmen — Bonus-Plattform gelb statt violett
+  }
+  // Sprung-Markierung: zwei schwebende Pfeile im Korridor (rein optisch;
+  // bei reducedFx keine Pulsanimation, nur statisch).
+  const laneMarkers = [];
+  if (!reducedFx) {
+    const markMat = new THREE.MeshStandardMaterial({ color: 0xffc93c, emissive: 0xffc93c, emissiveIntensity: 1 });
+    for (const dz of [-1, 1]) {
+      const m = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.9, 4), markMat);
+      m.rotation.x = -Math.PI / 2; m.rotation.z = Math.PI / 4;
+      m.position.set(11, 1.1, -12.75 + dz * 1.1);
+      group.add(m);
+      laneMarkers.push(m);
+    }
   }
 
   const margin = 0.5; // wie weit man über die Kante darf, bevor man fällt
@@ -196,11 +245,16 @@ function buildSky() {
     { id: 'bridge-se', x: 6.5,  z: 4,  tags: ['bridge'] },
   ];
 
+  let t = 0;
   return {
-    group, groundY, spawns, obstacles: [], waypoints,
-    resolve(x, z) {
-      // Kein Wegschieben — wer die Plattform verlässt, stürzt (fell=true).
-      return { x, z, fell: !onPlate(x, z) };
+    group, groundY, spawns, obstacles: [], waypoints, mood: MOODS.sky,
+    resolve(x, z, r, airborne) {
+      // Kein Wegschieben — wer die Plattform verlässt, stürzt (fell=true),
+      // AUSSER sie ist gerade in der Luft UND im Sprung-Korridor unterwegs
+      // (s. jumpLanes oben) — das ist der einzige Weg zur Bonus-Plattform.
+      const grounded = onPlate(x, z);
+      const safe = grounded || (airborne && inJumpLane(x, z));
+      return { x, z, fell: !safe };
     },
     steerToSafety(x, z) {
       const threshold = 1.4;
@@ -211,19 +265,25 @@ function buildSky() {
       }
       if (!best) return nearestPlateDir(x, z);
       if (best.clearance >= threshold) return { x: 0, z: 0 };
-      const t = (threshold - best.clearance) / threshold;
+      const t2 = (threshold - best.clearance) / threshold;
       let sx = 0, sz = 0;
-      if (best.halfW - Math.abs(best.lx) < threshold) sx = -Math.sign(best.lx) * t;
-      if (best.halfD - Math.abs(best.lz) < threshold) sz = -Math.sign(best.lz) * t;
+      if (best.halfW - Math.abs(best.lx) < threshold) sx = -Math.sign(best.lx) * t2;
+      if (best.halfD - Math.abs(best.lz) < threshold) sz = -Math.sign(best.lz) * t2;
       return { x: sx, z: sz };
     },
     conveyor() { return { x: 0, z: 0 }; },
-    update() {},
+    update(dt) {
+      if (reducedFx) return;
+      t += dt;
+      for (let i = 0; i < laneMarkers.length; i++) {
+        laneMarkers[i].position.y = 1.1 + Math.sin(t * 3 + i) * 0.12;
+      }
+    },
   };
 }
 
 // ── Map 3: Factory Panic ───────────────────────────────────────────────
-function buildFactory() {
+function buildFactory(reducedFx) {
   const group = new THREE.Group();
   const HW = 12, HD = 9, groundY = 0.5; // halbe Breite/Tiefe
 
@@ -259,6 +319,22 @@ function buildFactory() {
     obstacles.push({ x: c.x, z: c.z, r: 1.1 });
   }
 
+  // Sprungmarkierungen über den Förderbändern: rein optisch (keine eigene
+  // Kollision), zeigen an, wo ein Sprung über das Band lohnt — während der
+  // Luftzeit setzt conveyor() unten den Bandschub aus, man wird also nicht
+  // seitlich weggeschoben. Bei reducedFx nur statische Markierungen ohne
+  // Puls (kein neues bewegtes Element).
+  const beltJumpMarks = [];
+  const jumpMarkMat = new THREE.MeshStandardMaterial({ color: 0xffc93c, emissive: 0xffc93c, emissiveIntensity: 0.8 });
+  for (const b of belts) {
+    for (const dx of [-4, 4]) {
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 0.12, 6), jumpMarkMat);
+      m.position.set(b.x + dx, groundY + 0.08, b.z);
+      group.add(m);
+      beltJumpMarks.push(m);
+    }
+  }
+
   // Blinkende Warnlichter
   const lights = [];
   for (const lx of [-HW + 1, HW - 1]) {
@@ -288,7 +364,7 @@ function buildFactory() {
 
   let t = 0;
   return {
-    group, groundY, spawns, obstacles, waypoints,
+    group, groundY, spawns, obstacles, waypoints, mood: MOODS.factory,
     resolve(x, z, r) {
       const p = pushOutOfObstacles(x, z, r, obstacles);
       p.x = Math.max(-HW + 0.6 + r, Math.min(HW - 0.6 - r, p.x));
@@ -301,7 +377,10 @@ function buildFactory() {
       if (z < -HD + 2) sz = 1; else if (z > HD - 2) sz = -1;
       return { x: sx, z: sz };
     },
-    conveyor(x, z) {
+    conveyor(x, z, airborne) {
+      // Wer gerade springt, berührt das Band nicht — kein Schub (s.
+      // beltJumpMarks oben: das ist der Sinn der Sprungmarkierungen).
+      if (airborne) return { x: 0, z: 0 };
       for (const b of belts) {
         if (Math.abs(x - b.x) <= b.w / 2 && Math.abs(z - b.z) <= b.d / 2) {
           return { x: b.dir.x * b.speed, z: b.dir.z * b.speed };
@@ -313,6 +392,11 @@ function buildFactory() {
       t += dt;
       const on = (Math.sin(t * 6) > 0);
       for (const l of lights) l.material.emissiveIntensity = on ? 1.4 : 0.3;
+      if (!reducedFx) {
+        for (let i = 0; i < beltJumpMarks.length; i++) {
+          beltJumpMarks[i].material.emissiveIntensity = 0.6 + Math.sin(t * 4 + i) * 0.3;
+        }
+      }
     },
   };
 }

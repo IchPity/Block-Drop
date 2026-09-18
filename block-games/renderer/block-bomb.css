@@ -15,6 +15,18 @@
 
 .bomb-canvas { display: block; width: 100% !important; height: 100% !important; }
 
+/* Splitscreen (2 lokale Menschen, Lobby-Toggle "Zwei Bilder"): dünne Linie
+   zwischen den beiden Hälften, rein optisch (klickdurchlässig). */
+.bomb-stage.split-h::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.18);
+  pointer-events: none;
+  z-index: 1;
+}
+
 /* HUD-Overlay über dem Canvas — klickdurchlässig. */
 .bomb-hud {
   position: absolute;

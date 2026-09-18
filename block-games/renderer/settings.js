@@ -26,6 +26,17 @@ const Settings = (() => {
     volMaster: 80,
     volMusic: 70,
     volSfx: 80,
+    // Couch-Koop: zwei Bilder (Splitscreen) statt einem gemeinsamen, wenn ein
+    // 2. lokaler Spieler in der Lobby ist (siehe Lobby-Karte, app.js).
+    splitScreen: false,
+    // Steuerung (renderer/keybinds.js): Standard-Layout von Spieler 1 — Spieler 2
+    // bekommt automatisch das jeweils andere. keysP1/keysP2 enthalten NUR
+    // Abweichungen vom Preset, flach als "gruppe.aktion" → Tastencode, z.B.
+    // { 'walk.jump': 'Space' }. NIE in place mutieren (reset() ist ein flacher
+    // Spread) — Keybinds.set()/clearOverrides() schreiben immer frische Objekte.
+    keysPreset: 'wasd',
+    keysP1: Object.freeze({}),
+    keysP2: Object.freeze({}),
   };
 
   let data = { ...DEFAULTS };

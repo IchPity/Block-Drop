@@ -17,6 +17,18 @@
 }
 .rush-canvas { display: block; width: 100% !important; height: 100% !important; }
 
+/* Splitscreen (2 lokale Menschen, Lobby-Toggle "Zwei Bilder"): links/rechts
+   statt oben/unten (hohe/schmale Podeste) — dünne Linie, rein optisch. */
+.rush-stage.split-v::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; left: 50%;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.18);
+  pointer-events: none;
+  z-index: 1;
+}
+
 .rush-hud {
   position: absolute;
   inset: 0;
@@ -74,6 +86,42 @@
 .rush-chip-fill { display: block; height: 100%; background: var(--c, #36d6e7); }
 .rush-chip-stab { font-variant-numeric: tabular-nums; min-width: 2.6em; text-align: right; }
 .rush-chip-spells { letter-spacing: 1px; }
+
+/* Nächstes Teil: 4x4-Mini-Raster (bisher nirgends sichtbar). */
+.rush-chip-next { display: inline-flex; align-items: center; }
+.rush-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 3px);
+  grid-template-rows: repeat(4, 3px);
+  gap: 1px;
+}
+.rush-mini-cell { width: 3px; height: 3px; background: rgba(255, 255, 255, 0.08); border-radius: 1px; }
+.rush-mini-cell.on { background: var(--c, #fff); }
+
+/* Armierter Zauber + Ziel (spells.cursor war bisher nirgends angezeigt). */
+.rush-chip-cursor {
+  font-size: 0.82em;
+  color: var(--yellow, #ffc93c);
+  white-space: nowrap;
+}
+
+/* Kurzer Tastenhinweis während des Intros, aus den echten Keybinds erzeugt. */
+.rush-controls-hint {
+  position: absolute;
+  left: 50%; bottom: 6%;
+  transform: translateX(-50%);
+  text-align: center;
+  font-size: 0.85em;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(12, 18, 32, 0.55);
+  padding: 8px 16px;
+  border-radius: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease-out;
+}
+.rush-controls-hint.show { opacity: 1; }
+.rush-controls-hint b { color: #fff; }
 
 /* Kurze Meldungen mittig (Einsturz/Sieg/Spell-Einsatz) */
 .rush-message {

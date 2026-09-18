@@ -58,8 +58,22 @@ am Ende in die Repo-Struktur integriert wird.
   (bleibt offen — bisher reine Minigame-Serie ohne Brett/Würfel).
 - **✅ Erledigt (v0.19.0): Mindestens 3, höchstens 4 Spieler pro Partie.**
   Fehlende menschliche Spieler werden durch Bots aufgefüllt (1 Mensch → min.
-  2 Bots, 2 Menschen → min. 1 Bot); die genaue Anzahl regelt der Bot-Stepper
-  in der Lobby (`minBotCount()`/`maxBotCount()` in `app.js`).
+  2 Bots, 2 Menschen → min. 1 Bot); `minBotCount()`/`maxBotCount()` in
+  `app.js` klemmen die Anzahl. **Seit v0.23.0** wird Bot NICHT mehr über einen
+  globalen Fußzeilen-Stepper gesteuert, sondern ist eine gleichwertige Option
+  direkt im Platz-Popup jedes Lobby-Slots.
+- **✅ Erledigt (v0.23.0): Erstes Spiel der Party-Serie wird gewählt.** „Spiel
+  starten" öffnet zuerst ein Spiel-Voting (`#mgGameVote`); alle weiteren Spiele
+  der Serie laufen danach zufällig, die Map wird vor jeder Runde weiter
+  gewählt — siehe DOKUMENTATION.md „Party-Serie & Gesamt-Ranking".
+- **✅ Erledigt (v0.23.0): Einstellbare Tastenbelegung.** Eigener „Steuerung"-
+  Reiter in den Einstellungen: Preset (WASD/Pfeiltasten) pro Spieler-Slot,
+  jede Aktion einzeln umbelegbar, Konflikte werden getauscht/abgelehnt —
+  siehe DOKUMENTATION.md „Einstellungen"/„Couch-Koop".
+- **✅ Erledigt (v0.23.0): Splitscreen für Couch-Koop.** Bei zwei lokalen
+  Menschen kann die Lobby zwischen „Ein Bild"/„Zwei Bilder" umschalten; alle
+  drei Minigames rendern dann zwei eigene Kamera-Hälften statt eines
+  gemeinsamen Bildes — siehe DOKUMENTATION.md „Couch-Koop".
 - KI braucht pro Minigame eine eigene einfache Spiellogik (reagieren mit
   zufälliger menschenähnlicher Verzögerung, Fehlerquote je Schwierigkeit)
 - **✅ Erledigt (v0.19.0): Bot-Schwierigkeit ist nicht mehr pro Slot in der
@@ -79,15 +93,18 @@ am Ende in die Repo-Struktur integriert wird.
 | ID | Name | Idee | Status |
 |----|------|------|--------|
 | block-bomb | Block Bomb | Bombe weitergeben, wer hochgeht fliegt raus | ✅ v0.10.0 |
-| block-rush | Block Rush | Blöcke schneller stapeln als die Gegner | ✅ v0.22.0 |
+| block-rush | Block Rush | Blöcke schneller stapeln als die Gegner | ✅ v0.22.0, Spielbarkeits-Durchgang v0.23.0 |
 | coin-grab | Coin Grab | In begrenzter Zeit Münzen einsammeln | Platzhalter |
 | memory-clash | Memory Clash | Sequenzen merken, wer zuerst patzt fliegt | Platzhalter |
 | speed-tap | Speed Tap | Reaktionsduell | Platzhalter |
 | quiz-blocks | Quiz Blocks | Quizfragen, schnellste richtige Antwort gewinnt | Platzhalter |
 
 Freischalten: in `renderer/app.js` im `MINIGAMES`-Array `available: true`
-setzen und eine `start`-Funktion geben. Block Bomb (`renderer/block-bomb/`) dient
-als Vorlage für Aufbau, Map-Voting und die Steuerungs-Abstraktion.
+setzen und einen `GAME_REGISTRY`-Eintrag ergänzen (seit v0.23.0 kein
+Menü-Klick-Ziel mehr — jedes Spiel läuft ausschließlich über die Lobby/
+Party-Serie, `MINIGAMES` hat kein `start`/`nav` mehr). Block Bomb
+(`renderer/block-bomb/`) dient als Vorlage für Aufbau, Map-Voting und die
+Steuerungs-Abstraktion.
 
 **Konventionen für jedes Minigame (ab Block Bomb gesetzt):**
 - **Lobby-Farben = echte Spielerfarben** im Spiel (über `buildMatchConfig()` +

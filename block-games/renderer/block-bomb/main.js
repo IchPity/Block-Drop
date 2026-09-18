@@ -29,6 +29,7 @@
 import * as THREE from '../vendor/three.module.js';
 import { BlockCharacter } from '../game/characters.js';
 import { Bomb } from './bomb.js';
+import { applyMood, addLightRig } from '../game/theme.js';
 import { buildMap, BOMB_MAPS } from './maps.js';
 import { LocalHumanController, BotController, RemoteController } from '../game/controllers.js';
 import { makeBotBrain } from './bots.js';
@@ -38,6 +39,46 @@ const SPEED = 6.4;        // Basistempo (gleich für alle — Fairness)
 const PLAYER_R = 0.55;    // Kollisionsradius
 const PASS_DIST = 1.3;    // Abstand für Bombenübergabe
 const PASS_COOLDOWN = 0.75;
+
+// Sprung (s. Steuerung/Einstellungen „walk.jump"): reine Höhenverschiebung,
+// nur am Boden auslösbar. JUMP_V aus Zielwerten hergeleitet (v0 = g·T/2 für
+// Flugzeit T bei Schwerkraft g) — ergibt ~0.45s Flugzeit, ~0.5 Einheiten
+// Sprunghöhe. Für Block Bomb rein optisch/für Fallkanten; die eigentliche
+// Sprung-Nutzlast (Laser überspringen) ist Laser Lines' checkHits().
+const JUMP_GRAVITY = 20;
+const JUMP_V = 4.5;
+// Ab dieser Höhe gilt eine Figur als „in der Luft" — Maps nutzen das für
+// Sprung-Elemente (Lücke auf sky, Förderband-Schub auf factory aussetzen,
+// s. maps.js). Bewusst klein: schon ein kurzer Hüpfer zählt.
+const JUMP_AIRBORNE_Y = 0.12;
+
+// Splitscreen (2 lokale Menschen, Lobby-Toggle "Zwei Bilder", s. app.js
+// buildMatchConfig/startRound): oben/unten, weil die Arenen breiter als hoch
+// sind. SPLIT_ZOOM verkleinert die Übersichtsdistanz je Hälfte (weniger
+// Bildhöhe pro Hälfte → näher ran); SPLIT_FOLLOW_CLAMP begrenzt, wie weit die
+// Kamera einer Hälfte der eigenen Figur nachfährt (grobe, aber über alle
+// Maps sichere Reichweite um die Mitte); SPLIT_FOLLOW_LAG ist die Dämpfung
+// des Nachziehens (höher = schneller).
+const SPLIT_ZOOM = 0.62;
+const SPLIT_FOLLOW_CLAMP = 8;
+const SPLIT_FOLLOW_LAG = 3;
+
+// Adapter für RemoteController (s. game/controllers.js) — Bewegung {x,z} ist
+// gehalten (letzter Stand reicht), `jump` ist ein Tastendruck-Zähler und wird
+// wie bei Block Rush' RUSH_REMOTE_ADAPTER erst beim Lesen (update()) geleert,
+// damit auch bei verpassten Polls kein Sprung verloren geht.
+const WALK_REMOTE_ADAPTER = {
+  initial: () => ({ x: 0, z: 0, jump: 0 }),
+  merge: (pending, incoming) => ({
+    x: incoming.x || 0,
+    z: incoming.z || 0,
+    jump: pending.jump + (incoming.jump || 0),
+  }),
+  drain: (pending) => ({
+    value: pending,
+    next: { x: pending.x, z: pending.z, jump: 0 },
+  }),
+};
 
 class BlockBombGame {
   constructor(config) {
@@ -49,7 +90,7 @@ class BlockBombGame {
     // Spielkern kennt NetSession dabei nicht, app.js reicht nur `role` durch.
     this.role = config.role === 'guest' ? 'guest' : 'host';
     this._netSnap = null;      // letzter über applySnapshot() erhaltener Stand (Gast)
-    this._myIntent = { x: 0, z: 0 }; // eigener Intent, den app.js für 'input' abgreift
+    this._myIntent = WALK_REMOTE_ADAPTER.initial(); // eigener Intent, den app.js für 'input' abgreift
     this.running = false;
     this.paused = false;
     this.ended = false;
@@ -70,6 +111,7 @@ class BlockBombGame {
     this._initThree();
     this._initMap();
     this._initPlayers();
+    this._initViews();
     this._initHud();   // vor _initBomb: _assignBomb() nutzt das HUD (_message)
     this._initBomb();
     this._onResize = () => this._resize();
@@ -80,9 +122,11 @@ class BlockBombGame {
   // ── Three.js-Grundgerüst ───────────────────────────────────────────
   _initThree() {
     const reduced = this.config.reducedFx();
+    // Hintergrund/Nebel/Licht sind Sache der Map (mood-Objekt, s.
+    // game/theme.js) — werden in _initMap() gesetzt, NACHDEM die Map gebaut
+    // ist (buildMap() liefert das mood-Objekt zurück). Hier nur das
+    // Three.js-Grundgerüst ohne jede Farb-/Licht-Entscheidung.
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0d0f1c);
-    this.scene.fog = new THREE.Fog(0x0d0f1c, 28, 52);
 
     const w = this.host.clientWidth || window.innerWidth;
     const h = this.host.clientHeight || window.innerHeight;
@@ -98,29 +142,15 @@ class BlockBombGame {
     this.camera.lookAt(0, 1, 0);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: !reduced, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, reduced ? 1 : 2));
+    // Splitscreen rendert die Szene zweimal pro Frame — Pixel-Ratio dann auf
+    // 1 deckeln, sonst verdoppelt sich die Fill-Rate-Last unnötig.
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, (reduced || this.config.split) ? 1 : 2));
     this.renderer.setSize(w, h);
     this.renderer.shadowMap.enabled = !reduced;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.canvas = this.renderer.domElement;
     this.canvas.className = 'bomb-canvas';
     this.host.appendChild(this.canvas);
-
-    this.scene.add(new THREE.AmbientLight(0x8088aa, 0.85));
-    const key = new THREE.DirectionalLight(0xffffff, 1.15);
-    key.position.set(12, 24, 10);
-    if (!reduced) {
-      key.castShadow = true;
-      key.shadow.mapSize.set(1024, 1024);
-      const s = 24;
-      key.shadow.camera.left = -s; key.shadow.camera.right = s;
-      key.shadow.camera.top = s; key.shadow.camera.bottom = -s;
-      key.shadow.camera.far = 80;
-    }
-    this.scene.add(key);
-    const rim = new THREE.DirectionalLight(0x4db5ff, 0.4);
-    rim.position.set(-10, 8, -12);
-    this.scene.add(rim);
 
     // Debug group for waypoints + bot-target lines (initially hidden)
     this.debugGroup = new THREE.Group();
@@ -129,8 +159,13 @@ class BlockBombGame {
   }
 
   _initMap() {
-    this.map = buildMap(this.config.mapId, this.config.reducedFx());
+    const reduced = this.config.reducedFx();
+    this.map = buildMap(this.config.mapId, reduced);
     this.scene.add(this.map.group);
+    applyMood(this.scene, this.map.mood);
+    // castShadow hängt vom Live-reducedFx-Wert ab (Performance-Schalter),
+    // nicht von der Map — deshalb hier statt im mood-Objekt überschrieben.
+    addLightRig(this.scene, { ...this.map.mood, castShadow: !reduced });
   }
 
   _initPlayers() {
@@ -143,8 +178,8 @@ class BlockBombGame {
       char.group.position.set(spawn.x, this.map.groundY, spawn.z);
 
       let controller;
-      if (p.isLocal && p.type === 'human') controller = new LocalHumanController(p.keys || 'wasd');
-      else if (p.type === 'remote') controller = new RemoteController(p.peerId || p.id);
+      if (p.isLocal && p.type === 'human') controller = new LocalHumanController(p.bindings?.walk || p.keys || 'wasd');
+      else if (p.type === 'remote') controller = new RemoteController(p.peerId || p.id, WALK_REMOTE_ADAPTER);
       else controller = new BotController(makeBotBrain(p.difficulty || 'medium'));
       if (controller.attach) controller.attach();
 
@@ -153,9 +188,33 @@ class BlockBombGame {
         controller, char,
         x: spawn.x, z: spawn.z, facing: 0,
         alive: true, isHolder: false, falling: false, fallT: 0,
+        jumpY: 0, jumpVy: 0,
       };
     });
     this.aliveStart = this.players.length;
+  }
+
+  // Splitscreen-Views (s. app.js: config.split nur bei genau 2 lokalen
+  // Menschen + Host + Lobby-Toggle). Ohne Split ist views[0].camera === this.
+  // camera und rect deckt die volle Bühne — der Einzelbild-Pfad in _loop/
+  // _resize/_updateLabels bleibt dadurch exakt der alte Code, nur einmal
+  // durch die (dann einelementige) views-Liste geschleift.
+  _initViews() {
+    const localIds = this.players.filter((p) => p.isLocal).map((p) => p.id);
+    const split = this.config.split && localIds.length === 2;
+    // toggle statt add: host-Element wird pro start() neu befüllt, aber die
+    // CSS-Klasse muss explizit auch wieder WEG, falls das nächste Match in
+    // der Serie kein Splitscreen mehr ist.
+    this.host.classList.toggle('split-h', !!split);
+    if (split) {
+      const cam2 = this.camera.clone();
+      this.views = [
+        { playerId: localIds[0], camera: this.camera, rect: { x: 0, y: 0.5, w: 1, h: 0.5 }, base: this.camBase.clone().multiplyScalar(SPLIT_ZOOM) },
+        { playerId: localIds[1], camera: cam2, rect: { x: 0, y: 0, w: 1, h: 0.5 }, base: this.camBase.clone().multiplyScalar(SPLIT_ZOOM) },
+      ];
+    } else {
+      this.views = [{ playerId: localIds[0] ?? null, camera: this.camera, rect: { x: 0, y: 0, w: 1, h: 1 } }];
+    }
   }
 
   _initBomb() {
@@ -238,8 +297,9 @@ class BlockBombGame {
   _startIntro() {
     this.introActive = true;
     this.introT = 0;
-    this.camera.position.copy(this.camOverview);
-    this.camera.lookAt(0, 1, 0);
+    // Ein gemeinsamer introT für alle Views — beide Splitscreen-Hälften
+    // fliegen synchron ein und landen gleichzeitig (s. _updateIntro).
+    for (const v of this.views) { v.camera.position.copy(this.camOverview); v.camera.lookAt(0, 1, 0); }
     this._showMapIntro();
   }
 
@@ -247,11 +307,13 @@ class BlockBombGame {
     this.introT += dt;
     const t = Math.min(1, this.introT / this.introDuration);
     const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
-    this.camera.position.lerpVectors(this.camOverview, this.camBase, eased);
-    this.camera.lookAt(0, 1, 0);
+    for (const v of this.views) {
+      v.camera.position.lerpVectors(this.camOverview, this.camBase, eased);
+      v.camera.lookAt(0, 1, 0);
+    }
     if (t >= 1) {
       this.introActive = false;
-      this.camera.position.copy(this.camBase);
+      for (const v of this.views) v.camera.position.copy(this.camBase);
       this._hideMapIntro();
     }
   }
@@ -289,22 +351,27 @@ class BlockBombGame {
   _loop(now) {
     this.raf = requestAnimationFrame((t) => this._loop(t));
     const elapsed = now - this.last;
-    const fps = this.config.fpsLimit();
+    let fps = this.config.fpsLimit();
+    // Splitscreen rendert zweimal pro Frame — ein unbegrenztes Limit wäre
+    // dann ein echtes Perf-Risiko, deshalb intern auf 60 klemmen.
+    if (this.config.split && fps === 0) fps = 60;
     if (fps > 0 && elapsed < 1000 / fps - 0.5) return; // FPS-Limit
     this.last = now;
     const dt = Math.min(0.05, elapsed / 1000);
 
-    if (this.introActive) {
-      this._updateIntro(dt);
-    } else if (!this.paused && this.running) {
-      if (this.role === 'guest') this._stepReplica(dt);
-      else this._step(dt);
+    if (!this.paused) {
+      if (this.introActive) {
+        this._updateIntro(dt);
+      } else if (this.running) {
+        if (this.role === 'guest') this._stepReplica(dt);
+        else this._step(dt);
+      }
     }
     this._animate(dt);
     if (this.debugBots) {
       this._updateDebugViz();
     }
-    this.renderer.render(this.scene, this.camera);
+    this._renderViews();
     this._updateLabels();
   }
 
@@ -325,11 +392,19 @@ class BlockBombGame {
     for (const p of this.players) {
       if (!p.alive) { if (p.falling) this._updateFall(p, dt); continue; }
       const intent = p.controller.update(p, world, dt) || { x: 0, z: 0 };
+      if (p.jumpY <= 0 && (intent.jump || 0) > 0) p.jumpVy = JUMP_V;
+      if (p.jumpY > 0 || p.jumpVy > 0) {
+        p.jumpY += p.jumpVy * dt;
+        p.jumpVy -= JUMP_GRAVITY * dt;
+        if (p.jumpY <= 0) { p.jumpY = 0; p.jumpVy = 0; }
+      }
+      p.char.setJumpOffset(p.jumpY);
+      const airborne = p.jumpY > JUMP_AIRBORNE_Y;
       let vx = intent.x * SPEED, vz = intent.z * SPEED;
-      const push = this.map.conveyor(p.x, p.z);
+      const push = this.map.conveyor(p.x, p.z, airborne);
       vx += push.x; vz += push.z;
       const nx = p.x + vx * dt, nz = p.z + vz * dt;
-      const r = this.map.resolve(nx, nz, PLAYER_R);
+      const r = this.map.resolve(nx, nz, PLAYER_R, airborne);
       if (r.fell) { this._fall(p); continue; }
       p.x = r.x; p.z = r.z;
       if (intent.x || intent.z) p.facing = Math.atan2(intent.x, intent.z);
@@ -389,12 +464,15 @@ class BlockBombGame {
     for (const p of this.players) {
       const row = byId.get(p.id);
       if (!row) continue;
-      const [, x, z, facing, flags] = row;
+      // row[5] (jumpY) ist neu (v0.23.0) — defensiv lesen, damit ein älterer
+      // Host (ohne Sprung-Feld im Snapshot) einen neueren Gast nicht bricht.
+      const [, x, z, facing, flags, jumpY] = row;
       const wasAlive = p.alive;
       p.alive = !!(flags & 1);
       const isHolder = !!(flags & 2);
       p.x += (x - p.x) * lerp; p.z += (z - p.z) * lerp;
       p.char.group.position.x = p.x; p.char.group.position.z = p.z;
+      p.char.setJumpOffset(jumpY ?? 0);
       p.facing = facing;
       if (wasAlive && !p.alive) { p.char.explode(); this.config.sfx('bombExplode'); }
       if (isHolder !== p.isHolder) { p.isHolder = isHolder; p.char.setHolderGlow(isHolder); }
@@ -412,6 +490,7 @@ class BlockBombGame {
         p.id, Math.round(p.x * 100) / 100, Math.round(p.z * 100) / 100,
         Math.round(p.facing * 100) / 100,
         (p.alive ? 1 : 0) | (p.id === this.holderId ? 2 : 0),
+        Math.round(p.jumpY * 100) / 100, // neu (v0.23.0), s. applySnapshot()
       ]),
     };
   }
@@ -538,7 +617,11 @@ class BlockBombGame {
     }
     this.bomb.update(dt);
 
-    // Kamera-Shake nach Explosion
+    if (this.views.length > 1) {
+      this._updateSplitCameras(dt);
+      return;
+    }
+    // Kamera-Shake nach Explosion (Einzelbild-Pfad, unverändert ggü. v0.22)
     if (this.shake > 0) {
       this.shake = Math.max(0, this.shake - dt);
       const s = this.shake;
@@ -554,16 +637,78 @@ class BlockBombGame {
     }
   }
 
+  // Splitscreen-Kameras: je Hälfte der eigenen Figur nachziehen (gedämpft,
+  // geklemmt auf SPLIT_FOLLOW_CLAMP) statt der fixen Übersicht. Shake ist ein
+  // globales Ereignis (Explosion) und bekommt EINEN gemeinsamen Zufalls-
+  // Versatz für beide Hälften, statt pro Hälfte unabhängig zu wackeln.
+  _updateSplitCameras(dt) {
+    if (this.introActive) return; // Intro fährt beide Kameras synchron, s. _updateIntro
+    if (this.shake > 0) this.shake = Math.max(0, this.shake - dt);
+    const s = this.shake;
+    const jitter = s > 0
+      ? new THREE.Vector3((Math.random() * 2 - 1) * s, (Math.random() * 2 - 1) * s, (Math.random() * 2 - 1) * s)
+      : null;
+    for (const v of this.views) {
+      const p = this.players.find((pl) => pl.id === v.playerId);
+      const cx = p ? Math.max(-SPLIT_FOLLOW_CLAMP, Math.min(SPLIT_FOLLOW_CLAMP, p.x)) : 0;
+      const cz = p ? Math.max(-SPLIT_FOLLOW_CLAMP, Math.min(SPLIT_FOLLOW_CLAMP, p.z)) : 0;
+      const target = new THREE.Vector3(v.base.x + cx * 0.4, v.base.y, v.base.z + cz * 0.4);
+      v.camera.position.lerp(target, Math.min(1, dt * SPLIT_FOLLOW_LAG));
+      if (jitter) v.camera.position.add(jitter);
+      v.camera.lookAt(cx, 1, cz);
+    }
+  }
+
+  // Rendert entweder die volle Bühne (Einzelbild, exakt der alte Aufruf) oder
+  // teilt Viewport+Scissor pro Splitscreen-Hälfte auf. rect ist wie WebGL
+  // selbst von UNTEN gezählt (y=0=unten) — dadurch KEIN Flip hier nötig; der
+  // Flip passiert einzig in _viewPixelRect (Bildschirm-Pixel „von oben").
+  _renderViews() {
+    if (this.views.length < 2) {
+      this.renderer.setScissorTest(false);
+      this.renderer.render(this.scene, this.views[0].camera);
+      return;
+    }
+    const w = this.host.clientWidth || window.innerWidth;
+    const h = this.host.clientHeight || window.innerHeight;
+    this.renderer.setScissorTest(true);
+    for (const v of this.views) {
+      const vx = Math.round(v.rect.x * w);
+      const vy = Math.round(v.rect.y * h);
+      const vw = Math.round(v.rect.w * w);
+      const vh = Math.round(v.rect.h * h);
+      this.renderer.setViewport(vx, vy, vw, vh);
+      this.renderer.setScissor(vx, vy, vw, vh);
+      this.renderer.render(this.scene, v.camera);
+    }
+    this.renderer.setScissorTest(false);
+  }
+
+  // rect (Bottom-Up, s. _renderViews) → Bildschirm-Pixel-Rechteck von OBEN
+  // gezählt, für die DOM-Label-Platzierung in _updateLabels.
+  _viewPixelRect(v, w, h) {
+    return {
+      left: v.rect.x * w,
+      top: (1 - v.rect.y - v.rect.h) * h,
+      width: v.rect.w * w,
+      height: v.rect.h * h,
+    };
+  }
+
   _updateLabels() {
     const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
-    const v = new THREE.Vector3();
+    const vec = new THREE.Vector3();
     for (const p of this.players) {
       const el = this.labels.get(p.id);
       if (!p.alive) { el.style.display = 'none'; continue; }
       el.style.display = '';
-      v.set(p.x, this.map.groundY + 2.4, p.z).project(this.camera);
-      const sx = (v.x * 0.5 + 0.5) * w;
-      const sy = (-v.y * 0.5 + 0.5) * h;
+      // Splitscreen: Label folgt der Kamera-Hälfte des jeweiligen Spielers;
+      // Bots/Remote (keine eigene Hälfte) werden immer über views[0] projiziert.
+      const view = this.views.find((vw) => vw.playerId === p.id) || this.views[0];
+      const rect = this._viewPixelRect(view, w, h);
+      vec.set(p.x, this.map.groundY + 2.4, p.z).project(view.camera);
+      const sx = rect.left + (vec.x * 0.5 + 0.5) * rect.width;
+      const sy = rect.top + (-vec.y * 0.5 + 0.5) * rect.height;
       el.style.transform = `translate(-50%,-100%) translate(${sx}px,${sy}px)`;
       el.classList.toggle('holder', p.isHolder);
       if (p.debug) {
@@ -656,8 +801,10 @@ class BlockBombGame {
   _resize() {
     const w = this.host.clientWidth || window.innerWidth;
     const h = this.host.clientHeight || window.innerHeight;
-    this.camera.aspect = w / h;
-    this.camera.updateProjectionMatrix();
+    for (const v of this.views) {
+      v.camera.aspect = (w * v.rect.w) / (h * v.rect.h);
+      v.camera.updateProjectionMatrix();
+    }
     this.renderer.setSize(w, h);
   }
 
@@ -689,11 +836,12 @@ window.BlockBomb = {
   resume() { if (current) current.resume(); },
   stop() { if (current) { current.destroy(); current = null; } },
   isRunning() { return !!current && current.running; },
+  isPaused() { return !!current && current.paused; },
   // ── Online-Sessions (app.js/net/session.js) ──────────────────────────
   getSnapshot() { return current ? current.getSnapshot() : null; },
   applySnapshot(payload) { if (current) current.applySnapshot(payload); },
   feedRemoteInput(peerId, intent) { if (current) current.feedRemoteInput(peerId, intent); },
-  getMyInput() { return current ? current.getMyInput() : { x: 0, z: 0 }; },
+  getMyInput() { return current ? current.getMyInput() : WALK_REMOTE_ADAPTER.initial(); },
   convertToBot(peerId) { if (current) current.convertToBot(peerId); },
   getPlayers() {
     if (!current) return [];

@@ -42,20 +42,23 @@ Hinweis: Node.js liegt portabel auf `D:\` (`D:\node.exe`).
 |---|---|
 | `main.js` | Electron-Hauptprozess: Fenster (Vollbild), F11-Toggle, kein App-Menü, IPC für Anzeige-Einstellungen + `app:quit` |
 | `preload.js` | Brücke Main↔Renderer: Version/Plattform, Anzeige-Steuerung (Vollbild, Fenstergröße, Display-Infos), `quitApp()` |
-| `renderer/index.html` | Alle Screens: Laden, Login/Registrierung, Hauptmenü, **Lobby** (4 Playercards + Bot-Stepper + Slot-/Farb-Popups), Einstellungen (**in Kategorie-Reitern**: Konto/Anzeige/Grafik/Audio), **Credits** + Beenden-Overlay + **Konto/Freunde-Overlay**, **Match-Abbruch-Abstimmung** (`#mgAbortVote`), **Online-Sessions** (`#onlinePicker`: Hosten/Beitreten); Bühnen-Hintergrund-Layer |
-| `renderer/app.js` | UI-Logik: Screen-Wechsel, Gast-Modus, Menü-Rendering, **Lobby (Slots/Bot-Anzahl-Stepper/Farben + 300 Bot-Namen, Couch-Koop-Slot, Online-Peer-Slots)**, **Match-Abbruch-Abstimmung** (F5/F6, Schein-Abstimmung gegen Bots), **Online-Sessions** (Host/Beitreten, Lobby-Sync, Netzwerk-Match-Loop), **Credits-Rendering**, Einstellungs-UI, **Konto/Freunde-Overlay + Konto-Bearbeitung**, **Login-Vorschläge zuletzt angemeldeter Nutzer (`RecentUsers`)**, Toast, Sound-Verdrahtung, Beenden-Dialog (**mit optionalem Abmelden**), **feste navId-Tastatur-Navigation (`NAV_MENU`/`buildLobbyNav`) + Fokus-Gedächtnis**, animierter Hintergrund (Blöcke/Würfel/Sterne) |
+| `renderer/index.html` | Alle Screens: Laden, Login/Registrierung, Hauptmenü (nur noch Kopfband + „Spielen" + Credits, **kein Minigame-Grid/Tutorial-Einstieg mehr**), **Lobby** (4 Playercards, jeder Platz frei über „+"/„Ändern" auf Leer/2. Spieler/Bot/Freund + Slot-/Farb-Popups), Einstellungen (**in Kategorie-Reitern**: Konto/Anzeige/Grafik/Audio), **Credits** + Beenden-Overlay + **Konto/Freunde-Overlay**, **Match-Abbruch-Abstimmung** (`#mgAbortVote`), **Online-Sessions** (`#onlinePicker`: Hosten/Beitreten); Bühnen-Hintergrund-Layer |
+| `renderer/app.js` | UI-Logik: Screen-Wechsel, Gast-Modus, Menü-Rendering, **Lobby (Slots inkl. Bot/2.-Spieler/Splitscreen-Auswahl pro Platz + Farben + 300 Bot-Namen, Couch-Koop-Slot, Online-Peer-Slots)**, **Match-Abbruch-Abstimmung** (F5/F6, Schein-Abstimmung gegen Bots), **Online-Sessions** (Host/Beitreten, Lobby-Sync, Netzwerk-Match-Loop), **Credits-Rendering**, Einstellungs-UI, **Konto/Freunde-Overlay + Konto-Bearbeitung**, **Login-Vorschläge zuletzt angemeldeter Nutzer (`RecentUsers`)**, Toast, Sound-Verdrahtung, Beenden-Dialog (**mit optionalem Abmelden**), **feste navId-Tastatur-Navigation (`NAV_MENU`/`buildLobbyNav`) + Fokus-Gedächtnis**, animierter Hintergrund (Blöcke/Würfel/Sterne) |
 | `renderer/net/session.js` | **`NetSession`** (neu, v0.20.0): Online-Sessions über Supabase Realtime Broadcast + Presence — Hosten/Beitreten per Code, Einladungs-Channel pro Nutzer, generisches `on(type, handler)`/`send(type, payload)`. Kennt weder Lobby noch Spielkerne — reine Transport-Schicht, von app.js angesprochen |
 | `renderer/settings.js` | Zentraler Einstellungs-Store (localStorage, onChange-Events, `effectiveVolume()`) |
+| `renderer/keybinds.js` | **Tastenbelegung** (`Keybinds`, neu v0.23.0): Preset (WASD/Pfeiltasten) pro Spieler 1, Spieler 2 bekommt automatisch das andere, plus optionale Übersteuerungen je Aktion (`Settings.keysP1/keysP2`); `resolve(player)` liefert die fertigen `{walk,piece}`-Bindings, `set()` löst Konflikte per Tausch (gleicher Spieler) oder Ablehnung (anderer Spieler) |
 | `renderer/audio.js` | Sound-System `Sfx`: UI- + **Block-Bomb-Effekte** (`bombTick/bombPass/bombExplode/count/go`) + **Laser-Lines-Effekte** (`laserWarn/laserFire/laserHit/laserEliminate/laserWin/laserSpeedUp`) per WebAudio synthetisiert (keine Audio-Dateien), Lautstärke aus dem Settings-Store |
 | `renderer/auth.js` | Supabase-Auth + **Freundes- und Konto-API** (gleiches Backend wie die Website) + **`Auth.client`-Getter** (neu, für `net/session.js`) |
-| `renderer/style.css` | Arcade-Look: Farben (inkl. `--orange/--cyan/--pink`), Animationen, Layout, unsichtbare Scrollbalken, Kompakt-Stufen, **Lobby-/Playercard-/Bot-Stepper-/Popup-Styling**, Credits-Styling, Bühnen-Hintergrund, **generischer Minigame-Flow (`.mg-*`: Map-Voting/Countdown/Ergebnis/Ranking) + Lobby-Krone**, **Match-Abbruch-Panel (`.mg-abort-vote`, links/vertikal zentriert, nicht blockierend)** |
+| `renderer/style.css` | Arcade-Look: Farben (inkl. `--orange/--cyan/--pink`), Animationen, Layout, unsichtbare Scrollbalken, Kompakt-Stufen, **Lobby-/Playercard-/Popup-Styling**, Credits-Styling, Bühnen-Hintergrund, **generischer Minigame-Flow (`.mg-*`: Map-Voting/Countdown/Ranking) + Lobby-Krone**, **Match-Abbruch-Panel (`.mg-abort-vote`, links/vertikal zentriert, nicht blockierend)** |
 | `renderer/block-bomb.css` | Optik **Block Bomb**: Canvas-Bühne + In-Game-HUD (Timer/Namensschilder/Meldungen, Map-Intro) + Block-Bomb-Map-Thumbnails (`.mg-thumb-block-bomb-*`). Die Voting-/Countdown-/Ergebnis-Overlays sind generisch (`.mg-*` in `style.css`) |
 | `renderer/laser-lines.css` | Optik **Laser Lines**: Canvas-Bühne + In-Game-HUD (Leben/Tempo/Warnbanner/Treffer-Vignette/Namensschilder, Map-Intro) + Laser-Map-Thumbnails (`.mg-thumb-laser-lines-*`) |
-| `renderer/game/` | **Spiel-agnostische, von ALLEN Minigames geteilte Bausteine**: `characters.js` (blockige 3D-Figur `BlockCharacter` + `setHolderGlow/flash/explode/setInvulnBlink/setEliminated`), `controllers.js` (`LocalHumanController(layout)` — **WASD/Pfeiltasten trennbar für Couch-Koop** —, `RemoteController` — **jetzt echt gefüttert, s. Online-Sessions** —, generischer `BotController(brain)`), `bots/botAI.js`, `bots/waypoints.js` |
+| `renderer/block-rush.css` | Optik **Block Rush**: Canvas-Bühne + In-Game-HUD (Timer/Höhe-Stabilität-Chips/Nächstes-Teil/Zauber-Cursor, Splitscreen-Trennlinie `.split-v`) + Map-Thumbnails |
+| `renderer/game/` | **Spiel-agnostische, von ALLEN Minigames geteilte Bausteine**: `characters.js` (blockige 3D-Figur `BlockCharacter` + `setHolderGlow/flash/explode/setInvulnBlink/setEliminated/setJumpOffset`), `controllers.js` (`LocalHumanController(layout)` — **WASD/Pfeiltasten trennbar für Couch-Koop, liest jetzt `bindings` aus `Keybinds`** —, `LocalPieceController` (Block Rush), `RemoteController` — **jetzt echt gefüttert, s. Online-Sessions** —, generischer `BotController(brain)`), `theme.js` (**gemeinsames Farb-/Licht-Modul**, neu v0.23.0: `PALETTE` synchron zu den CSS-Tokens, `applyMood()`/`addLightRig()` für Hintergrund/Nebel/Licht pro Map), `bots/botAI.js`, `bots/waypoints.js` |
 | `renderer/game/bots/botAI.js` | **Generische, wiederverwendbare Bot-KI** (für alle Minigames): Zustandsautomaten (CHASE/FLEE/ROAM/AVOID_EDGE/UNSTUCK), Anti-Stuck-Erkennung, Wand-/Ecken-Vermeidung, Steering, optionaler Debug-Modus, **Utility-Scoring für Zielwahl**, **Gefahren-Lookahead** (`decision.predictedHazards`), **leichtgewichtige Bot-Koordination** (Ziel-Claims über `world.map`) |
 | `renderer/game/bots/memory.js` | **Räumliches Match-Gedächtnis** (`createZoneMemory`): Bots merken sich WÄHREND eines Matches erlebte Gefahrenzonen (z.B. Stellen, an denen sie feststeckten) mit sanftem, abklingendem Malus — ergänzt die statischen `corner`-Kartentags um echtes Laufzeit-Lernen. Pro Bot-Mover = automatisch pro Match frisch |
 | `renderer/block-bomb/` | **Block-Bomb-Spielkern** (ES-Module): `main.js` (Szene/Renderer/Schleife/Runden + HUD + Map-Intro + Platzierungen, **`role`-Split Host/Gast + `getSnapshot/applySnapshot/feedRemoteInput/convertToBot`**), `maps.js` (3 Maps), `bomb.js` (Bombe), `bots.js` (per-Game Adapter für `botAI.js`). Figur + Controller kommen aus `renderer/game/` |
 | `renderer/laser-lines/` | **Laser-Lines-Spielkern** (ES-Module): `main.js` (Szene/Schleife/Leben/Treffer/HUD, `window.LaserLines`, **`role`-Split Host/Gast + `getSnapshot/applySnapshot/feedRemoteInput/convertToBot`**), `maps.js` (3 Maps + `LASER_MAP_META` + Laser-Configs), `lasers.js` (Laser-System `warning→active→cooldown` + `LaserDirector`), `bots.js` (per-Game Adapter für `botAI.js`). Figur + Controller aus `renderer/game/` |
+| `renderer/block-rush/` | **Block-Rush-Spielkern** (ES-Module): `main.js` (Szene/Schleife/`PieceView`+Geisterteil/HUD, `window.BlockRush`, `role`-Split Host/Gast, Splitscreen-Views), `pieces.js` (Tetromino-Formen, `Playfield`-Kinematik, `previewDropRow()`), `tower.js` (`TowerSim` — Kipp-/Einsturz-Simulation der gelockten Blöcke), `spells.js` (4 Zauber), `maps.js` (3 Maps), `bots.js` (eigene Platzierungs-KI, reaktionsgebremst). Figur/Controller-Abstraktion gilt hier NICHT — Block Rush hat keine Spielfigur, sondern `LocalPieceController` aus `renderer/game/controllers.js` |
 | `renderer/vendor/three.module.js` | Lokal eingebundenes **Three.js (r160)** für die 3D-Darstellung (kein CDN — CSP `default-src 'self'`, offline-fähig) |
 | `renderer/assets/` | Eigene lokale Assets: `block-icon.svg/.png/.ico` (Marken-Block), `cube.svg`/`star.svg` (Deko-Masken) |
 | `Block Games starten.bat` | Doppelklick-Start der App |
@@ -80,18 +83,10 @@ gewinnt.
   gesteuert vom generischen Flow (`openMapVote` → `castMapVote` → `runCountdown` →
   `startRound` → `onGameResult`). Der Lobby-Knopf „Spiel starten" startet die
   **Party-Serie** (`startSeries()`) über alle verfügbaren Minigames.
-- **Tutorial-Schnellstart aus dem „Games"-Bereich:** Klick auf die Minigame-Karte im
-  Hauptmenü startet das Spiel als **Tutorial** — sofort eine Runde **ohne Lobby, ohne
-  Bot-Auswahl und ohne Map-Voting**: `startTutorial('block-bomb')` → `runCountdown` →
-  `startRound`. Es spielen **immer 3 Bots** (`buildTutorialPlayers()`), die Map
-  wird **zufällig** gewählt. Die Bots laufen auf dem
-  **einfachsten Grad `'easy'`** — bewusste Ausnahme zur Bot-Regel „immer Mittel/Schwer",
-  damit man das Spiel in Ruhe lernen kann. Eigene Farbe und Bot-Farben/-Namen sind
-  zufällig & ohne Dopplung. Das Flag `isTutorial` unterscheidet danach die
-  Ergebnis-Knöpfe: „Nochmal" startet eine neue Tutorial-Runde (neue Random-Map), der
-  zweite Knopf heißt „Zum Menü" und führt ins Hauptmenü (statt „Zur Lobby"). Der
-  Lobby-/Party-Weg (`btnParty` → `openLobby` → volle Bot-/Farb-/Map-Wahl) bleibt
-  unverändert daneben bestehen.
+- **Kein Tutorial-Schnellstart mehr (seit v0.23.0):** Es gibt keinen Einzelspiel-
+  Einstieg im Hauptmenü — jede Partie läuft über `btnParty` → `openLobby()` → volle
+  Bot-/Farb-/Map-Wahl → `startSeries()`. Der frühere Klick-auf-Minigame-Karte-Weg
+  (`startTutorial`) ist ersatzlos entfernt.
 - **Rendering:** Three.js (lokal in `renderer/vendor/`, kein CDN — CSP-konform/offline).
   Der Spielkern (`block-bomb/main.js`) wird als ES-Modul geladen und registriert
   `window.BlockBomb` (`start/pause/resume/stop/isRunning`). Settings werden respektiert:
@@ -128,10 +123,13 @@ gewinnt.
 - **HUD:** Namensschilder über den Köpfen (3D→2D projiziert), markierter Bombenträger
   (roter Glow + 💣), Bomben-Timer, verbleibende Spieler, kurze Meldungen
   („… hat die Bombe!", „Bombe weitergegeben!", „… ist explodiert!", „… gewinnt!").
-- **Tastatur überall:** WASD/Pfeile bewegen P1; Esc öffnet die Pause (`#bombPause`,
-  Weiter/Zum Menü). Map-Voting, Pause, Ergebnis und Einladungsfenster sind komplett
-  ohne Maus bedienbar. Die Bewegungstasten kollidieren nicht mit der Menü-Navigation,
-  weil der globale Handler in `setupKeyboard()` für den Spielscreen früh aussteigt.
+- **Tastatur überall:** WASD/Pfeile bewegen P1 (Preset in den Einstellungen wählbar,
+  s. „Steuerung"-Reiter), **springen** möglich (Standard Leertaste/Shift rechts,
+  s. Sprung-Mechanik im Änderungsprotokoll — in Block Bomb rein kosmetisch); Esc
+  öffnet die Pause (`#mgPause`, Weiter/Zum Menü). Map-Voting, Pause, Ergebnis und
+  Einladungsfenster sind komplett ohne Maus bedienbar. Die Bewegungstasten
+  kollidieren nicht mit der Menü-Navigation, weil der globale Handler in
+  `setupKeyboard()` für den Spielscreen früh aussteigt.
 - **Online-Einladung (vorbereitet):** `#inviteOverlay` zeigt „Du wurdest … eingeladen.
   Von: [Name]" mit **Annehmen/Ablehnen**, Enter bestätigt, Esc lehnt ab, mehrere
   Einladungen als Warteschlange. Noch ohne echte Netz-Anbindung — Test-Auslöser
@@ -141,36 +139,51 @@ gewinnt.
 ### Generischer Minigame-Flow (für ALLE Minigames)
 
 Seit v0.13.0 ist die Match-Orchestrierung in `app.js` **nicht mehr fest an Block
-Bomb gekoppelt**, sondern generisch — so teilen sich Block Bomb und Laser Lines
-(und künftige Spiele) denselben Ablauf und dieselben Overlays.
+Bomb gekoppelt**, sondern generisch — so teilen sich Block Bomb, Laser Lines und
+Block Rush denselben Ablauf und dieselben Overlays.
 
 - **Minigame-Registry (`GAME_REGISTRY`):** Jedes spielbare Minigame deklariert
-  entkoppelt `windowKey` (globales Spiel-Objekt `window.BlockBomb`/`window.LaserLines`
-  mit `start/pause/resume/stop/isRunning`), `mapMeta` (Maps fürs Voting), `screenId`
-  + `stageId` (Vollbild-Screen + Canvas-Host). Der Flow spricht das Spiel nur über
-  `window[windowKey]` an und kennt keine Spiel-Internas.
-- **Ein gemeinsames Overlay-Set (`#mg*`):** `#mgMapVote` (Voting), `#mgCountdown`
-  (3·2·1·GO), `#mgPause`, `#mgResult` (Einzel-/Tutorial-Ergebnis) und `#mgRanking`
-  (Serien-Zwischenstand/Gesamt-Ranking). Styling generisch als `.mg-*` in `style.css`;
-  spielspezifisch sind nur die Map-Thumbnails (`.mg-thumb-<spiel>-<map>` in der
-  jeweiligen Spiel-CSS).
+  entkoppelt `windowKey` (globales Spiel-Objekt `window.BlockBomb`/`window.LaserLines`/
+  `window.BlockRush` mit `start/pause/resume/stop/isRunning/isPaused`), `mapMeta`
+  (Maps fürs Voting), `screenId` + `stageId` (Vollbild-Screen + Canvas-Host). Der
+  Flow spricht das Spiel nur über `window[windowKey]` an und kennt keine
+  Spiel-Internas.
+- **Ein gemeinsames Overlay-Set (`#mg*`):** `#mgGameVote` (Spiel-Voting, nur vor
+  dem ersten Spiel einer Serie, seit v0.23.0), `#mgMapVote` (Map-Voting, vor jeder
+  Runde), `#mgCountdown` (3·2·1·GO), `#mgPause` (mit `#mgPauseHint` für den
+  Online-weiterläuft-Hinweis) und `#mgRanking` (Serien-Zwischenstand/
+  Gesamt-Ranking). Styling generisch als `.mg-*` in `style.css`; spielspezifisch
+  sind nur die Map-Thumbnails (`.mg-thumb-<spiel>-<map>` in der jeweiligen
+  Spiel-CSS). Seit v0.23.0 gibt es kein `#mgResult`-Einzelergebnis mehr — jede
+  Partie ist Teil einer Serie (kein Tutorial-Weg mehr), daher läuft jedes
+  Ergebnis über `#mgRanking`.
 - **Generischer Ergebnis-Vertrag:** `onResult(result)` mit
   `result = { winner, placements: [{id,name,colorHex}] }` (Reihenfolge 1.→letzter).
   Block Bomb merkt sich dafür die Eliminierungs-Reihenfolge; Laser Lines sortiert die
-  Überlebenden nach Leben. Einzelspiele zeigen `winner`, die Serie wertet `placements`.
-- **Flow-Funktionen:** `openMapVote()`/`castMapVote()` (Mensch wählt, Bots/Remote
-  zufällig, Mehrheit, Gleichstand zufällig) → `runCountdown()` → `startRound()` →
-  `onGameResult()`. Pause/Weiter/Beenden laufen generisch über `pauseGame()`/
-  `resumeGame()`/`quitGameToMenu()`. Esc-Verhalten + Tastatur-Container in
-  `setupKeyboard()` sind auf die `#mg*`-Overlays + beide Spielscreens umgestellt.
+  Überlebenden nach Leben; Block Rush nach Turmhöhe/Stabilität. `awardSeriesPoints()`
+  wertet daraus die Platzierungspunkte.
+- **Flow-Funktionen:** `openGameVote()`/`castGameVote()` (nur vor dem ersten
+  Spiel) → `openMapVote()`/`castMapVote()` (Mensch wählt, Bots/Remote zufällig,
+  Mehrheit, Gleichstand zufällig, vor JEDER Runde) → `runCountdown()` →
+  `startRound()` → `onGameResult()`. Pause/Weiter/Beenden laufen generisch über
+  `pauseGame()`/`resumeGame()`/`quitGameToMenu()` — seit v0.23.0 pausiert
+  `pauseGame()` die Simulation nur, wenn KEIN Online-Mitspieler beteiligt ist
+  (siehe „Beenden"/Änderungsprotokoll v0.23.0). Esc-Verhalten + Tastatur-Container
+  in `setupKeyboard()` sind auf die `#mg*`-Overlays + alle drei Spielscreens
+  umgestellt.
 
 ### Party-Serie & Gesamt-Ranking (Lobby „Spiel starten")
 
 Der große **„Spielen"**-Weg über die Lobby startet eine **Party-Serie** statt einer
 einzelnen Runde (`startSeries()` in `app.js`):
 
-- **Alle verfügbaren Minigames in zufälliger Reihenfolge** (`availableGames()` +
-  `shuffled()`): aktuell Block Bomb + Laser Lines.
+- **Erstes Spiel per Spiel-Voting (`#mgGameVote`, seit v0.23.0), alle weiteren
+  zufällig:** „Spiel starten" öffnet zuerst die Abstimmung über das erste Spiel
+  der Serie (`openGameVote()`/`castGameVote()`, gleiches Muster wie das
+  Map-Voting). Danach steht `seriesQueue = [gewähltes Spiel, ...gemischter Rest]`
+  fest — alle drei Minigames (Block Bomb, Laser Lines, Block Rush) sind
+  verfügbar, aber nur das erste wird gewählt, die Reihenfolge der übrigen ist
+  zufällig.
 - Pro Spiel: **eigenes Map-Voting** → Countdown → Runde → **Zwischen-Ranking**
   (`#mgRanking`, „Weiter"). Nach dem letzten Spiel: **Gesamt-Ranking** mit Krone.
 - **Platzierungspunkte:** Bei N Spielern bekommt der 1. **N** Punkte, der letzte **1**
@@ -249,16 +262,25 @@ Leben scheidet man aus — **Last-Man-Standing**, der letzte Überlebende gewinn
   „persistent" rotierende Speichen). Optik: rot/pinke leuchtende Linie + Glow,
   Boden-Warnlinie, **Funken beim Aktivieren** (nur ohne `reducedFx`), Warn- + Feuer-Sound.
   **Fairness:** keine Treffer ohne sichtbare Warnung; Tempo/Frequenz steigen langsam
-  (`LaserDirector`, Level aus der Rundenzeit, `laserSpeedUp` bei Level-Up). **Kollision:**
+  (`LaserDirector`, Level aus der Rundenzeit, `laserSpeedUp` bei Level-Up). **Spin Arena
+  (seit v0.23.0 nachweislich schaffbar):** sicherer Nabenbereich um das Zentrum
+  (`SPIN_HUB_RADIUS = 2.4`, größer als die reale Trefferzone — das Zentrum ist nie
+  tödlich), garantierte Mindest-Sektorbreite zwischen benachbarten Speichen
+  (`SPIN_MIN_SECTOR`, kann sich nie auf 0 schließen), an `SPEED` gekoppelte
+  Höchst-Drehgeschwindigkeit und eine Warnphase auch für neu entstehende Speichen bei
+  Level-Up. **Kollision:**
   Abstand Punkt→Segment (lane/spoke) bzw. Punkt-in-Rechteck (zone), nur in `active`.
+  **Überspringbar (seit v0.23.0):** die persistenten Speichen der Spin Arena sind als
+  `jumpable` markiert — hoch genug gesprungen (`jumpY > LASER_CLEAR_Y`), trifft der
+  Strahl nicht. Lane- (Factory Grid) und Zonen-Laser (Sky Warning) bleiben bewusst
+  NICHT überspringbar.
 - **HUD:** Spielname „Laser Lines", Rundentimer, **Leben je Spieler** (Herzen),
   **Warnbanner** („⚠ Laser incoming!"), **Tempo/Level**, Namensschilder über den Köpfen.
 - **Bots** (`bots.js`, `makeLaserBotBrain`): dünner Adapter, der die Bewegung an
   `botAI.js` delegiert. Laser-Verhalten wird auf die vorhandenen Zustände abgebildet:
   **AVOID_LASER → FLEE**, **SEEK_SAFE_ZONE/WANDER → ROAM**, **AVOID_EDGE/STUCK_RECOVERY**
-  automatisch. Schwierigkeit (easy/medium/hard) steuert Reaktionszeit + Fehlerrate;
-  **kein Cheaten** (Bots reagieren nur auf sichtbare Warnungen). Im Tutorial spielen die
-  Bots auf `easy`.
+  automatisch. Schwierigkeit (medium/hard) steuert Reaktionszeit + Fehlerrate;
+  **kein Cheaten** (Bots reagieren nur auf sichtbare Warnungen).
   - **Multi-Laser-Ausweichen (ab Mittel):** Statt stur vom nächsten Laser wegzulaufen,
     probt die **Sampling-Flucht** (`escapeSamples`) mehrere Richtungen und wählt die mit
     dem größten Abstand zu **allen** Lasern (über `world.laserDanger` an jedem Probe-Punkt)
@@ -267,12 +289,74 @@ Leben scheidet man aus — **Last-Man-Standing**, der letzte Überlebende gewinn
     der Bot proaktiv die laserfreieste Zone an (`safestWaypoint`). **Warn-Antizipation**
     (`warnAnticipation`, stärkster Effekt bei Schwer): starke Bots verlassen einen Laser
     schon in dessen sichtbarer **Warnphase**, bevor er feuert.
-- **Tutorial-Schnellstart:** Klick auf die Minigame-Karte „Laser Lines" startet sofort
-  eine **einzelne** Runde (`startTutorial('laser-lines')`): P1 + 3 Easy-Bots, zufällige
-  Map, kein Voting, kein Serien-Ranking. Ergebnis-Knöpfe „Nochmal"/„Zum Menü".
-- **Steuerung:** WASD/Pfeile bewegen P1, Esc pausiert (`#mgPause`). Der globale
-  Tastatur-Handler steigt im Spielscreen früh aus, damit die Bewegung nicht mit der
-  Menü-Navigation kollidiert (wie bei Block Bomb).
+  - **Springen statt Ausweichen (seit v0.23.0, nur Spin Arena):** ist eine Speiche
+    schon aktiv und zu nah für einen rechtzeitigen Sidestep, springt der Bot
+    stattdessen — Erfolgsquote nach Schwierigkeit (`jumpChance`: leicht 15%,
+    mittel 55%, schwer 90%).
+- **Kein Tutorial-Schnellstart mehr (seit v0.23.0):** siehe Block-Bomb-Abschnitt —
+  jede Partie läuft über die Lobby und die Party-Serie.
+- **Steuerung:** WASD/Pfeile bewegen P1 (Preset wählbar, „Steuerung"-Reiter),
+  **springen** (Standard Leertaste/Shift rechts) überspringt tief liegende Speichen
+  der Spin Arena, Esc pausiert (`#mgPause`). Der globale Tastatur-Handler steigt im
+  Spielscreen früh aus, damit die Bewegung nicht mit der Menü-Navigation kollidiert
+  (wie bei Block Bomb).
+
+### Block Rush (Minigame)
+
+Drittes spielbares Minigame: ein Tricky-Towers-artiges Party-Spiel, bei dem alle
+Spieler **gleichzeitig, nebeneinander** aus fallenden Teilen einen Turm auf ihrem
+eigenen Podest stapeln. Wer einstürzt oder überläuft (Turm zu hoch/zu schief),
+scheidet sofort aus — **Last-Man-Standing**, bei Zeitlimit gewinnt der
+höchste/stabilste Turm. **Bewusst kein Reihen-Räumen** (kein Tetris-Clear) —
+das Raster füllt sich nur, das ist Kernregel, keine Baustelle.
+
+- **Spielkern** (`renderer/block-rush/main.js`, registriert `window.BlockRush`):
+  eigene, vereinfachte Kipp-/Kollaps-Simulation statt Physik-Engine (`tower.js`,
+  `TowerSim`), keine Zeilen-Logik wie bei echtem Tetris (`pieces.js`).
+- **Steuerung:** links/rechts verschieben, drehen, sinken (soft), hart fallen
+  (hard drop), Zauber wirken, Ziel wechseln — Tastenbelegung im „Steuerung"-Reiter
+  frei einstellbar, Standard-Presets WASD (A/D/W/S, Q=hart fallen, E=Zauber,
+  R=Ziel wechseln) bzw. Pfeiltasten (←/→/↑/↓, Shift rechts=hart fallen,
+  Strg rechts=Zauber, `-`/`#`=Ziel wechseln). Reine Schwerkraft ist bewusst
+  langsam gehalten (Sekunden pro Reihe) — **hartes Fallen ist der eigentliche,
+  schnelle Weg zu spielen**, ein kurzer Hinweis dazu blendet während des
+  Intros ein.
+- **Sichtbares Spiel:** das fallende Teil hat ein eigenes Mesh (hängt am
+  Turm-Pivot, kippt also automatisch mit), dazu ein halbtransparentes
+  **Geisterteil** an der Landeposition und eine Spaltenmarkierung auf dem
+  Podest. HUD-Chips je Spieler zeigen Name, Höhe, Stabilität, das **nächste
+  Teil** (Mini-Raster) und den gerade **armierten Zauber + sein Ziel**.
+- **Kipp-/Einsturz-Physik (in Worten):** Jeder Turm hat eine Schwerpunkt-
+  Balance, die von Höhe, Löchern und wie mittig gebaut wird abhängt. Baut man
+  zu einseitig, neigt sich der Turm sichtbar; bleibt er zu lange zu schief
+  geneigt oder kippt er zu weit, stürzt er ein. Ein einzelner Randplatz kippt
+  den Turm nicht sofort — Erholung durch gegengewichtiges Bauen bleibt
+  möglich, solange man nicht weiter verschlimmert.
+- **3 Maps** (`maps.js`): **Ruhige Halle** (keine Umgebungseffekte), **Sturmklippe**
+  (Windböen schieben das fallende Teil seitlich — Kleber-Zauber neutralisiert
+  das für den eigenen Turm), **Wackelplattform** (das Podest selbst schwankt
+  sanft). Alle drei mit Spaltenlinien + Höhen-Markierungen am Podestrahmen als
+  Referenz für den Turm.
+- **4 Zauber** (`spells.js`, per Zufall aufgesammelt, über „Ziel wechseln"
+  anvisiert): 🧲 **Kleber** (eigener Turm, macht ihn kurzzeitig unempfindlich
+  gegen Windschub/Wackeln), 📦 **Wachstum** (nächstes Teil des Ziels wird
+  schwerer/instabiler), 💥 **Erdbeben** (rüttelt am Ziel-Turm), ⚡ **Blitzsturz**
+  (Ziel fällt für kurze Zeit deutlich schneller).
+- **Bots** (`bots.js`): eigene Platzierungs-KI (bewertet Löcher, Unebenheit,
+  Höhe, Zentriertheit UND den tatsächlichen Turm-Schwerpunkt — ein bereits
+  schiefer Turm wird aktiv gegengesteuert), reaktionsgebremst wie ein Mensch
+  (kein Handeln schneller als ein realistisches Tastenintervall), Zauber-Wahl
+  nach Turmzustand (Kleber bei niedriger Stabilität, Wachstum bei hoher,
+  Erdbeben/Blitzsturz gegen den größten Gegner). Schwierigkeit (medium/hard)
+  steuert Reaktionszeit, Fehlerquote und Zauber-Timing.
+- **Splitscreen:** wie die anderen beiden Spiele — bei zwei lokalen Menschen
+  und aktiviertem „Zwei Bilder" teilt sich die Bühne **links/rechts** (statt
+  oben/unten wie bei Block Bomb/Laser Lines), weil die Podeste hoch und
+  schmal statt breit sind; jede Hälfte dollyt auf den eigenen Turm.
+- **Online:** `role`-Split Host/Gast wie die anderen Spiele. Ein Gast simuliert
+  grundsätzlich kein eigenes `Playfield` (auch nicht für den eigenen lokalen
+  Spieler) — alle Türme inkl. des fallenden Teils kommen aus dem zuletzt
+  empfangenen Snapshot des Hosts.
 
 ### Vollbild
 Die App startet **immer im Vollbild** — wie andere Videospiele, ohne sichtbare
@@ -316,8 +400,8 @@ Erreichbar über das **⚙️-Zahnrad oben rechts im Hauptmenü** (zurück per
 überleben Neustarts.
 
 **Aufbau in Kategorie-Reitern:** Oben wählt man den Bereich (**Konto ·
-Anzeige · Grafik · Audio**), darunter erscheinen nur die Optionen dieser
-Kategorie. Es ist immer genau ein Panel sichtbar (`.settings-tab` /
+Anzeige · Steuerung · Grafik · Audio**), darunter erscheinen nur die Optionen
+dieser Kategorie. Es ist immer genau ein Panel sichtbar (`.settings-tab` /
 `.settings-panel` in `index.html`; `activateSettingsTab()` / `openSettings()`
 in `app.js`). Der **Konto-Reiter erscheint nur angemeldet**
 (`syncAccountCard()` blendet Reiter + Panel ein/aus und fällt sonst auf
@@ -333,6 +417,19 @@ Reiter und Optionen sind komplett **ohne Maus** bedienbar (siehe
 | Grafik | FPS-Limit (30/60/120/144/240/unbegrenzt) | wird nur **gespeichert** — die Minigames müssen das Limit selbst über `Settings.get('fpsLimit')` umsetzen (0 = unbegrenzt) |
 | Grafik | Animationen reduzieren | blendet schwebende Hintergrund-Blöcke und Glanz-Sweep aus (`body.reduced-fx`) |
 | Audio | Gesamt / Musik / Soundeffekte (0–100 %) | nur gespeichert (noch kein Sound in der App); Spiele lesen die fertige Lautstärke über `Settings.effectiveVolume('music'|'sfx')` (0–1, Master eingerechnet) |
+
+**Steuerung** (`renderer/keybinds.js`, eigener Reiter `#stabControls`):
+Spieler-Umschalter (P1/P2, immer beide editierbar — unabhängig davon, ob
+gerade ein 2. lokaler Spieler in der Lobby ist), Preset-Auswahl **nur für
+Spieler 1** (WASD/Pfeiltasten — Spieler 2 bekommt automatisch das jeweils
+andere Preset), darunter eine Zeile pro Aktion mit einem Tasten-Knopf
+(„Belegen"). Ein Klick/Enter auf den Knopf öffnet das `#keyCapture`-Overlay
+und übernimmt die nächste Taste; Konflikt mit einer anderen Aktion desselben
+Spielers **tauscht** beide Zuweisungen, ein Konflikt mit dem anderen Spieler
+wird abgelehnt. „Steuerung zurücksetzen" löscht nur die Übersteuerungen des
+gerade gewählten Spielers, das Preset bleibt. Aus der Lobby (P1-/`local`-Karte
+→ „⚙ Steuerung") geöffnet, führt Esc/„Zurück" wieder in die Lobby statt ins
+Menü (`settingsCtx`/`leaveSettings()`).
 
 „Zurücksetzen" stellt alle Defaults wieder her. Gespeicherte
 Anzeige-Einstellungen werden beim App-Start angewendet — **mit einer Ausnahme:
@@ -449,9 +546,10 @@ und die Haupt-Einstellungsseite immer synchron bleiben.
 - **Slot-Regeln** (`lobbyState.slots`, Typen `self`|`local`|`friend`|`bot`|`empty`):
   - **P1 ist immer man selbst** (`self`): angemeldet der Username, sonst „Gast".
     Nicht entfernbar — nur die **Farbe** ist änderbar.
-  - **P2–P4** sind frei: **Leer**, **2. Spieler** (`local`), **Freund** oder
-    (indirekt über den Footer-Stepper) **Bot**. Auswahl über ein kleines
-    Arcade-Popup über der Karte (`openSlotPicker()`), nicht per `alert()`.
+  - **P2–P4** sind frei: **Leer**, **2. Spieler** (`local`), **Bot** oder
+    **Freund** — jeder Platz regelt seinen Typ direkt über sein eigenes
+    „+"/„Ändern"-Popup (`openSlotPicker()` → `showSlotOptions()`), nicht per
+    `alert()` und nicht mehr über einen globalen Bot-Stepper (seit v0.23.0).
   - **Couch-Koop:** höchstens **ein** `local`-Slot gleichzeitig — die Option
     ist im Popup deaktiviert, sobald es schon einen gibt. `local` steuert mit
     **Pfeiltasten**, während P1 bei **WASD** bleibt (`isLocal:true` +
@@ -479,24 +577,31 @@ und die Haupt-Einstellungsseite immer synchron bleiben.
     „entfernte" Person sofort zurück. Ein `friend`-Slot **ohne** `peerId`
     (aus dem alten Platz-Popup) bleibt wie bisher rein lokale Deko ohne
     Netzbezug — siehe „Online-Sessions" für den Unterschied.
-- **Bot-ANZAHL statt Pro-Bot-Schwierigkeit (Footer-Stepper):** Bots werden
-  nicht mehr manuell pro Slot hinzugefügt, sondern über „🤖 Bots: − N +" im
-  Footer geregelt (`adjustBotCount()`/`setBotCount()`). Der Stepper füllt/leert
-  automatisch freie Slots und klemmt auf `[minBotCount(), maxBotCount()]` —
-  siehe „Mindestens 3 Spieler" unten. Bots bekommen weiterhin einen
-  zufälligen Namen aus **`BOT_NAMES`** (300 Namen, `getRandomBotName()`, ohne
-  Dopplung) und eine zufällige Farbe (`getRandomFreeColor()`); die
-  Bot-Card behält „🎲 Neuer Name" zum Neu-Würfeln.
-  - **Schwierigkeit ist nicht mehr in der Lobby einstellbar.** Jeder Bot
+- **Bot direkt pro Platz (seit v0.23.0):** „🤖 Bot" ist eine gleichwertige
+  Option im Platz-Popup neben Leer/2. Spieler/Freund (`setSlotBot()`). Bots
+  bekommen wie bisher einen zufälligen Namen aus **`BOT_NAMES`** (300 Namen,
+  `getRandomBotName()`, ohne Dopplung) und eine zufällige Farbe
+  (`getRandomFreeColor()`); die Bot-Card behält „🎲 Neuer Name" zum
+  Neu-Würfeln.
+  - **Schwierigkeit ist nicht in der Lobby einstellbar.** Jeder Bot
     bekommt sie **zufällig pro Match** (`randomBotDifficulty()` in
     `buildMatchConfig()`, weiterhin nur Mittel/Schwer, nie Leicht) — dieselbe
     Lobby-Konfiguration kann also von Match zu Match unterschiedlich starke
     Bots ergeben.
 - **Mindestens 3 Spieler insgesamt** (Menschen + Bots), höchstens 4 Plätze:
   `minBotCount() = max(0, 3 − Menschen)`, `maxBotCount() = 4 − Menschen`.
-  Verlässt ein Mensch die Lobby (Slot auf „Leer") oder wird ein Bot manuell
-  geleert, ruft `ensureBotCount()` automatisch `setBotCount()` auf und füllt
-  wieder auf. `startSeries()` prüft die Regel zusätzlich als Sicherheitsnetz.
+  `setBotCount()`/`ensureBotCount()` bleiben als **Sicherheitsnetz**: Verlässt
+  ein Mensch die Lobby (Slot auf „Leer"), füllt `ensureBotCount()` automatisch
+  wieder auf die Mindestzahl auf. `startSeries()` ruft es zusätzlich vor dem
+  Start nochmal defensiv auf.
+- **Steuerung & Splitscreen pro Platz (seit v0.23.0):** P1- und `local`-Karte
+  haben je einen „⚙ Steuerung"-Knopf, der direkt den „Steuerung"-Reiter der
+  Einstellungen für genau diesen Spieler öffnet (`openSettings('stabControls',
+  {player, returnTo:'lobby'})`) — Esc/„Zurück" führt danach wieder in die
+  Lobby statt ins Menü. Die `local`-Karte hat zusätzlich „🖵 Ein Bild/Zwei
+  Bilder" (`Settings.get/set('splitScreen')`); ist die Option aktiv, genau 2
+  lokale Menschen sind dabei und diese Seite ist nicht Gast, rendert jeder
+  Spielkern die Runde in zwei eigenen Kamera-Hälften (siehe „Couch-Koop").
 - **Farbauswahl** (`openColorPicker()`, feste Palette `LOBBY_COLORS`: Rot, Blau,
   Grün, Gelb, Lila, Orange, Cyan, Pink). Nur für **Menschen** (P1, 2. Spieler,
   Freunde — `isHumanSlot()`) — Bots erscheinen nicht im Picker. Popup mit
@@ -512,18 +617,16 @@ und die Haupt-Einstellungsseite immer synchron bleiben.
     hat Rot, P1 wählt Rot → P1 bekommt Rot, P2 rückt z.B. auf Blau, UI
     aktualisiert sofort. Ist **keine** freie Farbe mehr da → Toast
     „Keine freie Farbe verfügbar."
-- **Lobby-Aktionen** (Footer): „← Zurück" (→ Menü), Bot-Stepper, „↺ Lobby
+- **Lobby-Aktionen** (Footer): „← Zurück" (→ Menü), „🌐 Online", „↺ Lobby
   zurücksetzen" (`resetLobby()` — Slots 2–4 auf Leer, P1 bleibt, danach wieder
   mit Bots auf Minimum aufgefüllt) und „Spiel starten" (`startSeries()` — die
   echte Party-Serie über alle Minigames, s. „Party-Serie & Gesamt-Ranking").
 - **Tastatur (ohne Maus):** Die Lobby ist in `setupKeyboard()` eingehängt und
   navigiert über **feste navIds** (`buildLobbyNav()`, bei jedem `renderLobby()`
   neu erzeugt): ↑/↓ wechselt innerhalb einer Karte, ←/→ zur Nachbarkarte,
-  unten führt ↓ in die Fußzeile. Der Bot-Stepper sitzt als **zwei echte
-  Knöpfe** (`lobby_botsMinus`/`lobby_botsPlus`) zwischen „Zurück" und
-  „Zurücksetzen" — bewusst keine ←/→-Wertverstellung wie früher beim
-  Schwierigkeits-Knopf, damit die Fußzeile durchgängig mit ←/→ navigierbar
-  bleibt. Die **Popups** (`#slotPicker` / `#colorPicker`) haben **Vorrang** im
+  unten führt ↓ in die Fußzeile (jede Spalte landet auf ihrem jeweiligen
+  Footer-Knopf: Zurück/Online/Zurücksetzen/Spiel starten). Die **Popups**
+  (`#slotPicker` / `#colorPicker`) haben **Vorrang** im
   Container-Cascade und nutzen die geometrische `moveFocus()` — der Fokus
   bleibt im Popup, springt nicht in die Lobby/das Menü dahinter. **Esc**
   schließt erst ein offenes Popup, sonst geht es von der Lobby zurück ins
@@ -533,18 +636,30 @@ und die Haupt-Einstellungsseite immer synchron bleiben.
 ### Couch-Koop (2. lokaler Mensch)
 
 - Ein zweiter Mensch kann am selben PC mitspielen, ohne Konto oder
-  Netzwerk — Lobby-Slot-Typ `local` (siehe oben). P1 steuert mit **WASD**,
-  der 2. Spieler mit **Pfeiltasten**. Das ist ein bewusster **Breaking
-  Change**: vorher steuerten WASD UND Pfeiltasten gleichwertig P1 alleine;
-  Solo-Spielen geht jetzt nur noch mit WASD.
-- Technisch trennt `LocalHumanController(layout)` in `renderer/game/
-  controllers.js` die beiden Tastensätze auf zwei unabhängige Instanzen —
-  jede hört global auf `window`, ignoriert aber Tasten außerhalb des eigenen
-  Layouts (`mapKey(key, layout)`). Beide Spielkerne reichen dafür nur ein
-  zusätzliches Feld durch: `new LocalHumanController(p.keys || 'wasd')`
-  (`block-bomb/main.js`/`laser-lines/main.js`, `_initPlayers()`).
-  `buildMatchConfig()` setzt `keys: 'arrows'` für den `local`-Slot, sonst
-  `'wasd'`. Der Tutorial-Schnellstart (immer nur 1 Mensch) ist unberührt.
+  Netzwerk — Lobby-Slot-Typ `local` (siehe oben). P1 spielt mit seinem
+  gewählten **Preset** (WASD oder Pfeiltasten, „Steuerung"-Reiter), der
+  2. Spieler bekommt automatisch das jeweils **andere** Preset
+  (`Keybinds.basePreset('p2')`). Das ist seit v0.19.0 ein bewusster
+  **Breaking Change**: Solo-Spielen geht nur noch mit dem gewählten Preset,
+  nicht mehr WASD UND Pfeiltasten gleichzeitig für P1.
+- Technisch trennt `LocalHumanController`/`LocalPieceController` in
+  `renderer/game/controllers.js` die beiden Spieler auf zwei unabhängige
+  Instanzen — jede hört global auf `window`, reagiert aber nur auf die
+  eigenen, aufgelösten Bindings (`Keybinds.resolve('p1'|'p2')`, ein
+  `code → Aktion`-Rückwärts-Map pro Instanz; ein reiner Layout-String bleibt
+  als Fallback gültig). `buildMatchConfig()` reicht `bindings: {walk,piece}`
+  additiv durch (`keys` bleibt als Fallback). Jeder Spieler kann seine
+  Belegung einzeln über den „Steuerung"-Reiter anpassen (siehe „Einstellungen"
+  und „Lobby") — Presets sind nur der Ausgangspunkt, keine feste Grenze.
+- **Splitscreen (seit v0.23.0 gerendert):** Ist „Zwei Bilder" aktiv, bekommt
+  jeder Spielkern zwei Kamera-Views (`_initViews()`/`_renderViews()`, eigene
+  geklonte `THREE.PerspectiveCamera` je Hälfte, `setViewport`/`setScissor`).
+  Block Bomb/Laser Lines teilen **oben/unten** (breite Arenen), Block Rush
+  **links/rechts** (hohe, schmale Podeste); jede Hälfte folgt der Kamera
+  ihrem eigenen Spieler bzw. (Block Rush) dolly't auf dessen eigenen Turm
+  statt auf den global höchsten. Bleibt „Ein Bild" aktiv oder ist ein Gast
+  beteiligt (der liefert über `getMyInput()` nur einen Intent-Strom), läuft
+  der alte Einzelbild-Pfad unverändert weiter.
 - **Responsiv & scrollfrei:** Eigene Regeln in den Kompakt-Stufen
   (`@media max-height: 900px / 680px`) verkleinern Karten/Avatare; sieht in
   Vollbild, 1280×800 und 960×640 gut aus, Scrollbalken bleiben unsichtbar.
@@ -638,26 +753,47 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
   - **Auf einer Option:** ↑/↓ wechselt die Option; an der **obersten Option
     bringt ↑ zurück zum Reiter** — von dort wechselt ←/→ wieder die Reiter.
     ←/→ auf einer Option bleibt native (Regler verstellen / Auswahl wechseln).
-  - Back/Reset im Header bleiben per **Tab** erreichbar (Tab ist nicht belegt).
+  - Back/Reset im Header sind per **←/→** erreichbar (seit Impeccable-Critique
+    2026-09-15, keine Tab-Ausnahme mehr — verletzte sonst das Prinzip „keine
+    Ausnahmen" aus PRODUCT.md).
   - Die gerade angesteuerte Option wird **deutlich gelb markiert**: gelber Balken
     + gelbe Schrift auf der Zeile (`.setting-row:focus-within`), beim Lautstärke-
     Regler zusätzlich gelber, vergrößerter Griff. Der aktive Reiter selbst trägt
     gelbe Schrift + gelbe Unterkante.
+  - **Steuerung-Reiter, Belegen-Modus:** Enter/Leertaste auf einem Tasten-Knopf
+    öffnet `#keyCapture` — die NÄCHSTE gedrückte Taste wird belegt, nicht als
+    Navigation verarbeitet. Das läuft über einen eigenen, in der **Capture-Phase**
+    registrierten `window`-Listener (`stopImmediatePropagation()`, greift vor dem
+    normalen `setupKeyboard()`-Handler) plus eine zweite Absicherung
+    (`if (keyCapture) return;` direkt am Anfang von `setupKeyboard()`). Esc bricht
+    das Belegen ohne Änderung ab, statt wie sonst einen Screen zu verlassen.
+  - **`#setResolution` ist immer erreichbar** (auch im Vollbild-Start-Zustand):
+    die Auswahl wird nur noch optisch gedämpft (`.setting-row.is-inactive`) statt
+    `disabled` — vorher war sie so lange nie per Tastatur fokussierbar, wie
+    Vollbild aktiv war (und die App startet immer im Vollbild).
 - Sichtbarer Fokus nur bei Tastatur-Bedienung (`:focus-visible`): kräftiger
   gelber Rahmen **+ Glow** und leichtes **Skalieren** des fokussierten Elements
   (große Karten/Play-Buttons behalten ihren eigenen Effekt). Mausklicks erzeugen
   keinen Ring.
 - **Esc**: schließt das offene Overlay (Beenden / Konto) bzw. führt von den
-  Einstellungen **oder der Credits-Seite** zurück ins Menü.
+  Einstellungen **oder der Credits-Seite** zurück ins Menü — **außer**, die
+  Einstellungen wurden aus der Lobby heraus geöffnet (P1-/2.-Spieler-„⚙
+  Steuerung"-Knopf): dann führt Esc/„Zurück" zurück in die **Lobby**, nicht ins
+  Menü (`settingsCtx`/`leaveSettings()`, eigener Escape-Zweig **vor** dem
+  gemeinsamen Credits/Lobby-Zweig, damit ein Gast dabei nicht versehentlich
+  die Online-Session verlässt).
 - **F5/F6 — Match-Abbruch-Abstimmung:** einzige Ausnahme von „alles läuft über
   Fokus/Container" — wirken global, sobald `#mgAbortVote` offen ist, unabhängig
   davon, was gerade fokussiert ist (das Panel selbst ist bewusst fokuslos, s.
   Abschnitt „Match-Abbruch per Abstimmung"). **F5** = Ja, abbrechen, **F6** =
   Nein, weiterspielen.
 - **Couch-Koop (2 lokale Menschen):** nur die **Spielfigur-Bewegung** im
-  laufenden Match ist pro Spieler getrennt (P1 WASD, 2. Spieler Pfeiltasten,
-  siehe `LocalHumanController`-Layout) — alle Menüs/Overlays bleiben über die
-  normale, geteilte WASD-ODER-Pfeiltasten-Navigation bedienbar.
+  laufenden Match ist pro Spieler getrennt — welches Layout wer bekommt, ist
+  seit dem Steuerung-Reiter (Einstellungen) **einstellbar**: Spieler 1 wählt
+  ein Preset (WASD oder Pfeiltasten), Spieler 2 bekommt automatisch das
+  jeweils andere (`Keybinds.basePreset()`), zusätzlich lässt sich jede Aktion
+  einzeln umbelegen. Alle Menüs/Overlays bleiben über die normale, geteilte
+  WASD-ODER-Pfeiltasten-Navigation bedienbar.
 
 ### UI / Design
 - Arcade-Party-Look: Impact-Schriftzug mit Versatz-Schatten **und Glow**,
@@ -697,6 +833,341 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
   Klartext — gleicher Key wie die Website, RLS schützt die Daten.
 
 ## Änderungsprotokoll
+
+### v0.23.0 — 2026-09-18
+
+**Menü & Lobby**
+- **Kein Minigame-Grid/Tutorial-Einstieg mehr im Hauptmenü.** Jede Partie läuft
+  jetzt ausschließlich über „Spielen" → Lobby → `startSeries()`. Entfernt:
+  `startTutorial()`, `buildTutorialPlayers()`, das Flag `isTutorial`,
+  `showSingleResult()`, das `#mgResult`-Overlay + Buttons `#btnMgAgain`/
+  `#btnMgSecondary`, `UPCOMING_MINIGAMES` und das Minigame-Grid-Markup
+  (`renderer/index.html`, `renderer/app.js`, `renderer/style.css`). `MINIGAMES`
+  bleibt als Registry-Quelle für die Party-Serie bestehen, verliert aber
+  `start`/`nav` (kein Klick-Ziel mehr).
+- **Bot als gleichwertige Platz-Option statt Footer-Stepper.** Jeder Lobby-Platz
+  regelt seinen Typ direkt über sein „+"/„Ändern"-Popup: Leer, 2. Spieler, Bot
+  (`setSlotBot()`, neu) oder Freund. Der globale „🤖 Bots: − N +"-Stepper im
+  Footer (`adjustBotCount()`, `#btnBotsMinus`/`#btnBotsPlus`/`#lobbyBotCount`)
+  ist entfernt; `setBotCount()`/`ensureBotCount()`/`minBotCount()`/
+  `maxBotCount()` bleiben als Sicherheitsnetz für die Mindestzahl von 3
+  Spielern (`renderer/app.js`, `renderer/index.html`, `renderer/style.css`).
+  `buildLobbyNav()`s Footer-Navigation ist entsprechend auf Zurück/Online/
+  Zurücksetzen/Spiel-starten angepasst — `lobby_online` fehlte zuvor als
+  ↓-Ziel der zweiten Spalte, das ist jetzt korrekt.
+
+**Spiel-/Karten-Wahl**
+- **Spiel-Voting: nur das erste Spiel der Serie wird gewählt.** „Spiel starten"
+  öffnet jetzt zuerst `openGameVote()` (`#mgGameVote`, Karten aus `MINIGAMES`
+  mit Icon/Name/Beschreibung) — echte Menschen wählen, Bots/Remote-Peers
+  stimmen zufällig mit, Mehrheit gewinnt, Gleichstand entscheidet der Zufall
+  (`castGameVote()`, exakt nach dem Muster von `castMapVote()`). Danach steht
+  `seriesQueue = [gewähltes Spiel, ...gemischter Rest]` fest — alle weiteren
+  Spiele der Serie laufen ohne erneutes Spiel-Voting, **die Map wird aber vor
+  jeder Runde weiter gewählt** (unverändert `openMapVote()`). Netzwerk: kein
+  neues Event nötig — `series_start` transportiert die jetzt abgestimmte statt
+  rein zufällige `gameIds`-Reihenfolge an Gäste, die den bestehenden Handler
+  unverändert mitlaufen lassen (`renderer/app.js`, `renderer/index.html`,
+  `renderer/style.css`).
+
+**Pause**
+- **Escape pausiert lokale Matches jetzt wirklich, Online-Matches laufen
+  bewusst weiter.** `pauseGame()` prüft `currentPlayers` auf einen
+  Remote-Mitspieler bzw. den eigenen Gast-Status (`NetSession.state ===
+  'guest'`) — nur wenn KEIN Online-Mitspieler beteiligt ist, wird die
+  Simulation über `game.pause()` wirklich angehalten; sonst bleibt sie
+  absichtlich aktiv und das Pause-Overlay zeigt den Hinweis „Online-Match
+  läuft im Hintergrund weiter." (`#mgPauseHint`). Bug behoben: die
+  Intro-Kamerafahrt (`_updateIntro()`) lief in allen drei Spielkernen bisher
+  auch bei `this.paused === true` weiter — sie hängt jetzt wie die eigentliche
+  Simulation hinter `if (!this.paused)`. Jeder Spielkern bekommt dafür
+  `isPaused()` auf seiner `window.*`-API; `resumeGame()` ruft `resume()` nur
+  noch auf, wenn tatsächlich pausiert wurde (`renderer/app.js`,
+  `renderer/block-bomb/main.js`, `renderer/laser-lines/main.js`,
+  `renderer/block-rush/main.js`). Die 20-Hz-Netzwerk-Schleifen sind davon
+  unberührt — sie laufen unabhängig vom lokalen Pause-Zustand weiter.
+
+**Steuerung & Keybinds**
+- **Neuer Reiter „Steuerung" (Einstellungen) + Tastenbelegung.** Neuer Store
+  `renderer/keybinds.js` (`Keybinds`, geladen nach `settings.js`): jeder lokale
+  Spieler hat ein Preset (`keysPreset`: WASD/Pfeiltasten, gilt für Spieler 1 —
+  Spieler 2 bekommt automatisch das jeweils andere, `Keybinds.basePreset()`)
+  plus optionale Übersteuerungen je Aktion (`keysP1`/`keysP2` in
+  `Settings.DEFAULTS`, flach als `"gruppe.aktion" → Tastencode`). Alles läuft
+  über `event.code` (QWERTZ-fest) — vereinheitlicht: `LocalHumanController`
+  liest bisher `event.key`, `LocalPieceController` schon `event.code`; beide
+  nehmen jetzt entweder ein aufgelöstes Bindings-Objekt oder (Fallback) den
+  alten Layout-String und bauen sich einmalig eine `code → Aktion`-Rückwärts-
+  Map (`renderer/game/controllers.js`). Neuer Reiter `#stabControls` zwischen
+  Anzeige und Grafik: Spieler-Umschalter, Preset-Auswahl, je eine Zeile pro
+  Aktion (Laufspiele: links/rechts/vor/zurück/**springen** (Standard
+  Leertaste/Shift rechts, s. Sprung-Mechanik weiter unten); Block Rush:
+  links/rechts/drehen/sinken/hart fallen/Zauber/Ziel wechseln) mit einem Tasten-Knopf, „Steuerung zurücksetzen" (nur der gerade
+  gewählte Spieler). Belegen-Modus (`#keyCapture`-Overlay): die nächste Taste
+  wird exklusiv in der Capture-Phase auf `window` abgefangen
+  (`stopImmediatePropagation`, plus ein `if (keyCapture) return;` in
+  `setupKeyboard()` als zweite Absicherung), damit sie nicht als Navigation
+  verarbeitet wird; Konflikt mit einer anderen Aktion desselben Spielers
+  (gleiche Gruppe) tauscht beide Tasten, Konflikt mit dem anderen Spieler wird
+  abgelehnt (Toast); Escape bricht ohne Änderung ab; eine feste Sperrliste
+  (`Escape F5 F6 F9 F11 Tab Meta*`) ist nie belegbar. `buildMatchConfig()`
+  reicht die aufgelösten Bindings additiv als `bindings: {walk,piece}` durch
+  (`keys` bleibt als Fallback). Die „⚙ Steuerung"-Knöpfe in der Lobby (P1/2.
+  Spieler) öffnen jetzt echt `openSettings('stabControls', {player, returnTo:
+  'lobby'})` statt der bisherigen Platzhalter. Dafür bekommt `openSettings()`
+  einen optionalen Kontext (`settingsCtx = {player, returnTo}`); ein neues
+  `leaveSettings()` führt bei `returnTo:'lobby'` zurück in die Lobby (Fokus auf
+  den „Steuerung"-Knopf des bearbeiteten Spielers) statt ins Menü — verdrahtet
+  an `#btnSettingsBack` und als **eigener** Escape-Zweig **vor** dem
+  gemeinsamen Credits/Lobby-Zweig, damit ein Gast beim Zurückkehren in die
+  Lobby nicht versehentlich `leaveOnlineSession()` auslöst. Nebenbei behoben:
+  `#setResolution` war immer `disabled`, solange Vollbild aktiv war — und die
+  App startet **immer** im Vollbild —, war also per Tastatur nie erreichbar;
+  jetzt bleibt die Auswahl fokussierbar und wird nur noch optisch gedämpft
+  (`.setting-row.is-inactive`). `startRound()` blurt vorsorglich das
+  fokussierte Element, damit z.B. die Leertaste (spätere Sprung-Taste) nicht
+  noch den zuletzt fokussierten Lobby-/Vote-Knopf auslöst (`renderer/app.js`,
+  `renderer/index.html`, `renderer/style.css`, `renderer/settings.js`,
+  `renderer/keybinds.js` neu, `renderer/game/controllers.js`,
+  `renderer/block-bomb/main.js`, `renderer/laser-lines/main.js`,
+  `renderer/block-rush/main.js`).
+
+**Sprung**
+- **Sprung-Mechanik in Block Bomb + Laser Lines** (Tastenbelegung „walk.jump",
+  s. Steuerung-Reiter oben; Standard Leertaste bei WASD, Shift rechts bei
+  Pfeiltasten). Reine Höhenverschiebung: `LocalHumanController.update()`
+  liefert jetzt `{x,z,jump}`, `jump` als Tastendruck-Zähler statt gehaltener
+  Zustand (analog Block Rushs `seq`), damit ein kurzer Tipp zwischen zwei
+  20-Hz-Netzwerk-Polls nicht verloren geht. `BlockCharacter.setJumpOffset()`
+  (neu, `renderer/game/characters.js`) hebt die Figur zusätzlich zu
+  `groundY` an; beide Spielkerne simulieren pro Spieler `jumpY`/`jumpVy` mit
+  fester Schwerkraft (~0.45s Flugzeit, ~0.5 Einheiten Sprunghöhe — Block Bomb
+  hat dafür aktuell keinen spielerischen Nutzen, nur Konsistenz der
+  Steuerung). **Der eigentliche Zweck:** In Laser Lines prüft
+  `LaserDirector.checkHits()`/`Laser.hits()` jetzt zusätzlich die Sprunghöhe —
+  aber NUR persistente Speichen der Spin Arena sind als `jumpable` markiert
+  (`LASER_CLEAR_Y = 0.3` in `renderer/laser-lines/lasers.js`) und lassen sich
+  überspringen; Lane-Laser (Factory Grid) und Zonen-Laser (Sky Warning)
+  bleiben absichtlich NICHT überspringbar. Bots (`laser-lines/bots.js`)
+  springen statt seitlich auszuweichen, wenn eine Speiche schon aktiv UND zu
+  nah ist, um noch rechtzeitig wegzulaufen (`JUMP_TRIGGER_DIST`), mit
+  Erfolgsquote nach Schwierigkeit (`jumpChance`: leicht 15%, mittel 55%,
+  schwer 90%) — auf anderen Maps springen Bots nie. Online: neuer
+  `WALK_REMOTE_ADAPTER` (je Spielkern lokal definiert, analog Block Rushs
+  `RUSH_REMOTE_ADAPTER`) summiert Sprung-Tastendrücke eines entfernten
+  Spielers zwischen zwei Host-Abfragen auf; die Snapshot-Zeilen bekommen ein
+  neues, angehängtes `jumpY`-Feld, das Gäste defensiv mit `?? 0` lesen, damit
+  ein älterer Host einen neueren Gast nicht bricht (`renderer/game/
+  controllers.js`, `renderer/game/characters.js`, `renderer/block-bomb/
+  main.js`, `renderer/laser-lines/main.js`, `renderer/laser-lines/lasers.js`,
+  `renderer/laser-lines/bots.js`). Die unschaffbare Kreis-Laser-Map selbst
+  (Sektorbreite, Zentrum, fehlende Warnphase bei Level-Up) ist damit noch
+  NICHT behoben — das ist die separate Map-Fairness-Überarbeitung (s. „Maps"
+  unten).
+
+**Splitscreen**
+- **Splitscreen in allen drei Minigames.** Die `local`-Karte in der Lobby
+  bekommt „🖵 Ein Bild/Zwei Bilder" (Store-Wert `Settings.splitScreen`,
+  Default `false`). `startRound()` (`renderer/app.js`) berechnet daraus
+  additiv `split: true` im Match-Config — nur wenn genau 2 lokale Menschen
+  mitspielen UND diese Seite nicht Gast ist (ein Gast liefert über
+  `getMyInput()` nur EINEN Intent-Strom; zwei lokale Menschen bei einem Gast
+  bräuchten zwei eigene `RemoteController`-Identitäten beim Host, die es
+  nicht gibt — Splitscreen bleibt deshalb ein reines Host-/Solo-Feature).
+  Jeder Spielkern bekommt `this.views` (neue `_initViews()`): ohne Split ein
+  einzelner Eintrag mit `rect` über die volle Bühne und `camera === this.
+  camera` — der Einzelbild-Pfad ist dadurch exakt der alte Code, nur einmal
+  durch eine einelementige Liste geschleift. Mit Split zwei Einträge mit
+  eigener geklonter `THREE.PerspectiveCamera` (`camera.clone()` übernimmt
+  FOV/Near/Far). Aufteilung passend zur Spielform: **oben/unten** bei Block
+  Bomb/Laser Lines (breite Arenen), **links/rechts** bei Block Rush (hohe,
+  schmale Podeste) — je Kern per CSS-Klasse `split-h`/`split-v` auf dem
+  Bühnen-Element, mit einer dünnen 2px-Trennlinie (`block-bomb.css`,
+  `laser-lines.css`, `block-rush.css`). Rendering über eine neue
+  `_renderViews()`: ohne Split unverändert `render(scene, camera)`, mit
+  Split `setScissorTest(true)` + pro Hälfte `setViewport`/`setScissor` +
+  eigener `render()`-Aufruf. `rect` ist bewusst wie WebGL selbst „von unten"
+  gezählt (y=0=unten) — dadurch ist beim Viewport/Scissor selbst KEIN Flip
+  nötig; der Flip passiert einzig in der neuen `_viewPixelRect()`, die ein
+  `rect` in ein Bildschirm-Pixel-Rechteck „von oben" für DOM-Zwecke
+  (Namens-Labels) umrechnet. `_resize()` setzt das Seitenverhältnis jeder
+  Kamera anhand ihres eigenen Rechteck-Anteils. Kamera-Führung je Hälfte: In
+  Block Bomb/Laser Lines zieht jede Hälfte gedämpft der eigenen Figur nach
+  (auf `SPLIT_FOLLOW_CLAMP` Einheiten um die Mitte geklemmt, `_updateSplit
+  Cameras()`), in Block Rush dollyt jede Hälfte auf die EIGENE Turmhöhe und
+  schaut aufs eigene Podest statt (wie im Einzelbild-Fall) auf den global
+  höchsten Turm/den Ursprung. Die Intro-Kamerafahrt fährt beide Hälften über
+  EINEN gemeinsamen `introT` synchron ein und landet zunächst gemeinsam auf
+  `camBase`, bevor die Kameras im ersten Nach-Intro-Frame sanft auf ihre
+  eigene Position auseinanderziehen. Bildschirm-Shake (Block Bomb/Laser
+  Lines) bekommt EINEN gemeinsamen Zufalls-Versatz für beide Hälften statt
+  unabhängigem Wackeln pro Hälfte. HUD bleibt bewusst EINE gemeinsame Leiste
+  (Timer/Chips/Message) über die ganze Bühne; nur die schwebenden
+  Namens-Labels projizieren jetzt pro Spieler mit „seiner" Kamera-Hälfte
+  (Bots/Remote ohne eigene Hälfte immer über `views[0]`). Leistung:
+  `setPixelRatio` wird im Splitscreen auf 1 gedeckelt (zwei Render-Durchgänge
+  pro Frame verdoppeln sonst unnötig die Fill-Rate-Last) und ein `fpsLimit`
+  von 0 (unbegrenzt) wird im Splitscreen intern auf 60 geklemmt.
+  **Bewusst NICHT gemacht:** `renderer.shadowMap.autoUpdate = false` wäre
+  zwar eine weitere Optimierung, würde aber die Schatten aller sich
+  bewegenden Figuren/der Bombe einfrieren (Lichter sind zwar statisch, die
+  Schatten-WERFER nicht) — als sichtbarer Fehler bewusst nicht eingebaut.
+  (`renderer/app.js`, `renderer/block-bomb/main.js`,
+  `renderer/laser-lines/main.js`, `renderer/block-rush/main.js`,
+  `renderer/block-bomb.css`, `renderer/laser-lines.css`,
+  `renderer/block-rush.css`).
+
+**Block Rush**
+- **Block Rush spielbar gemacht.** Kernfehler war: `TowerSim` zeichnet nur
+  bereits eingerastete Blöcke — das FALLENDE Teil hatte gar kein Mesh, der
+  Spieler bewegte etwas Unsichtbares. Neue `PieceView` (`renderer/block-rush/
+  main.js`) hängt vier Würfel-Meshes an den TURM-PIVOT jedes Spielers (dieselbe
+  lokale Koordinatenformel wie `TowerSim.lock()`, dreht sich also automatisch
+  mit dem Kippwinkel mit), Position/Rotation kommen jeden Frame aus
+  `field.piece`, sanft zur Ziel-Spalte/-Reihe interpoliert. Zweite Instanz als
+  halbtransparentes Geisterteil an der Landeposition
+  (`Playfield.previewDropRow()`, neu in `pieces.js` — nutzt exakt dieselbe
+  `dropRow()`-Logik wie `hardDrop()`) plus einer schmalen Spaltenmarkierung auf
+  dem Podest. HUD-Chips zeigen jetzt zusätzlich das nächste Teil (4x4-Mini-
+  Raster aus `field.next`, das es schon gab, aber nirgends angezeigt wurde) und
+  den armierten Zauber + sein Ziel (`SpellSystem.currentAction()`, ebenfalls
+  bereits vorhanden, ebenfalls nie sichtbar). `_renderHud()` baute bisher die
+  komplette Chip-Reihe jeden Frame per `innerHTML` neu — jetzt werden die
+  Chip-DOM-Knoten einmal in `_initHud()` angelegt und pro Frame nur noch die
+  tatsächlich geänderten Werte geschrieben (Höhe/Stabilität/Zauber/Nächstes
+  Teil/Cursor); dadurch kann `_stepReplica()` (Gast) `_renderHud()` jetzt
+  ebenfalls jeden Frame aufrufen statt nur bei einer Alive-Änderung — vorher
+  blieben Höhe/Stabilität-Anzeige beim Gast zwischen Alive-Wechseln stehen.
+  **Bots bauten faktisch in Sekunden fertig:** `think()` lief ungebremst mit
+  jedem gerenderten Frame (bis zu 60 Eingaben/s). Neuer Eingabe-Cooldown
+  (`ACTION_INTERVAL = 0.08s`, an menschlichem ARR orientiert) erlaubt nur noch
+  eine Dreh-/Verschiebe-Eingabe pro Intervall, plus eine zusätzliche Denkpause
+  (halbe `reactionInterval`) zwischen "Ausrichtung passt" und dem eigentlichen
+  Hard-/Soft-Drop. Bots bewerten Platzierungen jetzt außerdem relativ zum
+  TATSÄCHLICHEN Turm-Schwerpunkt (`tower.comX`) statt nur zur eigenen
+  Teil-Mitte — ein bereits schiefer Turm verschiebt die "gute Mitte" Richtung
+  Gegengewicht, vorher bauten Bots immer stur zentriert und balancierten nie
+  zurück (`renderer/block-rush/bots.js`). **Kipp-Physik fairer:** `SUPPORT`
+  (Podest-Kipppunkt-Halbbreite) war mit 1.25 schmaler als das tatsächliche
+  3.0 breite Raster (COLS·CELL) — eine exakt ZENTRIERTE Randspalte lag damit
+  schon rechnerisch AM Kipppunkt. Korrigiert auf `COLS*CELL/2 = 1.5`. Die
+  Feder-Ruhelage (`tiltTarget`) konnte bei hoher Füllung dauerhaft über
+  `LEAN_ANGLE` hängen bleiben (Einsturz ohne Erholungschance) — jetzt bei 90%
+  von `LEAN_ANGLE` gedeckelt, Ausschläge darüber bleiben möglich, die Feder
+  entspannt sich danach aber immer wieder. Lochstrafe entschärft (0.55→0.35),
+  `GRACE` verlängert (1.1s→1.6s), Landeimpuls (`angVel`-Kick) dritte gedämpft
+  (0.9→0.55) (`renderer/block-rush/tower.js`). **Fallgeschwindigkeit**
+  verdoppelt (`BASE_FALL_INTERVAL` 0.80s→0.42s pro Reihe, `pieces.js`) — vorher
+  brauchte ein Teil bis zu ~9.6s vom Spawn bis zum Boden bei nur 90s
+  Rundenzeit, unassistiertes Spielen war praktisch unmöglich. Kurzer
+  Tasten-Hinweis im Intro, aus den echten Bindings des jeweiligen Spielers
+  erzeugt (`Keybinds` ist ein klassisches Script und für dieses ES-Modul nicht
+  erreichbar — eigene, unabhängige Kurz-Beschriftungstabelle wie schon in
+  `game/controllers.js`). Online: Snapshot-Zeilen bekommen vier angehängte
+  Felder (Spalte/Reihe/Teiltyp/Rotation des fallenden Teils); ein Gast simuliert
+  in Block Rush grundsätzlich KEIN eigenes Playfield (auch nicht für den
+  eigenen lokalen Spieler — das ist vorbestehende Architektur, keine Änderung
+  dieser Phase), `PieceView` liest dort deshalb IMMER aus dem zuletzt
+  empfangenen Snapshot statt aus `field.piece`. Kein Reihen-Räumen (bewusste
+  Entscheidung, Last-Man-Standing bleibt Kernregel).
+**Maps**
+- **Gemeinsames Theme-Modul + Kreis-Laser-Map (Spin Arena) endlich fair.**
+  Neu: `renderer/game/theme.js` — `PALETTE` (dieselben Hex-Werte wie die
+  CSS-Tokens in `style.css`, vorher wurden sie pro Datei per Hand nachgebaut
+  und drifteten auseinander, z.B. Laser Lines' Pink `0xff5bd0` vs. `--pink
+  #ff6ec7`), `applyMood(scene, mood)` (Hintergrund + Nebel) und
+  `addLightRig(target, mood)` (Ambient + schattenwerfendes Schlüssellicht +
+  Akzent-Rimlicht) — nach dem Vorbild von Block Rushs bereits bestehendem
+  `addLights(group, accent)`. Jede der 6 Block-Bomb-/Laser-Lines-Maps liefert
+  jetzt ein `mood`-Objekt statt fest im Spielkern verdrahteter Werte; die
+  Kerne rufen `applyMood`/`addLightRig` in `_initMap()` auf (NACH `buildMap()`,
+  `castShadow` wird dabei live von `reducedFx()` überschrieben, nicht aus der
+  Map). Block Rush bleibt bei seinem eigenen `addLights(group, accent)` —
+  kein erzwungener Umbau, war nicht kaputt.
+  **Spin Arena war nachweislich unschaffbar** (s. Kontext oben) — behoben in
+  `renderer/laser-lines/lasers.js` + `laser-lines/maps.js`:
+  - **Sicherer Nabenbereich** (`SPIN_HUB_RADIUS = 2.4`): Speichen beginnen
+    jetzt erst dort (`Laser.endpoints()` für `shape:'spoke'` startet bei
+    `innerRadius`, nicht bei `(0,0)`) — der Abstand vom Zentrum zur nächsten
+    Speiche (2.4) ist größer als die reale Trefferzone (`halfWidth+
+    playerRadius ≈ 1.1`), das Zentrum ist damit beweisbar nie tödlich.
+    Visuell markiert durch eine cyanfarbene Boden-Scheibe + Ring exakt in
+    diesem Radius (löst den vorherigen rein dekorativen, viel kleineren
+    Hub-Zylinder ab, der nichts über die echte Sicherheitszone aussagte).
+  - **Garantierte Mindest-Sektorbreite** (`SPIN_MIN_SECTOR = 0.5` rad,
+    ≈28.6°): Die Speichen rotierten vorher unabhängig gegeneinander
+    (`angularSpeed`-Vorzeichen wechselte pro Index) und konnten sich beliebig
+    schließen. Neu: `LaserDirector._spokeAngle(i, want, elapsed)` setzt den
+    Winkel jeder Speiche ANALYTISCH (keine freie Integration mehr,
+    `angularSpeed` bleibt bei Spin-Speichen 0) als starre Formation
+    (`(i/want)·2π + angularSpeed(level)·elapsed`) plus einer Schwingung mit
+    wechselndem Vorzeichen, deren Amplitude auf `(2π/want − minSector)/2`
+    gedeckelt ist — per Dreiecksungleichung ist damit für JEDES Nachbarpaar zu
+    JEDEM Zeitpunkt bewiesen `Sektor ≥ minSector` (Herleitung als Kommentar
+    direkt bei der Funktion). Das erhält den „Speichen schwingen
+    gegeneinander"-Charakter, ohne dass sich ein Sektor je auf 0 schließen kann.
+  - **`angularSpeed(level)` an die Spielergeschwindigkeit gekoppelt:**
+    `Math.min(0.62, 0.30 + level·0.055)` statt `0.55 + level·0.18`. Bei
+    `SPEED = 6.4` (main.js) ist ein Radius bis `6.4/0.62 ≈ 10.3` mit
+    tangentialer Bewegung sicher einholbar — vorher lag dieser Radius bei
+    Level 7 (Level-Formel `1+⌊elapsed/9⌋`, bei 60s Rundenzeit maximal Level 7)
+    bei nur `6.4/1.81 ≈ 3.5`. Der Deckel greift ab Level 6.
+  - **Warnphase auch für Speichen:** Alle Laser (auch persistente Spin-
+    Speichen) starten jetzt im Zustand `'warning'` statt Speichen sofort
+    scharf zu erscheinen — löst den Bruch mit dem eigenen Fairness-Versprechen
+    „nie ein Treffer ohne sichtbare Warnung" (`lasers.js:11-12`) bei neu
+    entstehenden Speichen pro Level-Up auf. Die Speiche rotiert während der
+    Warnphase weiter, die Warnlinie liegt also exakt dort, wo sie gleich
+    scharf wird.
+  - **Trefferzone = sichtbare Breite:** Der aktive Strahl (Lane/Speiche) war
+    bisher schmaler gezeichnet (`halfWidth·1.6`) als sogar die eigene
+    Warnlinie (`halfWidth·2`) — und deutlich schmaler als die reale
+    Trefferzone (`halfWidth+Spielerradius`, beidseitig ≈2.2 Einheiten breit).
+    `Laser` bekommt jetzt einen `playerRadius`-Parameter (durchgereicht von
+    `LaserDirector`, der ihn vom Spielkern als `PLAYER_R` erhält) und zeichnet
+    den aktiven Strahl exakt `(halfWidth+playerRadius)·2` breit — was man
+    sieht, ist jetzt exakt so breit wie das, was trifft.
+  - **Tiefe Speichen bleiben überspringbar** (`jumpable: true`, unverändert
+    seit dem Sprung-Feature) — jetzt zusätzlich mit echtem Bodenbezug
+    kombiniert (Nabe + Mindestsektor + Deckel-Tempo), Springen ist damit ein
+    zusätzliches Werkzeug, nicht die einzige Rettung.
+  Lane-/Zonen-Laser (Factory Grid, Sky Warning) bleiben bewusst NICHT
+  überspringbar (unveränderte Entscheidung aus dem Sprung-Feature).
+- **Neue Map-Elemente, `reducedFx`-Lücke geschlossen, Kulissenbewegung.**
+  `block-bomb/maps.js` und `laser-lines/maps.js` nahmen `reducedFx` bisher
+  entgegen, ohne es zu nutzen (`buildArena()`/`buildSky()`/`buildFactory()`
+  bzw. `buildSpin()`/`buildGrid()`/`buildSky()` hatten gar keinen Parameter
+  dafür) — jetzt akzeptieren alle sechs Builder-Funktionen `reducedFx` und
+  schalten damit neue Bewegungs-/Pulseffekte ab (keine neuen
+  schattenwerfenden Objekte kommen ohnehin hinzu).
+  - **Sprung-Lücken** (nutzen die Sprung-Mechanik, Herleitung der Gap-Größe
+    aus `SPEED·Flugzeit ≈ 6.4·0.45 ≈ 2.9` Einheiten): Block Bomb „sky" und
+    Laser Lines „sky" (Sky Warning) bekommen je eine zusätzliche, nur per
+    Sprung erreichbare Bonus-Plattform (gelb/cyan gerahmt statt
+    violett/pink) — `map.resolve(x,z,r,airborne)` bekommt ein neues
+    `airborne`-Argument (aus `p.jumpY > JUMP_AIRBORNE_Y` im jeweiligen
+    Spielkern) und unterdrückt `fell` nur, wenn die Figur gerade in der Luft
+    UND innerhalb eines definierten `jumpLanes`-Korridors ist — am Boden oder
+    außerhalb des Korridors bleibt jede Lücke tödlich wie zuvor.
+  - Block Bomb „factory": `conveyor(x,z,airborne)` setzt den Bandschub aus,
+    solange die Figur in der Luft ist — man kann über ein Förderband
+    SPRINGEN, statt sich seitlich wegschieben zu lassen. Zwei pulsierende
+    Bodenmarkierungen je Band zeigen, wo sich das lohnt.
+  - Laser Lines „grid" (Factory Grid) bekommt stattdessen bewegliche Deckung
+    (eine Kiste gleitet sinusförmig hin und her) statt eines Sprung-Elements
+    — Lane-Laser sind dort bewusst nicht überspringbar (s.o.), ein „Sprung-
+    Podest" hätte dort mechanisch nichts bewirkt; bewegliche Deckung nutzt
+    stattdessen echt aus, dass Taktik gefragt ist.
+  - **Kulissenbewegung**, vorher bei allen drei Laser-Lines-Maps exakt null
+    (`update(){}`): Spin Arena pulsiert der Naben-Ring, Factory Grid gleitet
+    die neue Deckungs-Kiste, Sky Warning schwebt die neue Bonus-Plattform
+    sanft auf und ab.
+  - Block Rush (`block-rush/maps.js`): keine Sprung-Inhalte (keine
+    Spielfigur-Bewegung dort) — stattdessen lesbarere Podest-Rahmung:
+    Spaltenlinien exakt auf `COLS·CELL=3.0` (dem echten Spielraster, das
+    Podest selbst ist 3.4 breit), vier Eckstäbe bis `ROWS·CELL=8.0` Höhe mit
+    Tick-Markierungen alle 4 Reihen als sichtbare Höhenreferenz für den Turm.
+  - Version auf 0.23.0 (package.json, preload.js).
 
 ### v0.22.2 — 2026-09-17
 - **Beenden-Dialog überlief bei angemeldeten Nutzern.** Mit allen drei

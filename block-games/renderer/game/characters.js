@@ -136,8 +136,12 @@ export class BlockCharacter {
     }
   }
 
-  _baseY() { return this._groundY || 0; }
-  setGroundY(y) { this._groundY = y; this.group.position.y = y; }
+  // Sprung (s. Sprung-Mechanik in block-bomb/main.js + laser-lines/main.js):
+  // reine Höhenverschiebung über dem Boden, komponiert additiv mit den
+  // übrigen Y-Bewegungen unten (Trage-Hibbeln, Sieg-Hüpfer, Ausscheiden-Absinken).
+  _baseY() { return (this._groundY || 0) + (this._jumpOffset || 0); }
+  setGroundY(y) { this._groundY = y; this.group.position.y = this._baseY(); }
+  setJumpOffset(dy) { this._jumpOffset = dy; }
 
   // Roter Träger-Glow an/aus (emissive hochfahren) — Block Bomb.
   setHolderGlow(on) {

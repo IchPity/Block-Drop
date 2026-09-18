@@ -697,145 +697,6 @@ body::before {
   transform: translateX(6px) scale(1.08);
 }
 
-.section-title {
-  width: 100%;
-  font-size: 1.15em;
-  font-weight: 800;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  margin-bottom: 16px;
-  animation: riseIn 0.45s ease-out 0.15s both;
-}
-
-/* Minigame-Karten: jede mit eigener Akzentkante (Farbrotation),
-   gestaffelte Einblendung über --card-i (wird per JS gesetzt) */
-.minigame-grid {
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
-}
-
-.minigame-card {
-  --accent: var(--blue);
-  position: relative;
-  overflow: hidden;
-  /* Karten sind <button> (Tastatur-Fokus) — Button-Defaults neutralisieren */
-  font: inherit;
-  color: inherit;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 30%),
-    linear-gradient(160deg, var(--bg-card-2), var(--bg-card));
-  border-radius: var(--radius);
-  padding: 26px 18px 20px;
-  text-align: center;
-  border: 1px solid var(--line);
-  border-bottom: 4px solid var(--bg-deep); /* 3D-Sockel */
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
-  transition: transform 0.16s ease, border-color 0.16s, box-shadow 0.16s;
-  animation: riseIn 0.45s ease-out calc(0.2s + var(--card-i, 0) * 0.06s) both;
-}
-
-.minigame-card:nth-child(5n + 1) { --accent: var(--red); }
-.minigame-card:nth-child(5n + 2) { --accent: var(--yellow); }
-.minigame-card:nth-child(5n + 3) { --accent: var(--green); }
-.minigame-card:nth-child(5n + 4) { --accent: var(--blue); }
-.minigame-card:nth-child(5n + 5) { --accent: var(--purple); }
-
-/* Akzent-Leiste oben mit weichem Schein */
-.minigame-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 5px;
-  background: var(--accent);
-  box-shadow: 0 0 16px var(--accent);
-}
-
-.minigame-card { cursor: pointer; }
-
-/* Karte kommt beim Hover nach vorne (Lift + leichter Tilt + Akzent-Glow).
-   Gilt für ALLE Karten — auch noch nicht spielbare lassen sich auswählen
-   und animieren (gestartet wird dann aber nichts, s. app.js). */
-.minigame-card:hover,
-.minigame-card:focus-visible {
-  transform: translateY(-7px) scale(1.03) rotate(-0.6deg);
-  border-color: var(--accent);
-  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.45), 0 0 22px -4px var(--accent);
-}
-
-/* Sammel-Kachel für alle „Bald"-Spiele: deutlich gedämpfter als die
-   spielbaren Karten (gestrichelter Rand statt Akzentkante, kein Glow) —
-   sie ist eine Vorschau, keine gleichwertige sechste Wahlmöglichkeit. */
-.minigame-card.minigame-teaser {
-  opacity: 0.6;
-  border-style: dashed;
-}
-.minigame-card.minigame-teaser::before { display: none; }
-.minigame-card.minigame-teaser:hover,
-.minigame-card.minigame-teaser:focus-visible { opacity: 0.85; }
-.minigame-card.minigame-teaser .minigame-icon {
-  background: var(--bg-deep);
-  box-shadow: none;
-  font-size: 1.3em;
-  letter-spacing: 3px;
-}
-
-/* Icon sitzt in einer akzentfarbenen, leicht glänzenden Kachel */
-.minigame-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  margin-bottom: 12px;
-  font-size: 2em;
-  border-radius: 16px;
-  background:
-    var(--gloss),
-    color-mix(in srgb, var(--accent) 26%, var(--bg-deep));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
-  transition: transform 0.16s;
-}
-
-.minigame-card:hover .minigame-icon,
-.minigame-card:focus-visible .minigame-icon {
-  animation: iconPulse 0.6s ease-in-out;
-  transform: scale(1.1) rotate(-4deg);
-}
-
-@keyframes iconPulse {
-  0% { transform: scale(0.95) rotate(-4deg); }
-  50% { transform: scale(1.15) rotate(-4deg); }
-  100% { transform: scale(1.1) rotate(-4deg); }
-}
-
-.minigame-card h3 { font-size: 1.05em; margin-bottom: 6px; }
-
-.minigame-card p { font-size: 0.8em; color: var(--text-dim); min-height: 2.4em; }
-
-.minigame-card .badge {
-  display: inline-block;
-  margin-top: 10px;
-  font-size: 0.7em;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: var(--bg-deep);
-  color: var(--text-dim);
-}
-
-.minigame-card.available .badge {
-  background: linear-gradient(180deg, var(--green), #2bb86a);
-  color: #06321b;
-  box-shadow: 0 0 14px rgba(61, 220, 132, 0.45);
-}
-
 .menu-footer {
   display: flex;
   align-items: center;
@@ -1180,6 +1041,54 @@ body::before {
   transform: scale(1.25);
 }
 
+/* Fenstergröße im Vollbild: bleibt fokussierbar (Tastatur-Pflicht), wird nur
+   optisch gedämpft statt disabled zu sein. */
+.setting-row.is-inactive { opacity: 0.55; }
+
+/* ── Steuerung (Tastenbelegung) ────────────────────────────────────────── */
+.controls-player-switch { display: flex; gap: 8px; flex-shrink: 0; }
+
+.controls-player-btn {
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+}
+
+.controls-player-btn.active {
+  color: var(--yellow);
+  border-color: var(--yellow);
+  background: var(--bg-card-2);
+}
+
+.controls-group-title {
+  font-size: 0.78em;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 14px 0 2px;
+}
+.controls-group-title:first-child { margin-top: 4px; }
+
+.key-btn {
+  min-width: 96px;
+  background: var(--bg-deep);
+  border: 2px solid var(--line);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.85em;
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.14s, transform 0.14s;
+}
+.key-btn:hover { border-color: var(--blue); transform: translateY(-1px); }
+
+.controls-reset-row { justify-content: center; }
+
+.key-capture-card { width: min(360px, 90vw); }
+.key-capture-hint { margin-top: 10px; font-size: 0.8em; }
+
 .settings-note {
   margin-top: 12px;
   text-align: center;
@@ -1393,10 +1302,9 @@ body.reduced-fx .party-btn-go { transition: none; }
 .online-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
 .online-error { color: var(--red); font-weight: 600; font-size: 0.85em; margin-top: 8px; }
 
-/* Als Online-Gast ist die Lobby nur ein Spiegel des Host-Stands — Stepper,
-   Zurücksetzen, Online-Menü und „Spiel starten" ergeben keinen Sinn, weil
-   nur der Host sie bedienen kann (siehe renderGuestWaitingRoom() in app.js). */
-#screen-lobby.online-guest .lobby-bot-stepper,
+/* Als Online-Gast ist die Lobby nur ein Spiegel des Host-Stands — Online-Menü,
+   Zurücksetzen und „Spiel starten" ergeben keinen Sinn, weil nur der Host sie
+   bedienen kann (siehe renderGuestWaitingRoom() in app.js). */
 #screen-lobby.online-guest #btnLobbyOnline,
 #screen-lobby.online-guest #btnLobbyReset,
 #screen-lobby.online-guest #btnLobbyStart {
@@ -1421,31 +1329,6 @@ body.reduced-fx .party-btn-go { transition: none; }
   align-items: center;
   margin-top: 26px;
 }
-
-/* Bot-Anzahl-Stepper im Lobby-Footer (ersetzt die frühere Pro-Bot-Schwierigkeit) */
-.lobby-bot-stepper {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.lobby-stepper-btn {
-  padding: 9px 15px;
-  font-weight: 700;
-  line-height: 1;
-}
-.lobby-stepper-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-  box-shadow: none;
-  border-color: var(--line);
-  color: var(--text);
-}
-.lobby-stepper-label {
-  font-size: 0.95em;
-  color: var(--text-dim);
-  white-space: nowrap;
-}
-.lobby-stepper-label strong { color: var(--yellow); }
 
 /* Kompakter „Spiel starten"-Button (nutzt den Party-Button-Look) */
 .party-btn.party-btn-sm {
@@ -1600,10 +1483,6 @@ body.reduced-fx .party-btn-go { transition: none; }
   .party-btn-icon { font-size: 2.3em; }
   .party-btn-text strong { font-size: 1.55em; }
   .party-btn-go { width: 40px; height: 40px; }
-  .section-title { margin-bottom: 10px; }
-  .minigame-card { padding: 16px 14px 14px; }
-  .minigame-icon { width: 50px; height: 50px; font-size: 1.6em; margin-bottom: 8px; }
-  .minigame-card p { min-height: 0; }
   .menu-footer { padding: 6px 8px 10px; }
   .credits-wrap { padding: 16px 0 12px; }
   .credits-title .game-logo.small { font-size: 1.9em; }
@@ -1640,9 +1519,6 @@ body.reduced-fx .party-btn-go { transition: none; }
   .game-logo.menu-logo { font-size: 1.8em; }
   .brand-sub { display: none; }
   .party-btn { margin: 10px 0 18px; padding: 14px 24px; }
-  .minigame-grid { gap: 10px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
-  .minigame-icon { width: 44px; height: 44px; font-size: 1.4em; margin-bottom: 6px; }
-  .minigame-card p { display: none; }
   .credits-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
   .credit-card { padding: 12px 16px; }
   .settings-note { display: none; }
@@ -1670,7 +1546,7 @@ select:focus-visible,
   box-shadow: 0 0 0 4px rgba(255, 201, 60, 0.22), 0 0 24px -2px var(--yellow);
 }
 
-button:focus-visible:not(.minigame-card):not(.party-btn) {
+button:focus-visible:not(.party-btn) {
   transform: scale(1.06);
   transition: transform 0.12s ease-out;
 }
@@ -2034,6 +1910,39 @@ button:focus-visible:not(.minigame-card):not(.party-btn) {
   background: var(--c, #fff); border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
+/* ── Spiel-Voting (nur vor dem ersten Spiel der Serie) ── */
+.mg-game-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 680px) { .mg-game-grid { grid-template-columns: 1fr; } }
+
+.mg-game-card {
+  position: relative;
+  background: var(--bg-card, #222241);
+  border: 2px solid var(--line, #3a3a66);
+  border-bottom: 4px solid var(--bg-deep, #0d0d1e);
+  border-radius: 16px;
+  padding: 20px 14px;
+  cursor: pointer; text-align: center;
+  color: var(--text, #f2f2fa);
+  transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+.mg-game-card:hover, .mg-game-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--yellow, #ffc93c);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  outline: none;
+}
+.mg-game-card.selected {
+  border-color: var(--green, #3ddc84);
+  box-shadow: 0 0 0 2px var(--green, #3ddc84) inset;
+}
+.mg-game-icon { font-size: 2.6em; margin-bottom: 8px; }
+.mg-game-card h3 { font-size: 1.1em; margin-bottom: 4px; }
+.mg-game-card p { font-size: 0.8em; color: var(--text-dim, #9a9abd); }
+
+/* ── Pause ── */
+.mg-pause-hint { margin-bottom: 4px; }
+.mg-pause-hint:empty { display: none; }
+
 /* ── Countdown 3·2·1·GO ── */
 .mg-countdown { background: rgba(13, 13, 30, 0.55); }
 .mg-count-num {
@@ -2050,8 +1959,6 @@ button:focus-visible:not(.minigame-card):not(.party-btn) {
 }
 .mg-count-num.go { color: var(--green, #3ddc84); text-shadow: 6px 6px 0 var(--bg-deep), 0 0 60px rgba(61, 220, 132, 0.8); }
 
-/* ── Ergebnis (Einzel-/Tutorial-Runde) ── */
-.mg-result-crown { font-size: 3.4em; margin-bottom: 6px; animation: mgCount 0.6s ease-out; }
 
 /* ── Ranking (Party-Serie) ── */
 .mg-ranking-card { width: min(560px, 94vw) !important; }

@@ -22,6 +22,7 @@
 'use strict';
 
 import * as THREE from '../vendor/three.module.js';
+import { COLS, ROWS, CELL } from './pieces.js';
 
 export const BLOCK_RUSH_MAP_META = [
   { id: 'halle', name: 'Ruhige Halle',     desc: 'Klassische Bühne, keine Umgebungsgefahr — gute Einsteiger-Map.' },
@@ -77,6 +78,39 @@ function buildBase(reducedFx, accent) {
     rim.rotation.x = Math.PI / 2;
     rim.position.y = PODIUM_H + 0.02;
     pg.add(rim);
+
+    // Spaltenlinien auf dem Podest — markieren die COLS=6 echten Spielspalten
+    // (COLS*CELL=3.0 breit, das Podest selbst ist 3.4 breit) direkt unter dem
+    // fallenden Teil, damit klar ist, in welche Spalte man gerade droppt.
+    const colSpan = COLS * CELL; // 3.0 — schmaler als das Podest (3.4), passt darauf
+    const colLineMat = new THREE.MeshStandardMaterial({ color: accent, emissive: accent, emissiveIntensity: 0.5 });
+    for (let c = 0; c <= COLS; c++) {
+      const lx = -colSpan / 2 + c * CELL;
+      const line = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.015, colSpan), colLineMat);
+      line.position.set(lx, PODIUM_H + 0.015, 0);
+      pg.add(line);
+    }
+
+    // Höhenmarken: vier dünne Eckstäbe bis ROWS*CELL Höhe, mit Ticks alle
+    // 4 Reihen — gibt eine sichtbare Referenz, wie hoch der Turm relativ zum
+    // Rahmen werden kann (vorher: keinerlei Höhenbezug am Podest selbst).
+    const frameH = ROWS * CELL;
+    const postMat = new THREE.MeshStandardMaterial({ color: accent, emissive: accent, emissiveIntensity: 0.22, transparent: true, opacity: 0.55 });
+    const tickMat = new THREE.MeshStandardMaterial({ color: accent, emissive: accent, emissiveIntensity: 0.4 });
+    for (const cx of [-colSpan / 2, colSpan / 2]) {
+      for (const cz of [-PODIUM_D / 2, PODIUM_D / 2]) {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, frameH, 6), postMat);
+        post.position.set(cx, PODIUM_H + frameH / 2, cz);
+        pg.add(post);
+      }
+    }
+    for (let row = 4; row < ROWS; row += 4) {
+      const y = PODIUM_H + row * CELL;
+      const tick = new THREE.Mesh(new THREE.BoxGeometry(colSpan + 0.12, 0.02, 0.02), tickMat);
+      tick.position.set(0, y, -PODIUM_D / 2);
+      pg.add(tick);
+    }
+
     group.add(pg);
     podiumGroups.push(pg);
   }

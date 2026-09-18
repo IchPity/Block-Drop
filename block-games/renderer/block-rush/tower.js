@@ -15,11 +15,28 @@
 import * as THREE from '../vendor/three.module.js';
 import { COLS, ROWS, CELL, PIECE_COLORS } from './pieces.js';
 
-const SUPPORT = 1.25;        // Podest-Halbbreite (schmaler als das 3.0 breite Raster → Überhang ist möglich)
+// Podest-Halbbreite: war 1.25 (schmaler als das eigentliche Raster!), dadurch
+// registrierte schon eine ZENTRIERTE Randspalte (Zellmitte bei ±(COLS-1)/2*CELL
+// = ±1.25) als exakt AM Kipppunkt. Auf die reale Feldbreite korrigiert:
+// COLS*CELL/2 = 6*0.5/2 = 1.5 — das Podest (3.4 breit, Halbbreite 1.7) trägt
+// das volle 3.0 breite Raster (Halbbreite 1.5) mit Rand. Randspalten-COM
+// (±1.25) ergibt damit balance=1.25/1.5≈0.83 statt 1.0 — sichtbar überhängend,
+// aber nicht mehr am Kipppunkt selbst.
+const SUPPORT = 1.5;
 const MAX_TILT = 0.28;       // rad, Deckel für das Kipp-Ziel bei extremer Schieflage
 const LEAN_ANGLE = 0.20;     // rad, ab hier beginnt die sichtbare Wackel-Warnung
+// tiltTarget (die Feder-Ruhelage) darf LEAN_ANGLE selbst nie erreichen — sonst
+// pendelt sich der Turm bei hoher Füllung (hNorm→1) dauerhaft im "lean"-
+// Zustand ein und der Einsturz ist nur noch eine Frage der Zeit, ganz ohne
+// Erholungsmöglichkeit. Deckel bei 90% von LEAN_ANGLE lässt Ausschläge über
+// LEAN_ANGLE weiterhin zu (Warnung/GRACE greifen normal), aber die Feder
+// entspannt sich danach IMMER wieder unter die Warnschwelle.
+const TILT_TARGET_CAP = LEAN_ANGLE * 0.9;
 const COLLAPSE_ANGLE = 0.44; // rad, sofortiger Einsturz
-const GRACE = 1.1;           // Sekunden Gnadenfrist im Wackel-Zustand
+// Gnadenfrist im Wackel-Zustand: 1.1 → 1.6s (rund 45% länger), damit ein
+// kurzer Ausschlag noch Zeit zum Gegensteuern lässt, statt fast automatisch
+// in den Einsturz zu laufen.
+const GRACE = 1.6;
 const CAP = COLS * ROWS;
 
 function bumpiness(heights) {
@@ -78,8 +95,11 @@ export class TowerSim {
 
     this._recompute(pf);
     // Landeimpuls: ein Teil, das seitlich außerhalb des Schwerpunkts landet,
-    // stößt den Turm spürbar in diese Richtung an.
-    this.angVel += (this.comX / SUPPORT) * 0.9;
+    // stößt den Turm spürbar in diese Richtung an. Koeffizient 0.9 → 0.55
+    // (zusammen mit dem größeren SUPPORT oben etwa halbiert der tatsächliche
+    // Ausschlag) — ein einzelner Randplatz soll den Turm anstoßen, ihn aber
+    // nicht mehr im Alleingang ins Trudeln bringen.
+    this.angVel += (this.comX / SUPPORT) * 0.55;
   }
 
   _recompute(pf) {
@@ -99,10 +119,14 @@ export class TowerSim {
     this._hNorm = hNorm;
     const balance = this.comX / SUPPORT;
     const bump = bumpiness(pf.heights) / (COLS * ROWS);
-    const stress = Math.abs(balance) * (1 + 0.9 * hNorm) + 0.55 * (pf.holes / 24) + 0.3 * bump;
+    // Lochstrafe entschärft (0.55 → 0.35 je Anteil) — Löcher sollten die
+    // Statik-Anzeige belasten, aber nicht allein schon knapp an den
+    // "wackelig"-Schwellenwert (stability < 0.18) heranreichen.
+    const stress = Math.abs(balance) * (1 + 0.9 * hNorm) + 0.35 * (pf.holes / 24) + 0.3 * bump;
     this.stability = Math.max(0, Math.min(1, 1 - stress));
     const clamped = Math.max(-1.4, Math.min(1.4, balance));
-    this.tiltTarget = clamped * MAX_TILT * (1 + 0.6 * hNorm);
+    const target = clamped * MAX_TILT * (1 + 0.6 * hNorm);
+    this.tiltTarget = Math.max(-TILT_TARGET_CAP, Math.min(TILT_TARGET_CAP, target));
   }
 
   // Erdbeben-Spell: kurzzeitig geringere Dämpfung + Rüttel-Drehmoment.
