@@ -198,8 +198,21 @@
         <p class="lobby-sub">Wer spielt mit?</p>
       </header>
 
+      <!-- Serien-Vorschau: die verfügbaren Minigames als Chips (app.js →
+           renderLobbyLineup, einmalig aus der MINIGAMES-Registry gebaut —
+           die tatsächliche Reihenfolge steht erst nach dem Spiel-Voting fest). -->
+      <div class="lobby-lineup">
+        <span class="lobby-lineup-label">Diese Serie wartet</span>
+        <div class="lobby-lineup-chips" id="lobbyLineupChips"></div>
+      </div>
+
       <!-- 4 Playercards werden aus dem lobbyState erzeugt (app.js). -->
       <div class="lobby-cards" id="lobbyCards"></div>
+
+      <!-- Kurze Zusammenfassung (Menschen/Bots/freie Plätze) — hält fest,
+           warum ggf. Bots automatisch aufgefüllt wurden (mind. 3 Spieler
+           insgesamt). Wird bei jedem renderLobby() neu befüllt. -->
+      <p class="lobby-summary" id="lobbySummary"></p>
 
       <footer class="lobby-footer">
         <button class="btn btn-pill" id="btnLobbyBack" data-nav="lobby_back">← Zurück</button>

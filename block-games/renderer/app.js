@@ -1319,6 +1319,23 @@ function miniBtn(text, onClick, nav) {
   return b;
 }
 
+// Kurze Zeile unter den Playercards: hält fest, wer gerade mitspielt und
+// warum ggf. Bots automatisch aufgefüllt wurden (mind. 3 Spieler insgesamt
+// — siehe minBotCount()). Rein informativ, keine eigene Logik.
+function renderLobbySummary() {
+  const el = document.getElementById('lobbySummary');
+  if (!el) return;
+  const humans = humanCount();
+  const bots = botCount();
+  const free = lobbyState.slots.filter(s => s.type === 'empty').length;
+  const parts = [
+    `👤 ${humans} ${humans === 1 ? 'Mensch' : 'Menschen'}`,
+    bots ? `🤖 ${bots} ${bots === 1 ? 'Bot' : 'Bots'}` : null,
+    free ? `${free} ${free === 1 ? 'Platz frei' : 'Plätze frei'}` : null,
+  ].filter(Boolean);
+  el.textContent = parts.join(' · ') + ' — mind. 3 Spieler insgesamt';
+}
+
 // Baut die vier Playercards aus dem lobbyState neu auf. Namen kommen per
 // textContent in die Karte (Freund-Usernamen sind nicht vertrauenswürdig).
 function renderLobby() {
@@ -1360,6 +1377,21 @@ function renderLobby() {
     st.textContent = slot.peerId
       ? 'Online'
       : { self: 'Du', local: `2. Spieler · ${p2Layout}`, friend: 'Freund', bot: 'Bot', empty: 'Leer' }[slot.type];
+
+    // Kurze Zeile je Kartentyp — füllt den sonst leeren Raum zwischen Status
+    // und Aktions-Knöpfen mit tatsächlich nützlicher Info statt Leerfläche.
+    const note = document.createElement('span');
+    note.className = 'lobby-card-note';
+    if (slot.type === 'bot') {
+      note.innerHTML = '🎯 Schwierigkeit: zufällig<br>🎨 Farbe: zufällig';
+    } else if (slot.type === 'self') {
+      const p1Layout = Keybinds.basePreset('p1') === 'arrows' ? 'Pfeiltasten' : 'WASD';
+      note.textContent = `🎮 ${p1Layout}`;
+    } else if (slot.type === 'friend' && !slot.peerId) {
+      note.textContent = '⏳ Eingeladen';
+    } else if (slot.type === 'empty') {
+      note.textContent = '2. Spieler, Bot oder Freund';
+    }
 
     // navId-Präfix der Karte: lobby_p1 … lobby_p4 (feste Tastatur-Navigation).
     const p = `lobby_p${slot.id}`;
@@ -1410,7 +1442,7 @@ function renderLobby() {
       }
     }
 
-    card.append(no, av, nm, st, actions);
+    card.append(no, av, nm, st, note, actions);
 
     // Krone des letzten Gesamtsiegers der Serie (verschwindet bei Reset bzw.
     // wenn der Slot frei wird).
@@ -1428,6 +1460,7 @@ function renderLobby() {
   const crownSlot = lobbyState.slots.find(s => s.id === lobbyCrownSlotId);
   if (lobbyCrownSlotId != null && (!crownSlot || crownSlot.type === 'empty')) lobbyCrownSlotId = null;
 
+  renderLobbySummary();
   buildLobbyNav(); // Navigations-Tabelle passend zu den aktuellen Karten neu bauen
   broadcastLobbyState(); // No-op, solange nicht gehostet wird
 }
@@ -1756,7 +1789,21 @@ function resolveColorConflicts(changedIdx, colorId) {
   });
 }
 
+// Serien-Vorschau oberhalb der Playercards: einmalig aus der MINIGAMES-
+// Registry gebaut (ändert sich nie zur Laufzeit, anders als renderLobby()).
+function renderLobbyLineup() {
+  const wrap = document.getElementById('lobbyLineupChips');
+  wrap.innerHTML = '';
+  MINIGAMES.filter(g => g.available).forEach(g => {
+    const chip = document.createElement('span');
+    chip.className = 'lobby-lineup-chip';
+    chip.innerHTML = `<span class="lobby-lineup-icon" aria-hidden="true">${g.icon}</span>${g.name}`;
+    wrap.appendChild(chip);
+  });
+}
+
 function setupLobby() {
+  renderLobbyLineup();
   document.getElementById('btnLobbyBack').addEventListener('click', () => {
     // Als Online-Gast trennt „← Zurück" (bzw. „✕ Verbindung trennen") auch
     // die Session — sonst bliebe man unsichtbar im Presence-Channel des Hosts.
@@ -2004,6 +2051,8 @@ function renderGuestWaitingRoom() {
   hint.className = 'lobby-online-hint';
   hint.textContent = 'Warte auf den Host …';
   wrap.appendChild(hint);
+  const summary = document.getElementById('lobbySummary');
+  if (summary) summary.textContent = '';
 }
 
 // ── Netzwerk-Match-Loop (Host: Snapshots senden, Eingaben empfangen;

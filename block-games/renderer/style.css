@@ -1140,6 +1140,45 @@ body.reduced-fx .party-btn-go { transition: none; }
   letter-spacing: 1px;
 }
 
+/* Serien-Vorschau (die 3 Minigames als Chips) — sitzt zwischen Titel und
+   Playercards, damit der Screen nicht direkt mit den Karten "kalt" startet. */
+.lobby-lineup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  animation: riseIn 0.4s ease-out 0.05s both;
+}
+
+.lobby-lineup-label {
+  font-size: 0.76em;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.lobby-lineup-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lobby-lineup-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82em;
+  font-weight: 700;
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+}
+
+.lobby-lineup-icon { font-size: 1.15em; }
+
 .lobby-cards {
   width: 100%;
   display: grid;
@@ -1219,6 +1258,17 @@ body.reduced-fx .party-btn-go { transition: none; }
   font-family: 'Segoe UI', sans-serif;
 }
 
+/* Ein freier Platz ist kein "Spieler mit fehlenden Daten", sondern eine
+   Einladung — eigener, dichterer Aufbau statt derselben gestreckten
+   Kartenstruktur mit viel Luft dazwischen. */
+.lobby-card.is-empty {
+  justify-content: center;
+  border-style: dashed;
+}
+.lobby-card.is-empty .lobby-card-actions { margin-top: 6px; }
+/* "Frei" (Name) sagt schon, was "LEER" (Status) wiederholt hätte. */
+.lobby-card.is-empty .lobby-status { display: none; }
+
 .lobby-name {
   font-weight: 800;
   font-size: 1.05em;
@@ -1243,13 +1293,26 @@ body.reduced-fx .party-btn-go { transition: none; }
   color: #3d2c02;
 }
 
-/* Aktions-Hints/Buttons unten in der Karte */
+/* Kurzinfo je Kartentyp (Bot-Schwierigkeit, eigenes Tastenlayout, freier
+   Platz …) — füllt den Raum zwischen Status und Aktions-Knöpfen, damit
+   Karten mit wenig Inhalt (Bot, Frei) nicht wie ein Loch in der Reihe wirken. */
+.lobby-card-note {
+  font-size: 0.76em;
+  color: var(--text-dim);
+  line-height: 1.5;
+  min-height: 1.2em;
+}
+
+/* Aktions-Hints/Buttons unten in der Karte — bleiben an der Unterkante,
+   damit alle Karten einer Reihe bündig abschließen, egal wie viele Knöpfe
+   sie haben (die Karten werden per Grid ohnehin auf gleiche Höhe gestreckt). */
 .lobby-card-actions {
   display: flex;
   flex-direction: column;
   gap: 8px;
   width: 100%;
-  margin-top: 4px;
+  margin-top: auto;
+  padding-top: 4px;
 }
 
 .lobby-mini-btn {
@@ -1321,13 +1384,22 @@ body.reduced-fx .party-btn-go { transition: none; }
   box-shadow: 0 0 8px var(--slot);
 }
 
+.lobby-summary {
+  margin-top: 18px;
+  font-size: 0.82em;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-align: center;
+  min-height: 1.2em;
+}
+
 .lobby-footer {
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
   justify-content: center;
   align-items: center;
-  margin-top: 26px;
+  margin-top: 18px;
 }
 
 /* Kompakter „Spiel starten"-Button (nutzt den Party-Button-Look) */
@@ -1494,6 +1566,7 @@ body.reduced-fx .party-btn-go { transition: none; }
   .setting-row { padding: 7px 0; }
   .lobby-wrap { padding: 14px 0 10px; }
   .lobby-header { margin-bottom: 14px; }
+  .lobby-lineup { flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 14px; }
   .lobby-cards { gap: 12px; }
   .lobby-card { padding: 16px 12px 12px; gap: 8px; }
   .lobby-avatar { width: 60px; height: 60px; font-size: 1.7em; }
@@ -1522,12 +1595,15 @@ body.reduced-fx .party-btn-go { transition: none; }
   .credits-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
   .credit-card { padding: 12px 16px; }
   .settings-note { display: none; }
+  .lobby-lineup { display: none; }
   .lobby-cards { gap: 9px; }
   .lobby-card { padding: 12px 9px 10px; gap: 6px; }
   .lobby-avatar { width: 50px; height: 50px; font-size: 1.4em; }
   .lobby-slot-no { font-size: 0.95em; }
   .lobby-name { font-size: 0.95em; }
+  .lobby-card-note { display: none; }
   .lobby-mini-btn { padding: 6px 8px; font-size: 0.76em; }
+  .lobby-summary { margin-top: 10px; font-size: 0.76em; }
   .lobby-footer { margin-top: 12px; gap: 10px; }
 }
 
