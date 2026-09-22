@@ -24,6 +24,13 @@ const Auth = {
 
   // Beim App-Start aufrufen. Lädt eine evtl. gespeicherte Session
   // (localStorage) und meldet jede Auth-Änderung an die UI.
+  //
+  // getSession() kann bei abgelaufener Session einen Netz-Refresh auslösen —
+  // ohne Internet/Supabase-Erreichbarkeit hängt der Promise dann auf ewig,
+  // und boot() (app.js) kommt nie am Login-Screen an (bleibt im Lade-Screen
+  // stecken). Deshalb hier dieselbe Absicherung wie beim Update-Check
+  // (main.js → UPDATE_CHECK_TIMEOUT_MS): nach 8s ohne Antwort einfach als
+  // "keine Session" werten, der Spieler landet dann normal am Login.
   async init() {
     client.auth.onAuthStateChange(async (_event, session) => {
       this.user = session?.user || null;
@@ -31,7 +38,13 @@ const Auth = {
       this._notify();
     });
 
-    const { data } = await client.auth.getSession();
+    const timeout = new Promise(resolve => setTimeout(() => resolve({ data: { session: null } }), 8000));
+    let data;
+    try {
+      ({ data } = await Promise.race([client.auth.getSession(), timeout]));
+    } catch {
+      data = { session: null };
+    }
     this.user = data.session?.user || null;
     await this._loadProfile();
     return this.user;
