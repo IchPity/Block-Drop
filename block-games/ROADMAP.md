@@ -98,6 +98,7 @@ am Ende in die Repo-Struktur integriert wird.
 | memory-clash | Memory Clash | Sequenzen merken, wer zuerst patzt fliegt | Platzhalter |
 | speed-tap | Speed Tap | Reaktionsduell | Platzhalter |
 | quiz-blocks | Quiz Blocks | Quizfragen, schnellste richtige Antwort gewinnt | Platzhalter |
+| color-hunt | Farbjagd | Reihum zeigt eine Zielfarbe kurz auf, der/die Zeigende muss sie an einem Regler (RGB/HSV) möglichst genau nachstellen — Punkte nach Genauigkeit zur Zielfarbe. Die übrigen Spieler sitzen an eigenen Flächen ringsum und wählen per eigenem Regler Ablenkungsfarben rund um die Zielfläche, um den Zeigenden zu verwirren | Platzhalter |
 
 Freischalten: in `renderer/app.js` im `MINIGAMES`-Array `available: true`
 setzen und einen `GAME_REGISTRY`-Eintrag ergänzen (seit v0.23.0 kein
