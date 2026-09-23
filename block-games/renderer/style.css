@@ -228,6 +228,26 @@ body::before {
   animation: logoPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
+/* Demo-Aufkleber neben dem Logo — auf Auth-Screen und Hauptmenü.
+   Markiert diesen Build als Demo-Version zum Herunterladen. */
+.game-logo .demo-badge {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  padding: 4px 10px;
+  margin-left: 10px;
+  color: var(--bg-deep);
+  background: var(--yellow);
+  border: 2px solid var(--bg-deep);
+  border-radius: 6px;
+  vertical-align: middle;
+  transform: rotate(6deg);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
+  text-shadow: none;
+  -webkit-text-stroke: 0;
+}
+
 @keyframes logoPop {
   from { opacity: 0; transform: rotate(-2deg) scale(0.7); }
   to   { opacity: 1; transform: rotate(-2deg) scale(1); }

@@ -834,6 +834,35 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
 
 ## Änderungsprotokoll
 
+### v0.24.0 — 2026-09-23
+
+**Verteilung / Demo-Kennzeichnung**
+- **`electron-builder` eingerichtet.** `package.json` bekommt `build.win`
+  (NSIS-Target, Icon), `build.nsis` (wählbarer Installationsort, Desktop-
+  Verknüpfung), `artifactName`/`directories.output` sowie das Skript
+  `npm run dist`. Neue Dev-Dependency `electron-builder`.
+- **Bekanntes Problem: NSIS-Installer schlägt ohne Windows-Entwicklermodus
+  fehl.** `electron-builder` lädt für jedes Windows-Target (auch `nsis` und
+  `zip`) das Paket `winCodeSign` nach und versucht darin macOS-Symlinks
+  (`libcrypto.dylib`/`libssl.dylib`) zu entpacken — ohne
+  `SeCreateSymbolicLinkPrivilege` (Windows-Entwicklermodus oder Admin-Shell)
+  bricht das mit „Dem Client fehlt ein erforderliches Recht" ab, auch nach
+  mehreren Retries. Die eigentliche App-Packaging-Stufe (`dist/win-unpacked/`)
+  läuft davon unberührt jedes Mal sauber durch — nur der anschließende
+  NSIS-/Zip-Schritt von electron-builder selbst scheitert. Workaround bis der
+  Build-Rechner den Entwicklermodus aktiviert hat: `dist/win-unpacked/` von
+  Hand zu einem Zip packen (z.B. `Compress-Archive`) und das als Portable-
+  Download verteilen.
+- **App überall als Demo gekennzeichnet:** Fenstertitel („Block Games
+  (Demo)", `main.js`), Logo-Badge auf Login-Screen und Hauptmenü
+  (`.demo-badge`, `renderer/index.html` + `renderer/style.css` — Achtung:
+  der Badge braucht die spezifischere Regel `.game-logo .demo-badge`, sonst
+  gewinnt `.game-logo span { color: var(--blue) }` per Selektor-Spezifität
+  und der Text wird auf Gelb kaum lesbar), Versionszeile im Hauptmenü-Footer
+  (`Block Games v0.24.0 · DEMO`, `renderer/app.js`), `productName`/
+  `description` in `package.json`. Versionsnummer in `preload.js` synchron
+  zu `package.json` nachgezogen (war zuvor getrennt hart codiert).
+
 ### v0.23.0 — 2026-09-18
 
 **Menü & Lobby**

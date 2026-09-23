@@ -150,12 +150,23 @@ Steuerungs-Abstraktion.
   einen Screen vor Login/Menü an — „Jetzt herunterladen" öffnet nur die
   Release-Seite im Browser (kein Auto-Download). Siehe DOKUMENTATION.md,
   Änderungsprotokoll v0.21.0.
-- `electron-builder` einrichten → Windows-Installer (NSIS) bauen
-- Installer auf der Website zum Download anbieten (z.B. neue Seite
-  `app/download/` oder Button auf der Startseite)
+- **✅ Erledigt (v0.24.0): `electron-builder` eingerichtet + Demo-Kennzeichnung.**
+  `npm run dist` baut über `electron-builder --win nsis` einen Windows-
+  Installer; NSIS selbst schlägt auf Rechnern ohne Windows-Entwickler-
+  modus fehl (fehlendes Symlink-Recht beim Entpacken von `winCodeSign`,
+  s. DOKUMENTATION.md „Bekannte Probleme"). Bis das geklärt ist, liefert
+  `dist/win-unpacked/` (vom selben Lauf immer erfolgreich gepackt) ein
+  fertiges Portable-Zip als Übergangslösung. App ist überall sichtbar als
+  **Demo** markiert: Fenstertitel, Logo-Badge (Login-Screen + Hauptmenü),
+  Versionszeile im Hauptmenü-Footer, `productName` in package.json.
+- Installer/Zip auf der Website zum Download anbieten (z.B. neue Seite
+  `app/download/` oder Button auf der Startseite) — noch offen
 - Releases versionieren (Tag `vX.Y.Z` + GitHub Release erstellen — nötig,
   damit der Update-Check oben überhaupt etwas findet); später evtl. echter
   Auto-Updater (`electron-updater`) statt nur des Browser-Links
+- Windows-Entwicklermodus auf dem Build-Rechner aktivieren (oder Build in
+  einer Umgebung mit Symlink-Recht laufen lassen), damit `nsis` statt nur
+  `win-unpacked`/Zip funktioniert
 
 ### Integration in die Repo-Struktur (ganz am Ende)
 - Ordner ggf. umziehen/umbenennen gemäß Repo-Konvention

@@ -3095,7 +3095,7 @@ async function boot() {
   setupKeyboard();
   await setupSettings();
   document.getElementById('appVersion').textContent =
-    `Block Games v${window.blockGames?.version || '?'}`;
+    `Block Games v${window.blockGames?.version || '?'} · DEMO`;
 
   // „Spielen" führt jetzt auf den Lobby-Vorbereitungsscreen (statt Toast).
   document.getElementById('btnParty').addEventListener('click', openLobby);

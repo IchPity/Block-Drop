@@ -1,25 +1,37 @@
 {
   "name": "block-games",
-  "version": "0.23.0",
-  "description": "Block Games — Party-Spiel im Mario-Party-Stil für die Block-Drop Arcade",
+  "version": "0.24.0",
+  "description": "Block Games (Demo) — Party-Spiel im Mario-Party-Stil für die Block-Drop Arcade",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder --win nsis"
   },
   "author": "Block-Drop Arcade",
   "license": "UNLICENSED",
   "build": {
     "appId": "com.blockdrop.blockgames",
-    "productName": "Block Games",
+    "productName": "Block Games (Demo)",
+    "artifactName": "BlockGames-Demo-${version}-Setup.${ext}",
+    "directories": {
+      "output": "dist"
+    },
     "win": {
-      "icon": "renderer/assets/block-icon.ico"
+      "icon": "renderer/assets/block-icon.ico",
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
     },
     "linux": {
       "icon": "renderer/assets/block-icon.png"
     }
   },
   "devDependencies": {
-    "electron": "^33.0.0"
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0"

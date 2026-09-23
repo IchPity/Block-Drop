@@ -80,7 +80,7 @@ function createWindow() {
     minWidth: 960,
     minHeight: 640,
     fullscreen: true,
-    title: 'Block Games',
+    title: 'Block Games (Demo)',
     icon: ICON_PATH,
     backgroundColor: '#14142b',
     show: false,
