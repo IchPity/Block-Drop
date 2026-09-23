@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Block Games (Demo) — Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/theme.css">
+  <style>
+    :root { --accent: #ffb703; }
+    .container { max-width: 760px; margin: 0 auto; padding: 88px 24px 48px; }
+    .hero { margin-bottom: 24px; }
+    .hero h1 { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+    .demo-pill {
+      display: inline-block; font-family: 'Share Tech Mono', monospace;
+      font-size: 12px; letter-spacing: 2px; color: #17140a;
+      background: var(--accent); padding: 4px 10px; border-radius: 5px;
+      margin-left: 8px; transform: rotate(-2deg);
+    }
+    .download-box {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      background: var(--board-raised); border: 1px solid var(--board-line);
+      border-radius: 16px; padding: 22px 26px; margin-bottom: 22px; flex-wrap: wrap;
+    }
+    .download-meta { font-size: 12.5px; color: var(--chalk-dim); }
+    .download-meta strong { color: var(--chalk); }
+    .btn-download {
+      display: inline-flex; align-items: center; gap: 10px; white-space: nowrap;
+      background: var(--accent); color: #17140a; text-decoration: none;
+      font-weight: 700; font-size: 14px; padding: 12px 22px; border-radius: 10px;
+      transition: transform 0.15s;
+    }
+    .btn-download:hover { transform: translateY(-1px); }
+    .feature-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 18px 0 6px;
+    }
+    .feature-box {
+      background: var(--board-raised); border: 1px solid var(--board-line);
+      border-radius: 12px; padding: 16px;
+    }
+    .feature-box .f-icon { font-size: 22px; margin-bottom: 8px; }
+    .feature-box .f-title { font-size: 13px; font-weight: 700; color: var(--chalk); margin-bottom: 4px; }
+    .feature-box .f-desc { font-size: 12px; color: var(--chalk-dim); line-height: 1.5; }
+    @media (max-width: 640px) {
+      .feature-grid { grid-template-columns: 1fr; }
+      .download-box { flex-direction: column; align-items: flex-start; }
+      .container { padding-top: 76px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="/" class="nav-back">&larr; Arcade</a>
+    <div class="nav-title"><span class="pill">DL</span> Block Games</div>
+  </div>
+  <div class="nav-right">
+    <div data-auth-slot></div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <section class="hero">
+    <h1>BLOCK GAMES<span class="demo-pill">DEMO</span></h1>
+    <p class="hero-sub">
+      Party-Minigames im Mario-Party-Stil für bis zu 4 Spieler — lokal am selben Rechner
+      oder online über verschiedene Netzwerke hinweg. Läuft mit demselben Konto wie die
+      Arcade-Website.
+    </p>
+  </section>
+
+  <div class="download-box">
+    <div class="download-meta">
+      Version <strong>0.24.0</strong> · Windows (x64) · <strong>111&nbsp;MB</strong><br>
+      Portables Zip, kein Installer nötig
+    </div>
+    <a class="btn-download"
+       href="https://github.com/IchPity/Block-Drop/releases/download/v0.24.0/BlockGames-Demo-0.24.0-win-x64.zip">
+      ⬇ Block Games herunterladen
+    </a>
+  </div>
+
+  <div class="doc-card">
+
+    <h2>Worum geht's?</h2>
+    <p>
+      <strong>Block Games</strong> ist ein eigenständiges Party-Spiel im Stil von Mario Party:
+      bis zu vier Spieler treten in einer Serie aus Minigames gegeneinander an — Tastatur-Preset
+      frei wählbar, gegen Bots oder gegen echte Freunde. Fehlende Mitspieler füllt die Lobby
+      automatisch mit Bots auf, zwei lokale Menschen können sich auch einen Bildschirm teilen
+      (Splitscreen).
+    </p>
+    <p>
+      Anmeldung läuft über <strong>denselben Account</strong> wie die Arcade-Website — oder
+      einfach als Gast, dann aber nur gegen Bots (kein Online-Spiel, kein gespeicherter
+      Fortschritt).
+    </p>
+
+    <h2>Minigames in dieser Demo</h2>
+    <div class="feature-grid">
+      <div class="feature-box">
+        <div class="f-icon">🔺</div>
+        <div class="f-title">Laser Lines</div>
+        <div class="f-desc">Weiche den Lasern aus, so lange es geht.</div>
+      </div>
+      <div class="feature-box">
+        <div class="f-icon">💣</div>
+        <div class="f-title">Block Bomb</div>
+        <div class="f-desc">Bombe weitergeben — wer damit hochgeht, fliegt raus.</div>
+      </div>
+      <div class="feature-box">
+        <div class="f-icon">🧱</div>
+        <div class="f-title">Block Rush</div>
+        <div class="f-desc">Baut gleichzeitig Türme — wer einstürzt, fliegt raus.</div>
+      </div>
+    </div>
+
+    <h2>Installation</h2>
+    <p>
+      Zip entpacken und <strong>„Block Games (Demo).exe"</strong> starten — es ist kein
+      Installer nötig. Windows zeigt beim ersten Start eventuell eine SmartScreen-Warnung
+      („Unbekannter Herausgeber"), weil der Build nicht signiert ist — über
+      <strong>„Weitere Informationen" → „Trotzdem ausführen"</strong> bestätigen.
+    </p>
+    <p>
+      Nur für <strong>Windows</strong>. Änderungsprotokoll und ältere Versionen gibt's auf
+      <a href="https://github.com/IchPity/Block-Drop/releases" target="_blank" rel="noopener">GitHub</a>.
+    </p>
+
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+</body>
+</html>
