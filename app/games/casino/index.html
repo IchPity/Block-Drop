@@ -51,6 +51,22 @@
   .cabinet.jackpot .bulbs { animation: bulbChase 0.28s steps(2) 14; opacity: 1; }
   @keyframes bulbChase { 0% { background-position: 0 0; opacity: 1; } 50% { background-position: 10px 0; opacity: 0.4; } 100% { background-position: 20px 0; opacity: 1; } }
 
+  .cabinet[data-mode="fruit"] { --amber: #ff8a5c; }
+  .cabinet[data-mode="enya"] { --amber: #b39cff; }
+  .cabinet[data-mode="enya"] .bulbs { background-image: repeating-radial-gradient(circle at 10px 7px, var(--amber) 0 2.6px, transparent 3.2px 20px); }
+  .modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+  .mode-btn {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; padding: 8px 12px; text-align: left;
+    background: var(--ink); border: 1px solid var(--board-line); border-radius: 10px; color: var(--chalk-dim); cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+  }
+  .mode-btn b { font-family: 'Baloo 2', sans-serif; font-size: 15px; font-weight: 700; color: var(--chalk); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .mode-btn span { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .mode-btn:hover:not(:disabled) { border-color: rgba(238,242,234,0.3); }
+  .mode-btn[aria-selected="true"] { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 12%, var(--ink)); }
+  .mode-btn[aria-selected="true"] span { color: var(--amber); }
+  .mode-btn:disabled { cursor: not-allowed; }
+  .mode-btn:disabled:not([aria-selected="true"]) { opacity: 0.45; }
   .meters { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; margin-bottom: 16px; }
   .meter { background: var(--ink); border: 1px solid var(--board-line); border-radius: 10px; padding: 10px 14px 8px; min-width: 0; }
   .meter-lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--chalk-dim); }
@@ -65,7 +81,7 @@
 
   .reels {
     position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px;
-    background: var(--board-line); border: 2px solid rgba(255,183,3,0.35); border-radius: 12px; overflow: hidden;
+    background: var(--board-line); border: 2px solid color-mix(in srgb, var(--amber) 40%, transparent); border-radius: 12px; overflow: hidden;
   }
   .reel { height: calc(var(--sym) * 3); overflow: hidden; background: var(--ink); position: relative; }
   .reel::after {
@@ -77,12 +93,13 @@
   .cell { height: var(--sym); display: grid; place-items: center; flex-shrink: 0; }
   .cell svg { width: 62%; height: 68%; max-width: 76px; transition: transform 0.25s; }
   .cell { transition: background 0.25s; }
-  .cell.hit { background: rgba(255,183,3,0.16); }
+  .cell.hit { background: color-mix(in srgb, var(--amber) 18%, transparent); }
   .cell.hit svg { transform: scale(1.14); }
   .payline {
     position: absolute; left: 0; right: 0; top: 50%; height: 0; z-index: 3; pointer-events: none;
-    border-top: 1px dashed rgba(255,183,3,0.5);
+    border-top: 1px dashed color-mix(in srgb, var(--amber) 55%, transparent);
   }
+  .reels.multi .payline { display: none; }
   .payline::before, .payline::after {
     content: ''; position: absolute; top: -6px; border: 6px solid transparent;
   }
@@ -174,6 +191,7 @@
   table.pay .trio svg { width: 22px; height: 22px; }
   table.pay td:last-child { text-align: right; font-family: 'Share Tech Mono', monospace; font-size: 15px; color: var(--amber); font-variant-numeric: tabular-nums; }
   table.pay .txt { color: var(--chalk-dim); }
+  table.pay td.rv { font-size: 13px; max-width: 150px; }
 
   @media (max-width: 860px) {
     .floor { grid-template-columns: minmax(0, 1fr); }
@@ -187,6 +205,9 @@
     .meters { grid-template-columns: 1.3fr 1fr; gap: 8px; }
     .meter-val { font-size: 24px; }
     .meter.small .meter-val { font-size: 20px; }
+    .mode-btn { padding: 7px 9px; }
+    .mode-btn b { font-size: 13px; }
+    .mode-btn span { font-size: 10px; letter-spacing: 0.04em; }
     .navbar { padding: 10px 14px !important; }
     .controls { flex-wrap: wrap; }
     .bet { flex: 1 1 100%; }
@@ -236,6 +257,28 @@
       <text x="24" y="30" text-anchor="middle" font-family="'Baloo 2', Impact, sans-serif" font-weight="800" font-size="14" fill="#eef2ea" letter-spacing="0.6">ENYA</text>
       <path d="M38 12l1.100 2.900 2.900 1.100-2.900 1.100L38 20l-1.100-2.900-2.900-1.100 2.900-1.100z" fill="#ffb703"/>
     </symbol>
+    <symbol id="s-crown" viewBox="0 0 48 48">
+      <path d="M6 36L4 14l10 9 10-15 10 15 10-9-2 22z" fill="#ffb703" stroke="#eef2ea" stroke-width="2" stroke-linejoin="round"/>
+      <rect x="6" y="36" width="36" height="6" rx="2" fill="#ffb703" stroke="#eef2ea" stroke-width="2"/>
+      <circle cx="24" cy="30" r="3" fill="#b39cff"/><circle cx="14" cy="31" r="2" fill="#4db5ff"/><circle cx="34" cy="31" r="2" fill="#4db5ff"/>
+    </symbol>
+    <symbol id="s-harp" viewBox="0 0 48 48">
+      <path d="M12 42V12c0-4 4-7 9-7 8 0 15 5 15 13 0 6-4 10-10 12L12 42z" fill="none" stroke="#eef2ea" stroke-width="2.6" stroke-linejoin="round"/>
+      <path d="M12 42h26" stroke="#eef2ea" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M17 12v27M22 10v22M27 11v17M32 14v11" stroke="#b39cff" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-moon" viewBox="0 0 48 48">
+      <path d="M30 5a19 19 0 1 0 13 32A16 16 0 0 1 30 5z" fill="#f2e04a" stroke="#eef2ea" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="17" cy="26" r="2.4" fill="#e0c938"/><circle cx="23" cy="35" r="1.8" fill="#e0c938"/>
+    </symbol>
+    <symbol id="s-note" viewBox="0 0 48 48">
+      <path d="M18 34V10l20-5v24" fill="none" stroke="#eef2ea" stroke-width="2.8" stroke-linejoin="round"/>
+      <ellipse cx="13" cy="35" rx="7" ry="5.500" fill="#4db5ff" stroke="#eef2ea" stroke-width="2"/>
+      <ellipse cx="33" cy="30" rx="7" ry="5.500" fill="#4db5ff" stroke="#eef2ea" stroke-width="2"/>
+    </symbol>
+    <symbol id="s-wave" viewBox="0 0 48 48">
+      <path d="M3 18c5-7 10-7 14 0s9 7 14 0 9-7 14 0M3 29c5-7 10-7 14 0s9 7 14 0 9-7 14 0M3 40c5-7 10-7 14 0s9 7 14 0 9-7 14 0" fill="none" stroke="#4db5ff" stroke-width="3.200" stroke-linecap="round"/>
+    </symbol>
     <symbol id="s-bar" viewBox="0 0 48 48">
       <rect x="5" y="12" width="38" height="24" rx="4" fill="#4ade80" stroke="#eef2ea" stroke-width="2"/>
       <text x="24" y="30" text-anchor="middle" font-family="'Baloo 2', Impact, sans-serif" font-weight="800" font-size="15" fill="#10160f" letter-spacing="1">BAR</text>
@@ -256,13 +299,15 @@
 <main class="container">
   <header class="hero">
     <h1>Casino</h1>
-    <p class="hero-sub" id="heroSub">Drei Walzen, Spielgeld und kein Risiko. Dein Guthaben wird nach jeder Runde automatisch auf diesem Gerät gespeichert, im Browser-Speicher und zusätzlich als Cookie.</p>
+    <p class="hero-sub" id="heroSub">Drei Walzen, drei Spielmodi, Spielgeld und kein Risiko. Dein Guthaben wird nach jeder Runde automatisch auf diesem Gerät gespeichert, im Browser-Speicher und zusätzlich als Cookie.</p>
     <p class="save-warn" id="saveWarn" hidden>Dein Browser erlaubt kein Speichern (privates Fenster?). Das Guthaben geht beim Schließen der Seite verloren.</p>
   </header>
 
   <div class="floor">
     <section class="cabinet" id="cabinet" aria-label="Spielautomat">
       <div class="bulbs" aria-hidden="true"></div>
+
+      <div class="modes" id="modes" role="tablist" aria-label="Spielmodus"></div>
 
       <div class="meters">
         <div class="meter main">
@@ -276,7 +321,7 @@
       </div>
 
       <div class="status-row">
-        <span class="status-note">Nur die mittlere Linie zählt</span>
+        <span class="status-note" id="modeNote"></span>
         <span class="status-chips"><span class="chip free" id="freeBadge" hidden></span><span class="chip luck" id="luckBadge" hidden></span></span>
       </div>
 
@@ -301,7 +346,7 @@
         <button type="button" class="spin" id="spin">SPIN</button>
       </div>
       <button type="button" class="auto-stop" id="autoStop">Autospin pausieren</button>
-      <p class="hint">Die <kbd>Leertaste</kbd> dreht überall auf der Seite. Was Sterne und Enya bringen, steht in der Gewinntabelle.</p>
+      <p class="hint">Die <kbd>Leertaste</kbd> dreht überall auf der Seite. Den Modus wechselst du zwischen den Runden, Regeln und Gewinne stehen in der Gewinntabelle.</p>
     </section>
 
     <aside class="side">
@@ -337,9 +382,9 @@
       </section>
 
       <section class="panel" aria-labelledby="payH">
-        <h2 id="payH">Gewinntabelle</h2>
+        <h2 id="payH">Gewinntabelle · <span id="payMode"></span></h2>
         <table class="pay" id="payTable"><tbody></tbody></table>
-        <p class="note">Angegeben ist das Vielfache deines Einsatzes. Freispiele laufen automatisch mit dem Einsatz, bei dem sie ausgelöst wurden. Im Schnitt zahlt der Automat rund 93 % zurück.</p>
+        <p class="note" id="payNote"></p>
       </section>
     </aside>
   </div>
@@ -349,23 +394,13 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/auth.js"></script>
+<script src="slots.js"></script>
 <script>
 'use strict';
 
-const SYMS = [
-  { id: 'seven',   name: 'Sieben',  w: 1,  m: 200 },
-  { id: 'diamond', name: 'Diamant', w: 2,  m: 80 },
-  { id: 'bell',    name: 'Glocke',  w: 4,  m: 40 },
-  { id: 'enya',    name: 'Enya',    w: 2,  m: 30 },
-  { id: 'star',    name: 'Stern',   w: 6,  m: 20 },
-  { id: 'cherry',  name: 'Kirsche', w: 9,  m: 12 },
-  { id: 'lemon',   name: 'Zitrone', w: 10, m: 8 },
-  { id: 'grape',   name: 'Traube',  w: 12, m: 8 },
-  { id: 'bar',     name: 'BAR',     w: 14, m: 6 },
-];
-const BY_ID = Object.fromEntries(SYMS.map(s => [s.id, s]));
-const POOL = SYMS.flatMap(s => Array(s.w).fill(s.id));
-const PAIR_MULT = 1.6;
+const { MODES, ORDER, ALL_IDS } = Slots;
+let M = MODES.classic; // aktiver Modus
+const RTP = { classic: 93, fruit: 94, enya: 96 };
 // Enya im mittleren Feld: Anzahl -> [Sekunden, Multiplikator]. Glück stapelt nicht: es gilt der höchste Wert.
 const LUCK = { 1: [15, 1.2], 2: [20, 1.3], 3: [30, 1.5] };
 const LUCK_MAX = 1.5, LUCK_MAX_SEC = 30;
@@ -378,10 +413,10 @@ const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('de-DE');
 const money = c => (c / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
-const pick = () => POOL[Math.floor(Math.random() * POOL.length)];
+const pick = () => Slots.pick(M);
 
 // ── Speichern ───────────────────────────────────────────────────────
-let state = { balance: START_BALANCE, betIdx: 2, rounds: 0, hits: 0, best: 0, jackpots: 0, lastWin: 0, free: 0, freeBet: 0, luck: [], view: null };
+let state = { balance: START_BALANCE, betIdx: 2, rounds: 0, hits: 0, best: 0, jackpots: 0, lastWin: 0, free: 0, freeBet: 0, freeMode: 'classic', mode: 'classic', luck: [], view: null };
 
 // Mit Konto liegt das Guthaben in Supabase (Wallet-Modus); als Gast bleibt es lokal.
 let wallet = false, guestBalance = START_BALANCE, poolAmt = 0;
@@ -399,7 +434,11 @@ function apply(s) {
   state.luck = Array.isArray(s.luck) ? s.luck.filter(l => l && Number.isFinite(l.until) && l.mult > 1).map(l => ({ until: Math.min(l.until, Date.now() + LUCK_MAX_SEC * 1000), mult: Math.min(l.mult, LUCK_MAX) })).slice(0, 1) : [];
   state.freeBet  = BET_STEPS.includes(s.freeBet) ? s.freeBet : 0;
   if (state.free > 0 && !state.freeBet) state.free = 0;
-  if (Array.isArray(s.view) && s.view.length === 3 && s.view.every(r => Array.isArray(r) && r.length === 3 && r.every(id => BY_ID[id]))) state.view = s.view;
+  state.mode = MODES[s.mode] ? s.mode : 'classic';
+  state.freeMode = MODES[s.freeMode] ? s.freeMode : 'classic';
+  if (state.free > 0) state.mode = state.freeMode; // Freispiele laufen im Modus, in dem sie gewonnen wurden
+  state.view = null;
+  if (Array.isArray(s.view) && s.view.length === 3 && s.view.every(r => Array.isArray(r) && r.length === 3 && r.every(id => MODES[state.mode].by[id]))) state.view = s.view;
 }
 function readCookie() {
   const m = document.cookie.split('; ').find(c => c.startsWith(CK + '='));
@@ -477,6 +516,10 @@ function render() {
   $('autoStop').classList.toggle('on', free && !autoPaused);
   renderLuck();
   $('topup').classList.toggle('needed', broke);
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.setAttribute('aria-selected', b.dataset.mode === M.id ? 'true' : 'false');
+    b.disabled = spinning || free;
+  });
 }
 
 function activeLuck() { return state.luck.filter(l => l.until > Date.now()); }
@@ -510,7 +553,7 @@ function banner(text, cls) {
 // ── Walzen ──────────────────────────────────────────────────────────
 const reels = [...document.querySelectorAll('.reel')];
 const strips = reels.map(r => r.firstElementChild);
-let view = [[pick(), pick(), pick()], [pick(), pick(), pick()], [pick(), pick(), pick()]];
+let view = Slots.makeGrid(M);
 
 function cell(id) {
   const d = document.createElement('div');
@@ -541,15 +584,6 @@ function spinReel(i, rows, finalRow) {
 }
 
 // ── Runde ───────────────────────────────────────────────────────────
-function evaluate(mid, stake) {
-  const [a, b, c] = mid;
-  if (a === b && b === c) return { kind: 'trio', sym: a, win: stake * BY_ID[a].m, hit: [0, 1, 2] };
-  if (a === b) return { kind: 'pair', sym: a, win: Math.round(stake * PAIR_MULT), hit: [0, 1] };
-  if (b === c) return { kind: 'pair', sym: b, win: Math.round(stake * PAIR_MULT), hit: [1, 2] };
-  if (a === c) return { kind: 'pair', sym: a, win: Math.round(stake * PAIR_MULT), hit: [0, 2] };
-  return { kind: 'none', win: 0, hit: [] };
-}
-
 async function spin() {
   if (spinning) return;
   clearTimeout(autoTimer);
@@ -562,20 +596,18 @@ async function spin() {
   cab.classList.remove('win', 'jackpot');
   document.querySelectorAll('.cell.hit').forEach(c => c.classList.remove('hit'));
 
-  const next = [0, 1, 2].map(() => [pick(), pick(), pick()]);
   const luckMult = luckFactor();
   const lucky = luckMult > 1;
-  const res = evaluate(next.map(r => r[1]), stake);
-  if (lucky) res.win = Math.round(res.win * luckMult);
-  const enyaAt = [0, 1, 2].filter(i => next[i][1] === 'enya');
-  if (res.sym === 'enya') { res.win = 0; res.hit = []; }
-  const luckStart = enyaAt.length > 0;
-  const award = res.sym === 'star' ? (res.kind === 'trio' ? 5 : res.kind === 'pair' ? 2 : 0) : 0;
+  const res = Slots.resolve(M, Slots.makeGrid(M), stake, isFree);
+  res.win = Slots.finalWin(res.raw, stake, luckMult);
+  const next = res.grid; // mit ausgebreitetem Wild
+  const award = res.award;
+  const luckStart = res.luckCount > 0;
 
   // Ergebnis steht fest und wird sofort gespeichert; ein Neuladen mitten in der Runde ändert nichts.
   let luckSec = 0;
   if (luckStart) {
-    const [sec, mult] = LUCK[enyaAt.length];
+    const [sec, mult] = LUCK[res.luckCount];
     luckSec = sec;
     const cur = activeLuck()[0];
     // Stärkeres Glück ersetzt schwächeres, gleich starkes wird nur verlängert, schwächeres bringt nichts
@@ -583,12 +615,12 @@ async function spin() {
     else if (mult === cur.mult) state.luck = [{ until: Math.max(cur.until, Date.now() + sec * 1000), mult }];
   }
   if (isFree) state.free--;
-  if (award) { if (!isFree && state.free === 0) state.freeBet = stake; state.free += award; }
+  if (award) { if (!isFree && state.free === 0) state.freeBet = stake; state.free += award; state.freeMode = M.id; }
   state.balance += res.win - wager;
   if (wallet) syncRound(stake, wager, res.win);
   state.rounds++;
   if (res.win > 0) { state.hits++; state.best = Math.max(state.best, res.win); }
-  if (res.kind === 'trio' && res.sym === 'seven') state.jackpots++;
+  if (res.jackpot) state.jackpots++;
   state.lastWin = res.win;
   state.view = next;
   save();
@@ -603,26 +635,33 @@ async function spin() {
   await Promise.all(strips.map((_, i) => spinReel(i, view[i], next[i])));
   view = next;
 
-  [...new Set([...res.hit, ...enyaAt])].forEach(i => strips[i].children[strips[i].children.length - 2].classList.add('hit'));
+  res.hits.forEach(([i, row]) => strips[i].children[strips[i].children.length - 3 + row].classList.add('hit'));
   spinning = false;
   clampBet();
   save();
   tweenBalance(state.balance);
   render();
 
-  const extra = (award ? ` · +${award} Freispiele` : '') + (lucky && res.win > 0 ? ` · ×${xf(luckMult)} Glück` : '');
-  if (res.kind === 'trio' && res.sym === 'seven') {
+  const extra = (award ? ` · +${award} Freispiele` : '') + (res.expanded ? ' · Wild füllt die Walze' : '') + (lucky && res.win > 0 ? ` · ×${xf(luckMult)} Glück` : '');
+  const many = M.lines.length > 1;
+  if (res.jackpot) {
     cab.classList.add('jackpot');
     banner(`JACKPOT · +${money(res.win)}${extra}`, 'jackpot');
+  } else if (M.scatter && award) {
+    cab.classList.add('jackpot');
+    banner(`${res.scatter}× ENYA · ${award} Freispiele, Gewinne ×${M.freeMult} · ${secs(LUCK[3][0])} ×${xf(LUCK[3][1])} Glück${res.win ? ' · +' + money(res.win) : ''}`, 'jackpot');
   } else if (luckStart) {
     cab.classList.add('jackpot');
-    banner(`${enyaAt.length}× ENYA · ${secs(luckSec)} ×${xf(LUCK[enyaAt.length][1])} Glück (aktiv ×${xf(luckFactor())})${res.win ? ' · +' + money(res.win) : ''}`, 'jackpot');
+    banner(`${res.luckCount}× ENYA · ${secs(luckSec)} ×${xf(LUCK[res.luckCount][1])} Glück (aktiv ×${xf(luckFactor())})${res.win ? ' · +' + money(res.win) : ''}`, 'jackpot');
+  } else if (res.win > 0 && many) {
+    cab.classList.add('win');
+    banner(`${res.lines} ${res.lines === 1 ? 'Gewinnlinie' : 'Gewinnlinien'} · +${money(res.win)}${extra}`, 'win');
   } else if (res.kind === 'trio') {
     cab.classList.add('win');
-    banner(`Dreimal ${BY_ID[res.sym].name} · +${money(res.win)}${extra}`, 'win');
+    banner(`Dreimal ${M.by[res.sym].name} · +${money(res.win)}${extra}`, 'win');
   } else if (res.kind === 'pair') {
     cab.classList.add('win');
-    banner(`Zwei gleiche (${BY_ID[res.sym].name}) · +${money(res.win)}${extra}`, 'win');
+    banner(`Zwei gleiche (${M.by[res.sym].name}) · +${money(res.win)}${extra}`, 'win');
   } else if (state.free > 0) {
     banner(`Keine Gewinnlinie. Noch ${state.free} Freispiele.`, 'lose');
   } else if (state.balance < BET_STEPS[0]) {
@@ -674,6 +713,7 @@ document.addEventListener('keyup', e => {
 window.addEventListener('storage', e => {
   if (e.key !== KEY || !e.newValue || spinning) return;
   try { apply(JSON.parse(e.newValue)); } catch (err) { return; }
+  if (state.mode !== M.id) { useMode(state.mode); view = state.view || Slots.makeGrid(M); strips.forEach((st, i) => place(st, view[i])); }
   clampBet();
   shown = state.balance;
   $('mBalance').textContent = money(shown);
@@ -711,7 +751,7 @@ async function loadWallet() {
   const { data, error } = await rpc('casino_wallet');
   if (error) { console.warn('[Casino] Wallet:', error.message); return false; }
   wallet = true;
-  $('heroSub').textContent = 'Drei Walzen, Spielgeld und kein Risiko. Dein Guthaben liegt in deinem Konto: Du kannst es auszahlen und dich in der Rangliste mit anderen messen.';
+  $('heroSub').textContent = 'Drei Walzen, drei Spielmodi, Spielgeld und kein Risiko. Dein Guthaben liegt in deinem Konto: Du kannst es auszahlen und dich in der Rangliste mit anderen messen.';
   $('payoutBox').hidden = false;
   setPool(data.pool);
   state.balance = data.balance; pending = 0;
@@ -771,17 +811,51 @@ if (window.Auth && Auth.onChange) {
 
 // ── Gewinntabelle ───────────────────────────────────────────────────
 function trio(id) { return `<span class="trio">${`<svg viewBox="0 0 48 48" aria-hidden="true"><use href="#s-${id}"/></svg>`.repeat(3)}</span>`; }
-$('payTable').tBodies[0].innerHTML =
-  SYMS.filter(s => s.id !== 'enya').map(s => `<tr><td>${trio(s.id)}</td><td class="txt">${s.name}</td><td>×${fmt(s.m)}</td></tr>`).join('') +
-  `<tr><td class="txt" colspan="2">Zwei gleiche</td><td>×1,6</td></tr><tr><td class="txt" colspan="2">Zwei / drei Sterne</td><td>+2 / +5 Frei</td></tr><tr><td class="txt" colspan="2">1 / 2 / 3 Enya</td><td>15 Sek ×1,2 / 20 Sek ×1,3 / 30 Sek ×1,5</td></tr>`;
+function renderPayTable() {
+  const many = M.lines.length > 1;
+  const rows = M.syms.filter(s => s.m > 0 && !(M.noPay || []).includes(s.id))
+    .map(s => `<tr><td>${trio(s.id)}</td><td class="txt">${s.name}</td><td>×${fmt(s.m)}</td></tr>`).join('');
+  const rules = M.rules.map(r => { const [l, v] = r.split(';'); return `<tr><td class="txt" colspan="2">${l}</td><td class="rv">${v}</td></tr>`; }).join('');
+  $('payTable').tBodies[0].innerHTML = rows + rules;
+  $('payMode').textContent = M.name;
+  $('payNote').textContent = (many
+    ? 'Angegeben ist das Vielfache des Linieneinsatzes (Einsatz ÷ 5). Alle 5 Linien zählen, ihre Gewinne addieren sich. '
+    : 'Angegeben ist das Vielfache deines Einsatzes. ')
+    + `Pro Runde zahlt der Automat höchstens das ${Slots.MAX_X}-Fache des Einsatzes. Freispiele laufen automatisch mit dem Einsatz, bei dem sie ausgelöst wurden. Im Schnitt zahlt dieser Modus rund ${RTP[M.id]} % zurück.`;
+}
+
+// ── Modus ───────────────────────────────────────────────────────────
+$('modes').innerHTML = ORDER.map(id => `<button type="button" class="mode-btn" role="tab" data-mode="${id}"><b>${MODES[id].name}</b><span>${MODES[id].tag}</span></button>`).join('');
+function useMode(id) {
+  M = MODES[id];
+  state.mode = M.id;
+  $('cabinet').dataset.mode = M.id;
+  $('reels').classList.toggle('multi', M.lines.length > 1);
+  $('modeNote').textContent = M.note;
+  renderPayTable();
+}
+function setMode(id) {
+  if (spinning || state.free > 0 || !MODES[id] || id === M.id) return;
+  useMode(id);
+  view = Slots.makeGrid(M);
+  state.view = view;
+  strips.forEach((st, i) => place(st, view[i]));
+  document.querySelectorAll('.cell.hit').forEach(c => c.classList.remove('hit'));
+  $('cabinet').classList.remove('win', 'jackpot');
+  save();
+  render();
+  banner(`${M.name}: ${M.note}.`);
+}
+$('modes').addEventListener('click', e => { const b = e.target.closest('.mode-btn'); if (b) setMode(b.dataset.mode); });
 
 // Zurück von der Kasse (Seitencache): Stand neu laden
 window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
 
 // ── Start ───────────────────────────────────────────────────────────
 load();
+useMode(state.mode);
 clampBet();
-if (state.view) view = state.view;
+view = state.view || Slots.makeGrid(M);
 strips.forEach((s, i) => place(s, view[i]));
 shown = state.balance;
 $('mBalance').textContent = money(shown);
