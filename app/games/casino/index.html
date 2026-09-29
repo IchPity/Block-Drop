@@ -450,7 +450,7 @@ function render() {
 }
 
 function activeLuck() { return state.luck.filter(l => l.until > Date.now()); }
-function luckFactor() { return activeLuck().reduce((f, l) => f * l.mult, 1); }
+function luckFactor() { return activeLuck().reduce((f, l) => f + l.mult, 0) || 1; }
 function renderLuck() {
   const act = activeLuck();
   const on = act.length > 0;
