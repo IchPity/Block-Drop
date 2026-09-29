@@ -183,23 +183,33 @@ const CHIPS = [1, 5, 10, 25, 50, 100, 500];
 // Musterdaten; der Name kommt vom angemeldeten Konto, sonst "Peter S."
 const holder = () => (window.Auth && Auth.user && (Auth.profile?.username || Auth.user.email)) || 'Peter S.';
 const METHODS = [
-  { id: 'card', name: 'Kreditkarte', hint: '•••• 0002',
+  { id: 'card', name: 'Kreditkarte', hint: '•••• 9382',
     fields: [
-      { id: 'num', label: 'Kartennummer', value: '4000 0000 0000 0002', ph: '0000 0000 0000 0000' },
+      { id: 'num', label: 'Kartennummer', value: '4539 7286 1405 9382', ph: '0000 0000 0000 0000', fmt: 'card' },
       { id: 'name', label: 'Karteninhaber', value: holder, ph: 'Name auf der Karte' },
-      { id: 'exp', label: 'Gültig bis', value: '12/30', ph: 'MM/JJ', half: true },
-      { id: 'cvc', label: 'CVC', value: '123', ph: '123', half: true } ],
+      { id: 'exp', label: 'Gültig bis', value: '08/29', ph: 'MM/JJ', half: true, fmt: 'exp' },
+      { id: 'cvc', label: 'CVC', value: '847', ph: '123', half: true, fmt: 'cvc' } ],
     steps: ['Verbindung wird gesichert …', 'Karte wird geprüft …', 'Bank bestätigt die Zahlung …'] },
   { id: 'paypal', name: 'PayPal', hint: 'Musterkonto',
-    fields: [ { id: 'mail', label: 'PayPal-E-Mail', value: 'Benutzer@email.com', ph: 'name@beispiel.de' } ],
+    fields: [ { id: 'mail', label: 'PayPal-E-Mail', value: () => (window.Auth && Auth.user && Auth.profile?.username || 'Benutzer') + '@email.com', ph: 'Benutzername@email.com' } ],
     steps: ['Weiterleitung zu PayPal …', 'Zahlung wird freigegeben …', 'Bestätigung kommt an …'] },
   { id: 'sofort', name: 'Sofortüberweisung', hint: 'Musterbank',
     fields: [
-      { id: 'iban', label: 'IBAN', value: 'DE89 3704 0044 0532 0130 00', ph: 'DE00 0000 0000 0000 0000 00' },
+      { id: 'iban', label: 'IBAN', value: 'DE89 3704 0044 0532 0130 00', ph: 'DE00 0000 0000 0000 0000 00', fmt: 'iban' },
       { id: 'name', label: 'Kontoinhaber', value: holder, ph: 'Name' } ],
     steps: ['Bank wird verbunden …', 'Überweisung wird geprüft …', 'Bank bestätigt die Zahlung …'] },
 ];
 const want = f => typeof f.value === 'function' ? f.value() : f.value;
+const FMT = {
+  card: (v) => v.replace(/\D/g, '').slice(0, 16).replace(/(\d{4})(?=\d)/g, '$1 '),
+  cvc: (v) => v.replace(/\D/g, '').slice(0, 3),
+  iban: (v) => v.replace(/[^a-z0-9]/gi, '').toUpperCase().slice(0, 22).replace(/(.{4})(?=.)/g, '$1 '),
+  exp: (v, del) => {
+    let d = v.replace(/\D/g, '').slice(0, 4);
+    if (d.length === 1 && d > '1') d = '0' + d;
+    return d.length > 2 || (d.length === 2 && !del) ? d.slice(0, 2) + '/' + d.slice(2) : d;
+  },
+};
 const norm = v => String(v).replace(/\s+/g, '').toLowerCase();
 
 const $ = id => document.getElementById(id);
@@ -295,7 +305,15 @@ $('methods').addEventListener('click', e => {
 });
 $('fields').addEventListener('input', e => {
   const id = e.target.dataset.f; if (!id) return;
-  vals[meth.id + id] = e.target.value; renderSummary();
+  const f = meth.fields.find(x => x.id === id), el = e.target;
+  if (f && f.fmt) {
+    const raw = el.value, atEnd = el.selectionStart === raw.length;
+    const sig = raw.slice(0, el.selectionStart).replace(/[\s\/]/g, '').length;
+    el.value = FMT[f.fmt](raw, (e.inputType || '').startsWith('delete'));
+    if (atEnd) el.setSelectionRange(el.value.length, el.value.length);
+    else { let n = 0, i = 0; while (i < el.value.length && n < sig) { if (!/[\s\/]/.test(el.value[i])) n++; i++; } el.setSelectionRange(i, i); }
+  }
+  vals[meth.id + id] = el.value; renderSummary();
 });
 
 function escapeHtml(t) { return String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
