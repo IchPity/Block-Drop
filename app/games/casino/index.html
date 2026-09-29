@@ -408,7 +408,7 @@ const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('de-DE');
-const money = c => (c / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const money = c => (c / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 const pick = () => POOL[Math.floor(Math.random() * POOL.length)];
 
 // ── Speichern ───────────────────────────────────────────────────────
@@ -673,10 +673,10 @@ function coShow(part) { ['coForm', 'coBusy', 'coDone'].forEach(id => { $(id).hid
 function openCheckout(cents, name) {
   const price = money(cents);
   co.add = cents; co.price = price; co.open = true; co.busy = false;
-  $('coCoins').textContent = '+' + money(co.add) + ' €';
+  $('coCoins').textContent = '+' + money(co.add);
   $('coName').textContent = name;
-  $('coPrice').textContent = price + ' €';
-  $('coTotal').textContent = price + ' €';
+  $('coPrice').textContent = price;
+  $('coTotal').textContent = price;
   coShow('coForm');
   $('checkout').classList.add('open');
   $('coPay').focus();
@@ -693,11 +693,11 @@ function pay() {
     state.balance += co.add;
     save();
     const no = 'BD-' + String(Date.now()).slice(-8);
-    $('coDoneText').textContent = '+' + money(co.add) + ' € wurden deinem Konto gutgeschrieben.';
-    $('coReceipt').textContent = 'Beleg ' + no + ' · ' + co.price + ' € · Karte •••• 0002 (Spielgeld)';
+    $('coDoneText').textContent = '+' + money(co.add) + ' wurden deinem Konto gutgeschrieben.';
+    $('coReceipt').textContent = 'Beleg ' + no + ' · ' + co.price + ' · Karte •••• 0002 (Spielgeld)';
     co.busy = false;
     coShow('coDone');
-    if (!spinning) { tweenBalance(state.balance); banner(`+${money(co.add)} € aufgeladen und gespeichert.`, 'win'); }
+    if (!spinning) { tweenBalance(state.balance); banner(`+${money(co.add)} aufgeladen und gespeichert.`, 'win'); }
     render();
     $('coClose').focus();
   }, steps.length * wait + 400);
