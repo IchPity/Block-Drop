@@ -59,9 +59,9 @@
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .show { margin-top: 12px; background: none; border: 1px dashed var(--amber); color: var(--amber); border-radius: 8px; padding: 9px 12px; cursor: pointer; font-size: 14px; width: 100%; }
   .show:hover { background: rgba(255,183,3,.08); }
-  dialog { margin: auto; border: 1px solid var(--board-line); border-radius: 14px; background: var(--board-raised); color: var(--chalk); padding: 20px; width: min(92vw, 400px); }
-  dialog::backdrop { background: rgba(0,0,0,.65); }
-  dialog h2 { font: 600 18px 'Baloo 2', sans-serif; margin-bottom: 12px; }
+  dialog { position: fixed; margin: 0; right: 16px; bottom: 16px; left: auto; top: auto; z-index: 50; border: 1px solid var(--board-line); border-radius: 14px; background: var(--board-raised); color: var(--chalk); padding: 20px; width: min(92vw, 400px); box-shadow: 0 12px 40px rgba(0,0,0,.55); }
+  dialog h2 { font: 600 18px 'Baloo 2', sans-serif; margin-bottom: 12px; cursor: move; touch-action: none; user-select: none; }
+  dialog h2::after { content: ' ⠿'; opacity: .5; }
   .cc { border-radius: 14px; padding: 18px; background: linear-gradient(135deg, #2b3a67, #6a3d8f); color: #fff; font-family: 'Share Tech Mono', monospace; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
   .cc .brand { font: 700 13px 'IBM Plex Sans', sans-serif; letter-spacing: .1em; opacity: .85; }
   .cc .num { font-size: 21px; letter-spacing: .08em; margin: 22px 0 16px; }
@@ -313,11 +313,25 @@ function showData() {
     $('dlgTitle').textContent = 'Kontodaten';
     $('dlgBody').innerHTML = `<div class="acct"><small>Kontoinhaber</small>${escapeHtml(g('name'))}<small>IBAN</small>${g('iban')}<small>Bank</small>Musterbank</div>`;
   }
-  $('dlg').showModal();
+  $('dlg').show();
 }
 $('showData').addEventListener('click', showData);
 $('dlgClose').addEventListener('click', () => $('dlg').close());
-$('dlg').addEventListener('click', e => { if (e.target === $('dlg')) $('dlg').close(); });
+(() => {
+  const d = $('dlg'), h = $('dlgTitle');
+  let ox = 0, oy = 0, drag = false;
+  h.addEventListener('pointerdown', e => {
+    const r = d.getBoundingClientRect();
+    d.style.left = r.left + 'px'; d.style.top = r.top + 'px'; d.style.right = 'auto'; d.style.bottom = 'auto';
+    ox = e.clientX - r.left; oy = e.clientY - r.top; drag = true; h.setPointerCapture(e.pointerId);
+  });
+  h.addEventListener('pointermove', e => {
+    if (!drag) return;
+    d.style.left = Math.max(0, Math.min(innerWidth - 60, e.clientX - ox)) + 'px';
+    d.style.top = Math.max(0, Math.min(innerHeight - 40, e.clientY - oy)) + 'px';
+  });
+  h.addEventListener('pointerup', () => { drag = false; });
+})();
 if (window.Auth && Auth.onChange) Auth.onChange(() => { if (!busy) renderSummary(); });
 
 $('pay').addEventListener('click', () => {
