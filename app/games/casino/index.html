@@ -343,7 +343,8 @@ const SYMS = [
 const BY_ID = Object.fromEntries(SYMS.map(s => [s.id, s]));
 const POOL = SYMS.flatMap(s => Array(s.w).fill(s.id));
 const PAIR_MULT = 1.6;
-const LUCK_MS = 3 * 60 * 1000;
+// Enya im mittleren Feld: Anzahl -> [Minuten, Multiplikator]
+const LUCK = { 1: [1, 2], 2: [2, 2], 3: [5, 5] };
 const CK = 'automat5dk_casino';
 const BET_STEPS = [10, 25, 50, 100, 250, 500];
 const START_BALANCE = 1000;
@@ -355,7 +356,7 @@ const fmt = n => Math.round(n).toLocaleString('de-DE');
 const pick = () => POOL[Math.floor(Math.random() * POOL.length)];
 
 // ── Speichern ───────────────────────────────────────────────────────
-let state = { balance: START_BALANCE, betIdx: 2, rounds: 0, hits: 0, best: 0, jackpots: 0, lastWin: 0, free: 0, freeBet: 0, luckUntil: 0, view: null };
+let state = { balance: START_BALANCE, betIdx: 2, rounds: 0, hits: 0, best: 0, jackpots: 0, lastWin: 0, free: 0, freeBet: 0, luck: [], view: null };
 
 function apply(s) {
   const num = (v, d) => (Number.isFinite(v) && v >= 0 ? Math.floor(v) : d);
@@ -367,7 +368,7 @@ function apply(s) {
   state.jackpots = num(s.jackpots, 0);
   state.lastWin  = num(s.lastWin, 0);
   state.free     = num(s.free, 0);
-  state.luckUntil = num(s.luckUntil, 0);
+  state.luck = Array.isArray(s.luck) ? s.luck.filter(l => l && Number.isFinite(l.until) && [2, 5].includes(l.mult)).map(l => ({ until: l.until, mult: l.mult })) : [];
   state.freeBet  = BET_STEPS.includes(s.freeBet) ? s.freeBet : 0;
   if (state.free > 0 && !state.freeBet) state.free = 0;
   if (Array.isArray(s.view) && s.view.length === 3 && s.view.every(r => Array.isArray(r) && r.length === 3 && r.every(id => BY_ID[id]))) state.view = s.view;
@@ -448,21 +449,23 @@ function render() {
   $('topup').classList.toggle('needed', broke);
 }
 
+function activeLuck() { return state.luck.filter(l => l.until > Date.now()); }
+function luckFactor() { return activeLuck().reduce((f, l) => f * l.mult, 1); }
 function renderLuck() {
-  const left = state.luckUntil - Date.now();
-  const on = left > 0;
+  const act = activeLuck();
+  const on = act.length > 0;
   $('luckBadge').hidden = !on;
   $('reels').classList.toggle('lucky', on);
   if (on) {
-    const t = Math.ceil(left / 1000);
-    $('luckBadge').textContent = 'DREIFACH GLÜCK ' + Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
+    const time = l => { const t = Math.ceil((l.until - Date.now()) / 1000); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+    $('luckBadge').textContent = 'GLÜCK ×' + luckFactor() + ' · ' + act.map(l => '×' + l.mult + ' ' + time(l)).join(' + ');
   }
   return on;
 }
 let luckWas = false;
 setInterval(() => {
   const on = renderLuck();
-  if (luckWas && !on && !spinning) banner('Dreifach Glück ist vorbei.', 'lose');
+  if (luckWas && !on && !spinning) banner('Glück ist vorbei.', 'lose');
   luckWas = on;
 }, 500);
 
@@ -528,14 +531,22 @@ async function spin() {
   document.querySelectorAll('.cell.hit').forEach(c => c.classList.remove('hit'));
 
   const next = [0, 1, 2].map(() => [pick(), pick(), pick()]);
-  const lucky = Date.now() < state.luckUntil;
+  const luckMult = luckFactor();
+  const lucky = luckMult > 1;
   const res = evaluate(next.map(r => r[1]), stake);
-  if (lucky) res.win *= 3;
-  const luckStart = res.kind === 'trio' && res.sym === 'enya';
+  if (lucky) res.win *= luckMult;
+  const enyaAt = [0, 1, 2].filter(i => next[i][1] === 'enya');
+  if (res.sym === 'enya') { res.win = 0; res.hit = []; }
+  const luckStart = enyaAt.length > 0;
   const award = res.sym === 'star' ? (res.kind === 'trio' ? 5 : res.kind === 'pair' ? 2 : 0) : 0;
 
   // Ergebnis steht fest und wird sofort gespeichert; ein Neuladen mitten in der Runde ändert nichts.
-  if (luckStart) state.luckUntil = Math.max(state.luckUntil, Date.now()) + LUCK_MS;
+  let luckMin = 0;
+  if (luckStart) {
+    const [min, mult] = LUCK[enyaAt.length];
+    luckMin = min;
+    state.luck = [...activeLuck(), { until: Date.now() + min * 60000, mult }];
+  }
   if (isFree) state.free--;
   if (award) { if (!isFree && state.free === 0) state.freeBet = stake; state.free += award; }
   state.balance += res.win - wager;
@@ -556,20 +567,20 @@ async function spin() {
   await Promise.all(strips.map((_, i) => spinReel(i, view[i], next[i])));
   view = next;
 
-  res.hit.forEach(i => strips[i].children[strips[i].children.length - 2].classList.add('hit'));
+  [...new Set([...res.hit, ...enyaAt])].forEach(i => strips[i].children[strips[i].children.length - 2].classList.add('hit'));
   spinning = false;
   clampBet();
   save();
   tweenBalance(state.balance);
   render();
 
-  const extra = (award ? ` · +${award} Freispiele` : '') + (lucky && res.win > 0 ? ' · ×3 Glück' : '');
+  const extra = (award ? ` · +${award} Freispiele` : '') + (lucky && res.win > 0 ? ` · ×${luckMult} Glück` : '');
   if (res.kind === 'trio' && res.sym === 'seven') {
     cab.classList.add('jackpot');
     banner(`JACKPOT · +${fmt(res.win)}${extra}`, 'jackpot');
   } else if (luckStart) {
     cab.classList.add('jackpot');
-    banner(`DREIFACH GLÜCK · +${fmt(res.win)} · 3 Minuten zählen alle Gewinne dreifach`, 'jackpot');
+    banner(`${enyaAt.length}× ENYA · ${luckMin} Min ×${LUCK[enyaAt.length][1]} Glück (gesamt ×${luckFactor()})${res.win ? ' · +' + fmt(res.win) : ''}`, 'jackpot');
   } else if (res.kind === 'trio') {
     cab.classList.add('win');
     banner(`Dreimal ${BY_ID[res.sym].name} · +${fmt(res.win)}${extra}`, 'win');
@@ -657,8 +668,8 @@ window.addEventListener('storage', e => {
 // ── Gewinntabelle ───────────────────────────────────────────────────
 function trio(id) { return `<span class="trio">${`<svg viewBox="0 0 48 48" aria-hidden="true"><use href="#s-${id}"/></svg>`.repeat(3)}</span>`; }
 $('payTable').tBodies[0].innerHTML =
-  SYMS.map(s => `<tr><td>${trio(s.id)}</td><td class="txt">${s.name}</td><td>×${fmt(s.m)}</td></tr>`).join('') +
-  `<tr><td class="txt" colspan="2">Zwei gleiche</td><td>×1,6</td></tr><tr><td class="txt" colspan="2">Zwei / drei Sterne</td><td>+2 / +5 Frei</td></tr><tr><td class="txt" colspan="2">Dreimal Enya</td><td>3 Min ×3</td></tr>`;
+  SYMS.filter(s => s.id !== 'enya').map(s => `<tr><td>${trio(s.id)}</td><td class="txt">${s.name}</td><td>×${fmt(s.m)}</td></tr>`).join('') +
+  `<tr><td class="txt" colspan="2">Zwei gleiche</td><td>×1,6</td></tr><tr><td class="txt" colspan="2">Zwei / drei Sterne</td><td>+2 / +5 Frei</td></tr><tr><td class="txt" colspan="2">1 / 2 / 3 Enya</td><td>1 Min ×2 / 2 Min ×2 / 5 Min ×5</td></tr>`;
 
 // ── Start ───────────────────────────────────────────────────────────
 load();
