@@ -69,6 +69,18 @@
   .mode-btn:disabled:not([aria-selected="true"]) { opacity: 0.45; }
   .meters { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; margin-bottom: 16px; }
   .meter { background: var(--ink); border: 1px solid var(--board-line); border-radius: 10px; padding: 10px 14px 8px; min-width: 0; }
+  .settings-back { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(5,8,4,0.72); }
+  .settings-back[hidden] { display: none; }
+  .settings { width: min(420px, 100%); background: var(--board-raised); border: 1px solid var(--board-line); border-radius: 14px; padding: 20px; box-shadow: 0 24px 60px rgba(0,0,0,0.5); }
+  .settings h2 { font-family: 'Baloo 2', sans-serif; font-size: 20px; color: var(--chalk); margin-bottom: 4px; }
+  .settings p { font-size: 13px; color: var(--chalk-dim); line-height: 1.5; margin-bottom: 14px; }
+  .settings .lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--chalk-dim); margin-bottom: 6px; }
+  .speeds { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .speeds button { padding: 10px 2px; background: var(--ink); border: 1px solid var(--board-line); border-radius: 8px; color: var(--chalk-dim); font: 600 13px 'IBM Plex Sans', sans-serif; cursor: pointer; }
+  .speeds button:hover { border-color: rgba(238,242,234,0.3); }
+  .speeds button[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); background: color-mix(in srgb, var(--amber) 12%, var(--ink)); }
+  .settings .close { margin-top: 16px; width: 100%; padding: 10px; border: 1px solid var(--board-line); border-radius: 10px; background: transparent; color: var(--chalk); font: 700 15px 'Baloo 2', sans-serif; cursor: pointer; }
+  .settings .close:hover { border-color: rgba(238,242,234,0.3); }
   .meter-lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--chalk-dim); }
   .meter-val {
     margin-top: 2px; font-family: 'Share Tech Mono', monospace; font-size: 30px; line-height: 1.15;
@@ -346,7 +358,7 @@
         <button type="button" class="spin" id="spin">SPIN</button>
       </div>
       <button type="button" class="auto-stop" id="autoStop">Autospin pausieren</button>
-      <p class="hint">Die <kbd>Leertaste</kbd> dreht überall auf der Seite. Den Modus wechselst du zwischen den Runden, Regeln und Gewinne stehen in der Gewinntabelle.</p>
+      <p class="hint">Die <kbd>Leertaste</kbd> dreht überall auf der Seite. Mit <kbd>Esc</kbd> stellst du die Drehgeschwindigkeit ein. Den Modus wechselst du zwischen den Runden, Regeln und Gewinne stehen in der Gewinntabelle.</p>
     </section>
 
     <aside class="side">
@@ -390,6 +402,16 @@
   </div>
 </main>
 
+<div class="settings-back" id="settingsBack" hidden>
+  <div class="settings" role="dialog" aria-modal="true" aria-labelledby="setH">
+    <h2 id="setH">Einstellungen</h2>
+    <p>Wie schnell sich die Walzen drehen. Gilt ab der nächsten Runde, auch für Autospin.</p>
+    <div class="lbl" id="speedLbl">Drehgeschwindigkeit</div>
+    <div class="speeds" id="speeds" role="group" aria-labelledby="speedLbl"></div>
+    <button type="button" class="close" id="setClose">Weiter spielen (Esc)</button>
+  </div>
+</div>
+
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -401,6 +423,8 @@
 const { MODES, ORDER, ALL_IDS } = Slots;
 let M = MODES.classic; // aktiver Modus
 const RTP = { classic: 93, fruit: 94, enya: 96 };
+const ENYA_LIMIT = 60 * 60 * 1000; // Enya Special: 1 Stunde pro Tag
+const SPEEDS = [{ n: 'Langsam', f: 1.7 }, { n: 'Normal', f: 1 }, { n: 'Schnell', f: 0.6 }, { n: 'Turbo', f: 0.35 }, { n: 'Blitz', f: 0.2 }];
 // Enya im mittleren Feld: Anzahl -> [Sekunden, Multiplikator]. Glück stapelt nicht: es gilt der höchste Wert.
 const LUCK = { 1: [15, 1.2], 2: [20, 1.3], 3: [30, 1.5] };
 const LUCK_MAX = 1.5, LUCK_MAX_SEC = 30;
@@ -416,10 +440,17 @@ const money = c => (c / 100).toLocaleString('de-DE', { minimumFractionDigits: 2,
 const pick = () => Slots.pick(M);
 
 // ── Speichern ───────────────────────────────────────────────────────
-let state = { balance: START_BALANCE, betIdx: 2, rounds: 0, hits: 0, best: 0, jackpots: 0, lastWin: 0, free: 0, freeBet: 0, freeMode: 'classic', mode: 'classic', luck: [], view: null };
+let state = { balance: START_BALANCE, betIdx: 2, rounds: 0, hits: 0, best: 0, jackpots: 0, lastWin: 0, free: 0, freeBet: 0, freeMode: 'classic', mode: 'classic', speed: 1, enyaDay: '', enyaMs: 0, luck: [], view: null };
 
 // Mit Konto liegt das Guthaben in Supabase (Wallet-Modus); als Gast bleibt es lokal.
 let wallet = false, guestBalance = START_BALANCE, poolAmt = 0;
+
+function today() { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+function enyaLeft() {
+  if (state.enyaDay !== today()) { state.enyaDay = today(); state.enyaMs = 0; }
+  return Math.max(0, ENYA_LIMIT - state.enyaMs);
+}
+const mmss = ms => { const t = Math.ceil(ms / 1000); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
 
 function apply(s) {
   const num = (v, d) => (Number.isFinite(v) && v >= 0 ? Math.floor(v) : d);
@@ -434,6 +465,11 @@ function apply(s) {
   state.luck = Array.isArray(s.luck) ? s.luck.filter(l => l && Number.isFinite(l.until) && l.mult > 1).map(l => ({ until: Math.min(l.until, Date.now() + LUCK_MAX_SEC * 1000), mult: Math.min(l.mult, LUCK_MAX) })).slice(0, 1) : [];
   state.freeBet  = BET_STEPS.includes(s.freeBet) ? s.freeBet : 0;
   if (state.free > 0 && !state.freeBet) state.free = 0;
+  state.speed = Math.min(SPEEDS.length - 1, num(s.speed, 1));
+  if (s.enyaDay === today()) {
+    state.enyaMs = Math.min(ENYA_LIMIT, state.enyaDay === s.enyaDay ? Math.max(state.enyaMs, num(s.enyaMs, 0)) : num(s.enyaMs, 0));
+    state.enyaDay = s.enyaDay;
+  }
   state.mode = MODES[s.mode] ? s.mode : 'classic';
   state.freeMode = MODES[s.freeMode] ? s.freeMode : 'classic';
   if (state.free > 0) state.mode = state.freeMode; // Freispiele laufen im Modus, in dem sie gewonnen wurden
@@ -516,9 +552,16 @@ function render() {
   $('autoStop').classList.toggle('on', free && !autoPaused);
   renderLuck();
   $('topup').classList.toggle('needed', broke);
+  renderModes();
+}
+function renderModes() {
+  const locked = spinning || state.free > 0;
+  const left = enyaLeft();
   document.querySelectorAll('.mode-btn').forEach(b => {
-    b.setAttribute('aria-selected', b.dataset.mode === M.id ? 'true' : 'false');
-    b.disabled = spinning || free;
+    const id = b.dataset.mode;
+    b.setAttribute('aria-selected', id === M.id ? 'true' : 'false');
+    b.disabled = locked || (id === 'enya' && left === 0 && M.id !== 'enya');
+    if (id === 'enya') b.lastElementChild.textContent = left === 0 ? 'Heute aus' : 'Spezial · ' + mmss(left);
   });
 }
 
@@ -574,7 +617,7 @@ function spinReel(i, rows, finalRow) {
     const target = all.length - 3;
     place(strip, all);
     void strip.offsetWidth;
-    const dur = REDUCED ? 260 + i * 120 : 1100 + i * 450;
+    const dur = REDUCED ? 260 + i * 120 : (1100 + i * 450) * SPEEDS[state.speed].f;
     reels[i].classList.add('moving');
     strip.style.transition = `transform ${dur}ms cubic-bezier(.16,.84,.3,1.04)`;
     strip.style.transform = `translateY(calc(var(--sym) * -${target}))`;
@@ -590,6 +633,7 @@ async function spin() {
   const isFree = state.free > 0;
   const stake = bet();
   if (!isFree && state.balance < stake) return;
+  if (M.id === 'enya' && !isFree && enyaLeft() === 0) { banner('Enya Special: Die Stunde für heute ist um. Morgen geht es weiter.', 'warn'); return; }
   spinning = true;
   const wager = isFree ? 0 : stake;
   const cab = $('cabinet');
@@ -674,7 +718,7 @@ async function spin() {
 
 function scheduleAuto() {
   clearTimeout(autoTimer);
-  if (state.free > 0 && !autoPaused && !spinning) autoTimer = setTimeout(spin, REDUCED ? 500 : 1100);
+  if (state.free > 0 && !autoPaused && !spinning) autoTimer = setTimeout(spin, REDUCED ? 500 : 1100 * SPEEDS[state.speed].f);
 }
 
 function refill() { location.href = 'aufladen/'; }
@@ -695,6 +739,7 @@ $('spin').addEventListener('click', request);
 $('autoStop').addEventListener('click', () => { autoPaused = true; clearTimeout(autoTimer); render(); banner('Autospin pausiert. Drück SPIN oder die Leertaste zum Fortsetzen.', 'warn'); });
 function spaceIgnored() {
   const el = document.activeElement;
+  if (settingsOpen()) return true;
   if (!el) return false;
   const t = el.tagName;
   return t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT' || !!el.closest('.navbar, .auth-modal-backdrop.open');
@@ -821,7 +866,7 @@ function renderPayTable() {
   $('payNote').textContent = (many
     ? 'Angegeben ist das Vielfache des Linieneinsatzes (Einsatz ÷ 5). Alle 5 Linien zählen, ihre Gewinne addieren sich. '
     : 'Angegeben ist das Vielfache deines Einsatzes. ')
-    + `Pro Runde zahlt der Automat höchstens das ${Slots.MAX_X}-Fache des Einsatzes. Freispiele laufen automatisch mit dem Einsatz, bei dem sie ausgelöst wurden. Im Schnitt zahlt dieser Modus rund ${RTP[M.id]} % zurück.`;
+    + `Pro Runde zahlt der Automat höchstens das ${Slots.MAX_X}-Fache des Einsatzes. Freispiele laufen automatisch mit dem Einsatz, bei dem sie ausgelöst wurden. Im Schnitt zahlt dieser Modus rund ${RTP[M.id]} % zurück.` + (M.id === 'enya' ? ' Dieser Modus lässt sich nur 1 Stunde pro Tag spielen, die Zeit zählt, solange er offen ist.' : '');
 }
 
 // ── Modus ───────────────────────────────────────────────────────────
@@ -848,11 +893,55 @@ function setMode(id) {
 }
 $('modes').addEventListener('click', e => { const b = e.target.closest('.mode-btn'); if (b) setMode(b.dataset.mode); });
 
+// ── Einstellungen (Esc) ─────────────────────────────────────────────
+function renderSpeeds() {
+  $('speeds').innerHTML = SPEEDS.map((v, i) => `<button type="button" data-i="${i}" aria-pressed="${i === state.speed}">${v.n}</button>`).join('');
+}
+const settingsOpen = () => !$('settingsBack').hidden;
+function toggleSettings(open) {
+  $('settingsBack').hidden = !open;
+  if (open) { renderSpeeds(); $('speeds').querySelector('[aria-pressed="true"]').focus(); }
+  else if (document.activeElement) document.activeElement.blur();
+}
+$('speeds').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  state.speed = +b.dataset.i;
+  save();
+  renderSpeeds();
+  b.focus();
+});
+$('setClose').addEventListener('click', () => toggleSettings(false));
+$('settingsBack').addEventListener('click', e => { if (e.target === e.currentTarget) toggleSettings(false); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || document.querySelector('.auth-modal-backdrop.open')) return;
+  e.preventDefault();
+  toggleSettings(!settingsOpen());
+});
+
+// Enya Special: Spielzeit pro Tag zählen, nur solange die Seite sichtbar ist
+let lastTick = Date.now(), saveAt = 0;
+setInterval(() => {
+  const now = Date.now(), dt = Math.min(now - lastTick, 2000);
+  lastTick = now;
+  if (M.id === 'enya' && !document.hidden) {
+    enyaLeft();
+    state.enyaMs = Math.min(ENYA_LIMIT, state.enyaMs + dt);
+    if (now - saveAt > 10000) { saveAt = now; save(); }
+  }
+  renderModes();
+  if (M.id === 'enya' && enyaLeft() === 0 && !spinning && state.free === 0) {
+    setMode('classic');
+    banner('Enya Special: Die Stunde für heute ist um. Morgen geht es weiter.', 'warn');
+  }
+}, 1000);
+
 // Zurück von der Kasse (Seitencache): Stand neu laden
 window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
 
 // ── Start ───────────────────────────────────────────────────────────
 load();
+if (state.mode === 'enya' && state.free === 0 && enyaLeft() === 0) { state.mode = 'classic'; state.view = null; }
 useMode(state.mode);
 clampBet();
 view = state.view || Slots.makeGrid(M);

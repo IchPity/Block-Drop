@@ -54,7 +54,7 @@
 
     enya: {
       id: 'enya', name: 'Enya Special', tag: 'Spezial',
-      note: '5 Linien · Enya ist Wild, breitet sich in der Mitte aus',
+      note: '5 Linien · Enya ist Wild · nur 1 Stunde pro Tag',
       lines: FIVE, top: 'crown', wild: 'enya', wildPays: 'crown', expand: 1,
       syms: [
         { id: 'crown', name: 'Krone',  w: 2,  m: 50 },
