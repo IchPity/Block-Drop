@@ -51,7 +51,7 @@
   .cabinet.jackpot .bulbs { animation: bulbChase 0.28s steps(2) 14; opacity: 1; }
   @keyframes bulbChase { 0% { background-position: 0 0; opacity: 1; } 50% { background-position: 10px 0; opacity: 0.4; } 100% { background-position: 20px 0; opacity: 1; } }
 
-  .meters { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .meters { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; margin-bottom: 16px; }
   .meter { background: var(--ink); border: 1px solid var(--board-line); border-radius: 10px; padding: 10px 14px 8px; min-width: 0; }
   .meter-lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--chalk-dim); }
   .meter-val {
@@ -125,17 +125,13 @@
   .auto-stop { display: none; margin-top: 10px; border: 1px solid var(--board-line); background: transparent; color: var(--chalk-dim); border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; }
   .auto-stop:hover { color: var(--chalk); border-color: rgba(238,242,234,0.3); }
   .auto-stop.on { display: inline-block; }
-  .free-badge {
-    position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 4; pointer-events: none;
-    background: var(--amber); color: var(--ink); font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px;
-    letter-spacing: 0.08em; padding: 2px 12px; border-radius: 999px; white-space: nowrap;
-  }
-  .luck-badge {
-    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 4; pointer-events: none;
-    background: var(--win); color: var(--ink); font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px;
-    letter-spacing: 0.08em; padding: 2px 12px; border-radius: 999px; white-space: nowrap; font-variant-numeric: tabular-nums;
-  }
   .reels.lucky { border-color: var(--win); }
+  .status-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 28px; margin-bottom: 8px; flex-wrap: wrap; }
+  .status-note { font-size: 12px; color: var(--chalk-faint); }
+  .status-chips { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .chip { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: 0.08em; padding: 2px 10px; border-radius: 999px; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--ink); }
+  .chip.free { background: var(--amber); }
+  .chip.luck { background: var(--win); }
   .hint { margin-top: 12px; font-size: 12px; color: var(--chalk-faint); line-height: 1.5; }
   .hint kbd { font-family: 'Share Tech Mono', monospace; border: 1px solid var(--board-line); border-radius: 4px; padding: 0 5px; color: var(--chalk-dim); }
 
@@ -177,8 +173,9 @@
     .container { padding: 0 16px; }
     .cabinet { padding: 0 14px 16px; }
     .bulbs { margin: 0 -14px 16px; }
-    .meters { grid-template-columns: 1fr 1fr; }
-    .meter.main { grid-column: 1 / -1; }
+    .meters { grid-template-columns: 1.3fr 1fr; gap: 8px; }
+    .meter-val { font-size: 24px; }
+    .meter.small .meter-val { font-size: 20px; }
     .navbar { padding: 10px 14px !important; }
     .controls { flex-wrap: wrap; }
     .bet { flex: 1 1 100%; }
@@ -262,18 +259,17 @@
           <div class="meter-val" id="mBalance">0</div>
         </div>
         <div class="meter small">
-          <div class="meter-lbl">Einsatz</div>
-          <div class="meter-val" id="mBet">50</div>
-        </div>
-        <div class="meter small">
           <div class="meter-lbl">Letzter Gewinn</div>
           <div class="meter-val" id="mWin">–</div>
         </div>
       </div>
 
+      <div class="status-row">
+        <span class="status-note">Nur die mittlere Linie zählt</span>
+        <span class="status-chips"><span class="chip free" id="freeBadge" hidden></span><span class="chip luck" id="luckBadge" hidden></span></span>
+      </div>
+
       <div class="reels" id="reels">
-        <div class="free-badge" id="freeBadge" hidden></div>
-        <div class="luck-badge" id="luckBadge" hidden></div>
         <div class="reel"><div class="strip"></div></div>
         <div class="reel"><div class="strip"></div></div>
         <div class="reel"><div class="strip"></div></div>
@@ -294,7 +290,7 @@
         <button type="button" class="spin" id="spin">SPIN</button>
       </div>
       <button type="button" class="auto-stop" id="autoStop">Autospin pausieren</button>
-      <p class="hint">Mit der <kbd>Leertaste</kbd> drehst du überall auf der Seite. Nur die mittlere Linie zählt. Zwei Sterne bringen 2 Freispiele, drei Sterne 5. Dreimal Enya schenkt dir 3 Minuten Dreifach Glück: alle Gewinne zählen dreifach.</p>
+      <p class="hint">Die <kbd>Leertaste</kbd> dreht überall auf der Seite. Was Sterne und Enya bringen, steht in der Gewinntabelle.</p>
     </section>
 
     <aside class="side">
@@ -426,7 +422,6 @@ let autoPaused = false;
 let autoTimer = 0;
 
 function render() {
-  $('mBet').textContent = fmt(bet());
   $('betOut').textContent = fmt(bet());
   setMeter($('mWin'), state.lastWin > 0 ? '+' + fmt(state.lastWin) : '–', state.lastWin > 0);
   $('stRounds').textContent = fmt(state.rounds);
