@@ -324,7 +324,7 @@ const SYMS = [
   { id: 'seven',   name: 'Sieben',  w: 1,  m: 200 },
   { id: 'diamond', name: 'Diamant', w: 2,  m: 80 },
   { id: 'bell',    name: 'Glocke',  w: 4,  m: 40 },
-  { id: 'enya',    name: 'Enya',    w: 5,  m: 30 },
+  { id: 'enya',    name: 'Enya',    w: 2,  m: 30 },
   { id: 'star',    name: 'Stern',   w: 6,  m: 20 },
   { id: 'cherry',  name: 'Kirsche', w: 9,  m: 12 },
   { id: 'lemon',   name: 'Zitrone', w: 10, m: 8 },
@@ -334,8 +334,9 @@ const SYMS = [
 const BY_ID = Object.fromEntries(SYMS.map(s => [s.id, s]));
 const POOL = SYMS.flatMap(s => Array(s.w).fill(s.id));
 const PAIR_MULT = 1.6;
-// Enya im mittleren Feld: Anzahl -> [Minuten, Multiplikator]
-const LUCK = { 1: [1, 2], 2: [2, 2], 3: [5, 5] };
+// Enya im mittleren Feld: Anzahl -> [Sekunden, Multiplikator]. Glück stapelt nicht: es gilt der höchste Wert.
+const LUCK = { 1: [15, 1.2], 2: [20, 1.3], 3: [30, 1.5] };
+const LUCK_MAX = 1.5, LUCK_MAX_SEC = 30;
 const CK = 'automat5dk_casino2';
 const BET_STEPS = [10, 20, 50, 100, 200, 500, 1000, 2500, 5000, 10000]; // Cent: 0,10 bis 100
 const START_BALANCE = 2000; // Cent
@@ -360,7 +361,7 @@ function apply(s) {
   state.jackpots = num(s.jackpots, 0);
   state.lastWin  = num(s.lastWin, 0);
   state.free     = num(s.free, 0);
-  state.luck = Array.isArray(s.luck) ? s.luck.filter(l => l && Number.isFinite(l.until) && [2, 5].includes(l.mult)).map(l => ({ until: l.until, mult: l.mult })) : [];
+  state.luck = Array.isArray(s.luck) ? s.luck.filter(l => l && Number.isFinite(l.until) && l.mult > 1).map(l => ({ until: Math.min(l.until, Date.now() + LUCK_MAX_SEC * 1000), mult: Math.min(l.mult, LUCK_MAX) })).slice(0, 1) : [];
   state.freeBet  = BET_STEPS.includes(s.freeBet) ? s.freeBet : 0;
   if (state.free > 0 && !state.freeBet) state.free = 0;
   if (Array.isArray(s.view) && s.view.length === 3 && s.view.every(r => Array.isArray(r) && r.length === 3 && r.every(id => BY_ID[id]))) state.view = s.view;
@@ -442,7 +443,9 @@ function render() {
 }
 
 function activeLuck() { return state.luck.filter(l => l.until > Date.now()); }
-function luckFactor() { return activeLuck().reduce((f, l) => f + l.mult, 0) || 1; }
+function luckFactor() { return Math.max(1, ...activeLuck().map(l => l.mult)); }
+const xf = m => String(m).replace('.', ',');
+const secs = n => n + ' Sek';
 function renderLuck() {
   const act = activeLuck();
   const on = act.length > 0;
@@ -450,7 +453,7 @@ function renderLuck() {
   $('reels').classList.toggle('lucky', on);
   if (on) {
     const time = l => { const t = Math.ceil((l.until - Date.now()) / 1000); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
-    $('luckBadge').textContent = 'GLÜCK ×' + luckFactor() + ' · ' + act.map(l => '×' + l.mult + ' ' + time(l)).join(' + ');
+    $('luckBadge').textContent = 'GLÜCK ×' + xf(luckFactor()) + ' · ' + time(act[0]);
   }
   return on;
 }
@@ -526,18 +529,21 @@ async function spin() {
   const luckMult = luckFactor();
   const lucky = luckMult > 1;
   const res = evaluate(next.map(r => r[1]), stake);
-  if (lucky) res.win *= luckMult;
+  if (lucky) res.win = Math.round(res.win * luckMult);
   const enyaAt = [0, 1, 2].filter(i => next[i][1] === 'enya');
   if (res.sym === 'enya') { res.win = 0; res.hit = []; }
   const luckStart = enyaAt.length > 0;
   const award = res.sym === 'star' ? (res.kind === 'trio' ? 5 : res.kind === 'pair' ? 2 : 0) : 0;
 
   // Ergebnis steht fest und wird sofort gespeichert; ein Neuladen mitten in der Runde ändert nichts.
-  let luckMin = 0;
+  let luckSec = 0;
   if (luckStart) {
-    const [min, mult] = LUCK[enyaAt.length];
-    luckMin = min;
-    state.luck = [...activeLuck(), { until: Date.now() + min * 60000, mult }];
+    const [sec, mult] = LUCK[enyaAt.length];
+    luckSec = sec;
+    const cur = activeLuck()[0];
+    // Stärkeres Glück ersetzt schwächeres, gleich starkes wird nur verlängert, schwächeres bringt nichts
+    if (!cur || mult > cur.mult) state.luck = [{ until: Date.now() + sec * 1000, mult }];
+    else if (mult === cur.mult) state.luck = [{ until: Math.max(cur.until, Date.now() + sec * 1000), mult }];
   }
   if (isFree) state.free--;
   if (award) { if (!isFree && state.free === 0) state.freeBet = stake; state.free += award; }
@@ -566,13 +572,13 @@ async function spin() {
   tweenBalance(state.balance);
   render();
 
-  const extra = (award ? ` · +${award} Freispiele` : '') + (lucky && res.win > 0 ? ` · ×${luckMult} Glück` : '');
+  const extra = (award ? ` · +${award} Freispiele` : '') + (lucky && res.win > 0 ? ` · ×${xf(luckMult)} Glück` : '');
   if (res.kind === 'trio' && res.sym === 'seven') {
     cab.classList.add('jackpot');
     banner(`JACKPOT · +${money(res.win)}${extra}`, 'jackpot');
   } else if (luckStart) {
     cab.classList.add('jackpot');
-    banner(`${enyaAt.length}× ENYA · ${luckMin} Min ×${LUCK[enyaAt.length][1]} Glück (gesamt ×${luckFactor()})${res.win ? ' · +' + money(res.win) : ''}`, 'jackpot');
+    banner(`${enyaAt.length}× ENYA · ${secs(luckSec)} ×${xf(LUCK[enyaAt.length][1])} Glück (aktiv ×${xf(luckFactor())})${res.win ? ' · +' + money(res.win) : ''}`, 'jackpot');
   } else if (res.kind === 'trio') {
     cab.classList.add('win');
     banner(`Dreimal ${BY_ID[res.sym].name} · +${money(res.win)}${extra}`, 'win');
@@ -641,7 +647,7 @@ window.addEventListener('storage', e => {
 function trio(id) { return `<span class="trio">${`<svg viewBox="0 0 48 48" aria-hidden="true"><use href="#s-${id}"/></svg>`.repeat(3)}</span>`; }
 $('payTable').tBodies[0].innerHTML =
   SYMS.filter(s => s.id !== 'enya').map(s => `<tr><td>${trio(s.id)}</td><td class="txt">${s.name}</td><td>×${fmt(s.m)}</td></tr>`).join('') +
-  `<tr><td class="txt" colspan="2">Zwei gleiche</td><td>×1,6</td></tr><tr><td class="txt" colspan="2">Zwei / drei Sterne</td><td>+2 / +5 Frei</td></tr><tr><td class="txt" colspan="2">1 / 2 / 3 Enya</td><td>1 Min ×2 / 2 Min ×2 / 5 Min ×5</td></tr>`;
+  `<tr><td class="txt" colspan="2">Zwei gleiche</td><td>×1,6</td></tr><tr><td class="txt" colspan="2">Zwei / drei Sterne</td><td>+2 / +5 Frei</td></tr><tr><td class="txt" colspan="2">1 / 2 / 3 Enya</td><td>15 Sek ×1,2 / 20 Sek ×1,3 / 30 Sek ×1,5</td></tr>`;
 
 // Zurück von der Kasse (Seitencache): Stand neu laden
 window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
