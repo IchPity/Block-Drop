@@ -41,6 +41,34 @@
   .amt strong { display: block; font-family: 'Share Tech Mono', monospace; font-size: 24px; font-weight: 400; color: var(--amber); }
   .amt span { font-size: 12px; color: var(--chalk-dim); }
 
+  .amt-input { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--ink); border: 1px solid var(--board-line); border-radius: 10px; }
+  .amt-input:focus-within { border-color: var(--amber); }
+  .amt-input input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--amber); font: 400 28px 'Share Tech Mono', monospace; }
+  .amt-input span { font: 400 24px 'Share Tech Mono', monospace; color: var(--chalk-dim); }
+  .amt-hint { margin-top: 6px; font-size: 12px; color: var(--chalk-faint); }
+  .amt-hint.err { color: #ff8a8a; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .chip { cursor: pointer; padding: 6px 12px; border-radius: 999px; background: var(--ink); border: 1px solid var(--board-line); color: var(--chalk-dim); font: 400 14px 'Share Tech Mono', monospace; }
+  .chip:hover { border-color: var(--amber); color: var(--amber); }
+  .fields { display: grid; gap: 10px; margin-top: 14px; }
+  .field label { display: block; font-size: 12px; color: var(--chalk-dim); margin-bottom: 4px; }
+  .field input { width: 100%; padding: 10px 12px; background: var(--ink); border: 1px solid var(--board-line); border-radius: 8px; color: var(--chalk); font: 400 15px 'Share Tech Mono', monospace; }
+  .field input:focus { outline: 0; border-color: var(--amber); }
+  .field input.bad { border-color: #ff8a8a; }
+  .field input.good { border-color: var(--win); }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .show { margin-top: 12px; background: none; border: 1px dashed var(--amber); color: var(--amber); border-radius: 8px; padding: 9px 12px; cursor: pointer; font-size: 14px; width: 100%; }
+  .show:hover { background: rgba(255,183,3,.08); }
+  dialog { margin: auto; border: 1px solid var(--board-line); border-radius: 14px; background: var(--board-raised); color: var(--chalk); padding: 20px; width: min(92vw, 400px); }
+  dialog::backdrop { background: rgba(0,0,0,.65); }
+  dialog h2 { font: 600 18px 'Baloo 2', sans-serif; margin-bottom: 12px; }
+  .cc { border-radius: 14px; padding: 18px; background: linear-gradient(135deg, #2b3a67, #6a3d8f); color: #fff; font-family: 'Share Tech Mono', monospace; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+  .cc .brand { font: 700 13px 'IBM Plex Sans', sans-serif; letter-spacing: .1em; opacity: .85; }
+  .cc .num { font-size: 21px; letter-spacing: .08em; margin: 22px 0 16px; }
+  .cc .meta { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+  .cc small { display: block; font-size: 9px; opacity: .7; letter-spacing: .1em; }
+  .acct { background: var(--ink); border: 1px solid var(--board-line); border-radius: 12px; padding: 14px; font-family: 'Share Tech Mono', monospace; font-size: 14px; line-height: 1.9; }
+  .acct small { display: block; font: 600 10px 'IBM Plex Sans', sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--chalk-dim); line-height: 1.2; margin-top: 8px; }
   .methods { display: grid; gap: 8px; }
   .method { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 10px; cursor: pointer; background: var(--ink); border: 1px solid var(--board-line); color: var(--chalk); text-align: left; font-size: 14px; }
   .method:hover { border-color: rgba(255,183,3,.6); }
@@ -86,7 +114,7 @@
 <main class="container">
   <header class="hero">
     <h1>Guthaben aufladen</h1>
-    <p class="hero-sub">Such einen Betrag und eine Zahlungsart aus. Du bekommst genau den Betrag gutgeschrieben, den du bezahlst.</p>
+    <p class="hero-sub">Gib einen Betrag ab 1 € ein, wähle eine Zahlungsart und tippe die Zahlungsdaten ein. Die Musterdaten dafür findest du im Popup. Du bekommst genau den Betrag gutgeschrieben, den du bezahlst.</p>
   </header>
 
   <div class="shop">
@@ -95,10 +123,14 @@
       <p class="warn" id="noSave" hidden>Dein Browser erlaubt kein Speichern. Die Aufladung geht sonst beim Schließen verloren.</p>
 
       <h2 id="amtH">Betrag wählen</h2>
-      <div class="amounts" role="radiogroup" aria-labelledby="amtH" id="amounts"></div>
+      <div class="amt-input"><input id="amtIn" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-labelledby="amtH"><span>€</span></div>
+      <p class="amt-hint" id="amtHint">Mindestbetrag 1 €, maximal 500 €.</p>
+      <div class="chips" id="amounts"></div>
 
       <h3 id="methH">Zahlungsart</h3>
       <div class="methods" role="radiogroup" aria-labelledby="methH" id="methods"></div>
+      <div class="fields" id="fields"></div>
+      <button type="button" class="show" id="showData">Zahlungsdaten zum Abschreiben anzeigen</button>
     </section>
 
     <aside class="panel sum" aria-labelledby="sumH">
@@ -128,6 +160,13 @@
   </div>
 </main>
 
+<dialog id="dlg">
+  <h2 id="dlgTitle">Zahlungsdaten</h2>
+  <div id="dlgBody"></div>
+  <p class="note">Das sind Musterdaten zum Abschreiben. Es wird nie echtes Geld abgebucht.</p>
+  <button type="button" class="pay" id="dlgClose">Schließen</button>
+</dialog>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/auth.js"></script>
 <script>
@@ -139,21 +178,29 @@ const CK = 'automat5dk_casino2';
 const START_BALANCE = 2000; // Cent
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// Nur Beträge, wie sie auch in echten Online-Casinos angeboten werden (volle Euro, keine ,99)
-const AMOUNTS = [
-  { eur: 10,  tag: 'Mindestbetrag' },
-  { eur: 20,  tag: '' },
-  { eur: 25,  tag: '' },
-  { eur: 50,  tag: 'Beliebt' },
-  { eur: 100, tag: '' },
-  { eur: 200, tag: '' },
-  { eur: 500, tag: 'High Roller' },
-];
+const MIN_EUR = 1, MAX_EUR = 500;
+const CHIPS = [1, 5, 10, 25, 50, 100, 500];
+// Musterdaten; der Name kommt vom angemeldeten Konto, sonst "Peter S."
+const holder = () => (window.Auth && Auth.user && (Auth.profile?.username || Auth.user.email)) || 'Peter S.';
 const METHODS = [
-  { id: 'card',   name: 'Kreditkarte',       hint: '•••• 0002', steps: ['Verbindung wird gesichert …', 'Karte wird geprüft …', 'Bank bestätigt die Zahlung …'] },
-  { id: 'paypal', name: 'PayPal',            hint: 'Musterkonto', steps: ['Weiterleitung zu PayPal …', 'Zahlung wird freigegeben …', 'Bestätigung kommt an …'] },
-  { id: 'sofort', name: 'Sofortüberweisung', hint: 'Musterbank', steps: ['Bank wird verbunden …', 'Überweisung wird geprüft …', 'Bank bestätigt die Zahlung …'] },
+  { id: 'card', name: 'Kreditkarte', hint: '•••• 0002',
+    fields: [
+      { id: 'num', label: 'Kartennummer', value: '4000 0000 0000 0002', ph: '0000 0000 0000 0000' },
+      { id: 'name', label: 'Karteninhaber', value: holder, ph: 'Name auf der Karte' },
+      { id: 'exp', label: 'Gültig bis', value: '12/30', ph: 'MM/JJ', half: true },
+      { id: 'cvc', label: 'CVC', value: '123', ph: '123', half: true } ],
+    steps: ['Verbindung wird gesichert …', 'Karte wird geprüft …', 'Bank bestätigt die Zahlung …'] },
+  { id: 'paypal', name: 'PayPal', hint: 'Musterkonto',
+    fields: [ { id: 'mail', label: 'PayPal-E-Mail', value: 'muster@paypal.example', ph: 'name@beispiel.de' } ],
+    steps: ['Weiterleitung zu PayPal …', 'Zahlung wird freigegeben …', 'Bestätigung kommt an …'] },
+  { id: 'sofort', name: 'Sofortüberweisung', hint: 'Musterbank',
+    fields: [
+      { id: 'iban', label: 'IBAN', value: 'DE89 3704 0044 0532 0130 00', ph: 'DE00 0000 0000 0000 0000 00' },
+      { id: 'name', label: 'Kontoinhaber', value: holder, ph: 'Name' } ],
+    steps: ['Bank wird verbunden …', 'Überweisung wird geprüft …', 'Bank bestätigt die Zahlung …'] },
 ];
+const want = f => typeof f.value === 'function' ? f.value() : f.value;
+const norm = v => String(v).replace(/\s+/g, '').toLowerCase();
 
 const $ = id => document.getElementById(id);
 const money = c => (c / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
@@ -178,50 +225,105 @@ function writeState(s) {
   return ok;
 }
 
-let sel = null;   // gewählter Betrag in Euro
+let sel = null;   // gültiger Betrag in Euro (oder null)
 let meth = METHODS[0];
 let busy = false;
 
 function view(id) { ['viewForm', 'viewBusy', 'viewDone'].forEach(v => { $(v).hidden = v !== id; }); }
 
-function renderAmounts() {
-  $('amounts').innerHTML = AMOUNTS.map(a =>
-    `<button type="button" class="amt" role="radio" aria-checked="${sel === a.eur}" data-eur="${a.eur}"><strong>${a.eur} €</strong><span>${a.tag || '&nbsp;'}</span></button>`
-  ).join('');
+function parseAmt(t) {
+  const v = String(t).trim().replace(/\s|€/g, '').replace(',', '.');
+  if (!/^\d+(\.\d{1,2})?$/.test(v)) return null;
+  const n = Math.round(parseFloat(v) * 100);
+  return n >= MIN_EUR * 100 && n <= MAX_EUR * 100 ? n : null;
+}
+let selC = null; // Betrag in Cent
+const vals = {}; // eingetippte Feldwerte je Zahlungsart
+
+function fieldsOk() { return meth.fields.every(f => norm(vals[meth.id + f.id] || '') === norm(want(f))); }
+
+function renderStatic() {
+  $('amounts').innerHTML = CHIPS.map(e => `<button type="button" class="chip" data-eur="${e}">${e} €</button>`).join('');
   $('methods').innerHTML = METHODS.map(m =>
     `<button type="button" class="method" role="radio" aria-checked="${meth.id === m.id}" data-id="${m.id}"><i></i>${m.name}<small>${m.hint}</small></button>`
   ).join('');
+  const half = meth.fields.filter(f => f.half);
+  const full = meth.fields.filter(f => !f.half);
+  const one = f => `<div class="field"><label for="f-${f.id}">${f.label}</label><input id="f-${f.id}" data-f="${f.id}" value="${escapeHtml(vals[meth.id + f.id] || '')}" placeholder="${f.ph}" autocomplete="off" spellcheck="false"></div>`;
+  $('fields').innerHTML = full.map(one).join('') + (half.length ? `<div class="field-row">${half.map(one).join('')}</div>` : '');
+  $('showData').textContent = meth.id === 'card' ? 'Karte anzeigen' : meth.id === 'paypal' ? 'PayPal-Konto anzeigen' : 'Kontodaten anzeigen';
 }
 function renderSummary() {
   const cur = balanceOf(readState());
   $('bal').textContent = money(cur);
   $('sMeth').textContent = meth.name;
-  if (sel) {
-    $('sAdd').textContent = '+' + money(sel * 100);
-    $('sNew').textContent = money(cur + sel * 100);
-    $('sTotal').textContent = money(sel * 100);
+  sel = selC ? selC / 100 : null;
+  if (selC) {
+    $('sAdd').textContent = '+' + money(selC);
+    $('sNew').textContent = money(cur + selC);
+    $('sTotal').textContent = money(selC);
   } else {
     $('sAdd').textContent = $('sNew').textContent = $('sTotal').textContent = '–';
   }
-  $('pay').disabled = !sel || busy;
+  meth.fields.forEach(f => {
+    const el = $('f-' + f.id); if (!el) return;
+    const v = norm(el.value), w = norm(want(f));
+    el.classList.toggle('good', !!v && v === w);
+    el.classList.toggle('bad', !!v && v.length >= w.length && v !== w);
+  });
+  $('pay').disabled = !selC || !fieldsOk() || busy;
 }
-function render() { renderAmounts(); renderSummary(); }
+function render() { renderStatic(); renderSummary(); }
 
+$('amtIn').addEventListener('input', () => {
+  const t = $('amtIn').value;
+  selC = parseAmt(t);
+  const h = $('amtHint');
+  const bad = t.trim() && !selC;
+  h.classList.toggle('err', !!bad);
+  h.textContent = bad ? `Bitte einen Betrag von ${MIN_EUR} € bis ${MAX_EUR} € eingeben (max. 2 Nachkommastellen).` : `Mindestbetrag ${MIN_EUR} €, maximal ${MAX_EUR} €.`;
+  renderSummary();
+});
 $('amounts').addEventListener('click', e => {
-  const b = e.target.closest('.amt'); if (!b || busy) return;
-  sel = Number(b.dataset.eur); render();
-  $('amounts').querySelector('[aria-checked="true"]').focus();
+  const b = e.target.closest('.chip'); if (!b || busy) return;
+  $('amtIn').value = b.dataset.eur; $('amtIn').dispatchEvent(new Event('input'));
 });
 $('methods').addEventListener('click', e => {
   const b = e.target.closest('.method'); if (!b || busy) return;
   meth = METHODS.find(m => m.id === b.dataset.id); render();
   $('methods').querySelector('[aria-checked="true"]').focus();
 });
+$('fields').addEventListener('input', e => {
+  const id = e.target.dataset.f; if (!id) return;
+  vals[meth.id + id] = e.target.value; renderSummary();
+});
+
+function escapeHtml(t) { return String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function showData() {
+  const m = meth;
+  const g = id => want(m.fields.find(f => f.id === id));
+  if (m.id === 'card') {
+    $('dlgTitle').textContent = 'Deine Karte';
+    $('dlgBody').innerHTML = `<div class="cc"><div class="brand">MUSTERBANK · CREDIT</div><div class="num">${g('num')}</div>
+      <div class="meta"><div><small>INHABER</small>${escapeHtml(g('name'))}</div><div><small>GÜLTIG BIS</small>${g('exp')}</div><div><small>CVC</small>${g('cvc')}</div></div></div>`;
+  } else if (m.id === 'paypal') {
+    $('dlgTitle').textContent = 'PayPal-Konto';
+    $('dlgBody').innerHTML = `<div class="acct"><small>Name</small>${escapeHtml(holder())}<small>E-Mail</small>${g('mail')}</div>`;
+  } else {
+    $('dlgTitle').textContent = 'Kontodaten';
+    $('dlgBody').innerHTML = `<div class="acct"><small>Kontoinhaber</small>${escapeHtml(g('name'))}<small>IBAN</small>${g('iban')}<small>Bank</small>Musterbank</div>`;
+  }
+  $('dlg').showModal();
+}
+$('showData').addEventListener('click', showData);
+$('dlgClose').addEventListener('click', () => $('dlg').close());
+$('dlg').addEventListener('click', e => { if (e.target === $('dlg')) $('dlg').close(); });
+if (window.Auth && Auth.onChange) Auth.onChange(() => { if (!busy) renderSummary(); });
 
 $('pay').addEventListener('click', () => {
-  if (busy || !sel) return;
+  if (busy || !selC || !fieldsOk()) return;
   busy = true;
-  const eur = sel, m = meth;
+  const eur = selC / 100, m = meth;
   view('viewBusy');
   const wait = REDUCED ? 300 : 900;
   m.steps.forEach((t, i) => setTimeout(() => { $('step').textContent = t; }, i * wait));
@@ -239,7 +341,7 @@ $('pay').addEventListener('click', () => {
     renderSummary();
   }, m.steps.length * wait + 400);
 });
-$('again').addEventListener('click', () => { sel = null; view('viewForm'); render(); });
+$('again').addEventListener('click', () => { selC = null; $('amtIn').value = ''; Object.keys(vals).forEach(k => delete vals[k]); view('viewForm'); render(); });
 
 window.addEventListener('storage', e => { if (e.key === KEY) renderSummary(); });
 render();
