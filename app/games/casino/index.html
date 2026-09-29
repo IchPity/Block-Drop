@@ -139,41 +139,8 @@
   .side { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
   .panel { background: var(--board-raised); border: 1px solid var(--board-line); border-radius: 12px; padding: 18px 18px 16px; }
   .panel h2 { font-family: 'Baloo 2', sans-serif; font-size: 16px; font-weight: 600; color: var(--chalk); margin-bottom: 12px; }
-  .checkout { position: fixed; inset: 0; z-index: 900; display: none; align-items: center; justify-content: center; padding: 16px; background: rgba(8,6,10,.86); overflow-y: auto; }
-  .checkout.open { display: flex; }
-  .checkout [hidden] { display: none !important; }
-  .co-box { width: min(440px, 100%); background: #1d1519; border: 1px solid #3a2a30; border-radius: 16px; padding: 22px; color: var(--chalk); box-shadow: 0 20px 60px rgba(0,0,0,.6); }
-  .co-box h2 { margin: 0 0 4px; font-size: 20px; }
-  .co-sub { margin: 0 0 16px; font-size: 13px; color: var(--chalk-dim); }
-  .co-order { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 14px; border: 1px solid #3a2a30; border-radius: 10px; margin-bottom: 14px; }
-  .co-order strong { font-family: 'Share Tech Mono', monospace; font-size: 20px; color: var(--amber); font-weight: 400; }
-  .co-order small { display: block; font-size: 12px; color: var(--chalk-dim); }
-  .co-price { font-family: 'Share Tech Mono', monospace; font-size: 22px; white-space: nowrap; }
-  .co-card { position: relative; aspect-ratio: 1.586; border-radius: 14px; padding: 18px 20px; margin-bottom: 14px; display: flex; flex-direction: column; justify-content: space-between; background: linear-gradient(135deg, #3b3f58, #1c1f33 60%, #2b2340); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); font-family: 'Share Tech Mono', monospace; }
-  .co-chip { width: 42px; height: 32px; border-radius: 6px; background: linear-gradient(135deg, #e8c26a, #a8802f); }
-  .co-num { font-size: clamp(17px, 5.4vw, 22px); letter-spacing: .12em; }
-  .co-row { display: flex; justify-content: space-between; font-size: 13px; color: #c9cbe0; text-transform: uppercase; }
-  .co-tag { position: absolute; top: 16px; right: 18px; font-size: 11px; letter-spacing: .14em; color: #c9cbe0; border: 1px solid #6c7096; border-radius: 4px; padding: 2px 6px; }
-  .co-field { display: flex; justify-content: space-between; font-size: 13px; padding: 8px 0; border-bottom: 1px solid #2c2025; color: var(--chalk-dim); }
-  .co-field b { color: var(--chalk); font-weight: 500; }
-  .co-pay { width: 100%; margin-top: 16px; padding: 14px; border: 0; border-radius: 10px; background: var(--amber); color: var(--ink); font: 700 16px 'Baloo 2', sans-serif; cursor: pointer; }
-  .co-cancel { display: block; width: 100%; margin-top: 8px; padding: 10px; background: none; border: 0; color: var(--chalk-dim); font: inherit; font-size: 13px; cursor: pointer; }
-  .co-note { margin: 12px 0 0; font-size: 12px; color: var(--chalk-dim); text-align: center; }
-  .co-state { text-align: center; padding: 18px 0 6px; }
-  .co-spin { width: 44px; height: 44px; margin: 0 auto 14px; border: 4px solid #3a2a30; border-top-color: var(--amber); border-radius: 50%; animation: cospin .8s linear infinite; }
-  @keyframes cospin { to { transform: rotate(360deg); } }
-  .co-ok { width: 54px; height: 54px; margin: 0 auto 12px; border-radius: 50%; background: var(--win); color: var(--ink); display: grid; place-items: center; font-size: 30px; font-weight: 800; }
-  .co-receipt { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--chalk-dim); margin-top: 10px; }
-  @media (prefers-reduced-motion: reduce) { .co-spin { animation: none; } }
   .topup.needed { border-color: var(--amber); }
-  .topup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .topup-btn {
-    cursor: pointer; text-align: left; padding: 10px 12px; border-radius: 10px; color: var(--chalk);
-    background: var(--ink); border: 1px solid var(--board-line); transition: border-color 0.15s, transform 0.15s;
-  }
-  .topup-btn:hover { border-color: var(--amber); transform: translateY(-1px); }
-  .topup-btn strong { display: block; font-family: 'Share Tech Mono', monospace; font-size: 20px; color: var(--amber); font-weight: 400; font-variant-numeric: tabular-nums; }
-  .topup-btn span { font-size: 12px; color: var(--chalk-dim); }
+  .co-pay { padding: 14px; border: 0; border-radius: 10px; background: var(--amber); color: var(--ink); font: 700 16px 'Baloo 2', sans-serif; }
   .note { margin-top: 12px; font-size: 12px; line-height: 1.55; color: var(--chalk-faint); }
 
   dl.stats { display: grid; gap: 8px; }
@@ -322,13 +289,9 @@
     <aside class="side">
       <section class="panel topup" id="topup" aria-labelledby="topupH">
         <h2 id="topupH">Guthaben aufladen</h2>
-        <div class="topup-grid">
-          <button type="button" class="topup-btn" data-cents="499"><strong>+4,99 €</strong><span>Starter</span></button>
-          <button type="button" class="topup-btn" data-cents="999"><strong>+9,99 €</strong><span>Regular</span></button>
-          <button type="button" class="topup-btn" data-cents="2499"><strong>+24,99 €</strong><span>Beliebt</span></button>
-          <button type="button" class="topup-btn" data-cents="4999"><strong>+49,99 €</strong><span>Groß</span></button>
-        </div>
-        <p class="note">Die Kasse ist nur nachgestellt: Preise und Karte sind Spielerei, es wird nie echtes Geld verwendet oder abgebucht.</p>
+        <p class="note" style="margin:0 0 12px">Beträge von 10 € bis 500 €, bezahlt wird über eine eigene Kasse.</p>
+        <a class="co-pay" href="aufladen/" style="display:block;text-align:center;text-decoration:none">Zur Kasse</a>
+        <p class="note">Die Kasse ist nur nachgestellt: Es wird nie echtes Geld verwendet oder abgebucht.</p>
       </section>
 
       <section class="panel" aria-labelledby="statsH">
@@ -351,33 +314,6 @@
 </main>
 
 
-<div class="checkout" id="checkout" role="dialog" aria-modal="true" aria-labelledby="coH">
-  <div class="co-box">
-    <div id="coForm">
-      <h2 id="coH">Sichere Kasse</h2>
-      <p class="co-sub">Bestellung prüfen und bezahlen</p>
-      <div class="co-order"><div><strong id="coCoins"></strong><small id="coName"></small></div><div class="co-price" id="coPrice"></div></div>
-      <div class="co-card" aria-label="Musterkarte">
-        <span class="co-tag">MUSTER</span>
-        <div class="co-chip"></div>
-        <div class="co-num">4000 0000 0000 0002</div>
-        <div class="co-row"><span>Max Mustermann</span><span>12/34</span></div>
-      </div>
-      <div class="co-field"><span>Zahlungsart</span><b>Kreditkarte •••• 0002</b></div>
-      <div class="co-field"><span>Gesamt</span><b id="coTotal"></b></div>
-      <button type="button" class="co-pay" id="coPay">Jetzt bezahlen</button>
-      <button type="button" class="co-cancel" id="coCancel">Abbrechen</button>
-      <p class="co-note">Spielgeld-Kasse: Die Karte ist eine Attrappe. Es wird nichts abgebucht, und du sollst hier keine echten Kartendaten eingeben.</p>
-    </div>
-    <div id="coBusy" class="co-state" hidden><div class="co-spin"></div><strong id="coStep">Zahlung wird vorbereitet …</strong></div>
-    <div id="coDone" class="co-state" hidden>
-      <div class="co-ok">✓</div><h2>Zahlung erfolgreich</h2>
-      <p class="co-sub" id="coDoneText"></p>
-      <div class="co-receipt" id="coReceipt"></div>
-      <button type="button" class="co-pay" id="coClose">Zurück zum Automaten</button>
-    </div>
-  </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/auth.js"></script>
@@ -658,7 +594,7 @@ function scheduleAuto() {
   if (state.free > 0 && !autoPaused && !spinning) autoTimer = setTimeout(spin, REDUCED ? 500 : 1100);
 }
 
-function refill() { openCheckout(499, 'Starter'); }
+function refill() { location.href = 'aufladen/'; }
 
 function request() {
   if (spinning) return;
@@ -666,49 +602,6 @@ function request() {
   if (state.balance < BET_STEPS[0]) { refill(); return; }
   spin();
 }
-
-// ── Aufladen ────────────────────────────────────────────────────────
-const co = { open: false, busy: false, add: 0, price: '' };
-function coShow(part) { ['coForm', 'coBusy', 'coDone'].forEach(id => { $(id).hidden = id !== part; }); }
-function openCheckout(cents, name) {
-  const price = money(cents);
-  co.add = cents; co.price = price; co.open = true; co.busy = false;
-  $('coCoins').textContent = '+' + money(co.add);
-  $('coName').textContent = name;
-  $('coPrice').textContent = price;
-  $('coTotal').textContent = price;
-  coShow('coForm');
-  $('checkout').classList.add('open');
-  $('coPay').focus();
-}
-function closeCheckout() { if (co.busy) return; co.open = false; $('checkout').classList.remove('open'); }
-function pay() {
-  if (co.busy) return;
-  co.busy = true;
-  coShow('coBusy');
-  const steps = ['Verbindung wird gesichert …', 'Karte wird geprüft …', 'Bank bestätigt die Zahlung …'];
-  const wait = REDUCED ? 300 : 900;
-  steps.forEach((t, i) => setTimeout(() => { $('coStep').textContent = t; }, i * wait));
-  setTimeout(() => {
-    state.balance += co.add;
-    save();
-    const no = 'BD-' + String(Date.now()).slice(-8);
-    $('coDoneText').textContent = '+' + money(co.add) + ' wurden deinem Konto gutgeschrieben.';
-    $('coReceipt').textContent = 'Beleg ' + no + ' · ' + co.price + ' · Karte •••• 0002 (Spielgeld)';
-    co.busy = false;
-    coShow('coDone');
-    if (!spinning) { tweenBalance(state.balance); banner(`+${money(co.add)} aufgeladen und gespeichert.`, 'win'); }
-    render();
-    $('coClose').focus();
-  }, steps.length * wait + 400);
-}
-$('coPay').addEventListener('click', pay);
-$('coCancel').addEventListener('click', closeCheckout);
-$('coClose').addEventListener('click', closeCheckout);
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && co.open) closeCheckout(); });
-document.querySelectorAll('.topup-btn').forEach(btn => btn.addEventListener('click', () => {
-  openCheckout(Number(btn.dataset.cents), btn.querySelector('span').textContent);
-}));
 
 // ── Steuerung ───────────────────────────────────────────────────────
 $('betDown').addEventListener('click', () => { if (state.betIdx > 0) { state.betIdx--; save(); render(); } });
@@ -719,7 +612,6 @@ $('spin').addEventListener('click', request);
 $('autoStop').addEventListener('click', () => { autoPaused = true; clearTimeout(autoTimer); render(); banner('Autospin pausiert. Drück SPIN oder die Leertaste zum Fortsetzen.', 'warn'); });
 function spaceIgnored() {
   const el = document.activeElement;
-  if (co.open) return true;
   if (!el) return false;
   const t = el.tagName;
   return t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT' || !!el.closest('.navbar, .auth-modal-backdrop.open');
@@ -750,6 +642,9 @@ function trio(id) { return `<span class="trio">${`<svg viewBox="0 0 48 48" aria-
 $('payTable').tBodies[0].innerHTML =
   SYMS.filter(s => s.id !== 'enya').map(s => `<tr><td>${trio(s.id)}</td><td class="txt">${s.name}</td><td>×${fmt(s.m)}</td></tr>`).join('') +
   `<tr><td class="txt" colspan="2">Zwei gleiche</td><td>×1,6</td></tr><tr><td class="txt" colspan="2">Zwei / drei Sterne</td><td>+2 / +5 Frei</td></tr><tr><td class="txt" colspan="2">1 / 2 / 3 Enya</td><td>1 Min ×2 / 2 Min ×2 / 5 Min ×5</td></tr>`;
+
+// Zurück von der Kasse (Seitencache): Stand neu laden
+window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
 
 // ── Start ───────────────────────────────────────────────────────────
 load();
