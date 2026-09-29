@@ -118,7 +118,18 @@
   }
   .spin:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.08); box-shadow: 0 10px 20px rgba(0,0,0,0.45); }
   .spin:active:not(:disabled) { transform: translateY(0); }
-  .spin:disabled { background: #3a2226; color: #a08488; box-shadow: none; cursor: not-allowed; }
+  .spin.refill:disabled, .spin.auto:disabled, .spin:disabled { background: #3a2226; color: #a08488; box-shadow: none; cursor: not-allowed; }
+  .spin.refill { background: var(--amber); color: var(--ink); }
+  .spin.auto { background: #3b2a08; color: var(--amber); }
+  .spin.long { font-size: 16px; letter-spacing: 0.06em; }
+  .auto-stop { display: none; margin-top: 10px; border: 1px solid var(--board-line); background: transparent; color: var(--chalk-dim); border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .auto-stop:hover { color: var(--chalk); border-color: rgba(238,242,234,0.3); }
+  .auto-stop.on { display: inline-block; }
+  .free-badge {
+    position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 4; pointer-events: none;
+    background: var(--amber); color: var(--ink); font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 13px;
+    letter-spacing: 0.08em; padding: 2px 12px; border-radius: 999px; white-space: nowrap;
+  }
   .hint { margin-top: 12px; font-size: 12px; color: var(--chalk-faint); line-height: 1.5; }
   .hint kbd { font-family: 'Share Tech Mono', monospace; border: 1px solid var(--board-line); border-radius: 4px; padding: 0 5px; color: var(--chalk-dim); }
 
@@ -226,7 +237,7 @@
 <main class="container">
   <header class="hero">
     <h1>Casino</h1>
-    <p class="hero-sub">Drei Walzen, Spielgeld und kein Risiko. Dein Guthaben wird nach jeder Runde automatisch in diesem Browser gespeichert.</p>
+    <p class="hero-sub">Drei Walzen, Spielgeld und kein Risiko. Dein Guthaben wird nach jeder Runde automatisch auf diesem Gerät gespeichert, im Browser-Speicher und zusätzlich als Cookie.</p>
     <p class="save-warn" id="saveWarn" hidden>Dein Browser erlaubt kein Speichern (privates Fenster?). Das Guthaben geht beim Schließen der Seite verloren.</p>
   </header>
 
@@ -250,6 +261,7 @@
       </div>
 
       <div class="reels" id="reels">
+        <div class="free-badge" id="freeBadge" hidden></div>
         <div class="reel"><div class="strip"></div></div>
         <div class="reel"><div class="strip"></div></div>
         <div class="reel"><div class="strip"></div></div>
@@ -269,7 +281,8 @@
         </div>
         <button type="button" class="spin" id="spin">SPIN</button>
       </div>
-      <p class="hint">Leertaste dreht ebenfalls. Nur die mittlere Linie zählt.</p>
+      <button type="button" class="auto-stop" id="autoStop">Autospin pausieren</button>
+      <p class="hint">Mit der <kbd>Leertaste</kbd> drehst du überall auf der Seite. Nur die mittlere Linie zählt. Zwei Sterne bringen 2 Freispiele, drei Sterne 5.</p>
     </section>
 
     <aside class="side">
@@ -281,7 +294,7 @@
           <button type="button" class="topup-btn" data-coins="5000" data-bonus="500"><strong>+5.000</strong><span>+500 Bonus</span></button>
           <button type="button" class="topup-btn" data-coins="15000" data-bonus="2000"><strong>+15.000</strong><span>+2.000 Bonus</span></button>
         </div>
-        <p class="note">Alles gratis. Es wird nie echtes Geld verwendet oder abgebucht.</p>
+        <p class="note">Alles gratis, auch wenn du pleite bist. Es wird nie echtes Geld verwendet oder abgebucht.</p>
       </section>
 
       <section class="panel" aria-labelledby="statsH">
@@ -297,7 +310,7 @@
       <section class="panel" aria-labelledby="payH">
         <h2 id="payH">Gewinntabelle</h2>
         <table class="pay" id="payTable"><tbody></tbody></table>
-        <p class="note">Angegeben ist das Vielfache deines Einsatzes. Im Schnitt zahlt der Automat rund 90 % zurück.</p>
+        <p class="note">Angegeben ist das Vielfache deines Einsatzes. Freispiele laufen automatisch mit dem Einsatz, bei dem sie ausgelöst wurden. Im Schnitt zahlt der Automat rund 92 % zurück.</p>
       </section>
     </aside>
   </div>
@@ -320,7 +333,8 @@ const SYMS = [
 ];
 const BY_ID = Object.fromEntries(SYMS.map(s => [s.id, s]));
 const POOL = SYMS.flatMap(s => Array(s.w).fill(s.id));
-const PAIR_MULT = 1.5;
+const PAIR_MULT = 1.4;
+const CK = 'automat5dk_casino';
 const BET_STEPS = [10, 25, 50, 100, 250, 500];
 const START_BALANCE = 1000;
 const KEY = 'automat5dk.casino.v1';
@@ -331,32 +345,41 @@ const fmt = n => Math.round(n).toLocaleString('de-DE');
 const pick = () => POOL[Math.floor(Math.random() * POOL.length)];
 
 // ── Speichern ───────────────────────────────────────────────────────
-let state = { balance: START_BALANCE, betIdx: 2, rounds: 0, hits: 0, best: 0, jackpots: 0, lastWin: 0, view: null };
-let canSave = true;
+let state = { balance: START_BALANCE, betIdx: 2, rounds: 0, hits: 0, best: 0, jackpots: 0, lastWin: 0, free: 0, freeBet: 0, view: null };
 
+function apply(s) {
+  const num = (v, d) => (Number.isFinite(v) && v >= 0 ? Math.floor(v) : d);
+  state.balance  = num(s.balance, START_BALANCE);
+  state.betIdx   = Math.min(BET_STEPS.length - 1, num(s.betIdx, 2));
+  state.rounds   = num(s.rounds, 0);
+  state.hits     = num(s.hits, 0);
+  state.best     = num(s.best, 0);
+  state.jackpots = num(s.jackpots, 0);
+  state.lastWin  = num(s.lastWin, 0);
+  state.free     = num(s.free, 0);
+  state.freeBet  = BET_STEPS.includes(s.freeBet) ? s.freeBet : 0;
+  if (state.free > 0 && !state.freeBet) state.free = 0;
+  if (Array.isArray(s.view) && s.view.length === 3 && s.view.every(r => Array.isArray(r) && r.length === 3 && r.every(id => BY_ID[id]))) state.view = s.view;
+}
+function readCookie() {
+  const m = document.cookie.split('; ').find(c => c.startsWith(CK + '='));
+  return m ? JSON.parse(decodeURIComponent(m.slice(CK.length + 1))) : null;
+}
 function load() {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return;
-    const s = JSON.parse(raw);
-    const num = (v, d) => (Number.isFinite(v) && v >= 0 ? Math.floor(v) : d);
-    state.balance  = num(s.balance, START_BALANCE);
-    state.betIdx   = Math.min(BET_STEPS.length - 1, num(s.betIdx, 2));
-    state.rounds   = num(s.rounds, 0);
-    state.hits     = num(s.hits, 0);
-    state.best     = num(s.best, 0);
-    state.jackpots = num(s.jackpots, 0);
-    state.lastWin  = num(s.lastWin, 0);
-    if (Array.isArray(s.view) && s.view.length === 3 && s.view.every(r => Array.isArray(r) && r.length === 3 && r.every(id => BY_ID[id]))) state.view = s.view;
-  } catch (e) { canSave = false; }
+  let s = null;
+  try { const raw = localStorage.getItem(KEY); if (raw) s = JSON.parse(raw); } catch (e) {}
+  if (!s) { try { s = readCookie(); } catch (e) {} }
+  if (s) apply(s);
 }
 function save() {
+  let ok = false;
+  try { localStorage.setItem(KEY, JSON.stringify(state)); ok = true; } catch (e) {}
   try {
-    localStorage.setItem(KEY, JSON.stringify(state));
-  } catch (e) {
-    canSave = false;
-    $('saveWarn').hidden = false;
-  }
+    const { view, ...small } = state;
+    document.cookie = CK + '=' + encodeURIComponent(JSON.stringify(small)) + '; max-age=31536000; path=/; SameSite=Lax';
+    if (document.cookie.includes(CK + '=')) ok = true;
+  } catch (e) {}
+  if (!ok) $('saveWarn').hidden = false;
 }
 
 // ── Anzeige ─────────────────────────────────────────────────────────
@@ -382,8 +405,10 @@ function tweenBalance(to) {
   tweenId = requestAnimationFrame(step);
   const m = $('mBalance'); m.classList.remove('pop'); void m.offsetWidth; m.classList.add('pop');
 }
-function bet() { return BET_STEPS[state.betIdx]; }
-function clampBet() { while (state.betIdx > 0 && BET_STEPS[state.betIdx] > state.balance) state.betIdx--; }
+function bet() { return state.free > 0 ? state.freeBet : BET_STEPS[state.betIdx]; }
+function clampBet() { if (state.free > 0) return; while (state.betIdx > 0 && BET_STEPS[state.betIdx] > state.balance) state.betIdx--; }
+let autoPaused = false;
+let autoTimer = 0;
 
 function render() {
   $('mBet').textContent = fmt(bet());
@@ -393,10 +418,22 @@ function render() {
   $('stHits').textContent = fmt(state.hits);
   $('stBest').textContent = state.best > 0 ? fmt(state.best) : '–';
   $('stJackpots').textContent = fmt(state.jackpots);
-  const broke = state.balance < BET_STEPS[0];
-  $('betDown').disabled = spinning || state.betIdx === 0;
-  $('betUp').disabled = spinning || state.betIdx === BET_STEPS.length - 1 || BET_STEPS[state.betIdx + 1] > state.balance;
-  $('spin').disabled = spinning || state.balance < bet();
+  const free = state.free > 0;
+  const broke = !free && state.balance < BET_STEPS[0];
+  $('betDown').disabled = spinning || free || state.betIdx === 0;
+  $('betUp').disabled = spinning || free || state.betIdx === BET_STEPS.length - 1 || BET_STEPS[state.betIdx + 1] > state.balance;
+  const sp = $('spin');
+  sp.classList.toggle('refill', broke && !spinning);
+  sp.classList.toggle('auto', free && !autoPaused);
+  sp.classList.toggle('long', free || broke);
+  if (free && !autoPaused) { sp.textContent = 'AUTOSPIN · ' + state.free; sp.disabled = spinning; }
+  else if (free) { sp.textContent = 'FREISPIELE STARTEN · ' + state.free; sp.disabled = spinning; }
+  else if (broke) { sp.textContent = '+500 AUFLADEN'; sp.disabled = spinning; }
+  else { sp.textContent = 'SPIN'; sp.disabled = spinning || state.balance < bet(); }
+  const badge = $('freeBadge');
+  badge.hidden = !free;
+  badge.textContent = 'FREISPIELE ' + state.free;
+  $('autoStop').classList.toggle('on', free && !autoPaused);
   $('topup').classList.toggle('needed', broke);
 }
 
@@ -440,27 +477,34 @@ function spinReel(i, rows, finalRow) {
 }
 
 // ── Runde ───────────────────────────────────────────────────────────
-function evaluate(mid) {
+function evaluate(mid, stake) {
   const [a, b, c] = mid;
-  if (a === b && b === c) return { kind: 'trio', sym: a, win: bet() * BY_ID[a].m, hit: [0, 1, 2] };
-  if (a === b) return { kind: 'pair', sym: a, win: Math.round(bet() * PAIR_MULT), hit: [0, 1] };
-  if (b === c) return { kind: 'pair', sym: b, win: Math.round(bet() * PAIR_MULT), hit: [1, 2] };
-  if (a === c) return { kind: 'pair', sym: a, win: Math.round(bet() * PAIR_MULT), hit: [0, 2] };
+  if (a === b && b === c) return { kind: 'trio', sym: a, win: stake * BY_ID[a].m, hit: [0, 1, 2] };
+  if (a === b) return { kind: 'pair', sym: a, win: Math.round(stake * PAIR_MULT), hit: [0, 1] };
+  if (b === c) return { kind: 'pair', sym: b, win: Math.round(stake * PAIR_MULT), hit: [1, 2] };
+  if (a === c) return { kind: 'pair', sym: a, win: Math.round(stake * PAIR_MULT), hit: [0, 2] };
   return { kind: 'none', win: 0, hit: [] };
 }
 
 async function spin() {
-  if (spinning || state.balance < bet()) return;
+  if (spinning) return;
+  clearTimeout(autoTimer);
+  const isFree = state.free > 0;
+  const stake = bet();
+  if (!isFree && state.balance < stake) return;
   spinning = true;
-  const wager = bet();
+  const wager = isFree ? 0 : stake;
   const cab = $('cabinet');
   cab.classList.remove('win', 'jackpot');
   document.querySelectorAll('.cell.hit').forEach(c => c.classList.remove('hit'));
 
   const next = [0, 1, 2].map(() => [pick(), pick(), pick()]);
-  const res = evaluate(next.map(r => r[1]));
+  const res = evaluate(next.map(r => r[1]), stake);
+  const award = res.sym === 'star' ? (res.kind === 'trio' ? 5 : res.kind === 'pair' ? 2 : 0) : 0;
 
   // Ergebnis steht fest und wird sofort gespeichert; ein Neuladen mitten in der Runde ändert nichts.
+  if (isFree) state.free--;
+  if (award) { if (!isFree && state.free === 0) state.freeBet = stake; state.free += award; }
   state.balance += res.win - wager;
   state.rounds++;
   if (res.win > 0) { state.hits++; state.best = Math.max(state.best, res.win); }
@@ -486,20 +530,44 @@ async function spin() {
   tweenBalance(state.balance);
   render();
 
+  const extra = award ? ` · +${award} Freispiele` : '';
   if (res.kind === 'trio' && res.sym === 'seven') {
     cab.classList.add('jackpot');
     banner(`JACKPOT · +${fmt(res.win)}`, 'jackpot');
   } else if (res.kind === 'trio') {
     cab.classList.add('win');
-    banner(`Dreimal ${BY_ID[res.sym].name} · +${fmt(res.win)}`, 'win');
+    banner(`Dreimal ${BY_ID[res.sym].name} · +${fmt(res.win)}${extra}`, 'win');
   } else if (res.kind === 'pair') {
     cab.classList.add('win');
-    banner(`Zwei gleiche (${BY_ID[res.sym].name}) · +${fmt(res.win)}`, 'win');
+    banner(`Zwei gleiche (${BY_ID[res.sym].name}) · +${fmt(res.win)}${extra}`, 'win');
+  } else if (state.free > 0) {
+    banner(`Keine Gewinnlinie. Noch ${state.free} Freispiele.`, 'lose');
   } else if (state.balance < BET_STEPS[0]) {
-    banner('Guthaben aufgebraucht. Lade rechts neue Coins auf.', 'warn');
+    banner('Guthaben aufgebraucht. Drück SPIN oder die Leertaste für +500 Coins.', 'warn');
   } else {
     banner('Keine Gewinnlinie. Nochmal?', 'lose');
   }
+  scheduleAuto();
+}
+
+function scheduleAuto() {
+  clearTimeout(autoTimer);
+  if (state.free > 0 && !autoPaused && !spinning) autoTimer = setTimeout(spin, REDUCED ? 500 : 1100);
+}
+
+function refill() {
+  state.balance += 500;
+  save();
+  tweenBalance(state.balance);
+  render();
+  banner('+500 Coins aufgeladen und gespeichert.', 'win');
+}
+
+function request() {
+  if (spinning) return;
+  if (state.free > 0) { autoPaused = false; spin(); return; }
+  if (state.balance < BET_STEPS[0]) { refill(); return; }
+  spin();
 }
 
 // ── Aufladen ────────────────────────────────────────────────────────
@@ -521,20 +589,27 @@ $('betDown').addEventListener('click', () => { if (state.betIdx > 0) { state.bet
 $('betUp').addEventListener('click', () => {
   if (state.betIdx < BET_STEPS.length - 1 && BET_STEPS[state.betIdx + 1] <= state.balance) { state.betIdx++; save(); render(); }
 });
-$('spin').addEventListener('click', spin);
+$('spin').addEventListener('click', request);
+$('autoStop').addEventListener('click', () => { autoPaused = true; clearTimeout(autoTimer); render(); banner('Autospin pausiert. Drück SPIN oder die Leertaste zum Fortsetzen.', 'warn'); });
 document.addEventListener('keydown', e => {
-  if (e.code !== 'Space' || e.repeat) return;
+  if (e.code !== 'Space') return;
   const t = document.activeElement && document.activeElement.tagName;
-  if (t === 'BUTTON' || t === 'INPUT' || t === 'A' || t === 'TEXTAREA') return;
+  if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
   e.preventDefault();
-  spin();
+  if (!e.repeat) request();
+});
+document.addEventListener('keyup', e => {
+  if (e.code !== 'Space') return;
+  const t = document.activeElement && document.activeElement.tagName;
+  if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
+  e.preventDefault();
 });
 
 // ── Gewinntabelle ───────────────────────────────────────────────────
 function trio(id) { return `<span class="trio">${`<svg viewBox="0 0 48 48" aria-hidden="true"><use href="#s-${id}"/></svg>`.repeat(3)}</span>`; }
 $('payTable').tBodies[0].innerHTML =
   SYMS.map(s => `<tr><td>${trio(s.id)}</td><td class="txt">${s.name}</td><td>×${fmt(s.m)}</td></tr>`).join('') +
-  `<tr><td class="txt" colspan="2">Zwei gleiche</td><td>×1,5</td></tr>`;
+  `<tr><td class="txt" colspan="2">Zwei gleiche</td><td>×1,4</td></tr><tr><td class="txt" colspan="2">Zwei / drei Sterne</td><td>+2 / +5 Frei</td></tr>`;
 
 // ── Start ───────────────────────────────────────────────────────────
 load();
@@ -544,8 +619,8 @@ strips.forEach((s, i) => place(s, view[i]));
 shown = state.balance;
 $('mBalance').textContent = fmt(shown);
 render();
-if (state.balance < BET_STEPS[0]) banner('Guthaben aufgebraucht. Lade rechts neue Coins auf.', 'warn');
-if (!canSave) $('saveWarn').hidden = false;
+if (state.free > 0) { banner(`Freispiele laufen: noch ${state.free}.`, 'win'); scheduleAuto(); }
+else if (state.balance < BET_STEPS[0]) banner('Guthaben aufgebraucht. Drück SPIN oder die Leertaste für +500 Coins.', 'warn');
 save();
 </script>
 </body>
