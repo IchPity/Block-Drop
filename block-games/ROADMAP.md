@@ -94,11 +94,11 @@ am Ende in die Repo-Struktur integriert wird.
 |----|------|------|--------|
 | block-bomb | Block Bomb | Bombe weitergeben, wer hochgeht fliegt raus | ✅ v0.10.0 |
 | block-rush | Block Rush | Blöcke schneller stapeln als die Gegner | ✅ v0.22.0, Spielbarkeits-Durchgang v0.23.0 |
+| color-hunt | Farbjagd | Reihum zeigt eine Zielfarbe kurz auf, der/die Jagende muss sie an einem RGB-Regler möglichst genau nachstellen (Punkte nach CIEDE2000-Farbabstand) — die übrigen Spieler mischen an eigenen Flächen Ablenkfarben, um zu verwirren | ✅ v0.25.0 |
 | coin-grab | Coin Grab | In begrenzter Zeit Münzen einsammeln | Platzhalter |
 | memory-clash | Memory Clash | Sequenzen merken, wer zuerst patzt fliegt | Platzhalter |
 | speed-tap | Speed Tap | Reaktionsduell | Platzhalter |
 | quiz-blocks | Quiz Blocks | Quizfragen, schnellste richtige Antwort gewinnt | Platzhalter |
-| color-hunt | Farbjagd | Reihum zeigt eine Zielfarbe kurz auf, der/die Zeigende muss sie an einem Regler (RGB/HSV) möglichst genau nachstellen — Punkte nach Genauigkeit zur Zielfarbe. Die übrigen Spieler sitzen an eigenen Flächen ringsum und wählen per eigenem Regler Ablenkungsfarben rund um die Zielfläche, um den Zeigenden zu verwirren | Platzhalter |
 
 Freischalten: in `renderer/app.js` im `MINIGAMES`-Array `available: true`
 setzen und einen `GAME_REGISTRY`-Eintrag ergänzen (seit v0.23.0 kein

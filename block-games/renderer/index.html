@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="block-bomb.css">
   <link rel="stylesheet" href="laser-lines.css">
   <link rel="stylesheet" href="block-rush.css">
+  <link rel="stylesheet" href="color-hunt.css">
 </head>
 <body>
 
@@ -495,6 +496,9 @@
   <div id="screen-block-rush" class="screen">
     <div id="rushStage" class="rush-stage"></div>
   </div>
+  <div id="screen-color-hunt" class="screen">
+    <div id="colorStage" class="ch-stage"></div>
+  </div>
 
   <!-- Spiel-Voting: nur vor dem ERSTEN Spiel der Serie. Echte Spieler wählen,
        Bots/Remote zufällig, Mehrheit gewinnt, Gleichstand → zufällig. Alle
@@ -608,11 +612,13 @@
   <script src="auth.js"></script>
   <script src="net/session.js"></script>
   <script src="app.js"></script>
-  <!-- Minigame-Spielkerne als ES-Module (laden Three.js aus vendor/).
-       Registrieren window.BlockBomb bzw. window.LaserLines; laufen deferred
-       nach app.js. -->
+  <!-- Minigame-Spielkerne als ES-Module. Registrieren window.BlockBomb,
+       window.LaserLines, window.BlockRush bzw. window.ColorHunt; laufen
+       deferred nach app.js. Die ersten drei laden Three.js aus vendor/ —
+       Farbjagd ist reines DOM, ohne 3D. -->
   <script type="module" src="block-bomb/main.js"></script>
   <script type="module" src="laser-lines/main.js"></script>
   <script type="module" src="block-rush/main.js"></script>
+  <script type="module" src="color-hunt/main.js"></script>
 </body>
 </html>

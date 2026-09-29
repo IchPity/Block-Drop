@@ -7,11 +7,13 @@
 // Dadurch ist „lokaler Mensch" ↔ „entfernter Spieler" später ein reiner
 // Controller-Tausch, ohne den Spielkern anzufassen.
 //
-// Vier Implementierungen:
+// Fünf Implementierungen:
 //   LocalHumanController  — gedrückte Tasten (WASD/Pfeile) des lokalen Spielers
 //   LocalPieceController  — wie oben, aber Ereignis-Zähler statt Richtung
 //                            (Block Rush: schieben/drehen/droppen/casten/Ziel
 //                            wechseln), s. „Lokales Teil-Stapeln" unten
+//   LocalColorController  — wie oben, aber Kanal wählen + Wert verstellen
+//                            (Farbjagd: RGB-Regler), s. „Lokaler Farbregler" unten
 //   BotController         — KI-Gehirn (per Konstruktor injiziert, je Spiel anders)
 //   RemoteController      — Online-Spiel über Netzwerke; optionaler `adapter`
 //                            für Intents, die kein {x,z} sind (s. dort)
@@ -55,6 +57,10 @@ const LEGACY_WALK = Object.freeze({
 const LEGACY_PIECE = Object.freeze({
   wasd:   Object.freeze({ left: 'KeyA', right: 'KeyD', rotate: 'KeyW', down: 'KeyS', hard: 'KeyQ', cast: 'KeyE', cycle: 'KeyR' }),
   arrows: Object.freeze({ left: 'ArrowLeft', right: 'ArrowRight', rotate: 'ArrowUp', down: 'ArrowDown', hard: 'ShiftRight', cast: 'ControlRight', cycle: 'Slash' }),
+});
+const LEGACY_COLOR = Object.freeze({
+  wasd:   Object.freeze({ left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS', lock: 'Space' }),
+  arrows: Object.freeze({ left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown', lock: 'ShiftRight' }),
 });
 
 function resolveBindingMap(bindingsOrLayout, legacyTable) {
@@ -271,6 +277,90 @@ export class LocalPieceController {
     }
     const out = { ...this._acc, soft: this.soft, seq: this.seq };
     this._acc.dx = 0; this._acc.rot = 0; this._acc.hard = 0; this._acc.cast = 0; this._acc.cycle = 0;
+    return out;
+  }
+}
+
+// ── Lokaler Farbregler (Farbjagd): kein Bewegungsintent, sondern ein aktiver
+// Kanal (R/G/B) + aufsummierte Wertänderungen je Kanal seit der letzten
+// Abfrage — dasselbe Ereignis-Zähler-Prinzip wie LocalPieceController, aus
+// demselben Grund (20-Hz-Online-Polling darf keine Tastendrücke verschlucken).
+// Kanal wechseln ist ein einzelner Tastendruck (kein Auto-Repeat nötig — nur
+// 3 Kanäle); Wert hoch/runter wiederholt gehalten per DAS/ARR wie oben.
+const COLOR_STEP = 5; // muss zum Regler-Raster in color-hunt/color.js (STEP) passen
+const COLOR_CHANNELS = 3; // R, G, B
+
+export class LocalColorController {
+  constructor(bindings = 'wasd') {
+    this._rev = reverseMap(resolveBindingMap(bindings, LEGACY_COLOR));
+    this.held = new Set();
+    this.cur = 0; // aktiver Kanal: 0=R, 1=G, 2=B
+    this._acc = [0, 0, 0]; // aufsummierte Schritte je Kanal seit letztem update()
+    this._lockAcc = 0;
+    this.seq = 0;
+    this._upDownDir = 0; this._dasTimer = 0; this._arrTimer = 0;
+    this.attached = false;
+
+    this._onDown = (e) => {
+      const a = this._rev.get(e.code);
+      if (!a) return;
+      e.preventDefault();
+      if (this.held.has(a)) return; // Browser-Auto-Repeat ignorieren, DAS/ARR macht das selbst
+      this.held.add(a);
+      this._press(a);
+    };
+    this._onUp = (e) => {
+      const a = this._rev.get(e.code);
+      if (!a) return;
+      this.held.delete(a);
+      if (a === 'up' || a === 'down') { this._upDownDir = 0; this._dasTimer = 0; this._arrTimer = 0; }
+    };
+  }
+
+  _press(action) {
+    switch (action) {
+      case 'left':  this.cur = (this.cur + COLOR_CHANNELS - 1) % COLOR_CHANNELS; this.seq++; break;
+      case 'right': this.cur = (this.cur + 1) % COLOR_CHANNELS; this.seq++; break;
+      case 'up':    this._acc[this.cur] += COLOR_STEP; this.seq++; this._upDownDir = 1; this._dasTimer = 0; break;
+      case 'down':  this._acc[this.cur] -= COLOR_STEP; this.seq++; this._upDownDir = -1; this._dasTimer = 0; break;
+      case 'lock':  this._lockAcc++; this.seq++; break;
+    }
+  }
+
+  attach() {
+    if (this.attached) return;
+    window.addEventListener('keydown', this._onDown);
+    window.addEventListener('keyup', this._onUp);
+    this.attached = true;
+  }
+  detach() {
+    window.removeEventListener('keydown', this._onDown);
+    window.removeEventListener('keyup', this._onUp);
+    this.held.clear();
+    this.attached = false;
+  }
+  // Tasten leeren, ohne die Listener zu lösen (z.B. beim Pausieren, oder wenn
+  // die Phase gerade keine Eingabe zulässt — s. color-hunt/main.js "show").
+  clear() {
+    this.held.clear();
+    this._upDownDir = 0; this._dasTimer = 0; this._arrTimer = 0;
+  }
+
+  update(self, world, dt) {
+    if (this._upDownDir !== 0) {
+      this._dasTimer += dt;
+      if (this._dasTimer >= DAS) {
+        this._arrTimer += dt;
+        while (this._arrTimer >= ARR) {
+          this._arrTimer -= ARR;
+          this._acc[this.cur] += this._upDownDir * COLOR_STEP;
+          this.seq++;
+        }
+      }
+    }
+    const out = { d: [...this._acc], cur: this.cur, lock: this._lockAcc, seq: this.seq };
+    this._acc = [0, 0, 0];
+    this._lockAcc = 0;
     return out;
   }
 }

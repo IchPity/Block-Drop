@@ -46,19 +46,21 @@ Hinweis: Node.js liegt portabel auf `D:\` (`D:\node.exe`).
 | `renderer/app.js` | UI-Logik: Screen-Wechsel, Gast-Modus, Menü-Rendering, **Lobby (Slots inkl. Bot/2.-Spieler/Splitscreen-Auswahl pro Platz + Farben + 300 Bot-Namen, Couch-Koop-Slot, Online-Peer-Slots)**, **Match-Abbruch-Abstimmung** (F5/F6, Schein-Abstimmung gegen Bots), **Online-Sessions** (Host/Beitreten, Lobby-Sync, Netzwerk-Match-Loop), **Credits-Rendering**, Einstellungs-UI, **Konto/Freunde-Overlay + Konto-Bearbeitung**, **Login-Vorschläge zuletzt angemeldeter Nutzer (`RecentUsers`)**, Toast, Sound-Verdrahtung, Beenden-Dialog (**mit optionalem Abmelden**), **feste navId-Tastatur-Navigation (`NAV_MENU`/`buildLobbyNav`) + Fokus-Gedächtnis**, animierter Hintergrund (Blöcke/Würfel/Sterne) |
 | `renderer/net/session.js` | **`NetSession`** (neu, v0.20.0): Online-Sessions über Supabase Realtime Broadcast + Presence — Hosten/Beitreten per Code, Einladungs-Channel pro Nutzer, generisches `on(type, handler)`/`send(type, payload)`. Kennt weder Lobby noch Spielkerne — reine Transport-Schicht, von app.js angesprochen |
 | `renderer/settings.js` | Zentraler Einstellungs-Store (localStorage, onChange-Events, `effectiveVolume()`) |
-| `renderer/keybinds.js` | **Tastenbelegung** (`Keybinds`, neu v0.23.0): Preset (WASD/Pfeiltasten) pro Spieler 1, Spieler 2 bekommt automatisch das andere, plus optionale Übersteuerungen je Aktion (`Settings.keysP1/keysP2`); `resolve(player)` liefert die fertigen `{walk,piece}`-Bindings, `set()` löst Konflikte per Tausch (gleicher Spieler) oder Ablehnung (anderer Spieler) |
-| `renderer/audio.js` | Sound-System `Sfx`: UI- + **Block-Bomb-Effekte** (`bombTick/bombPass/bombExplode/count/go`) + **Laser-Lines-Effekte** (`laserWarn/laserFire/laserHit/laserEliminate/laserWin/laserSpeedUp`) per WebAudio synthetisiert (keine Audio-Dateien), Lautstärke aus dem Settings-Store |
+| `renderer/keybinds.js` | **Tastenbelegung** (`Keybinds`, neu v0.23.0): Preset (WASD/Pfeiltasten) pro Spieler 1, Spieler 2 bekommt automatisch das andere, plus optionale Übersteuerungen je Aktion (`Settings.keysP1/keysP2`); `resolve(player)` liefert die fertigen `{walk,piece,color}`-Bindings (**`color`-Gruppe neu v0.25.0, Farbjagd**), `set()` löst Konflikte per Tausch (gleicher Spieler) oder Ablehnung (anderer Spieler) |
+| `renderer/audio.js` | Sound-System `Sfx`: UI- + **Block-Bomb-Effekte** (`bombTick/bombPass/bombExplode/count/go`) + **Laser-Lines-Effekte** (`laserWarn/laserFire/laserHit/laserEliminate/laserWin/laserSpeedUp`) + **Block-Rush-Effekte** (`rushLock/rushCollapse/rushSpell/rushWin`) + **Farbjagd-Effekte** (`colorShow/colorTick/colorLock/colorReveal/colorPerfect/colorWin`) per WebAudio synthetisiert (keine Audio-Dateien), Lautstärke aus dem Settings-Store |
 | `renderer/auth.js` | Supabase-Auth + **Freundes- und Konto-API** (gleiches Backend wie die Website) + **`Auth.client`-Getter** (neu, für `net/session.js`) |
 | `renderer/style.css` | Arcade-Look: Farben (inkl. `--orange/--cyan/--pink`), Animationen, Layout, unsichtbare Scrollbalken, Kompakt-Stufen, **Lobby-/Playercard-/Popup-Styling**, Credits-Styling, Bühnen-Hintergrund, **generischer Minigame-Flow (`.mg-*`: Map-Voting/Countdown/Ranking) + Lobby-Krone**, **Match-Abbruch-Panel (`.mg-abort-vote`, links/vertikal zentriert, nicht blockierend)** |
 | `renderer/block-bomb.css` | Optik **Block Bomb**: Canvas-Bühne + In-Game-HUD (Timer/Namensschilder/Meldungen, Map-Intro) + Block-Bomb-Map-Thumbnails (`.mg-thumb-block-bomb-*`). Die Voting-/Countdown-/Ergebnis-Overlays sind generisch (`.mg-*` in `style.css`) |
 | `renderer/laser-lines.css` | Optik **Laser Lines**: Canvas-Bühne + In-Game-HUD (Leben/Tempo/Warnbanner/Treffer-Vignette/Namensschilder, Map-Intro) + Laser-Map-Thumbnails (`.mg-thumb-laser-lines-*`) |
 | `renderer/block-rush.css` | Optik **Block Rush**: Canvas-Bühne + In-Game-HUD (Timer/Höhe-Stabilität-Chips/Nächstes-Teil/Zauber-Cursor, Splitscreen-Trennlinie `.split-v`) + Map-Thumbnails |
-| `renderer/game/` | **Spiel-agnostische, von ALLEN Minigames geteilte Bausteine**: `characters.js` (blockige 3D-Figur `BlockCharacter` + `setHolderGlow/flash/explode/setInvulnBlink/setEliminated/setJumpOffset`), `controllers.js` (`LocalHumanController(layout)` — **WASD/Pfeiltasten trennbar für Couch-Koop, liest jetzt `bindings` aus `Keybinds`** —, `LocalPieceController` (Block Rush), `RemoteController` — **jetzt echt gefüttert, s. Online-Sessions** —, generischer `BotController(brain)`), `theme.js` (**gemeinsames Farb-/Licht-Modul**, neu v0.23.0: `PALETTE` synchron zu den CSS-Tokens, `applyMood()`/`addLightRig()` für Hintergrund/Nebel/Licht pro Map), `bots/botAI.js`, `bots/waypoints.js` |
+| `renderer/color-hunt.css` | Optik **Farbjagd** (neu v0.25.0): reines DOM (kein Canvas) — 3 Arena-Layouts (Atelier/Kaleidoskop/Blitzlicht), Reveal-Panel, Roster-Chips (Name/Rolle/R-G-B-Balken/Eingeloggt), Map-Thumbnails (`.mg-thumb-color-hunt-*`) |
+| `renderer/game/` | **Spiel-agnostische, von ALLEN Minigames geteilte Bausteine**: `characters.js` (blockige 3D-Figur `BlockCharacter` + `setHolderGlow/flash/explode/setInvulnBlink/setEliminated/setJumpOffset`), `controllers.js` (`LocalHumanController(layout)` — **WASD/Pfeiltasten trennbar für Couch-Koop, liest jetzt `bindings` aus `Keybinds`** —, `LocalPieceController` (Block Rush), `LocalColorController` (**neu v0.25.0, Farbjagd**: Kanal wählen + Wert verstellen statt Bewegung), `RemoteController` — **jetzt echt gefüttert, s. Online-Sessions** —, generischer `BotController(brain)`), `theme.js` (**gemeinsames Farb-/Licht-Modul**, neu v0.23.0: `PALETTE` synchron zu den CSS-Tokens, `applyMood()`/`addLightRig()` für Hintergrund/Nebel/Licht pro Map), `bots/botAI.js`, `bots/waypoints.js` |
 | `renderer/game/bots/botAI.js` | **Generische, wiederverwendbare Bot-KI** (für alle Minigames): Zustandsautomaten (CHASE/FLEE/ROAM/AVOID_EDGE/UNSTUCK), Anti-Stuck-Erkennung, Wand-/Ecken-Vermeidung, Steering, optionaler Debug-Modus, **Utility-Scoring für Zielwahl**, **Gefahren-Lookahead** (`decision.predictedHazards`), **leichtgewichtige Bot-Koordination** (Ziel-Claims über `world.map`) |
 | `renderer/game/bots/memory.js` | **Räumliches Match-Gedächtnis** (`createZoneMemory`): Bots merken sich WÄHREND eines Matches erlebte Gefahrenzonen (z.B. Stellen, an denen sie feststeckten) mit sanftem, abklingendem Malus — ergänzt die statischen `corner`-Kartentags um echtes Laufzeit-Lernen. Pro Bot-Mover = automatisch pro Match frisch |
 | `renderer/block-bomb/` | **Block-Bomb-Spielkern** (ES-Module): `main.js` (Szene/Renderer/Schleife/Runden + HUD + Map-Intro + Platzierungen, **`role`-Split Host/Gast + `getSnapshot/applySnapshot/feedRemoteInput/convertToBot`**), `maps.js` (3 Maps), `bomb.js` (Bombe), `bots.js` (per-Game Adapter für `botAI.js`). Figur + Controller kommen aus `renderer/game/` |
 | `renderer/laser-lines/` | **Laser-Lines-Spielkern** (ES-Module): `main.js` (Szene/Schleife/Leben/Treffer/HUD, `window.LaserLines`, **`role`-Split Host/Gast + `getSnapshot/applySnapshot/feedRemoteInput/convertToBot`**), `maps.js` (3 Maps + `LASER_MAP_META` + Laser-Configs), `lasers.js` (Laser-System `warning→active→cooldown` + `LaserDirector`), `bots.js` (per-Game Adapter für `botAI.js`). Figur + Controller aus `renderer/game/` |
 | `renderer/block-rush/` | **Block-Rush-Spielkern** (ES-Module): `main.js` (Szene/Schleife/`PieceView`+Geisterteil/HUD, `window.BlockRush`, `role`-Split Host/Gast, Splitscreen-Views), `pieces.js` (Tetromino-Formen, `Playfield`-Kinematik, `previewDropRow()`), `tower.js` (`TowerSim` — Kipp-/Einsturz-Simulation der gelockten Blöcke), `spells.js` (4 Zauber), `maps.js` (3 Maps), `bots.js` (eigene Platzierungs-KI, reaktionsgebremst). Figur/Controller-Abstraktion gilt hier NICHT — Block Rush hat keine Spielfigur, sondern `LocalPieceController` aus `renderer/game/controllers.js` |
+| `renderer/color-hunt/` | **Farbjagd-Spielkern** (ES-Module, neu v0.25.0): `main.js` (Zustandsautomat intro→show→mix→reveal, DOM-HUD statt Three.js, `window.ColorHunt`, `role`-Split Host/Gast), `color.js` (sRGB→Lab→**CIEDE2000**-Farbabstand, `scoreFor()`, `randomTargetColor()`, Regler-Raster), `maps.js` (3 Regelsätze: Zeig-/Mischzeit + Arena-Layout), `bots.js` (Gedächtnis-Rauschen als Jäger, Beinahe-Treffer/Komplement als Störer). Keine Spielfigur — `LocalColorController` aus `renderer/game/controllers.js` |
 | `renderer/vendor/three.module.js` | Lokal eingebundenes **Three.js (r160)** für die 3D-Darstellung (kein CDN — CSP `default-src 'self'`, offline-fähig) |
 | `renderer/assets/` | Eigene lokale Assets: `block-icon.svg/.png/.ico` (Marken-Block), `cube.svg`/`star.svg` (Deko-Masken) |
 | `Block Games starten.bat` | Doppelklick-Start der App |
@@ -139,15 +141,16 @@ gewinnt.
 ### Generischer Minigame-Flow (für ALLE Minigames)
 
 Seit v0.13.0 ist die Match-Orchestrierung in `app.js` **nicht mehr fest an Block
-Bomb gekoppelt**, sondern generisch — so teilen sich Block Bomb, Laser Lines und
-Block Rush denselben Ablauf und dieselben Overlays.
+Bomb gekoppelt**, sondern generisch — so teilen sich Block Bomb, Laser Lines,
+Block Rush und (seit v0.25.0) Farbjagd denselben Ablauf und dieselben Overlays,
+obwohl Farbjagd als einziges davon kein Bewegungs-/Last-Man-Standing-Spiel ist.
 
 - **Minigame-Registry (`GAME_REGISTRY`):** Jedes spielbare Minigame deklariert
   entkoppelt `windowKey` (globales Spiel-Objekt `window.BlockBomb`/`window.LaserLines`/
-  `window.BlockRush` mit `start/pause/resume/stop/isRunning/isPaused`), `mapMeta`
-  (Maps fürs Voting), `screenId` + `stageId` (Vollbild-Screen + Canvas-Host). Der
-  Flow spricht das Spiel nur über `window[windowKey]` an und kennt keine
-  Spiel-Internas.
+  `window.BlockRush`/`window.ColorHunt` mit `start/pause/resume/stop/isRunning/isPaused`),
+  `mapMeta` (Maps fürs Voting), `screenId` + `stageId` (Vollbild-Screen + Bühnen-Host,
+  bei Farbjagd ein reiner DOM-Container statt Canvas). Der Flow spricht das Spiel nur
+  über `window[windowKey]` an und kennt keine Spiel-Internas.
 - **Ein gemeinsames Overlay-Set (`#mg*`):** `#mgGameVote` (Spiel-Voting, nur vor
   dem ersten Spiel einer Serie, seit v0.23.0), `#mgMapVote` (Map-Voting, vor jeder
   Runde), `#mgCountdown` (3·2·1·GO), `#mgPause` (mit `#mgPauseHint` für den
@@ -160,8 +163,10 @@ Block Rush denselben Ablauf und dieselben Overlays.
 - **Generischer Ergebnis-Vertrag:** `onResult(result)` mit
   `result = { winner, placements: [{id,name,colorHex}] }` (Reihenfolge 1.→letzter).
   Block Bomb merkt sich dafür die Eliminierungs-Reihenfolge; Laser Lines sortiert die
-  Überlebenden nach Leben; Block Rush nach Turmhöhe/Stabilität. `awardSeriesPoints()`
-  wertet daraus die Platzierungspunkte.
+  Überlebenden nach Leben; Block Rush nach Turmhöhe/Stabilität; Farbjagd nach
+  Punktesumme über beide Jäger-Züge (Gleichstand → bester Einzelzug, sonst Zufall —
+  s. Abschnitt „Farbjagd" unten). `awardSeriesPoints()` wertet daraus die
+  Platzierungspunkte.
 - **Flow-Funktionen:** `openGameVote()`/`castGameVote()` (nur vor dem ersten
   Spiel) → `openMapVote()`/`castMapVote()` (Mensch wählt, Bots/Remote zufällig,
   Mehrheit, Gleichstand zufällig, vor JEDER Runde) → `runCountdown()` →
@@ -169,8 +174,10 @@ Block Rush denselben Ablauf und dieselben Overlays.
   `pauseGame()`/`resumeGame()`/`quitGameToMenu()` — seit v0.23.0 pausiert
   `pauseGame()` die Simulation nur, wenn KEIN Online-Mitspieler beteiligt ist
   (siehe „Beenden"/Änderungsprotokoll v0.23.0). Esc-Verhalten + Tastatur-Container
-  in `setupKeyboard()` sind auf die `#mg*`-Overlays + alle drei Spielscreens
-  umgestellt.
+  in `setupKeyboard()` sind auf die `#mg*`-Overlays + alle vier Spielscreens
+  umgestellt (seit v0.25.0 generisch über `Object.values(GAME_REGISTRY)` statt
+  einer festen Screen-ID-Liste — ein neues Minigame muss diese Stelle nicht mehr
+  anfassen).
 
 ### Party-Serie & Gesamt-Ranking (Lobby „Spiel starten")
 
@@ -181,9 +188,9 @@ einzelnen Runde (`startSeries()` in `app.js`):
   zufällig:** „Spiel starten" öffnet zuerst die Abstimmung über das erste Spiel
   der Serie (`openGameVote()`/`castGameVote()`, gleiches Muster wie das
   Map-Voting). Danach steht `seriesQueue = [gewähltes Spiel, ...gemischter Rest]`
-  fest — alle drei Minigames (Block Bomb, Laser Lines, Block Rush) sind
-  verfügbar, aber nur das erste wird gewählt, die Reihenfolge der übrigen ist
-  zufällig.
+  fest — alle vier Minigames (Block Bomb, Laser Lines, Block Rush, Farbjagd)
+  sind verfügbar, aber nur das erste wird gewählt, die Reihenfolge der übrigen
+  ist zufällig.
 - Pro Spiel: **eigenes Map-Voting** → Countdown → Runde → **Zwischen-Ranking**
   (`#mgRanking`, „Weiter"). Nach dem letzten Spiel: **Gesamt-Ranking** mit Krone.
 - **Platzierungspunkte:** Bei N Spielern bekommt der 1. **N** Punkte, der letzte **1**
@@ -358,6 +365,81 @@ das Raster füllt sich nur, das ist Kernregel, keine Baustelle.
   Spieler) — alle Türme inkl. des fallenden Teils kommen aus dem zuletzt
   empfangenen Snapshot des Hosts.
 
+### Farbjagd (Minigame)
+
+Viertes spielbares Minigame (seit v0.25.0) — und das erste ohne Bewegung/
+Last-Man-Standing: reines DOM statt Three.js, **rundenbasiert statt
+gleichzeitig**. Reihum ist jeder Spieler **zweimal** (`TURNS_PER_PLAYER = 2`)
+der Jäger; die übrigen sind gleichzeitig Störer. Nur der Jäger punktet — die
+Punktesumme über beide Züge entscheidet die Platzierung.
+
+- **Spielkern** (`renderer/color-hunt/main.js`, registriert `window.ColorHunt`):
+  bewusst KEIN Canvas/Three.js — das Genre hat keine Kamera/Bewegung, eine 3D-
+  Bühne wäre reiner Mehraufwand ohne Spielwert. `role`-Split Host/Gast wie die
+  anderen drei Spiele, `getSnapshot/applySnapshot/feedRemoteInput/convertToBot`.
+- **Ein Zug hat vier Phasen:**
+  1. **intro** (1,2s): Zug-Ansage („Zug 3/8 — Name jagt!").
+  2. **show** (map-abhängig, 0,8–2,0s): Die Zielfarbe steht **für alle
+     sichtbar** auf der Jäger-Kachel — jeder sieht sie, auch die Störer (die
+     brauchen sie für ihre Ablenkfarbe). Eingaben werden zwar weiter
+     abgefragt (Tasten stauen sonst auf), aber NICHT angewendet — s. Kanal.
+  3. **mix** (map-abhängig, 9–14s): Zielfarbe verborgen, alle regeln live.
+     Die Jäger-Kachel zeigt die eigene Mischung, die Störer-Kacheln ihre
+     jeweilige Ablenkfarbe (Simultankontrast-Effekt). Der Jäger kann per
+     „Fertig" früher einloggen (`lock`). Countdown-Tick in den letzten 3s.
+  4. **reveal** (2,8s): Zielfarbe + Mischung nebeneinander, Punktzahl.
+- **Wertung** (`color-hunt/color.js`): sRGB → Lab → **CIEDE2000**
+  (Sharma/Wu/Dalal 2005, per Node-Referenzpaar gegen die Sharma-Testtabelle
+  verifiziert) statt naivem RGB-Abstand — Menschen empfinden Farbabstände
+  nicht linear im RGB-Raum. `scoreFor()` bildet ΔE00 exponentiell auf 0–100 Pkt
+  ab (`round(100·exp(-ΔE00/20))`: ΔE 2→90, ΔE 10→61, ΔE 20→37). Zielfarben
+  kommen aus HSV (S/V ≥ 0,35, keine Graubrei-Farben) und werden wie der Regler
+  auf ein 5er-Raster (0–255) gerundet, damit 100 Punkte erreichbar bleiben.
+- **Steuerung — neuer Controller-Typ**, weil kein `{x,z}`-Bewegungsintent
+  passt (wie schon bei Block Rush): `LocalColorController`
+  (`renderer/game/controllers.js`) liefert pro Frame `{d:[dr,dg,db], cur, lock,
+  seq}` — Kanal wechseln (links/rechts, sofort) + Wert verstellen (hoch/runter,
+  per DAS/ARR wiederholend gehalten) + Fertig (lock). Neue Keybind-Gruppe
+  `color` in `renderer/keybinds.js` (eigener „Steuerung"-Reiter-Block wie
+  Block Rush), Standardpresets WASD (A/D=Kanal, W/S=Wert, Leertaste=Fertig)
+  bzw. Pfeiltasten (Shift rechts=Fertig). `RemoteController` bekommt einen
+  eigenen `COLOR_REMOTE_ADAPTER` (Ereignis-Zähler aufaddieren statt ersetzen,
+  gleiches Muster wie Block Rush).
+- **3 Maps** (`maps.js`) — hier ein **Regelsatz**, keine Geometrie: **Atelier**
+  (2,0s zeigen/14s mischen, Störer-Tafeln als ruhige Reihe unterhalb der
+  Jäger-Fläche), **Kaleidoskop** (1,5s/12s, Störer-Kacheln als Ring direkt um
+  die Jäger-Fläche — starker Simultankontrast), **Blitzlicht** (0,8s/9s,
+  5×5-Mosaik: Mitte 3×3 = Jäger, die 16 Randzellen reihum an die Störer —
+  aufdringlichste Anordnung, per CSS-Grid-Auto-Placement um den explizit
+  platzierten Jäger-Block herum).
+- **Bots** (`bots.js`, `makeColorHuntBotBrain`): **kein Cheaten** — die
+  Zielfarbe steht im `world`-Objekt nur während „show", exakt so lange, wie
+  ein Mensch sie sieht. Als Jäger: Gedächtnis-Rauschen je Kanal (Gauß,
+  Box-Muller; stärker bei „medium" und bei kürzerer Zeigen-Zeit), danach
+  kanalweise auf den gemerkten Wert zusteuern, mit kleiner Denkpause
+  einloggen. Als Störer: Ablenkfarbe aus der gesehenen Zielfarbe — entweder
+  ein „Beinahe-Treffer" (Versatz auf 1-2 Kanälen) oder der Kontrast/das
+  Komplement (`255-c`) — steuert dorthin, loggt nie ein (Störer punkten
+  nicht). Schwierigkeit (medium/hard) steuert Reaktionszeit, Aktionstempo und
+  Gedächtnis-Rauschen.
+- **Roster-Chips statt Namensschilder:** ein Chip pro Spieler mit Name
+  (Lobby-Farbe), Rolle (🎯 Jäger/🌀 Störer), **R/G/B-Balken als Text+Balken**
+  (nicht nur die Farbfläche — hilft z.B. bei Farbsehschwäche, s. Accessibility-
+  Prinzip in PRODUCT.md) und Eingeloggt-Haken.
+- **Splitscreen:** wird bei Farbjagd bewusst IGNORIERT (`config.split` bleibt
+  ungenutzt) — die gemeinsame 2D-Bühne zeigt ohnehin alle Regler-Flächen aller
+  Spieler gleichzeitig, ein geteiltes Bild brächte hier keinen Vorteil.
+- **Online:** `role`-Split Host/Gast wie die anderen Spiele. Der Snapshot
+  überträgt die Zielfarbe nur in „show"/„reveal" (also genau dann, wenn ein
+  Gast sie auch sehen dürfte) — kein Cheat-Vektor über die Netzwerk-Schicht.
+  Turn-Ansage/Punkte-Meldung werden beim Gast aus dem Phasenwechsel
+  hergeleitet statt über ein eigenes Netz-Event übertragen.
+- **Steuerungs-Hinweis + Map-Intro:** wie bei den anderen drei Spielen aus den
+  ECHTEN Bindings erzeugt (kein hart codierter Text), eigener lokaler
+  `labelKey()`/`KEY_LABELS` in `main.js` (die App-Ebene `renderer/keybinds.js`
+  ist ein klassisches Script und für dieses ES-Modul nicht erreichbar — wie
+  schon bei Block Rush).
+
 ### Vollbild
 Die App startet **immer im Vollbild** — wie andere Videospiele, ohne sichtbare
 Taskleiste. Das Fenster wird mit `fullscreen: true` erzeugt (`main.js`);
@@ -422,7 +504,9 @@ Reiter und Optionen sind komplett **ohne Maus** bedienbar (siehe
 Spieler-Umschalter (P1/P2, immer beide editierbar — unabhängig davon, ob
 gerade ein 2. lokaler Spieler in der Lobby ist), Preset-Auswahl **nur für
 Spieler 1** (WASD/Pfeiltasten — Spieler 2 bekommt automatisch das jeweils
-andere Preset), darunter eine Zeile pro Aktion mit einem Tasten-Knopf
+andere Preset), darunter je Minigame-Genre eine Gruppe
+(`KEYBIND_GROUPS` in `app.js`: „Laufspiele" für Block Bomb/Laser Lines,
+„Block Rush", „Farbjagd") mit einer Zeile pro Aktion und einem Tasten-Knopf
 („Belegen"). Ein Klick/Enter auf den Knopf öffnet das `#keyCapture`-Overlay
 und übernimmt die nächste Taste; Konflikt mit einer anderen Aktion desselben
 Spielers **tauscht** beide Zuweisungen, ein Konflikt mit dem anderen Spieler
@@ -647,7 +731,7 @@ und die Haupt-Einstellungsseite immer synchron bleiben.
   Instanzen — jede hört global auf `window`, reagiert aber nur auf die
   eigenen, aufgelösten Bindings (`Keybinds.resolve('p1'|'p2')`, ein
   `code → Aktion`-Rückwärts-Map pro Instanz; ein reiner Layout-String bleibt
-  als Fallback gültig). `buildMatchConfig()` reicht `bindings: {walk,piece}`
+  als Fallback gültig). `buildMatchConfig()` reicht `bindings: {walk,piece,color}`
   additiv durch (`keys` bleibt als Fallback). Jeder Spieler kann seine
   Belegung einzeln über den „Steuerung"-Reiter anpassen (siehe „Einstellungen"
   und „Lobby") — Presets sind nur der Ausgangspunkt, keine feste Grenze.
@@ -659,7 +743,9 @@ und die Haupt-Einstellungsseite immer synchron bleiben.
   ihrem eigenen Spieler bzw. (Block Rush) dolly't auf dessen eigenen Turm
   statt auf den global höchsten. Bleibt „Ein Bild" aktiv oder ist ein Gast
   beteiligt (der liefert über `getMyInput()` nur einen Intent-Strom), läuft
-  der alte Einzelbild-Pfad unverändert weiter.
+  der alte Einzelbild-Pfad unverändert weiter. **Farbjagd ignoriert
+  Splitscreen bewusst** (`config.split` bleibt ungenutzt) — die gemeinsame
+  2D-Bühne zeigt ohnehin alle Regler-Flächen aller Spieler gleichzeitig.
 - **Responsiv & scrollfrei:** Eigene Regeln in den Kompakt-Stufen
   (`@media max-height: 900px / 680px`) verkleinern Karten/Avatare; sieht in
   Vollbild, 1280×800 und 960×640 gut aus, Scrollbalken bleiben unsichtbar.
@@ -833,6 +919,58 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
   Klartext — gleicher Key wie die Website, RLS schützt die Daten.
 
 ## Änderungsprotokoll
+
+### v0.25.0 — 2026-09-23
+
+**Farbjagd spielbar (viertes Minigame)**
+- **Rundenbasiertes Party-Minigame statt Last-Man-Standing:** Reihum ist
+  jeder Spieler zweimal (`TURNS_PER_PLAYER = 2`) der Jäger und muss eine kurz
+  gezeigte Zielfarbe an einem RGB-Regler nachstellen, während die übrigen
+  Spieler gleichzeitig Ablenkfarben mischen; nur der Jäger punktet.
+  Punktesumme über beide Züge entscheidet die Platzierung (Gleichstand →
+  bester Einzelzug, sonst Zufall).
+- **Bewusst reines DOM statt Three.js** (`renderer/color-hunt/main.js`,
+  `window.ColorHunt`) — das Genre hat keine Kamera/Bewegung, eine 3D-Bühne
+  wäre reiner Mehraufwand ohne Spielwert. Vier Phasen pro Zug: intro → show
+  (Zielfarbe für alle sichtbar) → mix (verborgen, alle regeln live,
+  Countdown-Tick in den letzten 3s) → reveal (Auflösung + Punkte).
+- **Wertung über wahrgenommenen Farbabstand** (`color-hunt/color.js`):
+  sRGB → Lab → **CIEDE2000** (Sharma/Wu/Dalal 2005) statt naivem RGB-Abstand,
+  exponentiell auf 0–100 Punkte abgebildet. Implementierung per Node gegen
+  die Sharma-Referenztestpaare verifiziert (ΔE00 exakt getroffen).
+- **Neuer Controller-Typ, weil kein `{x,z}`-Bewegungsintent passt** (wie
+  Block Rush): `LocalColorController` (`renderer/game/controllers.js`)
+  liefert `{d:[dr,dg,db], cur, lock, seq}` — Kanal wechseln (sofort) + Wert
+  verstellen (DAS/ARR-Wiederholung) + Fertig. Neue Keybind-Gruppe `color` in
+  `renderer/keybinds.js` (`ACTIONS`/`ACTION_LABELS`/beide `PRESETS`), eigener
+  Block im „Steuerung"-Reiter. `RemoteController` bekommt einen
+  `COLOR_REMOTE_ADAPTER` nach demselben Ereignis-Zähler-Muster wie Block Rush.
+- **3 Maps als Regelsatz statt Geometrie** (`color-hunt/maps.js`): Atelier
+  (ruhige Tafel-Reihe, viel Zeit), Kaleidoskop (Störer-Ring direkt um die
+  Jäger-Fläche, starker Simultankontrast), Blitzlicht (5×5-Mosaik, kurze
+  Zeigen-/Mischzeit — aufdringlichste Anordnung).
+- **Bot-KI ohne Cheaten** (`color-hunt/bots.js`, `makeColorHuntBotBrain`):
+  Zielfarbe im `world`-Objekt nur während „show" sichtbar, exakt wie bei
+  einem Menschen. Jäger merken sich die Farbe mit kanalweisem
+  Gedächtnis-Rauschen (Gauß); Störer wählen Beinahe-Treffer oder Komplement.
+- **Vier neue Soundeffekte** (`renderer/audio.js`: `colorShow`, `colorTick`,
+  `colorLock`, `colorReveal`, `colorPerfect`, `colorWin`).
+- **Roster-Chips statt Namensschildern:** Name, Rolle, **R/G/B als Text+
+  Balken** (nicht nur die Farbfläche — hilft bei Farbsehschwäche), Eingeloggt-
+  Haken.
+- **Verdrahtet wie die anderen drei Spiele:** `MINIGAMES`-Eintrag +
+  `GAME_REGISTRY['color-hunt']` (`renderer/app.js`), Screen
+  `#screen-color-hunt`/`#colorStage` + CSS-Link + Modul-Script
+  (`renderer/index.html`), läuft über denselben generischen Match-Flow.
+  Die Esc→Pause-Prüfung in `setupKeyboard()` ist dabei von einer festen
+  Screen-ID-Liste auf `Object.values(GAME_REGISTRY).some(...)`
+  verallgemeinert — ein künftiges fünftes Minigame muss diese Stelle nicht
+  mehr anfassen. `.mg-game-grid` (Spiel-Voting) von fester 3-Spalten- auf
+  `auto-fit`-Grid umgestellt (vier Karten ergeben sonst eine schiefe
+  3+1-Zeile).
+- Splitscreen wird bei Farbjagd bewusst ignoriert (keine Kamera, ein
+  geteiltes Bild brächte keinen Vorteil).
+- Version auf 0.25.0 (`package.json`, `preload.js`).
 
 ### v0.24.0 — 2026-09-23
 

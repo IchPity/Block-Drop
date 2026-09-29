@@ -15,6 +15,7 @@ const MINIGAMES = [
   { id: 'laser-lines', icon: '🔺', name: 'Laser Lines', desc: 'Weiche den Lasern aus!', available: true },
   { id: 'block-bomb',  icon: '💣', name: 'Block Bomb',  desc: 'Berühr die anderen – wer mit der Bombe hochgeht, fliegt raus', available: true },
   { id: 'block-rush',  icon: '🧱', name: 'Block Rush',  desc: 'Baut gleichzeitig Türme – wer einstürzt, fliegt raus', available: true },
+  { id: 'color-hunt',  icon: '🎨', name: 'Farbjagd',    desc: 'Misch die Zielfarbe nach – die anderen lenken dich mit Ablenkfarben ab', available: true },
 ];
 
 // ── Gast-Modus ───────────────────────────────────────────────────────
@@ -455,6 +456,7 @@ function leaveSettings() {
 const KEYBIND_GROUPS = [
   { group: 'walk', title: 'Laufspiele (Block Bomb · Laser Lines)' },
   { group: 'piece', title: 'Block Rush' },
+  { group: 'color', title: 'Farbjagd' },
 ];
 
 function syncControlsPlayerUi() {
@@ -854,7 +856,7 @@ function setupKeyboard() {
       if (mgVoteOpen()) { cancelMgFlow(); return; }                  // Voting → zurück (Lobby/Menü)
       if (mgRankingOpen()) { return; }                               // Ranking nur per Knopf
       if (mgPauseOpen()) { resumeGame(); return; }                   // Pause → weiter
-      if (isActive('screen-block-bomb') || isActive('screen-laser-lines') || isActive('screen-block-rush')) { pauseGame(); return; } // im Spiel → Pause
+      if (Object.values(GAME_REGISTRY).some((g) => isActive(g.screenId))) { pauseGame(); return; } // im Spiel → Pause
       // Esc schließt erst offene Overlays (Beenden / Konto), sonst führt es
       // aus Einstellungen bzw. der Credits-Seite zurück ins Hauptmenü.
       if (quitOpen) closeQuitDialog();
@@ -2442,6 +2444,13 @@ const RUSH_MAP_META = [
   { id: 'wippe', name: 'Wackelplattform', desc: 'Die Podeste schaukeln ständig — baue mittig!' },
 ];
 
+// Map-Metadaten von Farbjagd (Regelsatz statt Geometrie liegt in color-hunt/maps.js).
+const COLOR_MAP_META = [
+  { id: 'atelier', name: 'Atelier',      desc: 'Getrennte Tafeln ringsum, ruhiger Einstieg — genug Zeit zum Mischen.' },
+  { id: 'kaleido', name: 'Kaleidoskop',  desc: 'Ringe direkt um die Jägerfläche — die Ablenkfarben liegen ganz nah.' },
+  { id: 'blitz',   name: 'Blitzlicht',   desc: 'Nur ein kurzer Blick auf die Zielfarbe, dann tickt die Uhr im Mosaik.' },
+];
+
 // Minigame-Registry: bindet jedes spielbare Minigame entkoppelt an den
 // generischen Match-Flow. windowKey = globales Spiel-Objekt (window.BlockBomb /
 // window.LaserLines, beide mit start/pause/resume/stop/isRunning), mapMeta =
@@ -2453,6 +2462,8 @@ const GAME_REGISTRY = {
                    mapMeta: LASER_MAP_META, screenId: 'screen-laser-lines', stageId: 'laserStage' },
   'block-rush': { id: 'block-rush', name: 'Block Rush', windowKey: 'BlockRush',
                   mapMeta: RUSH_MAP_META, screenId: 'screen-block-rush', stageId: 'rushStage' },
+  'color-hunt': { id: 'color-hunt', name: 'Farbjagd', windowKey: 'ColorHunt',
+                  mapMeta: COLOR_MAP_META, screenId: 'screen-color-hunt', stageId: 'colorStage' },
 };
 // Alle spielbaren Spiele (für den Serien-Modus), in der MINIGAMES-Reihenfolge.
 function availableGames() {

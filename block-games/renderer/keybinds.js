@@ -16,6 +16,7 @@ const Keybinds = (() => {
   const ACTIONS = Object.freeze({
     walk:  Object.freeze(['left', 'right', 'up', 'down', 'jump']),
     piece: Object.freeze(['left', 'right', 'rotate', 'down', 'hard', 'cast', 'cycle']),
+    color: Object.freeze(['left', 'right', 'up', 'down', 'lock']),
   });
 
   // Deutsche Beschriftung je Aktion (für den Steuerung-Reiter).
@@ -25,6 +26,8 @@ const Keybinds = (() => {
     'piece.left': 'Links', 'piece.right': 'Rechts', 'piece.rotate': 'Drehen',
     'piece.down': 'Sinken (weich)', 'piece.hard': 'Fallen lassen (hart)',
     'piece.cast': 'Zauber wirken', 'piece.cycle': 'Ziel wechseln',
+    'color.left': 'Kanal zurück', 'color.right': 'Kanal vor',
+    'color.up': 'Wert +', 'color.down': 'Wert −', 'color.lock': 'Fertig',
   });
 
   function freezeDeep(obj) {
@@ -41,10 +44,12 @@ const Keybinds = (() => {
     wasd: freezeDeep({
       walk:  freezeDeep({ left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS', jump: 'Space' }),
       piece: freezeDeep({ left: 'KeyA', right: 'KeyD', rotate: 'KeyW', down: 'KeyS', hard: 'KeyQ', cast: 'KeyE', cycle: 'KeyR' }),
+      color: freezeDeep({ left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS', lock: 'Space' }),
     }),
     arrows: freezeDeep({
       walk:  freezeDeep({ left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown', jump: 'ShiftRight' }),
       piece: freezeDeep({ left: 'ArrowLeft', right: 'ArrowRight', rotate: 'ArrowUp', down: 'ArrowDown', hard: 'ShiftRight', cast: 'ControlRight', cycle: 'Slash' }),
+      color: freezeDeep({ left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown', lock: 'ShiftRight' }),
     }),
   });
 
@@ -90,9 +95,10 @@ const Keybinds = (() => {
   }
 
   // Welche Aktion IN DIESER GRUPPE hat der Spieler schon auf `code` liegen?
-  // (Konflikte werden bewusst nur innerhalb einer Gruppe geprüft — Laufspiele
-  // und Block Rush sind nie gleichzeitig aktiv, doppelte Belegung über beide
-  // Gruppen hinweg wäre also nur lästig, nie ein echtes Problem.)
+  // (Konflikte werden bewusst nur innerhalb einer Gruppe geprüft — nie sind
+  // zwei Gruppen gleichzeitig aktiv (Laufspiele/Block Rush/Farbjagd schließen
+  // sich als Genres aus), doppelte Belegung über Gruppen hinweg wäre also nur
+  // lästig, nie ein echtes Problem.)
   function findBindingInGroup(player, group, code) {
     const bound = resolve(player)[group];
     for (const action of ACTIONS[group]) {

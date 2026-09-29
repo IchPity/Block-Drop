@@ -93,6 +93,27 @@ const Sfx = (() => {
                    ['triangle', 622, 622, 0.10, 0.10, 0.34],
                    ['triangle', 740, 740, 0.20, 0.10, 0.34],
                    ['triangle', 988, 988, 0.30, 0.20, 0.34]],
+
+    // ── Farbjagd ─────────────────────────────────────────────────────────
+    // Zielfarbe blitzt auf: kurzer heller Doppel-Blip.
+    colorShow:    [['sine',     900,  900, 0,    0.06, 0.30],
+                   ['sine',     1200, 1200, 0.08, 0.06, 0.24]],
+    // Countdown-Tick in den letzten 3s vor Rundenende.
+    colorTick:    [['square',   700,  700, 0, 0.04, 0.22]],
+    // Jäger loggt seine Mischung ein: trockener, zufriedener Klick.
+    colorLock:    [['square',   440,  520, 0, 0.08, 0.30],
+                   ['triangle', 660,  660, 0.06, 0.06, 0.18]],
+    // Auflösung: neutraler, kurzer "Aufdecken"-Sweep (Punktzahl ist unbekannt).
+    colorReveal:  [['triangle', 500,  760, 0, 0.16, 0.26]],
+    // Fast perfekter Treffer (≥90 Punkte): heller, extra Glanz-Funkeln.
+    colorPerfect: [['triangle', 784,  784, 0,    0.10, 0.32],
+                   ['triangle', 988,  988, 0.08, 0.10, 0.30],
+                   ['sine',     1568, 1568, 0.16, 0.14, 0.22]],
+    // Sieg: aufsteigendes Arpeggio, eigene Tonlage.
+    colorWin:     [['triangle', 523, 523, 0,    0.10, 0.34],
+                   ['triangle', 659, 659, 0.10, 0.10, 0.34],
+                   ['triangle', 880, 880, 0.20, 0.10, 0.34],
+                   ['triangle', 1175,1175,0.30, 0.20, 0.34]],
   };
 
   function play(name, channel = 'sfx') {

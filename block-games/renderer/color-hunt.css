@@ -1,0 +1,232 @@
+/* Farbjagd — Spiel-Optik (reines DOM, KEIN Canvas/Three.js — das Genre hat
+   keine Bewegung). Das Map-Voting-/Countdown-/Ranking-Overlay ist generisch
+   (.mg-* in style.css); hier liegen nur Bühne, In-Game-HUD und die Map-
+   Vorschaubilder. Eigene Magenta/Gold-Akzente, analog dazu, wie die anderen
+   drei Spiele je eine eigene Akzentfarbe hart setzen (Laser Lines Pink/Rot,
+   Block Rush Cyan/Blau). */
+
+#screen-color-hunt { padding: 0; justify-content: stretch; align-items: stretch; }
+
+.ch-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 28%, #241a38, #0d0d1e 72%);
+}
+
+.ch-hud {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-display, sans-serif);
+  padding: 18px 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* ── Kopfzeile ── */
+.ch-top { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+.ch-title { font-size: 1.3em; font-weight: 900; color: #fff; text-shadow: 0 0 14px rgba(255, 110, 199, 0.6); }
+.ch-turn {
+  font-size: 1em; font-weight: 800; color: var(--text, #f2f2fa);
+  background: rgba(12, 18, 32, 0.55); padding: 4px 12px; border-radius: 10px;
+  border: 2px solid var(--line, #3a3a66);
+}
+.ch-timer {
+  font-size: 1.2em; font-weight: 900; min-width: 1.6em; text-align: center;
+  color: var(--text, #f2f2fa);
+  background: rgba(12, 18, 32, 0.65); padding: 4px 14px; border-radius: 12px;
+  border: 2px solid var(--line, #3a3a66);
+  font-variant-numeric: tabular-nums;
+}
+.ch-timer.warn { color: var(--red, #ff5d5d); border-color: var(--red, #ff5d5d); animation: chTimerPulse 0.5s infinite alternate; }
+@keyframes chTimerPulse { to { box-shadow: 0 0 14px rgba(255, 93, 93, 0.7); } }
+
+/* ── Arena ──
+   Während der Eingabesperre (intro/show/reveal) gedämpft, damit optisch klar
+   ist, dass gerade nicht gemischt werden kann. */
+.ch-arena {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  display: flex; align-items: center; justify-content: center;
+  transition: filter 0.25s;
+}
+.ch-arena.input-locked { filter: saturate(0.7) brightness(0.92); }
+.ch-arena.hidden { visibility: hidden; }
+
+.ch-tile {
+  --c: #888;
+  background-color: var(--c);
+  border-radius: 14px;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), inset 0 0 0 2px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.06s linear, border-color 0.15s;
+}
+.ch-tile.locked { border-color: var(--green, #3ddc84); box-shadow: 0 0 0 3px var(--green, #3ddc84), 0 6px 18px rgba(0, 0, 0, 0.45); }
+
+.ch-ring { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.ch-decoy-wrap { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
+/* Atelier: ruhigster Einstieg — Jägerfläche zentriert oben, Störer-Tafeln
+   als Reihe darunter, durch eine sichtbare Fuge getrennt. */
+.ch-layout-atelier .ch-hunter-tile { width: min(42vh, 240px); height: min(42vh, 240px); }
+.ch-layout-atelier .ch-decoy-wrap {
+  border-top: 2px dashed rgba(255, 255, 255, 0.18);
+  padding-top: 18px; width: 100%; max-width: 520px;
+}
+.ch-layout-atelier .ch-decoy-tile { width: min(20vh, 120px); height: min(20vh, 120px); }
+
+/* Kaleidoskop: Störer-Kacheln als Ring direkt um die Jägerfläche — kaum
+   Abstand, starker Simultankontrast-Effekt.
+   WICHTIG: `translate()` löst Prozentwerte gegen die BOX DES TRANSFORMIERTEN
+   ELEMENTS SELBST auf (CSS-Transforms-Spezifikation), NICHT gegen den
+   Container — `translate(38%)` auf der kleinen Störer-Kachel wäre also nur
+   38% von IHRER eigenen Breite, nicht 38% des Rings. Deshalb hier eine
+   `calc()`-Länge auf Basis derselben Formel wie die Ring-Größe, statt eines
+   Prozentwerts. */
+.ch-layout-kaleido .ch-ring {
+  --kaleido-size: min(66vh, 440px);
+  position: relative; width: var(--kaleido-size); height: var(--kaleido-size);
+  display: block;
+}
+.ch-layout-kaleido .ch-decoy-wrap { position: absolute; inset: 0; display: block; }
+.ch-layout-kaleido .ch-hunter-tile {
+  position: absolute; left: 50%; top: 50%;
+  width: 34%; height: 34%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  z-index: 2;
+}
+.ch-layout-kaleido .ch-decoy-tile {
+  position: absolute; left: 50%; top: 50%;
+  width: 23%; height: 23%;
+  margin: -11.5% 0 0 -11.5%;
+  border-radius: 50%;
+  transform: rotate(var(--angle, 0deg)) translate(calc(var(--kaleido-size, 440px) * 0.38)) rotate(calc(-1 * var(--angle, 0deg)));
+}
+
+/* Blitzlicht: 5×5-Mosaik, Mitte 3×3 = Jäger, 16 Randzellen reihum an die
+   Störer — aufdringlichste, "lauteste" Anordnung, kurze Zeigen-/Mischzeit. */
+.ch-blitz-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 4px;
+  width: min(62vh, 400px); height: min(62vh, 400px);
+}
+.ch-blitz-hunter { grid-column: 2 / span 3; grid-row: 2 / span 3; border-radius: 10px; }
+.ch-blitz-cell { border-radius: 4px; }
+
+/* ── Reveal ── */
+.ch-reveal { display: flex; flex-direction: column; align-items: center; gap: 14px; animation: chRevealIn 0.35s ease-out both; }
+@keyframes chRevealIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.ch-reveal-swatches { display: flex; align-items: center; gap: 18px; }
+.ch-reveal-swatch {
+  --c: #888;
+  width: min(26vh, 160px); height: min(26vh, 160px);
+  background-color: var(--c);
+  border-radius: 16px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 8px;
+}
+.ch-reveal-swatch span {
+  font-size: 0.75em; font-weight: 800; color: #fff;
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.35); padding: 2px 10px; border-radius: 999px;
+}
+.ch-reveal-vs { font-size: 1.3em; font-weight: 900; color: var(--text-dim, #9a9abd); }
+.ch-reveal-score { font-size: 1.5em; font-weight: 900; color: #fff; text-shadow: 0 0 14px rgba(255, 201, 60, 0.5); }
+
+/* ── Roster-Chips: Name, Rolle, R/G/B-Balken, Eingeloggt-Haken ── */
+.ch-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 14px; width: 100%; }
+.ch-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border-radius: 12px;
+  font-size: 0.82em; font-weight: 800;
+  color: var(--text, #f2f2fa);
+  background: rgba(12, 18, 32, 0.72);
+  border: 2px solid var(--c, #ff6ec7);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+}
+.ch-chip.is-hunter { border-color: var(--yellow, #ffc93c); box-shadow: 0 0 12px rgba(255, 201, 60, 0.4); }
+.ch-chip-name { color: var(--c, #ff6ec7); }
+.ch-chip-role { font-size: 0.95em; }
+.ch-chip-bars { display: inline-flex; gap: 3px; }
+.ch-bar { display: inline-block; width: 22px; height: 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.ch-bar span { display: block; height: 100%; }
+.ch-bar-r span { background: #ff5d5d; }
+.ch-bar-g span { background: #3ddc84; }
+.ch-bar-b span { background: #4db5ff; }
+.ch-chip-lock { color: var(--green, #3ddc84); opacity: 0; transition: opacity 0.15s; }
+.ch-chip-lock.show { opacity: 1; }
+
+/* ── Tastenhinweis (nur intro/show) ── */
+.ch-controls-hint {
+  margin-top: 10px; text-align: center; font-size: 0.85em; color: rgba(255, 255, 255, 0.75);
+  background: rgba(12, 18, 32, 0.55); padding: 8px 16px; border-radius: 12px;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+.ch-controls-hint.show { opacity: 1; }
+.ch-controls-hint b { color: #fff; }
+
+/* ── Kurze Meldungen (Zug-Ansage, Punkte, Sieg) ── */
+.ch-message {
+  position: absolute; top: 15%; left: 50%; transform: translateX(-50%);
+  font-size: 1.8em; font-weight: 900; color: #fff; text-align: center;
+  text-shadow: 3px 3px 0 var(--bg-deep, #0d0d1e), 0 0 24px rgba(255, 110, 199, 0.6);
+  opacity: 0; white-space: nowrap; pointer-events: none; z-index: 3;
+}
+.ch-message.show { animation: chMsg 1.6s ease-out forwards; }
+@keyframes chMsg {
+  0%   { opacity: 0; transform: translateX(-50%) scale(0.6); }
+  15%  { opacity: 1; transform: translateX(-50%) scale(1.08); }
+  75%  { opacity: 1; transform: translateX(-50%) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) scale(1); }
+}
+
+/* ── Map-Vorstellung ── */
+.ch-map-intro-name {
+  position: absolute; left: 50%; bottom: 12%; transform: translateX(-50%) translateY(20px) scale(0.9);
+  font-size: 2.8em; font-weight: 900; color: #fff;
+  text-shadow: 4px 4px 0 var(--bg-deep, #0d0d1e), 0 0 30px rgba(255, 110, 199, 0.6);
+  opacity: 0; pointer-events: none; z-index: 3;
+  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+.ch-map-intro-name.show { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+
+/* ── Animationen reduzieren ── */
+.reduced-fx .ch-timer.warn { animation: none; box-shadow: none; }
+.reduced-fx .ch-message.show { animation: none; opacity: 1; }
+.reduced-fx .ch-reveal { animation: none; }
+.reduced-fx .ch-map-intro-name { transition: none; }
+
+/* ── Map-Thumbnails fürs generische Map-Voting ── */
+.mg-thumb-color-hunt-atelier {
+  background: linear-gradient(160deg, #241a38, #0d0d1e),
+              repeating-linear-gradient(90deg, transparent 0 30px, rgba(255, 110, 199, 0.16) 30px 32px);
+}
+.mg-thumb-color-hunt-kaleido {
+  background: radial-gradient(circle at 50% 50%, rgba(255, 201, 60, 0.35) 0 18%, transparent 19%),
+              radial-gradient(circle at 30% 72%, rgba(77, 181, 255, 0.32) 0 14%, transparent 15%),
+              radial-gradient(circle at 70% 28%, rgba(61, 220, 132, 0.32) 0 14%, transparent 15%),
+              linear-gradient(160deg, #241a38, #14112a);
+}
+.mg-thumb-color-hunt-blitz {
+  background: repeating-conic-gradient(from 0deg, rgba(255, 110, 199, 0.25) 0deg 12deg, transparent 12deg 24deg),
+              linear-gradient(160deg, #1a1430, #0d0d1e);
+}
+
+/* ── Responsive ── */
+@media (max-width: 680px) {
+  .ch-layout-atelier .ch-hunter-tile { width: min(34vh, 190px); height: min(34vh, 190px); }
+  .ch-layout-atelier .ch-decoy-tile { width: min(16vh, 90px); height: min(16vh, 90px); }
+  .ch-message { font-size: 1.3em; }
+  .ch-map-intro-name { font-size: 2em; }
+}

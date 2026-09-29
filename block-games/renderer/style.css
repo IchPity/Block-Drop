@@ -2006,8 +2006,10 @@ button:focus-visible:not(.party-btn) {
   background: var(--c, #fff); border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
-/* ── Spiel-Voting (nur vor dem ersten Spiel der Serie) ── */
-.mg-game-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+/* ── Spiel-Voting (nur vor dem ersten Spiel der Serie) ──
+   auto-fit statt fester Spaltenzahl: bei 4 Minigames (seit Farbjagd) ergibt
+   das je nach Kartenbreite 2×2 oder 4×1 statt einer schiefen 3+1-Zeile. */
+.mg-game-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
 @media (max-width: 680px) { .mg-game-grid { grid-template-columns: 1fr; } }
 
 .mg-game-card {

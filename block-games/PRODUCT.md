@@ -22,11 +22,12 @@ nur der enge Freundeskreis — siehe Evidence/Constraints zu electron-builder.
 ## Product Purpose
 
 Party-Minigame-Sammlung im Mario-Party-Stil ("Block Games", Teil der
-"Block-Drop Arcade") für gemeinsames Spielen an einem PC — aktuell drei
-Last-Man-Standing-Minigames (Block Bomb, Laser Lines, Block Rush), weitere
-geplant (siehe ROADMAP.md). Erfolg bedeutet: jederzeit sofort spielbar, egal
-ob allein, zu zweit oder in voller Runde, ohne dass Technik oder Bedienung im
-Weg steht.
+"Block-Drop Arcade") für gemeinsames Spielen an einem PC — aktuell vier
+Minigames: drei Last-Man-Standing (Block Bomb, Laser Lines, Block Rush) und
+ein punktebasiertes (Farbjagd — jeder ist reihum dran, nur wer gerade jagt
+punktet), weitere geplant (siehe ROADMAP.md). Erfolg bedeutet: jederzeit
+sofort spielbar, egal ob allein, zu zweit oder in voller Runde, ohne dass
+Technik oder Bedienung im Weg steht.
 
 ## Positioning
 
@@ -92,12 +93,15 @@ Umbau des Spielkerns.
   entsprechenden Hinweis — ein einzelner Gast kann ein Match nicht für alle
   anhalten.
 - **Jeder Spielmodus bekommt genau 3 Maps** plus Map-Voting vor der Runde
-  (Mehrheit entscheidet, Gleichstand zufällig).
-- Drei Minigames im Registry-basierten, generischen Match-Flow: Block Bomb
+  (Mehrheit entscheidet, Gleichstand zufällig) — bei Farbjagd sind das drei
+  Regelsätze (Zeig-/Mischzeit, Anordnung der Störer-Flächen) statt Geometrie.
+- Vier Minigames im Registry-basierten, generischen Match-Flow: Block Bomb
   (Bombe weitergeben, Last-Man-Standing), Laser Lines (Laser ausweichen,
-  3 Leben) und Block Rush (Türme stapeln, Last-Man-Standing, kein
-  Reihen-Räumen). Teilen sich Bot-KI-Grundlage, Controller-Abstraktion,
-  Farbsystem aus der Lobby und die `#mg*`-Overlays.
+  3 Leben), Block Rush (Türme stapeln, Last-Man-Standing, kein Reihen-Räumen)
+  und Farbjagd (reihum jagen/ablenken, punktebasiert statt Last-Man-Standing —
+  Regler-Eingabe statt Bewegung, `LocalColorController`). Teilen sich Bot-KI-
+  Grundlage, Controller-Abstraktion, Farbsystem aus der Lobby und die
+  `#mg*`-Overlays.
 - **Online-/Freundes-Spiel ist seit v0.20.0 echt verdrahtet** (host-
   autoritativ über Supabase Realtime Broadcast+Presence, `renderer/net/
   session.js`): Session hosten/per Code beitreten, Freundes-Einladung über
