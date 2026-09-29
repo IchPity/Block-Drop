@@ -113,10 +113,10 @@
   .spin {
     flex: 1; min-width: 0; align-self: end; height: 48px; border: 0; border-radius: 12px; cursor: pointer;
     background: var(--bell); color: #fff; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: 0.14em;
-    box-shadow: 0 6px 14px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.22);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.4);
     transition: transform 0.15s cubic-bezier(.2,.8,.2,1), filter 0.15s, box-shadow 0.15s;
   }
-  .spin:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.08); box-shadow: 0 10px 20px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.22); }
+  .spin:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.08); box-shadow: 0 10px 20px rgba(0,0,0,0.45); }
   .spin:active:not(:disabled) { transform: translateY(0); }
   .spin:disabled { background: #3a2226; color: #a08488; box-shadow: none; cursor: not-allowed; }
   .hint { margin-top: 12px; font-size: 12px; color: var(--chalk-faint); line-height: 1.5; }
