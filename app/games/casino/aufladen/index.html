@@ -120,6 +120,7 @@
   <div class="shop">
     <section class="panel" aria-labelledby="amtH">
       <div class="balance"><span>Aktuelles Guthaben</span><strong id="bal">–</strong></div>
+      <p class="amt-hint" id="poolInfo" hidden></p>
       <p class="warn" id="noSave" hidden>Dein Browser erlaubt kein Speichern. Die Aufladung geht sonst beim Schließen verloren.</p>
 
       <h2 id="amtH">Betrag wählen</h2>
@@ -235,6 +236,21 @@ function writeState(s) {
   return ok;
 }
 
+// Konto-Modus: Guthaben und Auszahlungstopf kommen aus Supabase
+let wallet = null;   // { balance, pool } oder null (Gast)
+async function loadWallet() {
+  if (!(window.Auth && Auth.user)) { wallet = null; $('poolInfo').hidden = true; return; }
+  const { data, error } = await Auth.client.rpc('casino_wallet');
+  if (error) { console.warn('[Kasse] Wallet:', error.message); wallet = null; return; }
+  wallet = { balance: data.balance, pool: data.pool };
+  const p = $('poolInfo');
+  p.hidden = false;
+  p.textContent = wallet.pool > 0
+    ? 'Im Auszahlungstopf liegen ' + money(wallet.pool) + '. Dein Betrag wird zuerst daraus bezahlt, erst danach von der Karte.'
+    : 'Der Auszahlungstopf ist leer. Dein Betrag wird komplett von der Karte bezahlt.';
+  renderSummary();
+}
+
 let sel = null;   // gültiger Betrag in Euro (oder null)
 let meth = METHODS[0];
 let busy = false;
@@ -264,7 +280,7 @@ function renderStatic() {
   $('showData').textContent = meth.id === 'card' ? 'Karte anzeigen' : meth.id === 'paypal' ? 'PayPal-Konto anzeigen' : 'Kontodaten anzeigen';
 }
 function renderSummary() {
-  const cur = balanceOf(readState());
+  const cur = wallet ? wallet.balance : balanceOf(readState());
   $('bal').textContent = money(cur);
   $('sMeth').textContent = meth.name;
   sel = selC ? selC / 100 : null;
@@ -350,7 +366,7 @@ $('dlgClose').addEventListener('click', () => $('dlg').close());
   });
   h.addEventListener('pointerup', () => { drag = false; });
 })();
-if (window.Auth && Auth.onChange) Auth.onChange(() => { if (!busy) renderSummary(); });
+if (window.Auth && Auth.onChange) Auth.onChange(() => { if (!busy) { renderSummary(); loadWallet(); } });
 
 $('pay').addEventListener('click', () => {
   if (busy || !selC || !fieldsOk()) return;
@@ -359,18 +375,34 @@ $('pay').addEventListener('click', () => {
   view('viewBusy');
   const wait = REDUCED ? 300 : 900;
   m.steps.forEach((t, i) => setTimeout(() => { $('step').textContent = t; }, i * wait));
-  setTimeout(() => {
-    // Frisch lesen, damit ein zweiter Tab oder Gewinne zwischendurch nicht überschrieben werden
-    const s = readState() || {};
-    s.balance = balanceOf(s) + eur * 100;
-    const saved = writeState(s);
-    $('noSave').hidden = saved;
+  const finish = (newBal, split) => {
     const no = 'BD-' + String(Date.now()).slice(-8);
-    $('doneText').textContent = '+' + money(eur * 100) + ' wurden deinem Konto gutgeschrieben. Neues Guthaben: ' + money(s.balance) + '.';
-    $('receipt').innerHTML = 'Beleg ' + no + '<br>' + money(eur * 100) + ' · ' + m.name + ' (Spielgeld)';
+    $('doneText').textContent = '+' + money(eur * 100) + ' wurden deinem Konto gutgeschrieben. Neues Guthaben: ' + money(newBal) + '.';
+    $('receipt').innerHTML = 'Beleg ' + no + '<br>' + money(eur * 100) + ' · ' + m.name + ' (Spielgeld)' + (split || '');
     busy = false;
     view('viewDone');
     renderSummary();
+  };
+  setTimeout(async () => {
+    if (wallet) {
+      const { data, error } = await Auth.client.rpc('casino_deposit', { p_amount: eur * 100 });
+      if (error) {
+        busy = false; view('viewForm');
+        $('amtHint').classList.add('err'); $('amtHint').textContent = 'Zahlung fehlgeschlagen: ' + error.message;
+        loadWallet();
+        return;
+      }
+      wallet.balance = data.balance; wallet.pool = data.pool;
+      $('noSave').hidden = true;
+      finish(data.balance, '<br>Aus dem Auszahlungstopf: ' + money(data.from_pool) + '<br>Von der Karte: ' + money(data.from_card));
+      loadWallet();
+      return;
+    }
+    // Gast: frisch lesen, damit ein zweiter Tab oder Gewinne zwischendurch nicht überschrieben werden
+    const s = readState() || {};
+    s.balance = balanceOf(s) + eur * 100;
+    $('noSave').hidden = writeState(s);
+    finish(s.balance);
   }, m.steps.length * wait + 400);
 });
 $('again').addEventListener('click', () => { selC = null; $('amtIn').value = ''; Object.keys(vals).forEach(k => delete vals[k]); view('viewForm'); render(); });

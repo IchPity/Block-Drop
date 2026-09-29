@@ -141,6 +141,24 @@
   .panel h2 { font-family: 'Baloo 2', sans-serif; font-size: 16px; font-weight: 600; color: var(--chalk); margin-bottom: 12px; }
   .topup.needed { border-color: var(--amber); }
   .co-pay { padding: 14px; border: 0; border-radius: 10px; background: var(--amber); color: var(--ink); font: 700 16px 'Baloo 2', sans-serif; }
+  .payout { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--board-line); }
+  .payout h3 { font-family: 'Baloo 2', sans-serif; font-size: 14px; font-weight: 600; color: var(--chalk); margin-bottom: 8px; }
+  .pay-row { display: flex; gap: 8px; }
+  .pay-row input { flex: 1; min-width: 0; background: var(--ink); border: 1px solid var(--board-line); border-radius: 8px; padding: 8px 10px; color: var(--amber); font: 400 16px 'Share Tech Mono', monospace; }
+  .pay-row input:focus { border-color: var(--amber); outline: 0; }
+  .pay-row button { border: 1px solid var(--amber); background: transparent; color: var(--amber); border-radius: 8px; padding: 8px 12px; font: 700 14px 'Baloo 2', sans-serif; cursor: pointer; }
+  .pay-row button:disabled { opacity: .45; cursor: not-allowed; }
+  .pool-line { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; color: var(--chalk-dim); }
+  .pool-line b { font: 400 15px 'Share Tech Mono', monospace; color: var(--win); }
+  .msg { margin-top: 8px; font-size: 12px; color: var(--chalk-dim); min-height: 1em; }
+  .msg.err { color: #ff8a8a; }
+  ol.rank-list { list-style: none; display: grid; gap: 6px; counter-reset: r; }
+  ol.rank-list li { counter-increment: r; display: flex; gap: 8px; font-size: 13px; color: var(--chalk-dim); align-items: baseline; }
+  ol.rank-list li::before { content: counter(r) '.'; width: 20px; color: var(--chalk-faint); }
+  ol.rank-list li .n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--chalk); }
+  ol.rank-list li.me .n { color: var(--amber); }
+  ol.rank-list li .v { font-family: 'Share Tech Mono', monospace; color: var(--chalk); font-variant-numeric: tabular-nums; }
+  ol.rank-list li .v.neg { color: #ff8a8a; }
   .note { margin-top: 12px; font-size: 12px; line-height: 1.55; color: var(--chalk-faint); }
 
   dl.stats { display: grid; gap: 8px; }
@@ -238,7 +256,7 @@
 <main class="container">
   <header class="hero">
     <h1>Casino</h1>
-    <p class="hero-sub">Drei Walzen, Spielgeld und kein Risiko. Dein Guthaben wird nach jeder Runde automatisch auf diesem Gerät gespeichert, im Browser-Speicher und zusätzlich als Cookie.</p>
+    <p class="hero-sub" id="heroSub">Drei Walzen, Spielgeld und kein Risiko. Dein Guthaben wird nach jeder Runde automatisch auf diesem Gerät gespeichert, im Browser-Speicher und zusätzlich als Cookie.</p>
     <p class="save-warn" id="saveWarn" hidden>Dein Browser erlaubt kein Speichern (privates Fenster?). Das Guthaben geht beim Schließen der Seite verloren.</p>
   </header>
 
@@ -292,6 +310,20 @@
         <p class="note" style="margin:0 0 12px">Beträge von 1 € bis 500 €, bezahlt wird über eine eigene Kasse.</p>
         <a class="co-pay" href="aufladen/" style="display:block;text-align:center;text-decoration:none">Zur Kasse</a>
         <p class="note">Die Kasse ist nur nachgestellt: Es wird nie echtes Geld verwendet oder abgebucht.</p>
+
+        <div class="payout" id="payoutBox">
+          <h3>Auszahlen</h3>
+          <div class="pool-line"><span>Im Auszahlungstopf</span><b id="poolAmt">–</b></div>
+          <div class="pay-row"><input id="payIn" type="text" inputmode="decimal" autocomplete="off" placeholder="Betrag in €" aria-label="Auszahlungsbetrag in Euro"><button type="button" id="payAll">Alles</button><button type="button" id="payGo">Auszahlen</button></div>
+          <p class="msg" id="payMsg" role="status" aria-live="polite"></p>
+          <p class="note" style="margin-top:6px">Ausgezahltes Guthaben landet im Topf. Wer auflädt, bekommt zuerst daraus und erst danach von der Karte.</p>
+        </div>
+      </section>
+
+      <section class="panel rank" id="rankBox" aria-labelledby="rankH">
+        <h2 id="rankH">Battle: Rangliste</h2>
+        <ol class="rank-list" id="rankList"><li><span class="n">Melde dich an, um mitzuspielen.</span></li></ol>
+        <p class="note">Sortiert nach Gewinn: Guthaben plus Ausgezahltes minus Eingezahltes minus 20 € Startguthaben.</p>
       </section>
 
       <section class="panel" aria-labelledby="statsH">
@@ -351,9 +383,12 @@ const pick = () => POOL[Math.floor(Math.random() * POOL.length)];
 // ── Speichern ───────────────────────────────────────────────────────
 let state = { balance: START_BALANCE, betIdx: 2, rounds: 0, hits: 0, best: 0, jackpots: 0, lastWin: 0, free: 0, freeBet: 0, luck: [], view: null };
 
+// Mit Konto liegt das Guthaben in Supabase (Wallet-Modus); als Gast bleibt es lokal.
+let wallet = false, guestBalance = START_BALANCE, poolAmt = 0;
+
 function apply(s) {
   const num = (v, d) => (Number.isFinite(v) && v >= 0 ? Math.floor(v) : d);
-  state.balance  = num(s.balance, START_BALANCE);
+  if (!wallet) state.balance = num(s.balance, START_BALANCE);
   state.betIdx   = Math.min(BET_STEPS.length - 1, num(s.betIdx, 2));
   state.rounds   = num(s.rounds, 0);
   state.hits     = num(s.hits, 0);
@@ -375,12 +410,14 @@ function load() {
   try { const raw = localStorage.getItem(KEY); if (raw) s = JSON.parse(raw); } catch (e) {}
   if (!s) { try { s = readCookie(); } catch (e) {} }
   if (s) apply(s);
+  guestBalance = state.balance;
 }
 function save() {
   let ok = false;
-  try { localStorage.setItem(KEY, JSON.stringify(state)); ok = true; } catch (e) {}
+  const out = wallet ? { ...state, balance: guestBalance } : state;
+  try { localStorage.setItem(KEY, JSON.stringify(out)); ok = true; } catch (e) {}
   try {
-    const { view, ...small } = state;
+    const { view, ...small } = out;
     document.cookie = CK + '=' + encodeURIComponent(JSON.stringify(small)) + '; max-age=31536000; path=/; SameSite=Lax';
     if (document.cookie.includes(CK + '=')) ok = true;
   } catch (e) {}
@@ -548,6 +585,7 @@ async function spin() {
   if (isFree) state.free--;
   if (award) { if (!isFree && state.free === 0) state.freeBet = stake; state.free += award; }
   state.balance += res.win - wager;
+  if (wallet) syncRound(stake, wager, res.win);
   state.rounds++;
   if (res.win > 0) { state.hits++; state.best = Math.max(state.best, res.win); }
   if (res.kind === 'trio' && res.sym === 'seven') state.jackpots++;
@@ -642,6 +680,93 @@ window.addEventListener('storage', e => {
   render();
   scheduleAuto();
 });
+
+// ── Konto / Wallet (Supabase) ───────────────────────────────────────
+const rpc = (fn, args) => Auth.client.rpc(fn, args || {});
+let pending = 0, chain = Promise.resolve();
+const parseEur = t => {
+  const v = String(t).trim().replace(/\s|€/g, '').replace(',', '.');
+  return /^\d+(\.\d{1,2})?$/.test(v) ? Math.round(parseFloat(v) * 100) : null;
+};
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function setPool(v) { if (Number.isFinite(v)) { poolAmt = v; $('poolAmt').textContent = money(v); } }
+function adopt(w) {
+  if (!w) return;
+  setPool(w.pool);
+  if (pending > 0 || !Number.isFinite(w.balance)) return;
+  state.balance = w.balance;
+  if (!spinning) { clampBet(); tweenBalance(state.balance); render(); }
+}
+function syncRound(bet, paid, win) {
+  pending++;
+  chain = chain.then(async () => {
+    const { data, error } = await rpc('casino_round', { p_bet: bet, p_paid: paid, p_win: win });
+    pending--;
+    if (error) { console.warn('[Casino]', error.message); await loadWallet(); return; }
+    adopt(data);
+  });
+}
+async function loadWallet() {
+  const { data, error } = await rpc('casino_wallet');
+  if (error) { console.warn('[Casino] Wallet:', error.message); return false; }
+  wallet = true;
+  $('heroSub').textContent = 'Drei Walzen, Spielgeld und kein Risiko. Dein Guthaben liegt in deinem Konto: Du kannst es auszahlen und dich in der Rangliste mit anderen messen.';
+  $('payoutBox').hidden = false;
+  setPool(data.pool);
+  state.balance = data.balance; pending = 0;
+  clampBet(); shown = state.balance; $('mBalance').textContent = money(shown); render();
+  loadRanking();
+  return true;
+}
+async function loadRanking() {
+  const { data, error } = await rpc('casino_ranking');
+  const el = $('rankList');
+  if (error) { el.innerHTML = '<li><span class="n">Rangliste nicht verfügbar.</span></li>'; return; }
+  if (!data || !data.length) { el.innerHTML = '<li><span class="n">Noch niemand dabei.</span></li>'; return; }
+  el.innerHTML = data.map(r => {
+    const p = r.profit;
+    return `<li class="${r.is_me ? 'me' : ''}"><span class="n">${esc(r.username || 'Spieler')}</span><span class="v ${p < 0 ? 'neg' : ''}">${p > 0 ? '+' : ''}${money(p)}</span></li>`;
+  }).join('');
+}
+function payMsg(t, err) { const m = $('payMsg'); m.textContent = t; m.classList.toggle('err', !!err); }
+async function payout() {
+  if (!wallet || spinning) return;
+  const c = parseEur($('payIn').value);
+  if (!c || c < 100) return payMsg('Bitte mindestens 1 € eingeben.', true);
+  if (c > state.balance) return payMsg('So viel Guthaben hast du nicht.', true);
+  $('payGo').disabled = true;
+  await chain;
+  const { data, error } = await rpc('casino_payout', { p_amount: c });
+  $('payGo').disabled = false;
+  if (error) { payMsg('Auszahlung fehlgeschlagen: ' + error.message, true); await loadWallet(); return; }
+  adopt(data);
+  $('payIn').value = '';
+  payMsg(money(c) + ' ausgezahlt und in den Topf gelegt.');
+  banner(money(c) + ' ausgezahlt.', 'win');
+  loadRanking();
+}
+$('payGo').addEventListener('click', payout);
+$('payIn').addEventListener('keydown', e => { if (e.key === 'Enter') payout(); });
+$('payAll').addEventListener('click', () => { $('payIn').value = (state.balance / 100).toFixed(2).replace('.', ','); });
+setInterval(() => {
+  if (!wallet || document.hidden) return;
+  loadRanking();
+  rpc('casino_wallet').then(r => { if (r.data) setPool(r.data.pool); });
+}, 30000);
+
+$('payoutBox').hidden = true;
+if (window.Auth && Auth.onChange) {
+  let uid = null;
+  Auth.onChange(user => {
+    const id = user ? user.id : null;
+    if (id === uid) return;
+    const hadUser = uid;
+    uid = id;
+    if (user) loadWallet();
+    else if (hadUser) location.reload();
+  });
+}
 
 // ── Gewinntabelle ───────────────────────────────────────────────────
 function trio(id) { return `<span class="trio">${`<svg viewBox="0 0 48 48" aria-hidden="true"><use href="#s-${id}"/></svg>`.repeat(3)}</span>`; }
