@@ -321,7 +321,7 @@
       </section>
 
       <section class="panel rank" id="rankBox" aria-labelledby="rankH">
-        <h2 id="rankH">Battle: Rangliste</h2>
+        <h2 id="rankH">Battle: Auszahlungen</h2>
         <ol class="rank-list" id="rankList"><li><span class="n">Melde dich an, um mitzuspielen.</span></li></ol>
         <p class="note">Sortiert nach Gewinn: Guthaben plus Ausgezahltes minus Eingezahltes minus 20 € Startguthaben.</p>
       </section>
@@ -725,8 +725,7 @@ async function loadRanking() {
   if (error) { el.innerHTML = '<li><span class="n">Rangliste nicht verfügbar.</span></li>'; return; }
   if (!data || !data.length) { el.innerHTML = '<li><span class="n">Noch niemand dabei.</span></li>'; return; }
   el.innerHTML = data.map(r => {
-    const p = r.profit;
-    return `<li class="${r.is_me ? 'me' : ''}"><span class="n">${esc(r.username || 'Spieler')}</span><span class="v ${p < 0 ? 'neg' : ''}">${p > 0 ? '+' : ''}${money(p)}</span></li>`;
+    return `<li class="${r.is_me ? 'me' : ''}"><span class="n">${esc(r.username || 'Spieler')}</span><span class="v">${money(r.paid)}</span></li>`;
   }).join('');
 }
 function payMsg(t, err) { const m = $('payMsg'); m.textContent = t; m.classList.toggle('err', !!err); }
@@ -741,6 +740,8 @@ async function payout() {
   $('payGo').disabled = false;
   if (error) { payMsg('Auszahlung fehlgeschlagen: ' + error.message, true); await loadWallet(); return; }
   adopt(data);
+  const log = await rpc('casino_log_payout', { p_amount: c });
+  if (log.error) console.warn('[Casino] Auszahlung nicht in Rangliste:', log.error.message);
   $('payIn').value = '';
   payMsg(money(c) + ' ausgezahlt und in den Topf gelegt.');
   banner(money(c) + ' ausgezahlt.', 'win');
