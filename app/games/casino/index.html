@@ -321,7 +321,7 @@
 
     <aside class="side">
       <section class="panel topup" id="topup" aria-labelledby="topupH">
-        <h2 id="topupH">Coins aufladen</h2>
+        <h2 id="topupH">Guthaben aufladen</h2>
         <div class="topup-grid">
           <button type="button" class="topup-btn" data-cents="499"><strong>+4,99</strong><span>Starter</span></button>
           <button type="button" class="topup-btn" data-cents="999"><strong>+9,99</strong><span>Regular</span></button>
@@ -673,7 +673,7 @@ function coShow(part) { ['coForm', 'coBusy', 'coDone'].forEach(id => { $(id).hid
 function openCheckout(cents, name) {
   const price = money(cents);
   co.add = cents; co.price = price; co.open = true; co.busy = false;
-  $('coCoins').textContent = '+' + money(co.add) + ' Coins';
+  $('coCoins').textContent = '+' + money(co.add) + ' €';
   $('coName').textContent = name;
   $('coPrice').textContent = price + ' €';
   $('coTotal').textContent = price + ' €';
@@ -693,11 +693,11 @@ function pay() {
     state.balance += co.add;
     save();
     const no = 'BD-' + String(Date.now()).slice(-8);
-    $('coDoneText').textContent = '+' + money(co.add) + ' Coins wurden deinem Konto gutgeschrieben.';
+    $('coDoneText').textContent = '+' + money(co.add) + ' € wurden deinem Konto gutgeschrieben.';
     $('coReceipt').textContent = 'Beleg ' + no + ' · ' + co.price + ' € · Karte •••• 0002 (Spielgeld)';
     co.busy = false;
     coShow('coDone');
-    if (!spinning) { tweenBalance(state.balance); banner(`+${money(co.add)} Coins aufgeladen und gespeichert.`, 'win'); }
+    if (!spinning) { tweenBalance(state.balance); banner(`+${money(co.add)} € aufgeladen und gespeichert.`, 'win'); }
     render();
     $('coClose').focus();
   }, steps.length * wait + 400);
