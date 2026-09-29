@@ -323,10 +323,10 @@
       <section class="panel topup" id="topup" aria-labelledby="topupH">
         <h2 id="topupH">Coins aufladen</h2>
         <div class="topup-grid">
-          <button type="button" class="topup-btn" data-price="4,99" data-coins="500" data-bonus="0"><strong>+500</strong><span>Starter</span></button>
-          <button type="button" class="topup-btn" data-price="14,99" data-coins="2000" data-bonus="0"><strong>+2.000</strong><span>Regular</span></button>
-          <button type="button" class="topup-btn" data-price="34,99" data-coins="5000" data-bonus="500"><strong>+5.000</strong><span>+500 Bonus</span></button>
-          <button type="button" class="topup-btn" data-price="79,99" data-coins="15000" data-bonus="2000"><strong>+15.000</strong><span>+2.000 Bonus</span></button>
+          <button type="button" class="topup-btn" data-cents="499"><strong>+4,99</strong><span>Starter</span></button>
+          <button type="button" class="topup-btn" data-cents="999"><strong>+9,99</strong><span>Regular</span></button>
+          <button type="button" class="topup-btn" data-cents="2499"><strong>+24,99</strong><span>Beliebt</span></button>
+          <button type="button" class="topup-btn" data-cents="4999"><strong>+49,99</strong><span>Groß</span></button>
         </div>
         <p class="note">Die Kasse ist nur nachgestellt: Preise und Karte sind Spielerei, es wird nie echtes Geld verwendet oder abgebucht.</p>
       </section>
@@ -400,14 +400,15 @@ const POOL = SYMS.flatMap(s => Array(s.w).fill(s.id));
 const PAIR_MULT = 1.6;
 // Enya im mittleren Feld: Anzahl -> [Minuten, Multiplikator]
 const LUCK = { 1: [1, 2], 2: [2, 2], 3: [5, 5] };
-const CK = 'automat5dk_casino';
-const BET_STEPS = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000];
-const START_BALANCE = 1000;
-const KEY = 'automat5dk.casino.v1';
+const CK = 'automat5dk_casino2';
+const BET_STEPS = [10, 20, 50, 100, 200, 500, 1000, 2500, 5000, 10000]; // Cent: 0,10 bis 100
+const START_BALANCE = 2000; // Cent
+const KEY = 'automat5dk.casino.v2';
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('de-DE');
+const money = c => (c / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const pick = () => POOL[Math.floor(Math.random() * POOL.length)];
 
 // ── Speichern ───────────────────────────────────────────────────────
@@ -461,13 +462,13 @@ function setMeter(el, text, gain) {
 function tweenBalance(to) {
   cancelAnimationFrame(tweenId);
   const from = shown;
-  if (REDUCED || from === to) { shown = to; $('mBalance').textContent = fmt(to); return; }
+  if (REDUCED || from === to) { shown = to; $('mBalance').textContent = money(to); return; }
   const t0 = performance.now(), dur = Math.min(900, 300 + Math.abs(to - from) / 10);
   const step = now => {
     const k = Math.min(1, (now - t0) / dur);
     shown = from + (to - from) * (1 - Math.pow(1 - k, 3));
-    $('mBalance').textContent = fmt(shown);
-    if (k < 1) tweenId = requestAnimationFrame(step); else { shown = to; $('mBalance').textContent = fmt(to); }
+    $('mBalance').textContent = money(shown);
+    if (k < 1) tweenId = requestAnimationFrame(step); else { shown = to; $('mBalance').textContent = money(to); }
   };
   tweenId = requestAnimationFrame(step);
   const m = $('mBalance'); m.classList.remove('pop'); void m.offsetWidth; m.classList.add('pop');
@@ -478,11 +479,11 @@ let autoPaused = false;
 let autoTimer = 0;
 
 function render() {
-  $('betOut').textContent = fmt(bet());
-  setMeter($('mWin'), state.lastWin > 0 ? '+' + fmt(state.lastWin) : '–', state.lastWin > 0);
+  $('betOut').textContent = money(bet());
+  setMeter($('mWin'), state.lastWin > 0 ? '+' + money(state.lastWin) : '–', state.lastWin > 0);
   $('stRounds').textContent = fmt(state.rounds);
   $('stHits').textContent = fmt(state.hits);
-  $('stBest').textContent = state.best > 0 ? fmt(state.best) : '–';
+  $('stBest').textContent = state.best > 0 ? money(state.best) : '–';
   $('stJackpots').textContent = fmt(state.jackpots);
   const free = state.free > 0;
   const broke = !free && state.balance < BET_STEPS[0];
@@ -494,7 +495,7 @@ function render() {
   sp.classList.toggle('long', free || broke);
   if (free && !autoPaused) { sp.textContent = 'AUTOSPIN · ' + state.free; sp.disabled = spinning; }
   else if (free) { sp.textContent = 'FREISPIELE STARTEN · ' + state.free; sp.disabled = spinning; }
-  else if (broke) { sp.textContent = '+500 AUFLADEN'; sp.disabled = spinning; }
+  else if (broke) { sp.textContent = 'AUFLADEN'; sp.disabled = spinning; }
   else { sp.textContent = 'SPIN'; sp.disabled = spinning || state.balance < bet(); }
   const badge = $('freeBadge');
   badge.hidden = !free;
@@ -614,7 +615,7 @@ async function spin() {
 
   cancelAnimationFrame(tweenId);
   shown = state.balance - res.win;
-  $('mBalance').textContent = fmt(shown);
+  $('mBalance').textContent = money(shown);
   setMeter($('mWin'), '…', false);
   banner('Die Walzen laufen …');
   render();
@@ -632,20 +633,20 @@ async function spin() {
   const extra = (award ? ` · +${award} Freispiele` : '') + (lucky && res.win > 0 ? ` · ×${luckMult} Glück` : '');
   if (res.kind === 'trio' && res.sym === 'seven') {
     cab.classList.add('jackpot');
-    banner(`JACKPOT · +${fmt(res.win)}${extra}`, 'jackpot');
+    banner(`JACKPOT · +${money(res.win)}${extra}`, 'jackpot');
   } else if (luckStart) {
     cab.classList.add('jackpot');
-    banner(`${enyaAt.length}× ENYA · ${luckMin} Min ×${LUCK[enyaAt.length][1]} Glück (gesamt ×${luckFactor()})${res.win ? ' · +' + fmt(res.win) : ''}`, 'jackpot');
+    banner(`${enyaAt.length}× ENYA · ${luckMin} Min ×${LUCK[enyaAt.length][1]} Glück (gesamt ×${luckFactor()})${res.win ? ' · +' + money(res.win) : ''}`, 'jackpot');
   } else if (res.kind === 'trio') {
     cab.classList.add('win');
-    banner(`Dreimal ${BY_ID[res.sym].name} · +${fmt(res.win)}${extra}`, 'win');
+    banner(`Dreimal ${BY_ID[res.sym].name} · +${money(res.win)}${extra}`, 'win');
   } else if (res.kind === 'pair') {
     cab.classList.add('win');
-    banner(`Zwei gleiche (${BY_ID[res.sym].name}) · +${fmt(res.win)}${extra}`, 'win');
+    banner(`Zwei gleiche (${BY_ID[res.sym].name}) · +${money(res.win)}${extra}`, 'win');
   } else if (state.free > 0) {
     banner(`Keine Gewinnlinie. Noch ${state.free} Freispiele.`, 'lose');
   } else if (state.balance < BET_STEPS[0]) {
-    banner('Guthaben aufgebraucht. Drück SPIN oder die Leertaste für +500 Coins.', 'warn');
+    banner('Guthaben aufgebraucht. Drück SPIN oder die Leertaste zum Aufladen.', 'warn');
   } else {
     banner('Keine Gewinnlinie. Nochmal?', 'lose');
   }
@@ -657,7 +658,7 @@ function scheduleAuto() {
   if (state.free > 0 && !autoPaused && !spinning) autoTimer = setTimeout(spin, REDUCED ? 500 : 1100);
 }
 
-function refill() { openCheckout(500, 0, 'Starter', '4,99'); }
+function refill() { openCheckout(499, 'Starter'); }
 
 function request() {
   if (spinning) return;
@@ -669,10 +670,11 @@ function request() {
 // ── Aufladen ────────────────────────────────────────────────────────
 const co = { open: false, busy: false, add: 0, price: '' };
 function coShow(part) { ['coForm', 'coBusy', 'coDone'].forEach(id => { $(id).hidden = id !== part; }); }
-function openCheckout(coins, bonus, name, price) {
-  co.add = coins + bonus; co.price = price; co.open = true; co.busy = false;
-  $('coCoins').textContent = '+' + fmt(co.add) + ' Coins';
-  $('coName').textContent = name + (bonus ? ' · inkl. ' + fmt(bonus) + ' Bonus' : '');
+function openCheckout(cents, name) {
+  const price = money(cents);
+  co.add = cents; co.price = price; co.open = true; co.busy = false;
+  $('coCoins').textContent = '+' + money(co.add) + ' Coins';
+  $('coName').textContent = name;
   $('coPrice').textContent = price + ' €';
   $('coTotal').textContent = price + ' €';
   coShow('coForm');
@@ -691,11 +693,11 @@ function pay() {
     state.balance += co.add;
     save();
     const no = 'BD-' + String(Date.now()).slice(-8);
-    $('coDoneText').textContent = '+' + fmt(co.add) + ' Coins wurden deinem Konto gutgeschrieben.';
+    $('coDoneText').textContent = '+' + money(co.add) + ' Coins wurden deinem Konto gutgeschrieben.';
     $('coReceipt').textContent = 'Beleg ' + no + ' · ' + co.price + ' € · Karte •••• 0002 (Spielgeld)';
     co.busy = false;
     coShow('coDone');
-    if (!spinning) { tweenBalance(state.balance); banner(`+${fmt(co.add)} Coins aufgeladen und gespeichert.`, 'win'); }
+    if (!spinning) { tweenBalance(state.balance); banner(`+${money(co.add)} Coins aufgeladen und gespeichert.`, 'win'); }
     render();
     $('coClose').focus();
   }, steps.length * wait + 400);
@@ -705,7 +707,7 @@ $('coCancel').addEventListener('click', closeCheckout);
 $('coClose').addEventListener('click', closeCheckout);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && co.open) closeCheckout(); });
 document.querySelectorAll('.topup-btn').forEach(btn => btn.addEventListener('click', () => {
-  openCheckout(Number(btn.dataset.coins), Number(btn.dataset.bonus), btn.querySelector('span').textContent, btn.dataset.price);
+  openCheckout(Number(btn.dataset.cents), btn.querySelector('span').textContent);
 }));
 
 // ── Steuerung ───────────────────────────────────────────────────────
@@ -738,7 +740,7 @@ window.addEventListener('storage', e => {
   try { apply(JSON.parse(e.newValue)); } catch (err) { return; }
   clampBet();
   shown = state.balance;
-  $('mBalance').textContent = fmt(shown);
+  $('mBalance').textContent = money(shown);
   render();
   scheduleAuto();
 });
@@ -755,11 +757,11 @@ clampBet();
 if (state.view) view = state.view;
 strips.forEach((s, i) => place(s, view[i]));
 shown = state.balance;
-$('mBalance').textContent = fmt(shown);
+$('mBalance').textContent = money(shown);
 luckWas = renderLuck();
 render();
 if (state.free > 0) { banner(`Freispiele laufen: noch ${state.free}.`, 'win'); scheduleAuto(); }
-else if (state.balance < BET_STEPS[0]) banner('Guthaben aufgebraucht. Drück SPIN oder die Leertaste für +500 Coins.', 'warn');
+else if (state.balance < BET_STEPS[0]) banner('Guthaben aufgebraucht. Drück SPIN oder die Leertaste zum Aufladen.', 'warn');
 save();
 </script>
 </body>
