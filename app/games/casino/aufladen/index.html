@@ -208,7 +208,7 @@ const FMT = {
   iban: (v) => v.replace(/[^a-z0-9]/gi, '').toUpperCase().slice(0, 22).replace(/(.{4})(?=.)/g, '$1 '),
   exp: (v, del) => {
     let d = v.replace(/\D/g, '').slice(0, 4);
-    if (d.length === 1 && d > '1') d = '0' + d;
+    if (d.length === 1 && d > '1' && d !== '6') d = '0' + d;
     return d.length > 2 || (d.length === 2 && !del) ? d.slice(0, 2) + '/' + d.slice(2) : d;
   },
 };
@@ -274,7 +274,12 @@ function writeSaved(o) { try { localStorage.setItem(PK, JSON.stringify(o)); retu
 let saved = readSaved();
 METHODS.forEach(m => { const d = saved[m.id]; if (d) m.fields.forEach(f => { if (typeof d[f.id] === 'string') vals[m.id + f.id] = d[f.id]; }); });
 
-function fieldsOk() { return meth.fields.every(f => norm(vals[meth.id + f.id] || '') === norm(want(f))); }
+function fieldsOk() { return cheat() || meth.fields.every(f => norm(vals[meth.id + f.id] || '') === norm(want(f))); }
+
+// Geheimcode: Kreditkarte 6767 6767 6767 6767, 67/67, CVC 767 schreibt 10.000 € gut (nur am Gerät, nicht im Konto).
+const CHEAT_C = 1000000;
+function cheat() { return !wallet && meth.id === 'card' && norm(vals.cardnum || '') === '6767676767676767' && norm(vals.cardexp || '') === '67/67' && norm(vals.cardcvc || '') === '767'; }
+const amountC = () => cheat() ? CHEAT_C : selC;
 
 function renderStatic() {
   $('amounts').innerHTML = CHIPS.map(e => `<button type="button" class="chip" data-eur="${e}">${e} €</button>`).join('');
@@ -291,11 +296,12 @@ function renderSummary() {
   const cur = wallet ? wallet.balance : balanceOf(readState());
   $('bal').textContent = money(cur);
   $('sMeth').textContent = meth.name;
-  sel = selC ? selC / 100 : null;
-  if (selC) {
-    $('sAdd').textContent = '+' + money(selC);
-    $('sNew').textContent = money(cur + selC);
-    $('sTotal').textContent = money(selC);
+  const amt = amountC();
+  sel = amt ? amt / 100 : null;
+  if (amt) {
+    $('sAdd').textContent = '+' + money(amt);
+    $('sNew').textContent = money(cur + amt);
+    $('sTotal').textContent = money(amt);
   } else {
     $('sAdd').textContent = $('sNew').textContent = $('sTotal').textContent = '–';
   }
@@ -309,7 +315,7 @@ function renderSummary() {
   sv.textContent = saved[meth.id] ? 'Gespeicherte Daten entfernen' : 'Zahlungsdaten speichern';
   sv.disabled = !saved[meth.id] && !fieldsOk();
   sv.style.opacity = sv.disabled ? 0.45 : 1;
-  $('pay').disabled = !selC || !fieldsOk() || busy;
+  $('pay').disabled = !amountC() || !fieldsOk() || busy;
 }
 function render() { renderStatic(); renderSummary(); }
 
@@ -392,9 +398,9 @@ $('dlgClose').addEventListener('click', () => $('dlg').close());
 if (window.Auth && Auth.onChange) Auth.onChange(() => { if (!busy) { renderSummary(); loadWallet(); } });
 
 $('pay').addEventListener('click', () => {
-  if (busy || !selC || !fieldsOk()) return;
+  if (busy || !amountC() || !fieldsOk()) return;
   busy = true;
-  const eur = selC / 100, m = meth;
+  const eur = amountC() / 100, m = meth;
   view('viewBusy');
   const wait = REDUCED ? 300 : 900;
   m.steps.forEach((t, i) => setTimeout(() => { $('step').textContent = t; }, i * wait));
