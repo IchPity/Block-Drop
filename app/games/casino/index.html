@@ -421,7 +421,7 @@
     <aside class="side">
       <section class="panel topup" id="topup" aria-labelledby="topupH">
         <h2 id="topupH">Guthaben aufladen</h2>
-        <p class="note" style="margin:0 0 12px">Beträge von 1 € bis 500 €, bezahlt wird über eine eigene Kasse.</p>
+        <p class="note" style="margin:0 0 12px">Beträge von 1 € bis 500 € oder das Paket mit 10.000 €, bezahlt wird über eine eigene Kasse.</p>
         <a class="co-pay" href="aufladen/" style="display:block;text-align:center;text-decoration:none">Zur Kasse</a>
         <a href="belege/" style="display:block;text-align:center;margin-top:8px;font-size:14px">Meine Belege</a>
         <p class="note">Die Kasse ist nur nachgestellt: Es wird nie echtes Geld verwendet oder abgebucht.</p>
@@ -588,7 +588,8 @@ function tweenBalance(to) {
   const m = $('mBalance'); m.classList.remove('pop'); void m.offsetWidth; m.classList.add('pop');
 }
 function bet() { return state.free > 0 ? state.freeBet : BET_STEPS[state.betIdx]; }
-function clampBet() { if (state.free > 0) return; while (state.betIdx > 0 && BET_STEPS[state.betIdx] > state.balance) state.betIdx--; }
+function clampBet() { if (state.free > 0 || autoOn) return; // Autospin ändert den Einsatz nie, er stoppt stattdessen
+  while (state.betIdx > 0 && BET_STEPS[state.betIdx] > state.balance) state.betIdx--; }
 let autoPaused = false;
 let autoTimer = 0;
 let autoOn = false; // zuschaltbarer Autospin für normale Runden (Freispiele laufen ohnehin automatisch)
@@ -942,7 +943,7 @@ function scheduleAuto() {
   if (state.free > 0) { if (!autoPaused) autoTimer = setTimeout(spin, delay); return; }
   if (!autoOn) return;
   const stake = BET_STEPS[state.betIdx];
-  if (state.balance < stake) { autoOn = false; render(); banner('Autospin beendet: Das Guthaben reicht für den Einsatz nicht mehr.', 'warn'); return; }
+  if (state.balance < stake) { autoOn = false; clampBet(); render(); banner('Autospin beendet: Das Guthaben reicht für den Einsatz nicht mehr.', 'warn'); return; }
   if (M.id === 'enya' && enyaLeft() === 0) { autoOn = false; render(); return; }
   // Einstellungen offen: kurz warten, statt im Hintergrund weiterzudrehen
   autoTimer = setTimeout(() => { if (autoOn && settingsOpen()) scheduleAuto(); else spin(); }, delay);

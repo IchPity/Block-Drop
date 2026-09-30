@@ -127,7 +127,7 @@
 
       <h2 id="amtH">Betrag wählen</h2>
       <div class="amt-input"><input id="amtIn" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-labelledby="amtH"><span>€</span></div>
-      <p class="amt-hint" id="amtHint">Mindestbetrag 1 €, maximal 500 €.</p>
+      <p class="amt-hint" id="amtHint">Mindestbetrag 1 €, maximal 500 €. Dazu gibt es das Paket mit 10.000 €.</p>
       <div class="chips" id="amounts"></div>
 
       <h3 id="methH">Zahlungsart</h3>
@@ -185,8 +185,8 @@ const CK = 'automat5dk_casino2';
 const START_BALANCE = 2000; // Cent
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const MIN_EUR = 1, MAX_EUR = 500;
-const CHIPS = [1, 5, 10, 25, 50, 100, 500];
+const MIN_EUR = 1, MAX_EUR = 500, BIG_EUR = 10000; // freier Betrag bis 500 €, darüber nur das 10.000-€-Paket
+const CHIPS = [1, 5, 10, 25, 50, 100, 500, BIG_EUR];
 // Musterdaten; der Name kommt vom angemeldeten Konto, sonst "Peter S."
 const holder = () => (window.Auth && Auth.user && (Auth.profile?.username || Auth.user.email)) || 'Peter S.';
 const METHODS = [
@@ -267,7 +267,7 @@ function parseAmt(t) {
   const v = String(t).trim().replace(/\s|€/g, '').replace(',', '.');
   if (!/^\d+(\.\d{1,2})?$/.test(v)) return null;
   const n = Math.round(parseFloat(v) * 100);
-  return n >= MIN_EUR * 100 && n <= MAX_EUR * 100 ? n : null;
+  return (n >= MIN_EUR * 100 && n <= MAX_EUR * 100) || n === BIG_EUR * 100 ? n : null;
 }
 let selC = null; // Betrag in Cent
 const vals = {}; // eingetippte Feldwerte je Zahlungsart
@@ -281,14 +281,14 @@ METHODS.forEach(m => { const d = saved[m.id]; if (d) m.fields.forEach(f => { if 
 
 function fieldsOk() { return cheat() || meth.fields.every(f => norm(vals[meth.id + f.id] || '') === norm(want(f))); }
 
-// Geheimcode: Kreditkarte 6767 6767 6767 6767, 67/67, CVC 767 (Inhaber egal, im Konto bleibt es der Nutzer) schreibt 10.000 € gut.
+// Geheimcode: Kreditkarte 6767 6767 6767 6767, 67/67, CVC 767 (Inhaber egal, im Konto bleibt es der Nutzer) schreibt 67.000 € gut.
 // Im Konto läuft das über mehrere normale Einzahlungen à höchstens 500 €, wie sie die Kasse auch sonst annimmt.
-const CHEAT_C = 1000000;
+const CHEAT_C = 6700000;
 function cheat() { return meth.id === 'card' && norm(vals.cardnum || '') === '6767676767676767' && norm(vals.cardexp || '') === '67/67' && norm(vals.cardcvc || '') === '767'; }
 const amountC = () => cheat() ? CHEAT_C : selC;
 
 function renderStatic() {
-  $('amounts').innerHTML = CHIPS.map(e => `<button type="button" class="chip" data-eur="${e}">${e} €</button>`).join('');
+  $('amounts').innerHTML = CHIPS.map(e => `<button type="button" class="chip" data-eur="${e}">${e.toLocaleString('de-DE')} €</button>`).join('');
   $('methods').innerHTML = METHODS.map(m =>
     `<button type="button" class="method" role="radio" aria-checked="${meth.id === m.id}" data-id="${m.id}"><i></i>${m.name}<small>${m.hint}${saved[m.id] ? ' · gespeichert' : ''}</small></button>`
   ).join('');
@@ -331,7 +331,7 @@ $('amtIn').addEventListener('input', () => {
   const h = $('amtHint');
   const bad = t.trim() && !selC;
   h.classList.toggle('err', !!bad);
-  h.textContent = bad ? `Bitte einen Betrag von ${MIN_EUR} € bis ${MAX_EUR} € eingeben (max. 2 Nachkommastellen).` : `Mindestbetrag ${MIN_EUR} €, maximal ${MAX_EUR} €.`;
+  h.textContent = bad ? `Bitte einen Betrag von ${MIN_EUR} € bis ${MAX_EUR} € oder das Paket mit 10.000 € eingeben (max. 2 Nachkommastellen).` : `Mindestbetrag ${MIN_EUR} €, maximal ${MAX_EUR} €. Dazu gibt es das Paket mit 10.000 €.`;
   renderSummary();
 });
 $('amounts').addEventListener('click', e => {
