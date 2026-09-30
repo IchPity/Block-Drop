@@ -162,6 +162,8 @@
   .auto-stop:hover { color: var(--chalk); border-color: rgba(238,242,234,0.3); }
   .auto-stop.on { display: inline-block; }
   .reels.lucky { border-color: var(--win); }
+  .gear { padding: 4px 10px; min-height: 28px; background: transparent; border: 1px solid var(--board-line); border-radius: 999px; color: var(--chalk-dim); font: 600 12px 'IBM Plex Sans', sans-serif; cursor: pointer; }
+  .gear:hover { border-color: rgba(238,242,234,0.3); color: var(--chalk); }
   .status-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 28px; margin-bottom: 8px; flex-wrap: wrap; }
   .status-note { font-size: 12px; color: var(--chalk-faint); }
   .status-chips { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
@@ -341,7 +343,7 @@
 
       <div class="status-row">
         <span class="status-note" id="modeNote"></span>
-        <span class="status-chips"><span class="chip free" id="freeBadge" hidden></span><span class="chip luck" id="luckBadge" hidden></span></span>
+        <span class="status-chips"><button type="button" class="gear" id="gearBtn">Tempo &amp; Ton</button><span class="chip free" id="freeBadge" hidden></span><span class="chip luck" id="luckBadge" hidden></span></span>
       </div>
 
       <div class="reels" id="reels">
@@ -362,7 +364,7 @@
         <button type="button" class="spin" id="spin">SPIN</button>
       </div>
       <button type="button" class="auto-stop" id="autoStop">Autospin pausieren</button>
-      <p class="hint">Die <kbd>Leertaste</kbd> dreht überall auf der Seite. Mit <kbd>Esc</kbd> stellst du die Drehgeschwindigkeit ein. Den Modus wechselst du zwischen den Runden, Regeln und Gewinne stehen in der Gewinntabelle.</p>
+      <p class="hint">Die <kbd>Leertaste</kbd> dreht überall auf der Seite. Mit <kbd>Esc</kbd> oder „Tempo &amp; Ton“ stellst du Drehgeschwindigkeit und Ton ein. Den Modus wechselst du zwischen den Runden, Regeln und Gewinne stehen in der Gewinntabelle.</p>
     </section>
 
     <aside class="side">
@@ -683,7 +685,7 @@ function spinReel(i, rows, finalRow) {
     const target = all.length - 3;
     place(strip, all);
     void strip.offsetWidth;
-    const dur = REDUCED ? 260 + i * 120 : (1100 + i * (M.reels > 3 ? 300 : 450)) * SPEEDS[state.speed].f;
+    const dur = REDUCED ? (260 + i * 120) * SPEEDS[state.speed].f : (1100 + i * (M.reels > 3 ? 300 : 450)) * SPEEDS[state.speed].f;
     reels[i].classList.add('moving');
     strip.style.transition = `transform ${dur}ms cubic-bezier(.16,.84,.3,1.04)`;
     strip.style.transform = `translateY(calc(var(--sym) * -${target}))`;
@@ -985,6 +987,7 @@ function renderSound() {
   $('soundState').textContent = state.sound ? 'An' : 'Aus';
 }
 $('soundBtn').addEventListener('click', () => { state.sound = !state.sound; save(); renderSound(); if (state.sound) ding(988, 0, 0.2); });
+$('gearBtn').addEventListener('click', () => toggleSettings(true));
 $('setClose').addEventListener('click', () => toggleSettings(false));
 $('settingsBack').addEventListener('click', e => { if (e.target === e.currentTarget) toggleSettings(false); });
 document.addEventListener('keydown', e => {
