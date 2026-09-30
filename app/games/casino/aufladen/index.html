@@ -131,6 +131,7 @@
       <h3 id="methH">Zahlungsart</h3>
       <div class="methods" role="radiogroup" aria-labelledby="methH" id="methods"></div>
       <div class="fields" id="fields"></div>
+      <button type="button" class="show" id="saveData">Zahlungsdaten speichern</button>
       <button type="button" class="show" id="showData">Zahlungsdaten zum Abschreiben anzeigen</button>
     </section>
 
@@ -266,12 +267,19 @@ function parseAmt(t) {
 let selC = null; // Betrag in Cent
 const vals = {}; // eingetippte Feldwerte je Zahlungsart
 
+// Gespeicherte Zahlungsdaten: nur auf Wunsch, je Zahlungsart getrennt, sonst bleibt alles nur bis zum Verlassen der Seite
+const PK = 'automat5dk.casino.saved.v1';
+function readSaved() { try { return JSON.parse(localStorage.getItem(PK)) || {}; } catch (e) { return {}; } }
+function writeSaved(o) { try { localStorage.setItem(PK, JSON.stringify(o)); return true; } catch (e) { return false; } }
+let saved = readSaved();
+METHODS.forEach(m => { const d = saved[m.id]; if (d) m.fields.forEach(f => { if (typeof d[f.id] === 'string') vals[m.id + f.id] = d[f.id]; }); });
+
 function fieldsOk() { return meth.fields.every(f => norm(vals[meth.id + f.id] || '') === norm(want(f))); }
 
 function renderStatic() {
   $('amounts').innerHTML = CHIPS.map(e => `<button type="button" class="chip" data-eur="${e}">${e} €</button>`).join('');
   $('methods').innerHTML = METHODS.map(m =>
-    `<button type="button" class="method" role="radio" aria-checked="${meth.id === m.id}" data-id="${m.id}"><i></i>${m.name}<small>${m.hint}</small></button>`
+    `<button type="button" class="method" role="radio" aria-checked="${meth.id === m.id}" data-id="${m.id}"><i></i>${m.name}<small>${m.hint}${saved[m.id] ? ' · gespeichert' : ''}</small></button>`
   ).join('');
   const half = meth.fields.filter(f => f.half);
   const full = meth.fields.filter(f => !f.half);
@@ -297,6 +305,10 @@ function renderSummary() {
     el.classList.toggle('good', !!v && v === w);
     el.classList.toggle('bad', !!v && v.length >= w.length && v !== w);
   });
+  const sv = $('saveData');
+  sv.textContent = saved[meth.id] ? 'Gespeicherte Daten entfernen' : 'Zahlungsdaten speichern';
+  sv.disabled = !saved[meth.id] && !fieldsOk();
+  sv.style.opacity = sv.disabled ? 0.45 : 1;
   $('pay').disabled = !selC || !fieldsOk() || busy;
 }
 function render() { renderStatic(); renderSummary(); }
@@ -349,6 +361,17 @@ function showData() {
   }
   $('dlg').show();
 }
+$('saveData').addEventListener('click', () => {
+  if (saved[meth.id]) {
+    delete saved[meth.id];
+    meth.fields.forEach(f => delete vals[meth.id + f.id]);
+  } else {
+    if (!fieldsOk()) return;
+    saved[meth.id] = Object.fromEntries(meth.fields.map(f => [f.id, vals[meth.id + f.id]]));
+  }
+  if (!writeSaved(saved)) $('noSave').hidden = false;
+  render();
+});
 $('showData').addEventListener('click', showData);
 $('dlgClose').addEventListener('click', () => $('dlg').close());
 (() => {
@@ -405,8 +428,11 @@ $('pay').addEventListener('click', () => {
     finish(s.balance);
   }, m.steps.length * wait + 400);
 });
-$('again').addEventListener('click', () => { selC = null; $('amtIn').value = ''; Object.keys(vals).forEach(k => delete vals[k]); view('viewForm'); render(); });
+// Nochmal aufladen: Betrag, Zahlungsart und Zahlungsdaten bleiben eingetragen
+$('again').addEventListener('click', () => { view('viewForm'); render(); });
 
+// Zurück per Browser-Verlauf: Seite frisch laden, damit nichts Eingetipptes zurückkommt
+window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
 window.addEventListener('storage', e => { if (e.key === KEY) renderSummary(); });
 render();
 </script>
