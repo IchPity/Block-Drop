@@ -48,7 +48,7 @@
       rules: [
         'Drei gleiche auf einer Linie;Wert × Linieneinsatz',
         'Vier / fünf gleiche;Wert ×3 / ×10',
-        'Zwei gleiche von links;×1',
+        'Zwei gleiche von links;×1,2',
         'Stern;ersetzt alle außer Sieben',
       ],
     },
@@ -82,10 +82,61 @@
     },
   };
 
+  // Walzenzahl je Modus: Standard steht oben, die andere Variante hier als Überschreibung.
+  // Auszahlungswerte sind per Simulation auf die Ziel-Quote nachgestellt (siehe RTP).
+  const ALT = {
+    classic: { 5: {
+      reels: 5, lines: [[1, 1, 1, 1, 1]], lenMult: { 4: 3, 5: 10 }, pair: 2.8,
+      rules: [
+        'Zwei gleiche von links;×2,8',
+        'Vier / fünf gleiche;Wert ×3 / ×10',
+        'Zwei / drei Sterne von links;+2 / +5 Frei',
+        '1 / 2 / 3+ Enya in der Mitte;15 Sek ×1,2 / 20 Sek ×1,3 / 30 Sek ×1,5',
+      ],
+    } },
+    fruit: { 3: {
+      reels: 3, lines: FIVE.map(l => l.slice(0, 3)), lenMult: null, pair: 1.2,
+      m: { seven: 85, diamond: 34, bell: 17, cherry: 9, lemon: 7, grape: 5, bar: 4 },
+      rules: [
+        'Drei gleiche auf einer Linie;Wert × Linieneinsatz',
+        'Zwei gleiche von links;×1',
+        'Stern;ersetzt alle außer Sieben',
+      ],
+    } },
+    enya: { 3: {
+      reels: 3, lines: FIVE.map(l => l.slice(0, 3)), lenMult: null, expand: 1, pair: 0.4,
+      m: { crown: 50, harp: 20, moon: 10, note: 6, wave: 3, star: 3 },
+      scatter: { sym: 'enya', awards: { 3: 3, 4: 5, 5: 8, 6: 12 } },
+      rules: [
+        'Drei gleiche auf einer Linie;Wert × Linieneinsatz',
+        'Zwei gleiche von links;×0,4',
+        'Enya;Wild, ersetzt alles',
+        'Enya in der Mitte;füllt die ganze Walze',
+        '3 / 4 / 5 / 6+ Enya irgendwo;3 / 5 / 8 / 12 Freispiele + 30 Sek ×1,5 Glück',
+        'Im Freispiel;alle Gewinne ×2',
+      ],
+    } },
+  };
   const ORDER = ['classic', 'fruit', 'enya'];
   for (const m of Object.values(MODES)) {
     m.by = Object.fromEntries(m.syms.map(s => [s.id, s]));
     m.pool = m.syms.flatMap(s => Array(s.w).fill(s.id));
+  }
+  // Modus mit gewünschter Walzenzahl (3 oder 5)
+  const cache = {};
+  function forReels(id, n) {
+    const base = MODES[id];
+    if (!n || n === base.reels || !ALT[id] || !ALT[id][n]) return base;
+    const key = id + n;
+    if (!cache[key]) {
+      const m = Object.assign({}, base, ALT[id][n]);
+      if (m.m) {
+        m.syms = base.syms.map(x => (m.m[x.id] ? { ...x, m: m.m[x.id] } : x));
+        m.by = Object.fromEntries(m.syms.map(x => [x.id, x]));
+      }
+      cache[key] = m;
+    }
+    return cache[key];
   }
   const ALL_IDS = new Set(Object.values(MODES).flatMap(m => m.syms.map(s => s.id)));
 
@@ -94,6 +145,15 @@
 
   // Eine Linie: { mult, cells (Walzen-Indizes), sym, kind } oder null
   function scoreLine(mode, ids) {
+    if (!mode.wild && ids.length > 3) {
+      let k = 1;
+      while (k < ids.length && ids[k] === ids[0]) k++;
+      const sym = ids[0];
+      if (k < 2 || (k < 3 && !mode.pair)) return null;
+      if (mode.noPay && mode.noPay.includes(sym)) return { mult: 0, cells: [], sym, kind: k >= 3 ? 'trio' : 'pair' };
+      if (k < 3) return { mult: mode.pair, cells: [0, 1], sym, kind: 'pair' };
+      return { mult: mode.by[sym].m * ((mode.lenMult && mode.lenMult[k]) || 1), cells: ids.slice(0, k).map((_, i) => i), sym, kind: 'trio' };
+    }
     if (!mode.wild) {
       const [a, b, c] = ids;
       let cells = null, sym = null, kind = null;
@@ -161,7 +221,7 @@
     }
     if (mode.luckSym) {
       const at = g.map((_, i) => i).filter(i => g[i][1] === mode.luckSym);
-      out.luckCount = at.length;
+      out.luckCount = Math.min(at.length, 3);
       at.forEach(i => hit.add(i + ':1'));
       out.hits = [...hit].map(x => x.split(':').map(Number));
     }
@@ -170,6 +230,6 @@
 
   const finalWin = (raw, stake, luckMult) => Math.min(Math.round(raw * (luckMult > 1 ? luckMult : 1)), stake * MAX_X);
 
-  root.Slots = { MODES, ORDER, ALL_IDS, pick, makeGrid, resolve, finalWin, MAX_X };
+  root.Slots = { MODES, ORDER, forReels, ALL_IDS, pick, makeGrid, resolve, finalWin, MAX_X };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.Slots;
 })(typeof window !== 'undefined' ? window : globalThis);

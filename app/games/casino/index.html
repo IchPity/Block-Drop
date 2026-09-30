@@ -67,6 +67,12 @@
   .mode-btn[aria-selected="true"] span { color: var(--amber); }
   .mode-btn:disabled { cursor: not-allowed; }
   .mode-btn:disabled:not([aria-selected="true"]) { opacity: 0.45; }
+  .reelopt { display: flex; gap: 6px; margin: -6px 0 14px; }
+  .reelopt button { flex: 1; padding: 6px 8px; background: transparent; border: 1px solid var(--board-line); border-radius: 8px; color: var(--chalk-dim); font: 600 12px 'IBM Plex Sans', sans-serif; letter-spacing: 0.06em; cursor: pointer; }
+  .reelopt button:hover:not(:disabled) { border-color: rgba(238,242,234,0.3); }
+  .reelopt button[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); background: color-mix(in srgb, var(--amber) 12%, var(--ink)); }
+  .reelopt button:disabled { cursor: not-allowed; }
+  .reelopt button:disabled:not([aria-pressed="true"]) { opacity: 0.45; }
   .meters { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; margin-bottom: 16px; }
   .meter { background: var(--ink); border: 1px solid var(--board-line); border-radius: 10px; padding: 10px 14px 8px; min-width: 0; }
   .settings-back { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(5,8,4,0.72); }
@@ -363,6 +369,7 @@
       <div class="bigwin" id="bigwin" aria-hidden="true"><b id="bwTitle"></b><span id="bwAmt"></span></div>
 
       <div class="modes" id="modes" role="tablist" aria-label="Spielmodus"></div>
+      <div class="reelopt" id="reelOpt" role="group" aria-label="Walzenzahl"><button type="button" data-n="3">3 Walzen</button><button type="button" data-n="5">5 Walzen</button></div>
 
       <div class="meters">
         <div class="meter main">
@@ -464,7 +471,7 @@
 
 const { MODES, ORDER, ALL_IDS } = Slots;
 let M = MODES.classic; // aktiver Modus
-const RTP = { classic: 90, fruit: 87, enya: 87 };
+const RTP = { classic3: 90, classic5: 90, fruit5: 87, fruit3: 87, enya5: 87, enya3: 88 };
 const ENYA_LIMIT = 60 * 60 * 1000; // Enya Special: 1 Stunde pro Tag
 const SPEEDS = [{ n: 'Langsam', f: 1.7 }, { n: 'Normal', f: 1 }, { n: 'Schnell', f: 0.6 }, { n: 'Turbo', f: 0.35 }, { n: 'Blitz', f: 0.2 }];
 // Enya im mittleren Feld: Anzahl -> [Sekunden, Multiplikator]. Glück stapelt nicht: es gilt der höchste Wert.
@@ -483,7 +490,7 @@ const money = c => (c / 100).toLocaleString('de-DE', { minimumFractionDigits: 2,
 const pick = () => Slots.pick(M);
 
 // ── Speichern ───────────────────────────────────────────────────────
-let state = { balance: START_BALANCE, betIdx: 2, rounds: 0, hits: 0, best: 0, jackpots: 0, lastWin: 0, free: 0, freeBet: 0, freeMode: 'classic', mode: 'classic', speed: 1, sound: true, fx: true, enyaDay: '', enyaMs: 0, luck: [], view: null };
+let state = { balance: START_BALANCE, betIdx: 2, rounds: 0, hits: 0, best: 0, jackpots: 0, lastWin: 0, free: 0, freeBet: 0, freeMode: 'classic', mode: 'classic', speed: 1, sound: true, fx: true, reels: { classic: 3, fruit: 5, enya: 5 }, enyaDay: '', enyaMs: 0, luck: [], view: null };
 
 // Mit Konto liegt das Guthaben in Supabase (Wallet-Modus); als Gast bleibt es lokal.
 let wallet = false, guestBalance = START_BALANCE, poolAmt = 0;
@@ -511,6 +518,7 @@ function apply(s) {
   state.speed = Math.min(SPEEDS.length - 1, num(s.speed, 1));
   state.sound = s.sound !== false;
   state.fx = s.fx !== false;
+  for (const id of ORDER) state.reels[id] = s.reels && (s.reels[id] === 3 || s.reels[id] === 5) ? s.reels[id] : MODES[id].reels;
   if (s.enyaDay === today()) {
     state.enyaMs = Math.min(ENYA_LIMIT, state.enyaDay === s.enyaDay ? Math.max(state.enyaMs, num(s.enyaMs, 0)) : num(s.enyaMs, 0));
     state.enyaDay = s.enyaDay;
@@ -519,7 +527,8 @@ function apply(s) {
   state.freeMode = MODES[s.freeMode] ? s.freeMode : 'classic';
   if (state.free > 0) state.mode = state.freeMode; // Freispiele laufen im Modus, in dem sie gewonnen wurden
   state.view = null;
-  if (Array.isArray(s.view) && s.view.length === MODES[state.mode].reels && s.view.every(r => Array.isArray(r) && r.length === 3 && r.every(id => MODES[state.mode].by[id]))) state.view = s.view;
+  const vm = Slots.forReels(state.mode, state.reels[state.mode]);
+  if (Array.isArray(s.view) && s.view.length === vm.reels && s.view.every(r => Array.isArray(r) && r.length === 3 && r.every(id => vm.by[id]))) state.view = s.view;
 }
 function readCookie() {
   const m = document.cookie.split('; ').find(c => c.startsWith(CK + '='));
@@ -601,6 +610,7 @@ function render() {
 }
 function renderModes() {
   const locked = spinning || state.free > 0;
+  document.querySelectorAll('#reelOpt button').forEach(b => { b.setAttribute('aria-pressed', +b.dataset.n === M.reels); b.disabled = locked; });
   const left = enyaLeft();
   document.querySelectorAll('.mode-btn').forEach(b => {
     const id = b.dataset.mode;
@@ -1051,13 +1061,13 @@ function renderPayTable() {
   $('payNote').textContent = (many
     ? 'Angegeben ist das Vielfache des Linieneinsatzes (Einsatz ÷ 5). Alle 5 Linien zählen, ihre Gewinne addieren sich. '
     : 'Angegeben ist das Vielfache deines Einsatzes. ')
-    + `Pro Runde zahlt der Automat höchstens das ${Slots.MAX_X}-Fache des Einsatzes. Freispiele laufen automatisch mit dem Einsatz, bei dem sie ausgelöst wurden. Im Schnitt zahlt dieser Modus rund ${RTP[M.id]} % zurück.` + (M.id === 'enya' ? ' Dieser Modus lässt sich nur 1 Stunde pro Tag spielen, die Zeit zählt, solange er offen ist.' : '');
+    + `Pro Runde zahlt der Automat höchstens das ${Slots.MAX_X}-Fache des Einsatzes. Freispiele laufen automatisch mit dem Einsatz, bei dem sie ausgelöst wurden. Im Schnitt zahlt dieser Modus rund ${RTP[M.id + M.reels]} % zurück.` + (M.id === 'enya' ? ' Dieser Modus lässt sich nur 1 Stunde pro Tag spielen, die Zeit zählt, solange er offen ist.' : '');
 }
 
 // ── Modus ───────────────────────────────────────────────────────────
 $('modes').innerHTML = ORDER.map(id => `<button type="button" class="mode-btn" role="tab" data-mode="${id}"><b>${MODES[id].name}</b><span>${MODES[id].tag}</span></button>`).join('');
 function useMode(id) {
-  M = MODES[id];
+  M = Slots.forReels(id, state.reels[id]);
   state.mode = M.id;
   buildReels();
   $('cabinet').dataset.mode = M.id;
@@ -1065,9 +1075,20 @@ function useMode(id) {
   $('modeNote').textContent = M.note;
   renderPayTable();
 }
+function setReels(n) {
+  if (spinning || state.free > 0 || n === M.reels || (n !== 3 && n !== 5)) return;
+  state.reels[M.id] = n;
+  useMode(M.id);
+  fresh();
+  banner(`${M.name} mit ${n} Walzen.`);
+}
 function setMode(id) {
   if (spinning || state.free > 0 || !MODES[id] || id === M.id) return;
   useMode(id);
+  fresh();
+  banner(`${M.name}: ${M.note}.`);
+}
+function fresh() {
   view = Slots.makeGrid(M);
   state.view = view;
   strips.forEach((st, i) => place(st, view[i]));
@@ -1075,8 +1096,8 @@ function setMode(id) {
   $('cabinet').classList.remove('win', 'jackpot');
   save();
   render();
-  banner(`${M.name}: ${M.note}.`);
 }
+$('reelOpt').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setReels(+b.dataset.n); });
 $('modes').addEventListener('click', e => { const b = e.target.closest('.mode-btn'); if (b) setMode(b.dataset.mode); });
 
 // ── Einstellungen (Esc) ─────────────────────────────────────────────
