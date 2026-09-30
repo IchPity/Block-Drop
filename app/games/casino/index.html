@@ -855,9 +855,11 @@ async function spin() {
   const luckMult = luckFactor();
   const lucky = luckMult > 1;
   let res = Slots.resolve(M, Slots.makeGrid(M), stake, isFree);
-  // Geheimwort "enya" im Auszahlungsfeld: 1 Minute lang jede Runde ein Gewinn, aber nie der Hauptgewinn
+  // Geheimwort "enya" im Auszahlungsfeld: 1 Minute lang jede Runde der Hauptgewinn (mittlere Linie aus dem Top-Symbol)
   if (Date.now() < winUntil) {
-    for (let t = 0; t < 500 && (res.raw <= 0 || res.jackpot); t++) res = Slots.resolve(M, Slots.makeGrid(M), stake, isFree);
+    const grid = Slots.makeGrid(M);
+    grid.forEach(reel => { reel[1] = M.top; });
+    res = Slots.resolve(M, grid, stake, isFree);
   }
   res.win = Slots.finalWin(res.raw, stake, luckMult);
   const next = res.grid; // mit ausgebreitetem Wild
