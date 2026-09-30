@@ -499,7 +499,9 @@ const SPEEDS = [{ n: 'Langsam', f: 1.7 }, { n: 'Normal', f: 1 }, { n: 'Schnell',
 const LUCK = { 1: [15, 1.2], 2: [20, 1.3], 3: [30, 1.5] };
 const LUCK_MAX = 1.5, LUCK_MAX_SEC = 30;
 const CK = 'automat5dk_casino2';
-const BET_STEPS = [10, 20, 50, 100, 200, 500, 1000, 2500, 5000, 10000, 20000, 50000]; // Cent: 0,10 bis 500
+const BET_STEPS = [10, 20, 50, 100, 200, 500, 1000, 2500, 5000, 10000, 20000, 50000, 100000, 250000, 500000, 1000000]; // Cent: 0,10 bis 10.000
+const BET_MAX_NORMAL = BET_STEPS.indexOf(50000); // nur Enya Special geht bis 10.000 €
+const maxBetIdx = () => (M.id === 'enya' ? BET_STEPS.length - 1 : BET_MAX_NORMAL);
 const START_BALANCE = 2000; // Cent
 const KEY = 'automat5dk.casino.v2';
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -619,7 +621,7 @@ function render() {
   const free = v.free > 0;
   const broke = !free && v.balance < BET_STEPS[0];
   $('betDown').disabled = spinning || free || state.betIdx === 0;
-  $('betUp').disabled = spinning || free || state.betIdx === BET_STEPS.length - 1 || BET_STEPS[state.betIdx + 1] > v.balance;
+  $('betUp').disabled = spinning || free || state.betIdx >= maxBetIdx() || BET_STEPS[state.betIdx + 1] > v.balance;
   const sp = $('spin');
   sp.classList.toggle('refill', broke && !spinning);
   sp.classList.toggle('auto', free && !autoPaused);
@@ -977,7 +979,7 @@ function request() {
 // ── Steuerung ───────────────────────────────────────────────────────
 $('betDown').addEventListener('click', () => { if (state.betIdx > 0) { state.betIdx--; save(); render(); } });
 $('betUp').addEventListener('click', () => {
-  if (state.betIdx < BET_STEPS.length - 1 && BET_STEPS[state.betIdx + 1] <= state.balance) { state.betIdx++; save(); render(); }
+  if (state.betIdx < maxBetIdx() && BET_STEPS[state.betIdx + 1] <= state.balance) { state.betIdx++; save(); render(); }
 });
 $('spin').addEventListener('click', request);
 $('autoStop').addEventListener('click', () => { autoPaused = true; clearTimeout(autoTimer); render(); banner('Autospin pausiert. Drück SPIN oder die Leertaste zum Fortsetzen.', 'warn'); });
@@ -1145,6 +1147,7 @@ $('modes').innerHTML = ORDER.map(id => `<button type="button" class="mode-btn" r
 function useMode(id) {
   M = Slots.forReels(id, state.reels[id]);
   state.mode = M.id;
+  if (state.betIdx > maxBetIdx()) state.betIdx = maxBetIdx();
   buildReels();
   $('cabinet').dataset.mode = M.id;
   $('reels').classList.toggle('multi', M.lines.length > 1);
