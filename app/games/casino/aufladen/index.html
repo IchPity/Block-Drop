@@ -12,7 +12,7 @@
 <style>
   :root { --amber: var(--marquee); --win: #4ade80; --ink: #0b100a; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { min-height: 100vh; overflow-x: hidden; padding: 76px 0 72px; }
+  body { min-height: 100vh; overflow-x: clip; padding: 76px 0 72px; }
   ::selection { background: var(--amber); color: var(--ink); }
   :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
   button { font-family: inherit; }
@@ -48,7 +48,7 @@
   .amt-hint { margin-top: 6px; font-size: 12px; color: var(--chalk-faint); }
   .amt-hint.err { color: #ff8a8a; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-  .chip { cursor: pointer; padding: 6px 12px; border-radius: 999px; background: var(--ink); border: 1px solid var(--board-line); color: var(--chalk-dim); font: 400 14px 'Share Tech Mono', monospace; }
+  .chip { cursor: pointer; min-height: 40px; padding: 6px 14px; border-radius: 999px; background: var(--ink); border: 1px solid var(--board-line); color: var(--chalk-dim); font: 400 14px 'Share Tech Mono', monospace; }
   .chip:hover { border-color: var(--amber); color: var(--amber); }
   .fields { display: grid; gap: 10px; margin-top: 14px; }
   .field label { display: block; font-size: 12px; color: var(--chalk-dim); margin-bottom: 4px; }
@@ -57,7 +57,7 @@
   .field input.bad { border-color: #ff8a8a; }
   .field input.good { border-color: var(--win); }
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .show { margin-top: 12px; background: none; border: 1px dashed var(--amber); color: var(--amber); border-radius: 8px; padding: 9px 12px; cursor: pointer; font-size: 14px; width: 100%; }
+  .show { min-height: 44px; margin-top: 12px; background: none; border: 1px dashed var(--amber); color: var(--amber); border-radius: 8px; padding: 9px 12px; cursor: pointer; font-size: 14px; width: 100%; }
   .show:hover { background: rgba(255,183,3,.08); }
   dialog { position: fixed; margin: 0; right: 16px; bottom: 16px; left: auto; top: auto; z-index: 50; border: 1px solid var(--board-line); border-radius: 14px; background: var(--board-raised); color: var(--chalk); padding: 20px; width: min(92vw, 400px); box-shadow: 0 12px 40px rgba(0,0,0,.55); }
   dialog h2 { font: 600 18px 'Baloo 2', sans-serif; margin-bottom: 12px; cursor: move; touch-action: none; user-select: none; }
