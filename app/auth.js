@@ -245,10 +245,10 @@
     font-family: inherit; font-size: 12px; font-weight: 700;
     letter-spacing: 0.3px;
     cursor: pointer; text-decoration: none;
-    box-shadow: 0 0 20px rgba(215,38,61,0.3);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.35);
     transition: all 0.2s;
   }
-  .auth-login-btn:hover { background: #ea3f53; box-shadow: 0 0 30px rgba(215,38,61,0.5); transform: translateY(-1px); }
+  .auth-login-btn:hover { background: #ea3f53; box-shadow: 0 6px 15px rgba(0,0,0,0.4); transform: translateY(-1px); }
 
   /* ─── Modal ──────────────────────────────────────────────────────────── */
   .auth-modal-backdrop {
@@ -265,9 +265,9 @@
     border: 1px solid var(--board-line, rgba(238,242,234,0.1)); border-radius: 20px 20px 10px 10px;
     padding: 36px; width: 100%; max-width: 380px;
     max-height: calc(100vh - 32px); overflow-y: auto;
-    box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 80px rgba(215,38,61,0.08);
+    box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 16px 40px rgba(0,0,0,0.4);
     transform: scale(0.9) translateY(20px); opacity: 0;
-    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.22s;
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.22s;
   }
   @media (max-width: 480px) {
     .auth-modal { padding: 28px 22px; border-radius: 18px 18px 10px 10px; }
@@ -306,11 +306,11 @@
     border: none; border-radius: 10px; padding: 14px;
     font-family: inherit; font-size: 14px; font-weight: 700;
     letter-spacing: 0.3px; cursor: pointer;
-    box-shadow: 0 0 24px rgba(215,38,61,0.35);
+    box-shadow: 0 5px 12px rgba(0,0,0,0.35);
     transition: all 0.2s;
     margin-top: 6px;
   }
-  .auth-submit:hover:not(:disabled) { background: #ea3f53; box-shadow: 0 0 36px rgba(215,38,61,0.5); transform: translateY(-1px); }
+  .auth-submit:hover:not(:disabled) { background: #ea3f53; box-shadow: 0 7px 18px rgba(0,0,0,0.4); transform: translateY(-1px); }
   .auth-submit:disabled { opacity: 0.5; cursor: not-allowed; }
   .auth-switch {
     text-align: center; margin-top: 18px;
@@ -335,7 +335,7 @@
   }
   .auth-close {
     position: absolute; top: 14px; right: 14px;
-    width: 30px; height: 30px; border-radius: 50%;
+    width: 40px; height: 40px; border-radius: 50%;
     background: rgba(238,242,234,0.04); border: 1px solid var(--board-line, rgba(238,242,234,0.08));
     color: var(--chalk-dim, rgba(255,255,255,0.5)); cursor: pointer;
     display: flex; align-items: center; justify-content: center;
@@ -367,10 +367,10 @@
     padding: 14px 18px;
     display: flex; align-items: center; gap: 14px;
     min-width: 280px;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.55), 0 0 30px rgba(240,192,0,0.08);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.55), 0 6px 15px rgba(0,0,0,0.4);
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     transform: translateX(120%); opacity: 0;
-    transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+    transition: transform 0.45s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s;
     cursor: pointer;
     position: relative; overflow: hidden;
   }

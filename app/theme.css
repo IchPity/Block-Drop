@@ -157,7 +157,7 @@ body::after {
   display: flex; align-items: center; justify-content: center;
   background: var(--accent, var(--bell)); color: #0e130d;
   font-size: 11px; line-height: 1;
-  box-shadow: 0 0 0 3px rgba(238,242,234,0.06), 0 0 16px color-mix(in srgb, var(--accent, var(--bell)) 55%, transparent);
+  box-shadow: 0 0 0 3px rgba(238,242,234,0.06), 0 4px 10px rgba(0,0,0,0.4);
   transition: transform 0.2s;
 }
 .cabinet-start .dot::before { content: '▶'; margin-left: 2px; }

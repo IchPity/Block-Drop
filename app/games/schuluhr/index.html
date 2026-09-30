@@ -34,7 +34,7 @@
             color: var(--text);
             min-height: 100vh;
             padding: 72px 0 56px;
-            overflow-x: hidden;
+            overflow-x: clip;
         }
 
         /* ── Background orbs ─────────────────────────── */
@@ -198,12 +198,12 @@
             letter-spacing: 1px;
         }
         .progress-bg { background: rgba(255,255,255,0.05); border-radius: 99px; height: 6px; overflow: hidden; }
-        .progress-fill { height: 100%; border-radius: 99px; transition: width 1s linear; }
-        .pf-class { background: linear-gradient(90deg,var(--purple),#a78bfa); box-shadow: 0 0 12px rgba(139,126,255,0.35); }
-        .pf-break { background: linear-gradient(90deg,var(--yellow),var(--orange)); box-shadow: 0 0 12px rgba(240,192,0,0.3); }
-        .pf-free  { background: linear-gradient(90deg,var(--green),var(--blue)); box-shadow: 0 0 12px rgba(34,197,94,0.3); }
-        .pf-soon  { background: linear-gradient(90deg,var(--red),var(--yellow)); box-shadow: 0 0 12px rgba(233,69,96,0.3); }
-        .pf-lunch { background: linear-gradient(90deg,#f97316,var(--yellow)); box-shadow: 0 0 12px rgba(251,146,60,0.3); }
+        .progress-fill { height: 100%; width: 100%; border-radius: 99px; transform-origin: 0 50%; transform: scaleX(var(--p, 0)); transition: transform 1s linear; }
+        .pf-class { background: linear-gradient(90deg,var(--purple),#a78bfa); box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
+        .pf-break { background: linear-gradient(90deg,var(--yellow),var(--orange)); box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
+        .pf-free  { background: linear-gradient(90deg,var(--green),var(--blue)); box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
+        .pf-soon  { background: linear-gradient(90deg,var(--red),var(--yellow)); box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
+        .pf-lunch { background: linear-gradient(90deg,#f97316,var(--yellow)); box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
 
         .next-event {
             font-size: 12px; color: var(--muted2);
@@ -251,13 +251,13 @@
         .sched-item.active {
             background: rgba(139,126,255,0.12);
             border-color: rgba(139,126,255,0.32);
-            box-shadow: 0 0 14px rgba(139,126,255,0.1);
+            box-shadow: 0 3px 7px rgba(0,0,0,0.35);
         }
         .sched-item.done { opacity: 0.32; }
         .sched-item.break-type { background: rgba(240,192,0,0.04); border-color: rgba(240,192,0,0.08); }
-        .sched-item.break-type.active { background: rgba(240,192,0,0.12); border-color: rgba(240,192,0,0.3); box-shadow: 0 0 14px rgba(240,192,0,0.1); }
+        .sched-item.break-type.active { background: rgba(240,192,0,0.12); border-color: rgba(240,192,0,0.3); box-shadow: 0 3px 7px rgba(0,0,0,0.35); }
         .sched-item.lunch-type { background: rgba(251,146,60,0.04); border-color: rgba(251,146,60,0.08); }
-        .sched-item.lunch-type.active { background: rgba(251,146,60,0.12); border-color: rgba(251,146,60,0.3); box-shadow: 0 0 14px rgba(251,146,60,0.1); }
+        .sched-item.lunch-type.active { background: rgba(251,146,60,0.12); border-color: rgba(251,146,60,0.3); box-shadow: 0 3px 7px rgba(0,0,0,0.35); }
         .si-time {
             font-family: 'JetBrains Mono', monospace; font-size: 11px;
             color: rgba(255,255,255,0.32); letter-spacing: 0.5px;
@@ -314,7 +314,7 @@
         }
         .fw-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 9px; font-weight: 700; }
         .fw-progress-bg { background: rgba(255,255,255,0.05); border-radius: 99px; height: 3px; overflow: hidden; margin-bottom: 8px; }
-        .fw-progress-fill { height: 100%; border-radius: 99px; transition: width 1s linear; }
+        .fw-progress-fill { height: 100%; width: 100%; border-radius: 99px; transform-origin: 0 50%; transform: scaleX(var(--p, 0)); transition: transform 1s linear; }
         .fw-next { font-size: 11px; color: var(--muted); }
         .fw-next b { color: var(--muted2); font-weight: 700; }
 
@@ -417,7 +417,7 @@
         <div id="fwName"      class="fw-name">—</div>
         <div id="fwCountdown" class="fw-countdown cd-class">--:--</div>
         <div id="fwLabel"     class="fw-label">—</div>
-        <div class="fw-progress-bg"><div id="fwProgress" class="fw-progress-fill pf-class" style="width:0%"></div></div>
+        <div class="fw-progress-bg"><div id="fwProgress" class="fw-progress-fill pf-class" style="--p:0"></div></div>
         <div id="fwNext"      class="fw-next"></div>
     </div>
 </div>
@@ -536,7 +536,7 @@ function update() {
             <div class="countdown-label">bis Schulbeginn</div>
             <div class="progress-section">
                 <div class="progress-meta"><span></span><span>07:50</span></div>
-                <div class="progress-bg"><div class="progress-fill pf-soon" style="width:0%"></div></div>
+                <div class="progress-bg"><div class="progress-fill pf-soon" style="--p:0"></div></div>
             </div>
             <div class="next-event">Nächstes: <b>1. Stunde</b> — 07:50 bis 08:40</div>`;
         renderScheduleToday(sched, curMin);
@@ -560,7 +560,7 @@ function update() {
             <div class="countdown-label">${cdLabel}</div>
             <div class="progress-section">
                 <div class="progress-meta"><span>${fmtTime(slot.h1,slot.m1)}</span><span>${fmtTime(slot.h2,slot.m2)}</span></div>
-                <div class="progress-bg"><div class="progress-fill ${pfCls}" style="width:${progress.toFixed(2)}%"></div></div>
+                <div class="progress-bg"><div class="progress-fill ${pfCls}" style="--p:${(progress/100).toFixed(4)}"></div></div>
             </div>
             <div class="next-event">${nextLabel}</div>`;
         renderScheduleToday(sched, curMin);
@@ -610,7 +610,7 @@ body{font-family:'Inter','Segoe UI',sans-serif;background:#08081a;color:var(--te
 .cd-c{color:var(--purple)}.cd-b{color:var(--yellow)}.cd-f{color:var(--green)}.cd-s{color:var(--red)}.cd-l{color:var(--orange)}
 .lbl{font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:7px}
 .pb{background:rgba(255,255,255,.05);border-radius:100px;height:3px;overflow:hidden;margin-bottom:7px}
-.pf{height:100%;border-radius:100px;transition:width 1s linear}
+.pf{height:100%;width:100%;border-radius:100px;transform-origin:0 50%;transform:scaleX(var(--p,0));transition:transform 1s linear}
 .pf-c{background:linear-gradient(90deg,var(--purple),#a78bfa)}
 .pf-b{background:linear-gradient(90deg,var(--yellow),var(--orange))}
 .pf-f{background:linear-gradient(90deg,var(--green),var(--blue))}
@@ -627,7 +627,7 @@ const PIP_HTML = `
     <div id="N" class="name"></div>
     <div id="C" class="cd cd-c">--:--</div>
     <div id="L" class="lbl">—</div>
-    <div class="pb"><div id="P" class="pf pf-c" style="width:0%"></div></div>
+    <div class="pb"><div id="P" class="pf pf-c" style="--p:0"></div></div>
     <div id="X" class="nxt"></div>
 </div>
 `;
@@ -644,13 +644,13 @@ function renderPipDoc(doc, st) {
         sb('bf','bf-b','Frei');
         N.textContent=''; C.className='cd cd-f'; C.style.fontSize='1.5rem';
         C.textContent='ENDLICH FREI!'; L.textContent='Schule wieder in';
-        P.className='pf pf-f'; P.style.width='100%';
+        P.className='pf pf-f'; P.style.setProperty('--p',1);
         X.innerHTML=`<b>${freeCountdown(st.now)}</b>`;
     } else if (st.kind==='before') {
         sb('bs','bs-b','Bald los');
         N.textContent='Schulbeginn 07:50'; C.className='cd cd-s'; C.style.fontSize='';
         C.textContent=fmtCountdown(st.secsLeft); L.textContent='bis Schulbeginn';
-        P.className='pf pf-s'; P.style.width='0%';
+        P.className='pf pf-s'; P.style.setProperty('--p',0);
         X.innerHTML='Nächstes: <b>1. Stunde</b>';
     } else if (st.kind==='active') {
         const {slot,secsLeft,progress,next}=st;
@@ -662,7 +662,7 @@ function renderPipDoc(doc, st) {
         sb(cfg.bar,cfg.b,cfg.lbl);
         N.textContent=`${slot.name} · ${fmtTime(slot.h1,slot.m1)}–${fmtTime(slot.h2,slot.m2)}`;
         C.className='cd '+cfg.c; C.style.fontSize=''; C.textContent=fmtCountdown(secsLeft);
-        L.textContent=cfg.cl; P.className='pf '+cfg.p; P.style.width=progress.toFixed(2)+'%';
+        L.textContent=cfg.cl; P.className='pf '+cfg.p; P.style.setProperty('--p',(progress/100).toFixed(4));
         X.innerHTML=next?`Danach: <b>${next.name}</b>`:'Danach: <b>Endlich Frei! 🎉</b>';
     }
 }
@@ -735,13 +735,13 @@ function updateWidget(st) {
         sb('bar-free','sb-free','Frei'); fwName.textContent='';
         fwCount.className='fw-countdown cd-free'; fwCount.style.fontSize='1.1rem';
         fwCount.textContent='ENDLICH FREI!'; fwLabel.textContent='Schule wieder in';
-        fwProg.className='fw-progress-fill pf-free'; fwProg.style.width='100%';
+        fwProg.className='fw-progress-fill pf-free'; fwProg.style.setProperty('--p',1);
         fwNext.innerHTML=`<b>${freeCountdown(st.now)}</b>`;
     } else if (st.kind==='before') {
         sb('bar-soon','sb-soon','Bald los'); fwName.textContent='Schulbeginn 07:50 Uhr';
         fwCount.className='fw-countdown cd-soon'; fwCount.style.fontSize='';
         fwCount.textContent=fmtCountdown(st.secsLeft); fwLabel.textContent='bis Schulbeginn';
-        fwProg.className='fw-progress-fill pf-soon'; fwProg.style.width='0%';
+        fwProg.className='fw-progress-fill pf-soon'; fwProg.style.setProperty('--p',0);
         fwNext.innerHTML='Nächstes: <b>1. Stunde</b>';
     } else if (st.kind==='active') {
         const {slot,secsLeft,progress,next}=st;
@@ -756,7 +756,7 @@ function updateWidget(st) {
         fwName.textContent=`${slot.name} · ${fmtTime(slot.h1,slot.m1)}–${fmtTime(slot.h2,slot.m2)}`;
         fwCount.className='fw-countdown '+cd; fwCount.style.fontSize='';
         fwCount.textContent=fmtCountdown(secsLeft); fwLabel.textContent=cl;
-        fwProg.className='fw-progress-fill '+pf; fwProg.style.width=progress.toFixed(2)+'%';
+        fwProg.className='fw-progress-fill '+pf; fwProg.style.setProperty('--p',(progress/100).toFixed(4));
         fwNext.innerHTML=next?`Danach: <b>${next.name}</b>`:'Danach: <b>Endlich Frei! 🎉</b>';
     }
 }

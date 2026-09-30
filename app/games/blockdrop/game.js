@@ -778,7 +778,7 @@ class BlockDrop {
     this.scoreEl.textContent = this.score;
     this.levelEl.textContent = this.level;
     this.linesEl.textContent = this.lines;
-    this.levelBar.style.width = `${(this.lines % 10) / 10 * 100}%`;
+    this.levelBar.style.transform = `scaleX(${(this.lines % 10) / 10})`;
     if (this.modeBadge) {
       this.modeBadge.textContent = this.mode === 'standard' ? 'Standard' : 'Classic';
       this.modeBadge.className   = this.mode;

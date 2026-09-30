@@ -29,7 +29,7 @@
       color: var(--chalk);
       min-height: 100vh;
       padding: 72px 0 56px;
-      overflow-x: hidden;
+      overflow-x: clip;
     }
 
     h1, .display { font-family: 'Baloo 2', sans-serif; }
@@ -141,7 +141,7 @@
     }
     .sched-table th.today::after {
       content: ''; position: absolute; left: 10px; right: 10px; bottom: 0;
-      height: 2px; background: var(--marquee); box-shadow: 0 0 8px var(--marquee);
+      height: 2px; background: var(--marquee); box-shadow: 0 2px 4px rgba(0,0,0,0.35);
     }
     .sched-table td.today-col { background: rgba(255,183,3,0.045); }
     .period-col { width: 92px; white-space: nowrap; }

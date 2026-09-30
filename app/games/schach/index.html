@@ -17,7 +17,7 @@
     body {
       background: var(--bg); min-height: 100vh;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color: var(--chalk); overflow-x: hidden;
+      color: var(--chalk); overflow-x: clip;
       display: flex; flex-direction: column; align-items: center;
       padding: 80px 16px 40px; gap: 16px;
     }
@@ -45,7 +45,7 @@
     .nav-back {
       display:inline-flex;align-items:center;gap:6px;
       text-decoration:none;color:rgba(255,255,255,0.35);
-      font-size:11px;font-weight:600;
+      font-size: 12px;font-weight:600;
       border:1px solid rgba(255,255,255,0.1);border-radius:8px;
       padding:6px 12px;transition:all 0.2s;
     }
@@ -58,14 +58,14 @@
       border-radius:10px;padding:6px 14px;
     }
     .turn-dot { width:10px;height:10px;border-radius:50%;transition:background 0.3s,box-shadow 0.3s; }
-    .turn-dot.white { background:#fff;box-shadow:0 0 8px rgba(255,255,255,0.6); }
-    .turn-dot.black { background:#0e0e18;box-shadow:0 0 6px rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3); }
+    .turn-dot.white { background:#fff;box-shadow:0 2px 4px rgba(0,0,0,0.35); }
+    .turn-dot.black { background:#0e0e18;box-shadow:0 2px 4px rgba(0,0,0,0.35);border:1.5px solid rgba(255,255,255,0.3); }
     #turn-indicator { font-size:12px;font-weight:700;color:rgba(255,255,255,0.7); }
     .btn-new {
       display:inline-flex;align-items:center;gap:6px;
       background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:8px;
       padding:6px 14px;color:var(--green);font-family:inherit;
-      font-size:11px;font-weight:700;cursor:pointer;transition:all 0.2s;
+      font-size: 12px;font-weight:700;cursor:pointer;transition:all 0.2s;
     }
     .btn-new:hover { background:rgba(34,197,94,0.18);border-color:rgba(34,197,94,0.45); }
 
@@ -77,17 +77,17 @@
       border-radius:14px;padding:12px 14px;
     }
     .panel-box h3 {
-      font-size:11px;font-weight:700;text-transform:uppercase;
+      font-size: 12px;font-weight:700;text-transform:uppercase;
       letter-spacing:3px;color:rgba(255,255,255,0.2);margin-bottom:8px;
     }
     .captured-row { display:flex;flex-wrap:wrap;gap:2px;min-height:24px;font-size:18px;line-height:1; }
-    .info-text { font-size:11px;color:rgba(255,255,255,0.3);line-height:1.9; }
+    .info-text { font-size: 12px;color:rgba(255,255,255,0.3);line-height:1.9; }
     .info-text b { color:rgba(255,255,255,0.65); }
 
     /* ── Board ──────────────────────────────────────────── */
     #board-wrap {
       position:relative;border-radius:12px;overflow:hidden;
-      box-shadow:0 0 0 1px rgba(255,255,255,0.08),0 0 60px rgba(34,197,94,0.08),0 32px 80px rgba(0,0,0,0.85);
+      box-shadow:0 0 0 1px rgba(255,255,255,0.08),0 12px 30px rgba(0,0,0,0.4),0 32px 80px rgba(0,0,0,0.85);
     }
     #chess-board {
       display:grid;
@@ -118,7 +118,7 @@
     .black-piece {
       color:#0c0c14;
       -webkit-text-stroke:0.8px rgba(220,220,255,0.28);
-      text-shadow:0 0 4px rgba(255,255,255,0.18),0 1px 2px rgba(0,0,0,0.9);
+      text-shadow:0 2px 4px rgba(0,0,0,0.5),0 1px 2px rgba(0,0,0,0.9);
     }
 
     .move-dot {
@@ -153,7 +153,7 @@
     /* Input */
     .field-group { display:flex;flex-direction:column;gap:6px;width:100%; }
     .field-label {
-      font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+      font-size: 12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
       color:rgba(255,255,255,0.25);
     }
     .start-input {
@@ -167,12 +167,12 @@
     .color-row { display:flex;gap:8px;width:100%; }
     .color-btn {
       flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
-      border-radius:10px;padding:10px 6px;font-family:inherit;font-size:11px;font-weight:700;
+      border-radius:10px;padding:10px 6px;font-family:inherit;font-size: 12px;font-weight:700;
       color:rgba(255,255,255,0.4);cursor:pointer;transition:all 0.2s;
       display:flex;flex-direction:column;align-items:center;gap:4px;
     }
     .color-btn .sym { font-size:22px; }
-    .color-btn .sym.black-piece { color:#0c0c14; -webkit-text-stroke:0.8px rgba(220,220,255,0.28); filter:drop-shadow(0 0 3px rgba(255,255,255,0.2)); }
+    .color-btn .sym.black-piece { color:#0c0c14; -webkit-text-stroke:0.8px rgba(220,220,255,0.28); filter:drop-shadow(0 4px 8px rgba(0,0,0,0.45)); }
     .color-btn.selected { background:rgba(34,197,94,0.12);border-color:rgba(34,197,94,0.4);color:#fff; }
     .color-btn:hover:not(.selected) { border-color:rgba(255,255,255,0.2);color:rgba(255,255,255,0.7); }
 
@@ -180,9 +180,9 @@
     .start-play-btn {
       width:100%;background:#178640;border:none;border-radius:14px;
       padding:14px;color:#fff;font-family:inherit;font-size:15px;font-weight:800;
-      cursor:pointer;box-shadow:0 0 32px rgba(34,197,94,0.35);transition:all 0.22s;
+      cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,0.4);transition:all 0.22s;
     }
-    .start-play-btn:hover { background:#12863d;transform:translateY(-2px);box-shadow:0 0 48px rgba(34,197,94,0.55); }
+    .start-play-btn:hover { background:#12863d;transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,0.4); }
 
     /* ── Promotion Overlay ──────────────────────────────── */
     #promotion-overlay {
@@ -199,7 +199,7 @@
     }
     .promo-btn:hover { background:rgba(34,197,94,0.12);border-color:rgba(34,197,94,0.4);transform:translateY(-2px); }
     .promo-sym { font-size:40px;line-height:1; }
-    .promo-lbl { font-size:11px;font-weight:700;color:rgba(255,255,255,0.5); }
+    .promo-lbl { font-size: 12px;font-weight:700;color:rgba(255,255,255,0.5); }
 
     /* ── Game Over ──────────────────────────────────────── */
     #gameover-overlay {
@@ -207,16 +207,16 @@
       background:rgba(6,8,24,0.94);backdrop-filter:blur(14px);
       display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;
     }
-    #gameover-overlay .go-icon { font-size:64px;animation:popIn 0.5s 0.1s both cubic-bezier(0.34,1.56,0.64,1); }
+    #gameover-overlay .go-icon { font-size:64px;animation:popIn 0.5s 0.1s both cubic-bezier(0.25, 1, 0.5, 1); }
     @keyframes popIn { from{transform:scale(0)rotate(-15deg);opacity:0} to{transform:scale(1)rotate(0);opacity:1} }
-    #gameover-winner { font-size:28px;font-weight:900;color:#fff;letter-spacing:-1px;text-shadow:0 0 48px rgba(34,197,94,0.5); }
+    #gameover-winner { font-size:28px;font-weight:900;color:#fff;letter-spacing:-1px;text-shadow:0 2px 12px rgba(0,0,0,0.5); }
     #gameover-overlay p { font-size:12px;color:rgba(255,255,255,0.3); }
     .btn-go-new {
       background:#178640;border:none;border-radius:14px;
       padding:14px 32px;color:#fff;font-family:inherit;font-size:14px;font-weight:800;
-      cursor:pointer;box-shadow:0 0 32px rgba(34,197,94,0.4);transition:all 0.22s;
+      cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,0.4);transition:all 0.22s;
     }
-    .btn-go-new:hover { background:#12863d;transform:translateY(-2px);box-shadow:0 0 48px rgba(34,197,94,0.6); }
+    .btn-go-new:hover { background:#12863d;transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,0.4); }
 
     /* ── Scrollbar ──────────────────────────────────────── */
     ::-webkit-scrollbar { width:5px; }
@@ -225,19 +225,19 @@
     @media (max-width:780px) {
       body { padding: 70px 10px 30px; gap: 12px; }
       .navbar { padding: 10px 14px; }
-      .nav-back { padding: 5px 10px; font-size: 11px; }
+      .nav-back { padding: 5px 10px; font-size: 12px; }
       .nav-title { font-size: 12px; }
       .nav-right { gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
-      .btn-new { padding: 5px 10px; font-size: 11px; }
+      .btn-new { padding: 5px 10px; font-size: 12px; }
       .turn-badge { padding: 5px 10px; }
-      #turn-indicator { font-size: 11px; }
+      #turn-indicator { font-size: 12px; }
 
       :root { --cell: min(11vw, 48px); }
       #wrapper { flex-direction: column; align-items: stretch; gap: 10px; }
       .panel { width: 100%; flex-direction: row; gap: 8px; flex-wrap: wrap; }
       .panel-box { flex: 1 1 calc(50% - 4px); padding: 10px 12px; }
-      .panel-box h3 { font-size: 11px; letter-spacing: 2px; margin-bottom: 6px; }
-      .info-text { font-size: 11px; line-height: 1.6; }
+      .panel-box h3 { font-size: 12px; letter-spacing: 2px; margin-bottom: 6px; }
+      .info-text { font-size: 12px; line-height: 1.6; }
       .captured-row { font-size: 16px; min-height: 20px; }
       #board-wrap { align-self: center; }
 
@@ -248,7 +248,7 @@
       .start-logo { font-size: 28px; }
       #start-form { gap: 14px; padding: 0 16px; max-width: 92vw; }
       .start-input { font-size: 16px; padding: 11px 12px; }
-      .color-btn { font-size: 11px; padding: 9px 4px; }
+      .color-btn { font-size: 12px; padding: 9px 4px; }
       .color-btn .sym { font-size: 20px; }
       .start-play-btn { padding: 13px; font-size: 14px; }
 
@@ -259,7 +259,7 @@
     @media (max-width: 420px) {
       .nav-right { gap: 4px; }
       .turn-badge { padding: 4px 8px; }
-      #turn-indicator { font-size: 11px; }
+      #turn-indicator { font-size: 12px; }
       :root { --cell: min(11.2vw, 40px); }
     }
   </style>
