@@ -50,11 +50,11 @@
 <main class="container">
   <header class="hero">
     <h1>Meine Belege</h1>
-    <p class="hero-sub">Alle Einzahlungen auf einen Blick. Tippe einen Eintrag an, um den Beleg zu sehen.</p>
+    <p class="hero-sub">Alle Einzahlungen und Auszahlungen auf einen Blick. Tippe einen Eintrag an, um den Beleg zu sehen.</p>
   </header>
   <div class="total"><span id="cnt">Einzahlungen</span><strong id="sum">–</strong></div>
   <ul class="list" id="list"></ul>
-  <div class="empty" id="empty" hidden>Noch keine Einzahlungen.<br><a href="../aufladen/">Zur Kasse</a></div>
+  <div class="empty" id="empty" hidden>Noch keine Belege.<br><a href="../aufladen/">Zur Kasse</a></div>
   <p class="note">Die Belege liegen nur in diesem Browser, getrennt nach Gast und Konto. Es ist Spielgeld.</p>
 </main>
 
@@ -74,9 +74,10 @@ let rows = [];
 function render() {
   rows = Belege.list();
   $('empty').hidden = rows.length > 0;
-  $('sum').textContent = Belege.money(rows.reduce((s, b) => s + b.cents, 0));
-  $('cnt').textContent = rows.length + (rows.length === 1 ? ' Einzahlung' : ' Einzahlungen');
-  $('list').innerHTML = rows.map((b, i) => `<li><button type="button" class="item" data-i="${i}"><span>${Belege.esc(b.method)}</span><b>+${Belege.money(b.cents)}</b><small>${Belege.when(b.ts)} · ${Belege.esc(b.no)}</small></button></li>`).join('');
+  const ins = rows.filter(b => !Belege.isOut(b)), outs = rows.filter(Belege.isOut);
+  $('sum').textContent = Belege.money(ins.reduce((s, b) => s + b.cents, 0));
+  $('cnt').textContent = ins.length + (ins.length === 1 ? ' Einzahlung' : ' Einzahlungen') + ' · ' + outs.length + (outs.length === 1 ? ' Auszahlung' : ' Auszahlungen');
+  $('list').innerHTML = rows.map((b, i) => `<li><button type="button" class="item" data-i="${i}"><span>${Belege.isOut(b) ? 'Auszahlung' : Belege.esc(b.method)}</span><b>${Belege.isOut(b) ? '−' : '+'}${Belege.money(b.cents)}</b><small>${Belege.when(b.ts)} · ${Belege.esc(b.no)}</small></button></li>`).join('');
 }
 $('list').addEventListener('click', e => {
   const b = e.target.closest('.item'); if (!b) return;

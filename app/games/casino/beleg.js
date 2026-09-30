@@ -15,7 +15,16 @@ window.Belege = (() => {
   }
   const when = ts => new Date(ts).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'medium' });
   // Beleg-Karte als HTML (Klassen .beleg aus belege.css-Block in den Seiten)
-  const html = b => `<div class="beleg">
+  const isOut = b => b.kind === 'auszahlung';
+  const html = b => isOut(b) ? `<div class="beleg">
+    <div class="beleg-head"><strong>AUSZAHLUNGSBELEG</strong><span>${esc(b.no)}</span></div>
+    <div class="beleg-row"><span>Datum</span><b>${when(b.ts)}</b></div>
+    <div class="beleg-row"><span>Konto</span><b>${esc(b.payer || '–')}</b></div>
+    <div class="beleg-row"><span>Ziel</span><b>Auszahlungstopf</b></div>
+    <div class="beleg-row total"><span>Ausgezahlt</span><b>${money(b.cents)}</b></div>
+    <div class="beleg-row"><span>Neues Guthaben</span><b>${money(b.balance)}</b></div>
+    <p class="beleg-note">Spielgeld. Es wurde nie echtes Geld überwiesen. Dieser Beleg ist kein Zahlungsnachweis.</p>
+  </div>` : `<div class="beleg">
     <div class="beleg-head"><strong>BELEG</strong><span>${esc(b.no)}</span></div>
     <div class="beleg-row"><span>Datum</span><b>${when(b.ts)}</b></div>
     <div class="beleg-row"><span>Zahlungsart</span><b>${esc(b.method)}</b></div>
@@ -34,5 +43,5 @@ window.Belege = (() => {
   .beleg-row.total { border-top: 2px dashed #9a9a90; margin-top: 6px; padding-top: 8px; font-size: 15px; }
   .beleg-row.total b { font-weight: 700; }
   .beleg-note { margin-top: 10px; font: 400 11px/1.4 'IBM Plex Sans', sans-serif; color: #6a6a62; }`;
-  return { add, list, html, css, money, esc, when };
+  return { add, list, html, isOut, css, money, esc, when };
 })();
