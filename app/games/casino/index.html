@@ -79,6 +79,11 @@
   .speeds button { padding: 10px 2px; background: var(--ink); border: 1px solid var(--board-line); border-radius: 8px; color: var(--chalk-dim); font: 600 13px 'IBM Plex Sans', sans-serif; cursor: pointer; }
   .speeds button:hover { border-color: rgba(238,242,234,0.3); }
   .speeds button[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); background: color-mix(in srgb, var(--amber) 12%, var(--ink)); }
+  .toggle { width: 100%; margin-top: 16px; min-height: 44px; display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--ink); border: 1px solid var(--board-line); border-radius: 8px; color: var(--chalk); font: 600 14px 'IBM Plex Sans', sans-serif; cursor: pointer; }
+  .toggle:hover { border-color: rgba(238,242,234,0.3); }
+  .toggle[aria-pressed="true"] { border-color: var(--amber); }
+  .toggle[aria-pressed="true"] span { color: var(--amber); }
+  @media (max-width: 420px) { .speeds { gap: 4px; } .speeds button { font-size: 12px; } }
   .settings .close { margin-top: 16px; width: 100%; padding: 10px; border: 1px solid var(--board-line); border-radius: 10px; background: transparent; color: var(--chalk); font: 700 15px 'Baloo 2', sans-serif; cursor: pointer; }
   .settings .close:hover { border-color: rgba(238,242,234,0.3); }
   .meter-lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--chalk-dim); }
@@ -92,9 +97,11 @@
   @keyframes pop { 0% { transform: scale(1.14); } 100% { transform: scale(1); } }
 
   .reels {
-    position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px;
+    position: relative; display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 2px;
     background: var(--board-line); border: 2px solid color-mix(in srgb, var(--amber) 40%, transparent); border-radius: 12px; overflow: hidden;
   }
+  .reels[data-n="5"] { --sym: clamp(48px, 12vw, 96px); }
+  .reels[data-n="5"] .cell svg { width: 74%; height: 74%; }
   .reel { height: calc(var(--sym) * 3); overflow: hidden; background: var(--ink); position: relative; }
   .reel::after {
     content: ''; position: absolute; inset: 0; pointer-events: none;
@@ -311,7 +318,7 @@
 <main class="container">
   <header class="hero">
     <h1>Casino</h1>
-    <p class="hero-sub" id="heroSub">Drei Walzen, drei Spielmodi, Spielgeld und kein Risiko. Dein Guthaben wird nach jeder Runde automatisch auf diesem Gerät gespeichert, im Browser-Speicher und zusätzlich als Cookie.</p>
+    <p class="hero-sub" id="heroSub">Drei oder fünf Walzen, drei Spielmodi, Spielgeld und kein Risiko. Dein Guthaben wird nach jeder Runde automatisch auf diesem Gerät gespeichert, im Browser-Speicher und zusätzlich als Cookie.</p>
     <p class="save-warn" id="saveWarn" hidden>Dein Browser erlaubt kein Speichern (privates Fenster?). Das Guthaben geht beim Schließen der Seite verloren.</p>
   </header>
 
@@ -338,9 +345,6 @@
       </div>
 
       <div class="reels" id="reels">
-        <div class="reel"><div class="strip"></div></div>
-        <div class="reel"><div class="strip"></div></div>
-        <div class="reel"><div class="strip"></div></div>
         <div class="payline" aria-hidden="true"></div>
       </div>
 
@@ -405,9 +409,10 @@
 <div class="settings-back" id="settingsBack" hidden>
   <div class="settings" role="dialog" aria-modal="true" aria-labelledby="setH">
     <h2 id="setH">Einstellungen</h2>
-    <p>Wie schnell sich die Walzen drehen. Gilt ab der nächsten Runde, auch für Autospin.</p>
+    <p>Drehgeschwindigkeit und Ton. Die Geschwindigkeit gilt ab der nächsten Runde, auch für Autospin.</p>
     <div class="lbl" id="speedLbl">Drehgeschwindigkeit</div>
     <div class="speeds" id="speeds" role="group" aria-labelledby="speedLbl"></div>
+    <button type="button" class="toggle" id="soundBtn" aria-pressed="true">Ton (Klingeln bei Gewinn)<span id="soundState">An</span></button>
     <button type="button" class="close" id="setClose">Weiter spielen (Esc)</button>
   </div>
 </div>
@@ -422,7 +427,7 @@
 
 const { MODES, ORDER, ALL_IDS } = Slots;
 let M = MODES.classic; // aktiver Modus
-const RTP = { classic: 90, fruit: 87, enya: 86 };
+const RTP = { classic: 90, fruit: 87, enya: 87 };
 const ENYA_LIMIT = 60 * 60 * 1000; // Enya Special: 1 Stunde pro Tag
 const SPEEDS = [{ n: 'Langsam', f: 1.7 }, { n: 'Normal', f: 1 }, { n: 'Schnell', f: 0.6 }, { n: 'Turbo', f: 0.35 }, { n: 'Blitz', f: 0.2 }];
 // Enya im mittleren Feld: Anzahl -> [Sekunden, Multiplikator]. Glück stapelt nicht: es gilt der höchste Wert.
@@ -440,7 +445,7 @@ const money = c => (c / 100).toLocaleString('de-DE', { minimumFractionDigits: 2,
 const pick = () => Slots.pick(M);
 
 // ── Speichern ───────────────────────────────────────────────────────
-let state = { balance: START_BALANCE, betIdx: 2, rounds: 0, hits: 0, best: 0, jackpots: 0, lastWin: 0, free: 0, freeBet: 0, freeMode: 'classic', mode: 'classic', speed: 1, enyaDay: '', enyaMs: 0, luck: [], view: null };
+let state = { balance: START_BALANCE, betIdx: 2, rounds: 0, hits: 0, best: 0, jackpots: 0, lastWin: 0, free: 0, freeBet: 0, freeMode: 'classic', mode: 'classic', speed: 1, sound: true, enyaDay: '', enyaMs: 0, luck: [], view: null };
 
 // Mit Konto liegt das Guthaben in Supabase (Wallet-Modus); als Gast bleibt es lokal.
 let wallet = false, guestBalance = START_BALANCE, poolAmt = 0;
@@ -466,6 +471,7 @@ function apply(s) {
   state.freeBet  = BET_STEPS.includes(s.freeBet) ? s.freeBet : 0;
   if (state.free > 0 && !state.freeBet) state.free = 0;
   state.speed = Math.min(SPEEDS.length - 1, num(s.speed, 1));
+  state.sound = s.sound !== false;
   if (s.enyaDay === today()) {
     state.enyaMs = Math.min(ENYA_LIMIT, state.enyaDay === s.enyaDay ? Math.max(state.enyaMs, num(s.enyaMs, 0)) : num(s.enyaMs, 0));
     state.enyaDay = s.enyaDay;
@@ -474,7 +480,7 @@ function apply(s) {
   state.freeMode = MODES[s.freeMode] ? s.freeMode : 'classic';
   if (state.free > 0) state.mode = state.freeMode; // Freispiele laufen im Modus, in dem sie gewonnen wurden
   state.view = null;
-  if (Array.isArray(s.view) && s.view.length === 3 && s.view.every(r => Array.isArray(r) && r.length === 3 && r.every(id => MODES[state.mode].by[id]))) state.view = s.view;
+  if (Array.isArray(s.view) && s.view.length === MODES[state.mode].reels && s.view.every(r => Array.isArray(r) && r.length === 3 && r.every(id => MODES[state.mode].by[id]))) state.view = s.view;
 }
 function readCookie() {
   const m = document.cookie.split('; ').find(c => c.startsWith(CK + '='));
@@ -594,9 +600,69 @@ function banner(text, cls) {
 }
 
 // ── Walzen ──────────────────────────────────────────────────────────
-const reels = [...document.querySelectorAll('.reel')];
-const strips = reels.map(r => r.firstElementChild);
-let view = Slots.makeGrid(M);
+let reels = [], strips = [];
+function buildReels() {
+  const box = $('reels');
+  box.querySelectorAll('.reel').forEach(r => r.remove());
+  box.style.setProperty('--n', M.reels);
+  box.dataset.n = M.reels;
+  const line = box.querySelector('.payline');
+  reels = Array.from({ length: M.reels }, () => {
+    const r = document.createElement('div');
+    r.className = 'reel';
+    r.innerHTML = '<div class="strip"></div>';
+    box.insertBefore(r, line);
+    return r;
+  });
+  strips = reels.map(r => r.firstElementChild);
+}
+let view = null;
+
+// ── Ton ─────────────────────────────────────────────────────────────
+let actx = null;
+function audio() {
+  if (!state.sound) return null;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+  } catch (e) { return null; }
+  return actx;
+}
+// Glockenton: Grundton plus zwei unharmonische Obertöne, schneller Anschlag, langes Ausklingen
+function ding(freq, at, vol) {
+  const ctx = audio();
+  if (!ctx) return;
+  const t = ctx.currentTime + at;
+  [[1, 1], [2.76, 0.32], [5.4, 0.12]].forEach(([r, g], k) => {
+    const o = ctx.createOscillator(), a = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.value = freq * r;
+    a.gain.setValueAtTime(0.0001, t);
+    a.gain.exponentialRampToValueAtTime(vol * g, t + 0.006);
+    a.gain.exponentialRampToValueAtTime(0.0001, t + (k ? 0.35 : 0.9));
+    o.connect(a).connect(ctx.destination);
+    o.start(t);
+    o.stop(t + 1);
+  });
+}
+function tick() {
+  const ctx = audio();
+  if (!ctx) return;
+  const t = ctx.currentTime, o = ctx.createOscillator(), a = ctx.createGain();
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(180, t);
+  o.frequency.exponentialRampToValueAtTime(70, t + 0.06);
+  a.gain.setValueAtTime(0.09, t);
+  a.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+  o.connect(a).connect(ctx.destination);
+  o.start(t);
+  o.stop(t + 0.1);
+}
+// Ding ding ding bei jedem Gewinn; Jackpot und Freispiele steigen als Tonleiter weiter
+function winSound(big) {
+  const notes = big ? [784, 988, 1175, 1319, 1568, 1976] : [988, 988, 988];
+  notes.forEach((f, i) => ding(f, i * (big ? 0.14 : 0.19), big ? 0.22 : 0.2));
+}
 
 function cell(id) {
   const d = document.createElement('div');
@@ -617,12 +683,12 @@ function spinReel(i, rows, finalRow) {
     const target = all.length - 3;
     place(strip, all);
     void strip.offsetWidth;
-    const dur = REDUCED ? 260 + i * 120 : (1100 + i * 450) * SPEEDS[state.speed].f;
+    const dur = REDUCED ? 260 + i * 120 : (1100 + i * (M.reels > 3 ? 300 : 450)) * SPEEDS[state.speed].f;
     reels[i].classList.add('moving');
     strip.style.transition = `transform ${dur}ms cubic-bezier(.16,.84,.3,1.04)`;
     strip.style.transform = `translateY(calc(var(--sym) * -${target}))`;
     setTimeout(() => reels[i].classList.remove('moving'), dur * 0.72);
-    setTimeout(resolve, dur + 60);
+    setTimeout(() => { tick(); resolve(); }, dur + 60);
   });
 }
 
@@ -635,6 +701,7 @@ async function spin() {
   if (!isFree && state.balance < stake) return;
   if (M.id === 'enya' && !isFree && enyaLeft() === 0) { banner('Enya Special: Die Stunde für heute ist um. Morgen geht es weiter.', 'warn'); return; }
   spinning = true;
+  audio();
   const wager = isFree ? 0 : stake;
   const cab = $('cabinet');
   cab.classList.remove('win', 'jackpot');
@@ -688,6 +755,7 @@ async function spin() {
 
   const extra = (award ? ` · +${award} Freispiele` : '') + (res.expanded ? ' · Wild füllt die Walze' : '') + (lucky && res.win > 0 ? ` · ×${xf(luckMult)} Glück` : '');
   const many = M.lines.length > 1;
+  if (res.win > 0 || award || luckStart) winSound(res.jackpot || award > 0);
   if (res.jackpot) {
     cab.classList.add('jackpot');
     banner(`JACKPOT · +${money(res.win)}${extra}`, 'jackpot');
@@ -796,7 +864,7 @@ async function loadWallet() {
   const { data, error } = await rpc('casino_wallet');
   if (error) { console.warn('[Casino] Wallet:', error.message); return false; }
   wallet = true;
-  $('heroSub').textContent = 'Drei Walzen, drei Spielmodi, Spielgeld und kein Risiko. Dein Guthaben liegt in deinem Konto: Du kannst es auszahlen und dich in der Rangliste mit anderen messen.';
+  $('heroSub').textContent = 'Drei oder fünf Walzen, drei Spielmodi, Spielgeld und kein Risiko. Dein Guthaben liegt in deinem Konto: Du kannst es auszahlen und dich in der Rangliste mit anderen messen.';
   $('payoutBox').hidden = false;
   setPool(data.pool);
   state.balance = data.balance; pending = 0;
@@ -874,6 +942,7 @@ $('modes').innerHTML = ORDER.map(id => `<button type="button" class="mode-btn" r
 function useMode(id) {
   M = MODES[id];
   state.mode = M.id;
+  buildReels();
   $('cabinet').dataset.mode = M.id;
   $('reels').classList.toggle('multi', M.lines.length > 1);
   $('modeNote').textContent = M.note;
@@ -900,7 +969,7 @@ function renderSpeeds() {
 const settingsOpen = () => !$('settingsBack').hidden;
 function toggleSettings(open) {
   $('settingsBack').hidden = !open;
-  if (open) { renderSpeeds(); $('speeds').querySelector('[aria-pressed="true"]').focus(); }
+  if (open) { renderSpeeds(); renderSound(); $('speeds').querySelector('[aria-pressed="true"]').focus(); }
   else if (document.activeElement) document.activeElement.blur();
 }
 $('speeds').addEventListener('click', e => {
@@ -911,6 +980,11 @@ $('speeds').addEventListener('click', e => {
   renderSpeeds();
   b.focus();
 });
+function renderSound() {
+  $('soundBtn').setAttribute('aria-pressed', state.sound);
+  $('soundState').textContent = state.sound ? 'An' : 'Aus';
+}
+$('soundBtn').addEventListener('click', () => { state.sound = !state.sound; save(); renderSound(); if (state.sound) ding(988, 0, 0.2); });
 $('setClose').addEventListener('click', () => toggleSettings(false));
 $('settingsBack').addEventListener('click', e => { if (e.target === e.currentTarget) toggleSettings(false); });
 document.addEventListener('keydown', e => {

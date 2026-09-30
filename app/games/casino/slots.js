@@ -1,14 +1,14 @@
 'use strict';
 // Spielmodi des Automaten: reine Regeln ohne DOM, damit sie sich auch in Node durchrechnen lassen.
 (function (root) {
-  const FIVE = [[1, 1, 1], [0, 0, 0], [2, 2, 2], [0, 1, 2], [2, 1, 0]]; // Zeile je Walze
+  const FIVE = [[1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2], [0, 1, 2, 1, 0], [2, 1, 0, 1, 2]]; // Zeile je Walze
   const MAX_X = 200; // Gewinn pro Runde nie über das 200-Fache des Einsatzes
 
   const MODES = {
     classic: {
       id: 'classic', name: 'Klassik', tag: '1 Linie',
       note: 'Nur die mittlere Linie zählt',
-      lines: [[1, 1, 1]], top: 'seven',
+      reels: 3, lines: [[1, 1, 1]], top: 'seven',
       syms: [
         { id: 'seven',   name: 'Sieben',  w: 1,  m: 200 },
         { id: 'diamond', name: 'Diamant', w: 2,  m: 80 },
@@ -33,20 +33,21 @@
     fruit: {
       id: 'fruit', name: 'Fruchtfieber', tag: '5 Linien',
       note: '5 Linien · Stern ist Wild (außer für die Sieben)',
-      lines: FIVE, top: 'seven', wild: 'star', wildPays: 'diamond', noWild: ['seven'],
+      reels: 5, lines: FIVE, top: 'seven', wild: 'star', wildPays: 'diamond', noWild: ['seven'],
       syms: [
-        { id: 'seven',   name: 'Sieben',  w: 2,  m: 100 },
-        { id: 'diamond', name: 'Diamant', w: 3,  m: 40 },
-        { id: 'bell',    name: 'Glocke',  w: 5,  m: 20 },
+        { id: 'seven',   name: 'Sieben',  w: 2,  m: 50 },
+        { id: 'diamond', name: 'Diamant', w: 3,  m: 20 },
+        { id: 'bell',    name: 'Glocke',  w: 5,  m: 10 },
         { id: 'star',    name: 'Stern (Wild)', w: 5, m: 0 },
-        { id: 'cherry',  name: 'Kirsche', w: 9,  m: 10 },
-        { id: 'lemon',   name: 'Zitrone', w: 11, m: 6 },
-        { id: 'grape',   name: 'Traube',  w: 12, m: 6 },
-        { id: 'bar',     name: 'BAR',     w: 13, m: 4 },
+        { id: 'cherry',  name: 'Kirsche', w: 9,  m: 5 },
+        { id: 'lemon',   name: 'Zitrone', w: 11, m: 4 },
+        { id: 'grape',   name: 'Traube',  w: 12, m: 3 },
+        { id: 'bar',     name: 'BAR',     w: 13, m: 2 },
       ],
-      pair: 1.0,
+      pair: 1.0, lenMult: { 4: 3, 5: 10 },
       rules: [
         'Drei gleiche auf einer Linie;Wert × Linieneinsatz',
+        'Vier / fünf gleiche;Wert ×3 / ×10',
         'Zwei gleiche von links;×1',
         'Stern;ersetzt alle außer Sieben',
       ],
@@ -55,25 +56,27 @@
     enya: {
       id: 'enya', name: 'Enya Special', tag: 'Spezial',
       note: '5 Linien · Enya ist Wild · nur 1 Stunde pro Tag',
-      lines: FIVE, top: 'crown', wild: 'enya', wildPays: 'crown', expand: 1,
+      reels: 5, lines: FIVE, top: 'crown', wild: 'enya', wildPays: 'crown', expand: 2,
       syms: [
-        { id: 'crown', name: 'Krone',  w: 2,  m: 50 },
-        { id: 'harp',  name: 'Harfe',  w: 3,  m: 20 },
-        { id: 'moon',  name: 'Mond',   w: 5,  m: 10 },
-        { id: 'note',  name: 'Note',   w: 8,  m: 5 },
-        { id: 'wave',  name: 'Welle',  w: 11, m: 4 },
-        { id: 'star',  name: 'Stern',  w: 14, m: 3 },
+        { id: 'crown', name: 'Krone',  w: 2,  m: 25 },
+        { id: 'harp',  name: 'Harfe',  w: 3,  m: 10 },
+        { id: 'moon',  name: 'Mond',   w: 5,  m: 5 },
+        { id: 'note',  name: 'Note',   w: 8,  m: 3 },
+        { id: 'wave',  name: 'Welle',  w: 11, m: 2 },
+        { id: 'star',  name: 'Stern',  w: 14, m: 2 },
         { id: 'enya',  name: 'Enya (Wild)', w: 3, m: 0 },
       ],
       pair: 0.1,
-      scatter: { sym: 'enya', awards: { 3: 5, 4: 8, 5: 12, 6: 15 } },
+      lenMult: { 4: 3, 5: 10 },
+      scatter: { sym: 'enya', awards: { 4: 3, 5: 5, 6: 8, 7: 12 } },
       freeMult: 2, scatterLuck: true,
       rules: [
         'Drei gleiche auf einer Linie;Wert × Linieneinsatz',
+        'Vier / fünf gleiche;Wert ×3 / ×10',
         'Zwei gleiche von links;×0,1',
         'Enya;Wild, ersetzt alles',
         'Enya in der Mitte;füllt die ganze Walze',
-        '3 / 4 / 5+ Enya irgendwo;5 / 8 / 12 Freispiele + 30 Sek ×1,5 Glück',
+        '4 / 5 / 6 / 7+ Enya irgendwo;3 / 5 / 8 / 12 Freispiele + 30 Sek ×1,5 Glück',
         'Im Freispiel;alle Gewinne ×2',
       ],
     },
@@ -87,7 +90,7 @@
   const ALL_IDS = new Set(Object.values(MODES).flatMap(m => m.syms.map(s => s.id)));
 
   const pick = (mode, rnd) => mode.pool[Math.floor((rnd || Math.random)() * mode.pool.length)];
-  const makeGrid = (mode, rnd) => [0, 1, 2].map(() => [pick(mode, rnd), pick(mode, rnd), pick(mode, rnd)]);
+  const makeGrid = (mode, rnd) => Array.from({ length: mode.reels }, () => [pick(mode, rnd), pick(mode, rnd), pick(mode, rnd)]);
 
   // Eine Linie: { mult, cells (Walzen-Indizes), sym, kind } oder null
   function scoreLine(mode, ids) {
@@ -105,16 +108,21 @@
     const isW = id => id === mode.wild;
     const subst = base => !(mode.noWild && mode.noWild.includes(base));
     const fits = (id, base) => id === base || (isW(id) && subst(base));
-    const firstReal = ids.find(id => !isW(id));
-    const base = firstReal || mode.wildPays;
-    if (ids.every(id => fits(id, base))) return { mult: mode.by[base].m, cells: [0, 1, 2], sym: base, kind: 'trio' };
+    // Serie von links: Basis ist das erste echte Symbol (nur Wilds: wildPays), gezählt wird, solange es passt
+    const base = ids.find(id => !isW(id)) || mode.wildPays;
+    let k = 0;
+    while (k < ids.length && fits(ids[k], base)) k++;
+    if (k >= 3) {
+      const lm = (mode.lenMult && mode.lenMult[k]) || 1;
+      return { mult: mode.by[base].m * lm, cells: ids.slice(0, k).map((_, i) => i), sym: base, kind: 'trio' };
+    }
     const real2 = ids.slice(0, 2).find(id => !isW(id));
     const b2 = real2 || mode.wildPays;
     if (mode.pair && ids.slice(0, 2).every(id => fits(id, b2))) return { mult: mode.pair, cells: [0, 1], sym: b2, kind: 'pair' };
     return null;
   }
 
-  // Rechnet ein 3x3-Gitter aus (grid[walze][zeile]). Glück und Deckel kommen erst in finalWin.
+  // Rechnet ein Gitter (3 oder 5 Walzen à 3 Zeilen) aus (grid[walze][zeile]). Glück und Deckel kommen erst in finalWin.
   function resolve(mode, grid, stake, freeSpin) {
     const g = grid.map(r => r.slice());
     const out = { grid: g, raw: 0, hits: [], kind: 'none', sym: null, jackpot: false, award: 0, luckCount: 0, expanded: false, lines: 0 };
@@ -152,7 +160,7 @@
       }
     }
     if (mode.luckSym) {
-      const at = [0, 1, 2].filter(i => g[i][1] === mode.luckSym);
+      const at = g.map((_, i) => i).filter(i => g[i][1] === mode.luckSym);
       out.luckCount = at.length;
       at.forEach(i => hit.add(i + ':1'));
       out.hits = [...hit].map(x => x.split(':').map(Number));
