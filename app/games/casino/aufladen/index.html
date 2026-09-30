@@ -107,6 +107,7 @@
     <div class="nav-title"><span class="pill">777</span> Kasse</div>
   </div>
   <div class="nav-right">
+    <a href="../belege/" class="nav-back">Belege</a>
     <div data-auth-slot></div>
   </div>
 </nav>
@@ -155,7 +156,8 @@
         <h2>Zahlung erfolgreich</h2>
         <p class="note" id="doneText"></p>
         <div class="receipt" id="receipt"></div>
-        <a class="pay back" href="../">Zurück zum Automaten</a>
+        <button type="button" class="pay" id="showReceipt">Beleg anzeigen</button>
+        <a class="pay back" href="../" style="display:block;background:transparent;color:var(--chalk-dim);margin-top:6px;font-size:14px;border:1px solid var(--board-line)">Zurück zum Automaten</a>
         <button type="button" class="pay" id="again" style="background:transparent;color:var(--chalk-dim);margin-top:6px;font-size:14px">Nochmal aufladen</button>
       </div>
     </aside>
@@ -171,8 +173,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/auth.js"></script>
+<script src="../beleg.js"></script>
 <script>
 'use strict';
+document.head.insertAdjacentHTML('beforeend', '<style>' + Belege.css + '</style>');
 
 // Gleicher Speicher wie der Automat (siehe ../index.html)
 const KEY = 'automat5dk.casino.v2';
@@ -405,8 +409,10 @@ $('pay').addEventListener('click', () => {
   view('viewBusy');
   const wait = REDUCED ? 300 : 900;
   m.steps.forEach((t, i) => setTimeout(() => { $('step').textContent = t; }, i * wait));
-  const finish = (newBal, split, credited, stopped) => {
-    const no = 'BD-' + String(Date.now()).slice(-8), c = credited === undefined ? eur * 100 : credited;
+  const finish = (newBal, split, credited, stopped, parts) => {
+    const now = Date.now(), no = 'BD-' + String(now).slice(-8), c = credited === undefined ? eur * 100 : credited;
+    lastReceipt = { no, ts: now, cents: c, method: m.name, payer: holder(), balance: newBal, fromPool: parts ? parts.fromPool : 0, fromCard: parts ? parts.fromCard : c };
+    Belege.add(lastReceipt);
     $('doneText').textContent = '+' + money(c) + ' wurden deinem Konto gutgeschrieben. Neues Guthaben: ' + money(newBal) + '.' + (stopped ? ' Der Rest ging nicht durch: ' + stopped : '');
     $('receipt').innerHTML = 'Beleg ' + no + '<br>' + money(c) + ' · ' + m.name + ' (Spielgeld)' + (split || '');
     busy = false;
@@ -430,7 +436,7 @@ $('pay').addEventListener('click', () => {
         return;
       }
       $('noSave').hidden = true;
-      finish(last.balance, '<br>Aus dem Auszahlungstopf: ' + money(fromPool) + '<br>Von der Karte: ' + money(fromCard), got, fail && fail.message);
+      finish(last.balance, '<br>Aus dem Auszahlungstopf: ' + money(fromPool) + '<br>Von der Karte: ' + money(fromCard), got, fail && fail.message, { fromPool, fromCard });
       loadWallet();
       return;
     }
@@ -441,7 +447,14 @@ $('pay').addEventListener('click', () => {
     finish(s.balance);
   }, m.steps.length * wait + 400);
 });
-// Nochmal aufladen: Betrag, Zahlungsart und Zahlungsdaten bleiben eingetragen
+let lastReceipt = null;
+$('showReceipt').addEventListener('click', () => {
+  if (!lastReceipt) return;
+  $('dlgTitle').textContent = 'Dein Beleg';
+  $('dlgBody').innerHTML = Belege.html(lastReceipt);
+  $('dlg').show();
+});
+// Nochmal aufladen:Betrag, Zahlungsart und Zahlungsdaten bleiben eingetragen
 $('again').addEventListener('click', () => { view('viewForm'); render(); });
 
 // Zurück per Browser-Verlauf: Seite frisch laden, damit nichts Eingetipptes zurückkommt

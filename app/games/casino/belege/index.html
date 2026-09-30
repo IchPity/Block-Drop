@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<title>Belege — Casino</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/theme.css">
+<style>
+  :root { --amber: var(--marquee); --ink: #0b100a; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { min-height: 100vh; overflow-x: clip; padding: 76px 0 72px; }
+  :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .container { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+  .hero { margin: 24px 0 24px; }
+  .hero-sub { max-width: 60ch; }
+  .total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 14px; margin-bottom: 16px; background: var(--ink); border: 1px solid var(--board-line); border-radius: 10px; }
+  .total span { font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--chalk-dim); }
+  .total strong { font: 400 24px 'Share Tech Mono', monospace; color: var(--amber); }
+  .list { display: grid; gap: 8px; list-style: none; }
+  .item { width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center; text-align: left; cursor: pointer; padding: 12px 14px; min-height: 56px; border-radius: 10px; background: var(--board-raised); border: 1px solid var(--board-line); color: var(--chalk); font-family: inherit; }
+  .item:hover { border-color: var(--amber); }
+  .item b { font: 400 18px 'Share Tech Mono', monospace; color: var(--amber); grid-row: span 2; }
+  .item span { font-size: 14px; }
+  .item small { font-size: 12px; color: var(--chalk-dim); font-family: 'Share Tech Mono', monospace; }
+  .empty { text-align: center; padding: 34px 16px; border: 1px dashed var(--board-line); border-radius: 12px; color: var(--chalk-dim); }
+  .empty a { display: inline-block; margin-top: 12px; color: var(--amber); }
+  .note { margin-top: 14px; font-size: 12px; color: var(--chalk-faint); }
+  dialog { position: fixed; margin: auto; z-index: 50; border: 0; background: transparent; color: var(--chalk); width: min(92vw, 400px); padding: 0; }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  .close { width: 100%; margin-top: 10px; min-height: 44px; border: 0; border-radius: 10px; background: var(--amber); color: var(--ink); font: 700 15px 'Baloo 2', sans-serif; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="../aufladen/" class="nav-back">&larr; Kasse</a>
+    <div class="nav-title"><span class="pill">777</span> Belege</div>
+  </div>
+  <div class="nav-right">
+    <div data-auth-slot></div>
+  </div>
+</nav>
+
+<main class="container">
+  <header class="hero">
+    <h1>Meine Belege</h1>
+    <p class="hero-sub">Alle Einzahlungen auf einen Blick. Tippe einen Eintrag an, um den Beleg zu sehen.</p>
+  </header>
+  <div class="total"><span id="cnt">Einzahlungen</span><strong id="sum">–</strong></div>
+  <ul class="list" id="list"></ul>
+  <div class="empty" id="empty" hidden>Noch keine Einzahlungen.<br><a href="../aufladen/">Zur Kasse</a></div>
+  <p class="note">Die Belege liegen nur in diesem Browser, getrennt nach Gast und Konto. Es ist Spielgeld.</p>
+</main>
+
+<dialog id="dlg">
+  <div id="dlgBody"></div>
+  <button type="button" class="close" id="dlgClose">Schließen</button>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth.js"></script>
+<script src="../beleg.js"></script>
+<script>
+'use strict';
+document.head.insertAdjacentHTML('beforeend', '<style>' + Belege.css + '</style>');
+const $ = id => document.getElementById(id);
+let rows = [];
+function render() {
+  rows = Belege.list();
+  $('empty').hidden = rows.length > 0;
+  $('sum').textContent = Belege.money(rows.reduce((s, b) => s + b.cents, 0));
+  $('cnt').textContent = rows.length + (rows.length === 1 ? ' Einzahlung' : ' Einzahlungen');
+  $('list').innerHTML = rows.map((b, i) => `<li><button type="button" class="item" data-i="${i}"><span>${Belege.esc(b.method)}</span><b>+${Belege.money(b.cents)}</b><small>${Belege.when(b.ts)} · ${Belege.esc(b.no)}</small></button></li>`).join('');
+}
+$('list').addEventListener('click', e => {
+  const b = e.target.closest('.item'); if (!b) return;
+  $('dlgBody').innerHTML = Belege.html(rows[+b.dataset.i]);
+  $('dlg').showModal();
+});
+$('dlgClose').addEventListener('click', () => $('dlg').close());
+$('dlg').addEventListener('click', e => { if (e.target === $('dlg')) $('dlg').close(); });
+if (window.Auth && Auth.onChange) Auth.onChange(render);
+window.addEventListener('storage', render);
+render();
+</script>
+</body>
+</html>
