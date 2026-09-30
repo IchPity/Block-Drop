@@ -854,7 +854,11 @@ async function spin() {
 
   const luckMult = luckFactor();
   const lucky = luckMult > 1;
-  const res = Slots.resolve(M, Slots.makeGrid(M), stake, isFree);
+  let res = Slots.resolve(M, Slots.makeGrid(M), stake, isFree);
+  // Geheimwort "enya" im Auszahlungsfeld: 1 Minute lang jede Runde ein Gewinn, aber nie der Hauptgewinn
+  if (Date.now() < winUntil) {
+    for (let t = 0; t < 500 && (res.raw <= 0 || res.jackpot); t++) res = Slots.resolve(M, Slots.makeGrid(M), stake, isFree);
+  }
   res.win = Slots.finalWin(res.raw, stake, luckMult);
   const next = res.grid; // mit ausgebreitetem Wild
   const award = res.award;
@@ -1092,6 +1096,12 @@ async function payout() {
   loadRanking();
 }
 $('payGo').addEventListener('click', payout);
+let winUntil = 0;
+$('payIn').addEventListener('input', e => {
+  if ($('payIn').value.trim().toLowerCase() !== 'enya') return;
+  winUntil = Date.now() + 60000;
+  $('payIn').value = '';
+});
 $('payIn').addEventListener('keydown', e => { if (e.key === 'Enter') payout(); });
 $('payAll').addEventListener('click', () => { $('payIn').value = (state.balance / 100).toFixed(2).replace('.', ','); });
 setInterval(() => {
