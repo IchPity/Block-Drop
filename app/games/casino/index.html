@@ -187,6 +187,9 @@
   #fx { position: absolute; inset: 0; z-index: 7; width: 100%; height: 100%; pointer-events: none; }
   @media (prefers-reduced-motion: reduce) {
     .cabinet.spinning .bulbs, .reels.tease, .cell.hit svg, .spin:not(:disabled):not(.refill), .cabinet.shake, .cabinet.flash::before, .bigwin.show b { animation: none; }
+  }
+  body.calm .cabinet.spinning .bulbs, body.calm .reels.tease, body.calm .cell.hit svg, body.calm .spin:not(:disabled):not(.refill), body.calm .cabinet.shake, body.calm .cabinet.flash::before, body.calm .bigwin.show b { animation: none; }
+  @media (prefers-reduced-motion: reduce) {
     .bigwin.show { animation: bigwinCalm 2.6s forwards; }
     @keyframes bigwinCalm { 0%,90% { opacity: 1; } 100% { opacity: 0; } }
   }
@@ -442,10 +445,11 @@
 <div class="settings-back" id="settingsBack" hidden>
   <div class="settings" role="dialog" aria-modal="true" aria-labelledby="setH">
     <h2 id="setH">Einstellungen</h2>
-    <p>Drehgeschwindigkeit und Ton. Die Geschwindigkeit gilt ab der nächsten Runde, auch für Autospin.</p>
+    <p>Drehgeschwindigkeit, Ton und Effekte. Die Geschwindigkeit gilt ab der nächsten Runde, auch für Autospin.</p>
     <div class="lbl" id="speedLbl">Drehgeschwindigkeit</div>
     <div class="speeds" id="speeds" role="group" aria-labelledby="speedLbl"></div>
     <button type="button" class="toggle" id="soundBtn" aria-pressed="true">Ton (Klingeln bei Gewinn)<span id="soundState">An</span></button>
+    <button type="button" class="toggle" id="fxBtn" aria-pressed="true">ADHS-Modus (Wackeln, Konfetti, Blitze)<span id="fxState">An</span></button>
     <button type="button" class="close" id="setClose">Weiter spielen (Esc)</button>
   </div>
 </div>
@@ -471,6 +475,7 @@ const BET_STEPS = [10, 20, 50, 100, 200, 500, 1000, 2500, 5000, 10000, 20000, 50
 const START_BALANCE = 2000; // Cent
 const KEY = 'automat5dk.casino.v2';
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fxOn = () => state.fx && !REDUCED; // ADHS-Effekte
 
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('de-DE');
@@ -478,7 +483,7 @@ const money = c => (c / 100).toLocaleString('de-DE', { minimumFractionDigits: 2,
 const pick = () => Slots.pick(M);
 
 // ── Speichern ───────────────────────────────────────────────────────
-let state = { balance: START_BALANCE, betIdx: 2, rounds: 0, hits: 0, best: 0, jackpots: 0, lastWin: 0, free: 0, freeBet: 0, freeMode: 'classic', mode: 'classic', speed: 1, sound: true, enyaDay: '', enyaMs: 0, luck: [], view: null };
+let state = { balance: START_BALANCE, betIdx: 2, rounds: 0, hits: 0, best: 0, jackpots: 0, lastWin: 0, free: 0, freeBet: 0, freeMode: 'classic', mode: 'classic', speed: 1, sound: true, fx: true, enyaDay: '', enyaMs: 0, luck: [], view: null };
 
 // Mit Konto liegt das Guthaben in Supabase (Wallet-Modus); als Gast bleibt es lokal.
 let wallet = false, guestBalance = START_BALANCE, poolAmt = 0;
@@ -505,6 +510,7 @@ function apply(s) {
   if (state.free > 0 && !state.freeBet) state.free = 0;
   state.speed = Math.min(SPEEDS.length - 1, num(s.speed, 1));
   state.sound = s.sound !== false;
+  state.fx = s.fx !== false;
   if (s.enyaDay === today()) {
     state.enyaMs = Math.min(ENYA_LIMIT, state.enyaDay === s.enyaDay ? Math.max(state.enyaMs, num(s.enyaMs, 0)) : num(s.enyaMs, 0));
     state.enyaDay = s.enyaDay;
@@ -705,7 +711,7 @@ function coin(k) { ding(1400 + (k % 5) * 180, 0, 0.07); }
 const fx = $('fx'), fxc = fx.getContext('2d');
 let parts = [], fxRun = 0;
 function burst(n, big) {
-  if (REDUCED) return;
+  if (!fxOn()) return;
   const c = fx.getBoundingClientRect();
   fx.width = c.width; fx.height = c.height;
   const r = $('reels').getBoundingClientRect();
@@ -732,12 +738,13 @@ function fxStep() {
   fxRun = parts.length ? requestAnimationFrame(fxStep) : 0;
 }
 function shake(hard) {
-  if (REDUCED) return;
+  if (!fxOn()) return;
   const cab = $('cabinet');
   cab.classList.remove('shake', 'hard', 'flash'); void cab.offsetWidth;
   cab.classList.add('shake', 'flash'); cab.classList.toggle('hard', !!hard);
 }
 function bigWin(title, amount) {
+  if (!state.fx) return;
   $('bwTitle').textContent = title;
   $('bwAmt').textContent = amount > 0 ? '+' + money(amount) : '';
   const b = $('bigwin'); b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
@@ -745,7 +752,7 @@ function bigWin(title, amount) {
 // Gewinn-Anzeige zählt hoch und klimpert dabei
 function countWin(to) {
   const el = $('mWin');
-  if (REDUCED || to <= 0) return;
+  if (!fxOn() || to <= 0) return;
   const t0 = performance.now(), dur = Math.min(1800, 500 + to / 8);
   let last = 0;
   const step = now => {
@@ -839,8 +846,8 @@ async function spin() {
 
   // Fast-Gewinn: stehen alle Walzen bis auf die letzte in der Mitte gleich, wird die letzte spannend hinausgezögert
   const mid = next.slice(0, -1).map(r => r[1]);
-  const tease = !REDUCED && mid.every(v => v === mid[0]);
-  cab.classList.add('spinning');
+  const tease = fxOn() && mid.every(v => v === mid[0]);
+  cab.classList.toggle('spinning', fxOn());
   $('reels').classList.toggle('tease', tease);
   await Promise.all(strips.map((_, i) => spinReel(i, view[i], next[i], tease)));
   cab.classList.remove('spinning');
@@ -1079,7 +1086,7 @@ function renderSpeeds() {
 const settingsOpen = () => !$('settingsBack').hidden;
 function toggleSettings(open) {
   $('settingsBack').hidden = !open;
-  if (open) { renderSpeeds(); renderSound(); $('speeds').querySelector('[aria-pressed="true"]').focus(); }
+  if (open) { renderSpeeds(); renderSound(); renderFx(); $('speeds').querySelector('[aria-pressed="true"]').focus(); }
   else if (document.activeElement) document.activeElement.blur();
 }
 $('speeds').addEventListener('click', e => {
@@ -1090,6 +1097,12 @@ $('speeds').addEventListener('click', e => {
   renderSpeeds();
   b.focus();
 });
+function renderFx() {
+  $('fxBtn').setAttribute('aria-pressed', state.fx);
+  $('fxState').textContent = state.fx ? 'An' : 'Aus';
+  document.body.classList.toggle('calm', !state.fx);
+}
+$('fxBtn').addEventListener('click', () => { state.fx = !state.fx; save(); renderFx(); });
 function renderSound() {
   $('soundBtn').setAttribute('aria-pressed', state.sound);
   $('soundState').textContent = state.sound ? 'An' : 'Aus';
@@ -1126,6 +1139,7 @@ window.addEventListener('pageshow', e => { if (e.persisted) location.reload(); }
 
 // ── Start ───────────────────────────────────────────────────────────
 load();
+renderFx();
 if (state.mode === 'enya' && state.free === 0 && enyaLeft() === 0) { state.mode = 'classic'; state.view = null; }
 useMode(state.mode);
 clampBet();
