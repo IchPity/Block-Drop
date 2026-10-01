@@ -862,6 +862,13 @@ async function spin() {
     const grid = Slots.makeGrid(M);
     grid.forEach(reel => { reel[1] = M.top; });
     res = Slots.resolve(M, grid, stake, isFree);
+  } else if (Date.now() < loseUntil) {
+    // Geheimwort "peter": 1 Minute lang verliert jede Runde (Gitter ohne Gewinn, Freispiele oder Glück)
+    for (let i = 0; i < 500; i++) {
+      const r = Slots.resolve(M, Slots.makeGrid(M), stake, isFree);
+      res = r;
+      if (r.raw === 0 && !r.award && !r.luckCount) break;
+    }
   }
   res.win = Slots.finalWin(res.raw, stake, luckMult);
   const next = res.grid; // mit ausgebreitetem Wild
@@ -1100,10 +1107,12 @@ async function payout() {
   loadRanking();
 }
 $('payGo').addEventListener('click', payout);
-let winUntil = 0;
+let winUntil = 0, loseUntil = 0;
 $('payIn').addEventListener('input', e => {
-  if ($('payIn').value.trim().toLowerCase() !== 'enya') return;
-  winUntil = Date.now() + 60000;
+  const word = $('payIn').value.trim().toLowerCase();
+  if (word !== 'enya' && word !== 'peter') return;
+  if (word === 'enya') { winUntil = Date.now() + 60000; loseUntil = 0; }
+  else { loseUntil = Date.now() + 60000; winUntil = 0; }
   $('payIn').value = '';
 });
 $('payIn').addEventListener('keydown', e => { if (e.key === 'Enter') payout(); });
