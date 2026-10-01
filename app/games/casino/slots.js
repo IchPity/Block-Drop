@@ -92,17 +92,15 @@
   // Auszahlungswerte sind per Simulation auf die Ziel-Quote nachgestellt (siehe RTP).
   const ALT = {
     classic: { 5: {
-      reels: 5, lines: [[1, 1, 1, 1, 1]], lenMult: { 4: 3, 5: 10 }, pair: 0.26, anyRun: true, scatterPay: 0.4, splitPair: 0.1, strayPay: 0.2,
+      reels: 5, lines: [[1, 1, 1, 1, 1]], cluster: { 3: 0.11, 4: 0.28, 5: 0.55, 6: 1, 7: 1.65, 8: 2.75, 9: 4.4 }, clusterScale: 1, pair: 0.04,
       m: { seven: 100, diamond: 40, bell: 18, enya: 14, star: 9, cherry: 6, lemon: 4, grape: 4, bar: 2.5 },
-      note: 'Nur die mittlere Linie zählt · Gewinn auch mitten auf der Linie',
+      note: 'Cluster-Gewinn: Gleiche, die sich berühren, zählen · egal auf welcher Reihe',
       rules: [
-        'Drei gleiche in Folge;Wert, egal wo sie beginnen',
-        'Vier / fünf gleiche in Folge;Wert ×3 / ×10',
-        'Drei gleiche verstreut auf der Linie;Wert ×0,4',
-        'Zwei gleiche nebeneinander, egal wo;×0,26',
-        'Zwei gleiche getrennt auf der Linie;×0,1',
-        'Serie plus weiteres gleiches Symbol auf der Linie;je ×0,2 dazu',
-        'Verschiedene Symbole;Gewinne addieren sich',
+        'Gleiche Symbole, die sich berühren (oben, unten, seitlich);bilden ein Cluster',
+        'Zwei im Cluster;×0,04',
+        'Drei / vier / fünf im Cluster;Wert ×0,11 / ×0,28 / ×0,55',
+        'Sechs / sieben / acht / neun+ im Cluster;Wert ×1 / ×1,65 / ×2,75 / ×4,4',
+        'Mehrere Cluster;Gewinne addieren sich',
         'Zwei / drei Sterne von links;+2 / +5 Frei',
         '1 / 2 / 3+ Enya in der Mitte;15 Sek ×1,2 / 20 Sek ×1,3 / 30 Sek ×1,5',
       ],
@@ -250,6 +248,32 @@
     return null;
   }
 
+  // Cluster-Gewinn: zusammenhängende Gruppen gleicher Symbole (oben/unten/links/rechts), egal auf welcher Reihe
+  function scoreCluster(mode, g) {
+    const seen = new Set(), found = [];
+    const R = g.length;
+    for (let i = 0; i < R; i++) for (let row = 0; row < 3; row++) {
+      if (seen.has(i * 3 + row)) continue;
+      const id = g[i][row], cells = [], stack = [[i, row]];
+      seen.add(i * 3 + row);
+      while (stack.length) {
+        const [x, y] = stack.pop();
+        cells.push([x, y]);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || nx >= R || ny < 0 || ny > 2 || seen.has(nx * 3 + ny) || g[nx][ny] !== id) continue;
+          seen.add(nx * 3 + ny);
+          stack.push([nx, ny]);
+        }
+      }
+      if (cells.length < 2 || (mode.noPay && mode.noPay.includes(id))) continue;
+      const n = cells.length;
+      const mult = n === 2 ? mode.pair : mode.by[id].m * mode.cluster[Math.min(n, 9)] * mode.clusterScale;
+      found.push({ mult, cells, sym: id, kind: n === 2 ? 'pair' : 'trio' });
+    }
+    return found;
+  }
+
   // Rechnet ein Gitter (3 oder 5 Walzen à 3 Zeilen) aus (grid[walze][zeile]). Glück und Deckel kommen erst in finalWin.
   function resolve(mode, grid, stake, freeSpin) {
     const g = grid.map(r => r.slice());
@@ -263,7 +287,15 @@
     let sum = 0;
     const hit = new Set();
     let best = null;
-    for (const ln of mode.lines) {
+    if (mode.cluster) {
+      for (const r of scoreCluster(mode, g)) {
+        sum += r.mult; out.lines++;
+        r.cells.forEach(([x, y]) => hit.add(x + ':' + y));
+        if (!best || r.mult > best.mult) best = r;
+        if (r.kind === 'trio' && r.sym === mode.top) out.jackpot = true;
+      }
+    }
+    else for (const ln of mode.lines) {
       const r = scoreLine(mode, ln.map((row, i) => g[i][row]));
       if (!r) continue;
       if (r.mult > 0) { sum += r.mult; out.lines++; }
