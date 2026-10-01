@@ -86,7 +86,7 @@
   // Auszahlungswerte sind per Simulation auf die Ziel-Quote nachgestellt (siehe RTP).
   const ALT = {
     classic: { 5: {
-      reels: 5, lines: [[1, 1, 1, 1, 1]], lenMult: { 4: 3, 5: 10 }, pair: 0.26, anyRun: true, scatterPay: 0.4, splitPair: 0.1,
+      reels: 5, lines: [[1, 1, 1, 1, 1]], lenMult: { 4: 3, 5: 10 }, pair: 0.26, anyRun: true, scatterPay: 0.4, splitPair: 0.1, strayPay: 0.2,
       m: { seven: 100, diamond: 40, bell: 18, enya: 14, star: 9, cherry: 6, lemon: 4, grape: 4, bar: 2.5 },
       note: 'Nur die mittlere Linie zählt · Gewinn auch mitten auf der Linie',
       rules: [
@@ -95,6 +95,7 @@
         'Drei gleiche verstreut auf der Linie;Wert ×0,4',
         'Zwei gleiche nebeneinander, egal wo;×0,26',
         'Zwei gleiche getrennt auf der Linie;×0,1',
+        'Serie plus weiteres gleiches Symbol auf der Linie;je ×0,2 dazu',
         'Verschiedene Symbole;Gewinne addieren sich',
         'Zwei / drei Sterne von links;+2 / +5 Frei',
         '1 / 2 / 3+ Enya in der Mitte;15 Sek ×1,2 / 20 Sek ×1,3 / 30 Sek ×1,5',
@@ -169,7 +170,11 @@
         }
         for (const id of new Set(ids)) {
           const cells = ids.map((x, i) => (x === id ? i : -1)).filter(i => i >= 0);
-          if (cells.length >= 3) take(mode.by[id].m * mode.scatterPay, cells, id, 'trio');
+          const run = per[id];
+          if (run && run.kind === 'trio' && run.cells.length >= 3 && cells.length > run.cells.length) { // Serie plus Einzelne auf der Linie
+            run.mult += mode.by[id].m * mode.strayPay * (cells.length - run.cells.length);
+            run.cells = cells;
+          } else if (cells.length >= 3) take(mode.by[id].m * mode.scatterPay, cells, id, 'trio');
           else if (cells.length === 2) take(mode.splitPair, cells, id, 'pair');
         }
         const all = Object.values(per);
