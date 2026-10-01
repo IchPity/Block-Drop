@@ -47,8 +47,10 @@
   .meters { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
   .meter { background: var(--ink); border: 1px solid var(--board-line); border-radius: 10px; padding: 10px 14px 8px; min-width: 0; }
   .meter-lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--chalk-dim); }
-  .meter-val { margin-top: 2px; font-family: 'Share Tech Mono', monospace; font-size: 24px; line-height: 1.15; color: var(--amber); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .meter-val { margin-top: 2px; font-family: 'Share Tech Mono', monospace; font-size: 24px; line-height: 1.15; color: var(--amber); font-variant-numeric: tabular-nums; }
   .meter.small .meter-val { font-size: 20px; color: var(--chalk); }
+  .meter-val.long { font-size: 17px; }
+  .meter.small .meter-val.long { font-size: 15px; }
   .meter-val.gain { color: var(--win); }
   .banner { min-height: 48px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--board-line); font: 700 17px 'Baloo 2', sans-serif; color: var(--chalk-dim); }
   .banner.win { color: var(--win); border-color: rgba(74,222,128,0.4); background: rgba(74,222,128,0.07); }
@@ -70,13 +72,15 @@
   .cell.out.red { background: var(--red); } .cell.out.black { background: var(--blk); }
   .cell.win { box-shadow: 0 0 0 2px var(--amber); z-index: 2; animation: pulse 0.5s ease-in-out infinite alternate; }
   @keyframes pulse { to { filter: brightness(1.5); } }
-  .chipmark { position: absolute; right: 2px; top: 2px; min-width: 20px; padding: 1px 4px; border-radius: 999px; background: var(--amber); color: var(--ink); font: 700 10px 'Share Tech Mono', monospace; line-height: 14px; text-align: center; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+  .chipmark { position: absolute; right: 1px; top: 1px; max-width: calc(100% - 2px); min-width: 20px; padding: 1px 4px; white-space: nowrap; overflow: hidden; border-radius: 999px; background: var(--amber); color: var(--ink); font: 700 10px 'Share Tech Mono', monospace; line-height: 14px; text-align: center; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.6); }
 
   .controls { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-top: 18px; }
   .chips { display: flex; gap: 6px; flex-wrap: wrap; }
   .lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--chalk-dim); margin-bottom: 4px; }
   .chipbtn { min-width: 58px; min-height: 44px; padding: 6px 10px; background: var(--ink); border: 1px solid var(--board-line); border-radius: 999px; color: var(--chalk-dim); font: 700 13px 'Share Tech Mono', monospace; cursor: pointer; }
   .chipbtn:hover { border-color: rgba(238,242,234,0.3); }
+  .chipbtn.allin { min-width: 76px; color: var(--amber); border-color: color-mix(in srgb, var(--amber) 45%, var(--board-line)); letter-spacing: 0.04em; }
+  .chipbtn.allin[aria-pressed="true"] { background: var(--amber); color: var(--ink); }
   .chipbtn[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); background: color-mix(in srgb, var(--amber) 12%, var(--ink)); }
   .tool { min-height: 44px; padding: 8px 14px; background: transparent; border: 1px solid var(--board-line); border-radius: 10px; color: var(--chalk); font: 600 14px 'IBM Plex Sans', sans-serif; cursor: pointer; }
   .tool:hover:not(:disabled) { border-color: rgba(238,242,234,0.3); }
@@ -157,7 +161,7 @@
       <button type="button" class="tool" id="rebet">Wiederholen</button>
       <button type="button" class="spin" id="spin">DREHEN</button>
     </div>
-    <p class="hint">Mit der Maus oder dem Finger setzt du den gewählten Chip aufs Feld, mit Rechtsklick nimmst du ihn wieder weg. <kbd>Leertaste</kbd> dreht. Tempo, Ton und Effekte stellst du im Automaten mit <kbd>Esc</kbd> ein, sie gelten hier mit.</p>
+    <p class="hint">Mit der Maus oder dem Finger setzt du den gewählten Chip aufs Feld, „All In“ setzt dein gesamtes Restguthaben auf ein Feld, mit Rechtsklick nimmst du ihn wieder weg. <kbd>Leertaste</kbd> dreht. Tempo, Ton und Effekte stellst du im Automaten mit <kbd>Esc</kbd> ein, sie gelten hier mit.</p>
 
     <div class="paytab">
       <b>Auszahlung (zurück inklusive Einsatz):</b> Einzelzahl ×36 · Rot/Schwarz, Gerade/Ungerade, 1–18/19–36 ×2 · Dutzend und Spalte ×3. Bei der Null verlieren alle Einsätze außer auf die Null selbst. Mit einer Null zahlt der Tisch im Schnitt 97,3 % zurück.
@@ -187,6 +191,13 @@ const SLICE = 360 / 37;
 const $ = id => document.getElementById(id);
 const money = c => (c / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 const NS = 'http://www.w3.org/2000/svg';
+// Kurzform für den Chip auf dem Feld: 25 · 1,5k · 12k · 2,3 Mio (der genaue Betrag steht im title)
+function markText(c) {
+  const e = c / 100, f = (x, u) => x.toFixed(x < 10 ? 1 : 0).replace('.', ',').replace(',0', '') + u;
+  if (e >= 1e6) return f(e / 1e6, ' Mio');
+  if (e >= 1000) return f(e / 1000, 'k');
+  return Number.isInteger(e) ? String(e) : money(c).replace(' €', '');
+}
 
 // ── Speicher (wie in der Kasse: nur das Guthaben wird gelesen und geschrieben) ──
 function readState() {
@@ -280,14 +291,14 @@ $('board').innerHTML = cells.map(p => {
   const st = `grid-column:${p.col}${p.cols ? ' / span ' + p.cols : ''};grid-row:${p.row}${p.rows ? ' / span ' + p.rows : ''}`;
   return `<button type="button" class="cell ${p.cls}" data-k="${p.key}" style="${st}" aria-label="${p.label}">${p.label}<span class="chipmark" hidden></span></button>`;
 }).join('');
-$('chips').innerHTML = CHIPS.map((c, i) => `<button type="button" class="chipbtn" data-i="${i}" aria-pressed="false">${money(c).replace(',00', '')}</button>`).join('') + '<button type="button" class="chipbtn" data-i="-1" aria-pressed="false">All In</button>';
+$('chips').innerHTML = CHIPS.map((c, i) => `<button type="button" class="chipbtn" data-i="${i}" aria-pressed="false">${money(c).replace(',00', '')}</button>`).join('') + '<button type="button" class="chipbtn allin" data-i="-1" aria-pressed="false">All In</button>';
 
 // ── Zustand ─────────────────────────────────────────────────────────
 let balance = START_BALANCE;
 let bets = {};          // Schlüssel -> Cent
 let stack = [];         // Reihenfolge der gesetzten Chips für Rückgängig
 let lastBets = null;
-let chipIdx = 2;
+let chipIdx = 2, lastChip = 2;
 let spinning = false;
 let wallet = false, guestBalance = START_BALANCE;
 let wheelRot = 0, ballRot = 0;
@@ -296,18 +307,21 @@ let lastWin = 0;
 const total = () => Object.values(bets).reduce((a, b) => a + b, 0);
 function banner(text, cls) { const b = $('banner'); b.className = 'banner' + (cls ? ' ' + cls : ''); b.textContent = text; }
 
+function setMeter(id, text) { const el = $(id); el.textContent = text; el.classList.toggle('long', text.length > 12); }
+
 function render(shownBalance) {
   const t = total();
-  $('mBalance').textContent = money(shownBalance === undefined ? balance - t : shownBalance);
-  $('mBet').textContent = money(t);
-  $('mWin').textContent = lastWin > 0 ? '+' + money(lastWin) : '–';
+  setMeter('mBalance', money(shownBalance === undefined ? balance - t : shownBalance));
+  setMeter('mBet', money(t));
+  setMeter('mWin', lastWin > 0 ? '+' + money(lastWin) : '–');
   $('mWin').classList.toggle('gain', lastWin > 0);
   document.querySelectorAll('#board .cell').forEach(el => {
     const v = bets[el.dataset.k], m = el.lastElementChild;
-    m.hidden = !v; if (v) m.textContent = v >= 100 ? (v / 100).toString().replace('.', ',') : money(v).replace(' €', '');
+    m.hidden = !v; if (v) { m.textContent = markText(v); el.title = `${el.getAttribute('aria-label')}: ${money(v)}`; } else el.removeAttribute('title');
     el.disabled = spinning;
   });
   document.querySelectorAll('#chips .chipbtn').forEach(b => { b.setAttribute('aria-pressed', +b.dataset.i === chipIdx); b.disabled = spinning; });
+  $('chips').querySelector('.allin').disabled = spinning || balance - t < CHIPS[0];
   $('undo').disabled = spinning || !stack.length;
   $('clear').disabled = spinning || !stack.length;
   $('rebet').disabled = spinning || !lastBets || total() > 0 || Object.values(lastBets).reduce((a, b) => a + b, 0) > balance;
@@ -328,7 +342,14 @@ function place(k, amount, allIn) {
   stack.push([k, amount]);
   render();
 }
-$('board').addEventListener('click', e => { const b = e.target.closest('.cell'); if (b) place(b.dataset.k, chipIdx < 0 ? balance - total() : CHIPS[chipIdx], chipIdx < 0); });
+$('board').addEventListener('click', e => {
+  const b = e.target.closest('.cell'); if (!b || spinning) return;
+  if (chipIdx >= 0) { place(b.dataset.k, CHIPS[chipIdx]); return; }
+  // All In ist einmalig: der ganze Rest aufs Feld, danach gilt wieder der letzte Chip
+  const rest = balance - total();
+  place(b.dataset.k, rest, true);
+  if (rest > 0) { chipIdx = lastChip; render(); banner(`All In: ${money(rest)} auf ${FIELDS[b.dataset.k].label}. Drehen oder Rückgängig.`); }
+});
 $('board').addEventListener('contextmenu', e => {
   const b = e.target.closest('.cell'); if (!b) return;
   e.preventDefault();
@@ -338,7 +359,11 @@ $('board').addEventListener('contextmenu', e => {
   stack = stack.filter(s => s[0] !== k);
   render();
 });
-$('chips').addEventListener('click', e => { const b = e.target.closest('.chipbtn'); if (b) { chipIdx = +b.dataset.i; render(); } });
+$('chips').addEventListener('click', e => { const b = e.target.closest('.chipbtn'); if (!b) return;
+  chipIdx = +b.dataset.i; if (chipIdx >= 0) lastChip = chipIdx;
+  render();
+  if (chipIdx < 0) banner(`All In: Feld antippen, dann liegen alle ${money(balance - total())} dort.`);
+});
 $('undo').addEventListener('click', () => {
   const s = stack.pop(); if (!s) return;
   bets[s[0]] -= s[1]; if (bets[s[0]] <= 0) delete bets[s[0]];
@@ -392,7 +417,7 @@ async function spin() {
   document.querySelectorAll('.cell.win').forEach(c => c.classList.remove('win'));
   banner('Die Kugel rollt …');
   render(balance - ret); // Einsatz ist abgezogen, der Gewinn kommt am Ende
-  $('mBet').textContent = money(t);
+  setMeter('mBet', money(t));
 
   const p = prefs();
   const dur = REDUCED ? 600 : Math.max(900, 5200 * p.f);

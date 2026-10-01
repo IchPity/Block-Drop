@@ -33,8 +33,10 @@
   .meters { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
   .meter { background: var(--ink); border: 1px solid var(--board-line); border-radius: 10px; padding: 10px 14px 8px; min-width: 0; }
   .meter-lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--chalk-dim); }
-  .meter-val { margin-top: 2px; font-family: 'Share Tech Mono', monospace; font-size: 24px; line-height: 1.15; color: var(--amber); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .meter-val { margin-top: 2px; font-family: 'Share Tech Mono', monospace; font-size: 24px; line-height: 1.15; color: var(--amber); font-variant-numeric: tabular-nums; }
   .meter.small .meter-val { font-size: 20px; color: var(--chalk); }
+  .meter-val.long { font-size: 17px; }
+  .meter.small .meter-val.long { font-size: 15px; }
   .meter-val.gain { color: var(--win); }
 
   .felt { border: 1px solid var(--board-line); border-radius: 12px; padding: 16px 16px 18px; background: color-mix(in srgb, #1f8a4c 16%, var(--ink)); min-height: 300px; display: flex; flex-direction: column; justify-content: space-between; gap: 18px; }
@@ -347,11 +349,13 @@ function cardsHtml(key, cards, hideSecond) {
 }
 const totalText = v => v.soft && v.t < 21 ? 'Weich ' + v.t : String(v.t);
 
+function setMeter(id, text) { const el = $(id); el.textContent = text; el.classList.toggle('long', text.length > 12); }
+
 function render() {
   const t = g.staked;
-  $('mBalance').textContent = money(balance);
-  $('mBet').textContent = money(g.phase === 'idle' ? bet : t);
-  $('mWin').textContent = lastNet > 0 ? '+' + money(lastNet) : '–';
+  setMeter('mBalance', money(balance));
+  setMeter('mBet', money(g.phase === 'idle' ? bet : t));
+  setMeter('mWin', lastNet > 0 ? '+' + money(lastNet) : '–');
   $('mWin').classList.toggle('gain', lastNet > 0);
 
   const playing = g.phase !== 'idle';
