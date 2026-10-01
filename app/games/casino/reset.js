@@ -2,7 +2,7 @@
 // Einmaliger Reset: Gast-Guthaben zurück auf die Standardsumme (20 €). Muss vor dem Seitenskript laufen.
 // Für einen weiteren Reset RESET_ID hochzählen.
 (() => {
-  const RESET_ID = '2026-10-01', FLAG = 'automat5dk.casino.reset', KEY = 'automat5dk.casino.v2', CK = 'automat5dk_casino2', START = 2000;
+  const RESET_ID = '2026-10-01b', FLAG = 'automat5dk.casino.reset', KEY = 'automat5dk.casino.v2', CK = 'automat5dk_casino2', START = 2000;
   try {
     if (localStorage.getItem(FLAG) === RESET_ID) return;
     let s = null;
