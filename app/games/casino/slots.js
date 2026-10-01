@@ -86,14 +86,16 @@
   // Auszahlungswerte sind per Simulation auf die Ziel-Quote nachgestellt (siehe RTP).
   const ALT = {
     classic: { 5: {
-      reels: 5, lines: [[1, 1, 1, 1, 1]], lenMult: { 4: 3, 5: 10 }, pair: 0.5, anyRun: true, scatterPay: 0.4,
+      reels: 5, lines: [[1, 1, 1, 1, 1]], lenMult: { 4: 3, 5: 10 }, pair: 0.26, anyRun: true, scatterPay: 0.4, splitPair: 0.1,
       m: { seven: 100, diamond: 40, bell: 18, enya: 14, star: 9, cherry: 6, lemon: 4, grape: 4, bar: 2.5 },
       note: 'Nur die mittlere Linie zählt · Gewinn auch mitten auf der Linie',
       rules: [
         'Drei gleiche in Folge;Wert, egal wo sie beginnen',
         'Vier / fünf gleiche in Folge;Wert ×3 / ×10',
         'Drei gleiche verstreut auf der Linie;Wert ×0,4',
-        'Zwei gleiche nebeneinander, egal wo;×0,5',
+        'Zwei gleiche nebeneinander, egal wo;×0,26',
+        'Zwei gleiche getrennt auf der Linie;×0,1',
+        'Verschiedene Symbole;Gewinne addieren sich',
         'Zwei / drei Sterne von links;+2 / +5 Frei',
         '1 / 2 / 3+ Enya in der Mitte;15 Sek ×1,2 / 20 Sek ×1,3 / 30 Sek ×1,5',
       ],
@@ -155,8 +157,9 @@
       let sym = ids[0];
       if (mode.anyRun) { // mehr Kombis auf der Mittellinie: Serie, Paar und verstreute Gleiche irgendwo
         const pays = id => !(mode.noPay && mode.noPay.includes(id));
-        let best = null;
-        const take = (mult, cells, id, kind) => { if (pays(id) && (!best || mult > best.mult)) best = { mult, cells, sym: id, kind }; };
+        // Je Symbol zählt die beste Kombi; verschiedene Symbole zahlen nebeneinander (BAR-Serie + Trauben an den Rändern)
+        const per = {};
+        const take = (mult, cells, id, kind) => { if (pays(id) && (!per[id] || mult > per[id].mult)) per[id] = { mult, cells, sym: id, kind }; };
         for (let i = 0; i < ids.length;) {
           let j = i + 1; while (j < ids.length && ids[j] === ids[i]) j++;
           const n = j - i, cells = ids.slice(i, j).map((_, x) => i + x);
@@ -167,8 +170,12 @@
         for (const id of new Set(ids)) {
           const cells = ids.map((x, i) => (x === id ? i : -1)).filter(i => i >= 0);
           if (cells.length >= 3) take(mode.by[id].m * mode.scatterPay, cells, id, 'trio');
+          else if (cells.length === 2) take(mode.splitPair, cells, id, 'pair');
         }
-        return best;
+        const all = Object.values(per);
+        if (!all.length) return null;
+        const top = all.reduce((a, b) => (b.mult > a.mult ? b : a));
+        return { mult: all.reduce((s, r) => s + r.mult, 0), cells: all.flatMap(r => r.cells), sym: top.sym, kind: top.kind };
       }
       if (k < 2 || (k < 3 && !mode.pair)) return null;
       if (mode.noPay && mode.noPay.includes(sym)) return { mult: 0, cells: [], sym, kind: k >= 3 ? 'trio' : 'pair' };
