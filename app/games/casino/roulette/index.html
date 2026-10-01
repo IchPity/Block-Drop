@@ -280,7 +280,7 @@ $('board').innerHTML = cells.map(p => {
   const st = `grid-column:${p.col}${p.cols ? ' / span ' + p.cols : ''};grid-row:${p.row}${p.rows ? ' / span ' + p.rows : ''}`;
   return `<button type="button" class="cell ${p.cls}" data-k="${p.key}" style="${st}" aria-label="${p.label}">${p.label}<span class="chipmark" hidden></span></button>`;
 }).join('');
-$('chips').innerHTML = CHIPS.map((c, i) => `<button type="button" class="chipbtn" data-i="${i}" aria-pressed="false">${money(c).replace(',00', '')}</button>`).join('');
+$('chips').innerHTML = CHIPS.map((c, i) => `<button type="button" class="chipbtn" data-i="${i}" aria-pressed="false">${money(c).replace(',00', '')}</button>`).join('') + '<button type="button" class="chipbtn" data-i="-1" aria-pressed="false">All In</button>';
 
 // ── Zustand ─────────────────────────────────────────────────────────
 let balance = START_BALANCE;
@@ -321,13 +321,14 @@ function render(shownBalance) {
 function place(k, amount) {
   if (spinning) return;
   const t = total();
+  if (amount <= 0) { banner('Es ist nichts mehr zum Setzen übrig.', 'warn'); return; }
   if (t + amount > balance) { banner('Dafür reicht das Guthaben nicht.', 'warn'); return; }
   if (t + amount > MAX_TOTAL) { banner(`Pro Runde höchstens ${money(MAX_TOTAL)} setzen.`, 'warn'); return; }
   bets[k] = (bets[k] || 0) + amount;
   stack.push([k, amount]);
   render();
 }
-$('board').addEventListener('click', e => { const b = e.target.closest('.cell'); if (b) place(b.dataset.k, CHIPS[chipIdx]); });
+$('board').addEventListener('click', e => { const b = e.target.closest('.cell'); if (b) place(b.dataset.k, chipIdx < 0 ? Math.min(balance, MAX_TOTAL) - total() : CHIPS[chipIdx]); });
 $('board').addEventListener('contextmenu', e => {
   const b = e.target.closest('.cell'); if (!b) return;
   e.preventDefault();
