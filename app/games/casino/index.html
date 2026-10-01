@@ -500,8 +500,8 @@ const LUCK = { 1: [15, 1.2], 2: [20, 1.3], 3: [30, 1.5] };
 const LUCK_MAX = 1.5, LUCK_MAX_SEC = 30;
 const CK = 'automat5dk_casino2';
 const BET_STEPS = [10, 20, 50, 100, 200, 500, 1000, 2500, 5000, 10000, 20000, 50000, 100000, 250000, 500000, 1000000]; // Cent: 0,10 bis 10.000
-const BET_MAX_NORMAL = BET_STEPS.indexOf(50000); // nur Enya Special geht bis 10.000 €
-const maxBetIdx = () => (M.id === 'enya' ? BET_STEPS.length - 1 : BET_MAX_NORMAL);
+const BET_MAX_NORMAL = BET_STEPS.indexOf(50000); // nur Modi mit 5 Walzen gehen bis 10.000 €
+const maxBetIdx = () => (M.reels === 5 ? BET_STEPS.length - 1 : BET_MAX_NORMAL); // alles mit 5 Walzen bis 10.000 €
 const START_BALANCE = 2000; // Cent
 const KEY = 'automat5dk.casino.v2';
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;

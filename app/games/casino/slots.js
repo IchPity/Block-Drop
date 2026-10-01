@@ -86,10 +86,13 @@
   // Auszahlungswerte sind per Simulation auf die Ziel-Quote nachgestellt (siehe RTP).
   const ALT = {
     classic: { 5: {
-      reels: 5, lines: [[1, 1, 1, 1, 1]], lenMult: { 4: 3, 5: 10 }, pair: 2.8,
+      reels: 5, lines: [[1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2]], lenMult: { 4: 3, 5: 10 }, pair: 1.8, anyRun: true,
+      m: { seven: 100, diamond: 40, bell: 20, enya: 15, star: 10, cherry: 7, lemon: 5, grape: 5, bar: 4 },
+      note: '3 Linien · Gewinn auch mitten auf der Linie',
       rules: [
-        'Zwei gleiche von links;×2,8',
-        'Vier / fünf gleiche;Wert ×3 / ×10',
+        'Drei gleiche in Folge auf einer Linie;Wert × Linieneinsatz, egal wo sie beginnen',
+        'Zwei gleiche von links;×1,8',
+        'Vier / fünf gleiche in Folge;Wert ×3 / ×10',
         'Zwei / drei Sterne von links;+2 / +5 Frei',
         '1 / 2 / 3+ Enya in der Mitte;15 Sek ×1,2 / 20 Sek ×1,3 / 30 Sek ×1,5',
       ],
@@ -148,7 +151,12 @@
     if (!mode.wild && ids.length > 3) {
       let k = 1;
       while (k < ids.length && ids[k] === ids[0]) k++;
-      const sym = ids[0];
+      let sym = ids[0];
+      if (mode.anyRun && k < 3) { // beste Serie ab 3 gleichen irgendwo auf der Linie
+        let bs = 0, bl = 0, bi = 0;
+        for (let i = 0; i < ids.length;) { let j = i + 1; while (j < ids.length && ids[j] === ids[i]) j++; const v = j - i >= 3 ? mode.by[ids[i]].m * ((mode.lenMult && mode.lenMult[j - i]) || 1) : 0; if (v > bs) { bs = v; bl = j - i; bi = i; } i = j; }
+        if (bs > 0 && !(mode.noPay && mode.noPay.includes(ids[bi]))) return { mult: bs, cells: ids.slice(bi, bi + bl).map((_, x) => bi + x), sym: ids[bi], kind: 'trio' };
+      }
       if (k < 2 || (k < 3 && !mode.pair)) return null;
       if (mode.noPay && mode.noPay.includes(sym)) return { mult: 0, cells: [], sym, kind: k >= 3 ? 'trio' : 'pair' };
       if (k < 3) return { mult: mode.pair, cells: [0, 1], sym, kind: 'pair' };
