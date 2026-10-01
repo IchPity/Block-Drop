@@ -412,9 +412,10 @@ $('pay').addEventListener('click', () => {
   if (busy || !amountC() || !fieldsOk()) return;
   busy = true;
   const eur = amountC() / 100, m = meth;
-  view('viewBusy');
+  const instant = admin(); // Admin: keine Bankschritte, sofort gutgeschrieben
+  if (!instant) view('viewBusy');
   const wait = REDUCED ? 300 : 900;
-  m.steps.forEach((t, i) => setTimeout(() => { $('step').textContent = t; }, i * wait));
+  if (!instant) m.steps.forEach((t, i) => setTimeout(() => { $('step').textContent = t; }, i * wait));
   const finish = (newBal, split, credited, stopped, parts) => {
     const now = Date.now(), no = 'BD-' + String(now).slice(-8), c = credited === undefined ? eur * 100 : credited;
     lastReceipt = { no, ts: now, cents: c, method: m.name, payer: holder(), balance: newBal, fromPool: parts ? parts.fromPool : 0, fromCard: parts ? parts.fromCard : c };
@@ -451,7 +452,7 @@ $('pay').addEventListener('click', () => {
     s.balance = balanceOf(s) + eur * 100;
     $('noSave').hidden = writeState(s);
     finish(s.balance);
-  }, m.steps.length * wait + 400);
+  }, instant ? 0 : m.steps.length * wait + 400);
 });
 let lastReceipt = null;
 $('showReceipt').addEventListener('click', () => {
