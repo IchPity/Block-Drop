@@ -69,7 +69,7 @@
     /* Hero */
     .hero { margin-top: 28px; margin-bottom: 28px; }
     .hero h1 {
-      font-size: 50px; font-weight: 900; letter-spacing: -2.5px; line-height: 0.98;
+      font-size: 50px; font-weight: 900; letter-spacing: -0.02em; line-height: 0.98;
       color: #fff;
     }
     .hero-sub {
@@ -317,11 +317,11 @@
 
     /* Login gate */
     .login-gate {
-      background: linear-gradient(135deg, rgba(225,6,0,0.1), rgba(48,80,224,0.05));
+      background: var(--board-raised);
       border: 1px solid rgba(225,6,0,0.25);
       border-radius: 22px; padding: 56px 32px; text-align: center;
     }
-    .login-gate-icon { font-size: 50px; margin-bottom: 12px; opacity: 0.85; }
+    .login-gate-icon { color: #ff4a3d; margin-bottom: 12px; line-height: 0; }
     .login-gate h2 { font-size: 24px; font-weight: 900; color: #fff; letter-spacing: -0.8px; margin-bottom: 8px; }
     .login-gate p { font-size: 13px; color: rgba(255,255,255,0.45); max-width: 380px; margin: 0 auto 22px; line-height: 1.6; }
     .login-gate-btn {
@@ -404,7 +404,7 @@
       .nav-game-title { font-size: 12px; }
       .container { padding: 0 14px; }
       .hero { margin-top: 18px; margin-bottom: 18px; }
-      .hero h1 { font-size: 34px; letter-spacing: -1.5px; }
+      .hero h1 { font-size: 34px; letter-spacing: -0.02em; }
       .hero-sub { font-size: 12px; margin-top: 10px; }
 
       .balance-bar { flex-direction: column; align-items: flex-start; gap: 12px; padding: 16px 18px; }
@@ -430,7 +430,6 @@
       .lb-pts { font-size: 12px; }
       .login-gate { padding: 40px 20px; }
       .login-gate h2 { font-size: 20px; }
-      .login-gate-icon { font-size: 42px; }
       .bet-toast { font-size: 12px; padding: 12px 18px; max-width: calc(100vw - 24px); }
     }
     @media (max-width: 420px) {
@@ -583,7 +582,7 @@ function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;',
 function showLoginGate() {
   appBody.innerHTML = `
     <div class="login-gate">
-      <div class="login-gate-icon">🔒</div>
+      <div class="login-gate-icon"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
       <h2>Login erforderlich</h2>
       <p>F1 Podium Wetten sind nur für angemeldete Nutzer. Logg dich ein oder erstell einen Account — du startest mit <strong>1.000 Punkten</strong>.</p>
       <button class="login-gate-btn" id="open-login">Anmelden</button>

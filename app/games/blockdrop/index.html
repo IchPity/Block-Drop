@@ -43,7 +43,7 @@
     .nav-left { display: flex; align-items: center; gap: 14px; }
     .nav-back {
       display: inline-flex; align-items: center; gap: 6px;
-      text-decoration: none; color: rgba(255,255,255,0.35);
+      text-decoration: none; color: #8b9a88;
       font-size: 12px; font-weight: 600;
       border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
       padding: 6px 12px; transition: all 0.2s;
@@ -58,7 +58,7 @@
     }
     .nav-stat { display: flex; flex-direction: column; align-items: center; }
     .nav-stat-val { font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -0.5px; line-height: 1; }
-    .nav-stat-lbl { font-size: 12px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-top: 1px; }
+    .nav-stat-lbl { font-size: 12px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: #8b9a88; margin-top: 1px; }
     .nav-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.07); }
 
     /* ── Layout ─────────────────────────────────────────── */
@@ -76,7 +76,7 @@
     .panel-box h2 {
       font-size: 12px; font-weight: 700;
       text-transform: uppercase; letter-spacing: 3px;
-      color: rgba(255,255,255,0.2); margin-bottom: 8px;
+      color: #8b9a88; margin-bottom: 8px;
     }
     .panel-box .value {
       font-size: 28px; font-weight: 900; color: #fff;
@@ -106,8 +106,8 @@
       letter-spacing: -1.5px;
       text-shadow: 0 2px 12px rgba(0,0,0,0.5);
     }
-    #overlay .overlay-sub { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: -8px; }
-    #overlay p { font-size: 12px; color: rgba(255,255,255,0.35); text-align: center; line-height: 1.5; }
+    #overlay .overlay-sub { font-size: 12px; color: #8b9a88; margin-top: -8px; }
+    #overlay p { font-size: 12px; color: #8b9a88; text-align: center; line-height: 1.5; }
     #overlay p strong { color: rgba(255,255,255,0.75); }
 
     /* ── Mode Buttons ───────────────────────────────────── */
@@ -154,10 +154,10 @@
     #mode-badge.standard { background: rgba(56,189,248,0.12); color: #38bdf8; }
 
     /* ── Controls ───────────────────────────────────────── */
-    #controls-hint { font-size: 12px; color: rgba(255,255,255,0.18); line-height: 2.1; }
+    #controls-hint { font-size: 12px; color: #8b9a88; line-height: 2.1; }
 
     /* ── High Scores ────────────────────────────────────── */
-    #hs-mode-label { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.2); margin-bottom: 10px; }
+    #hs-mode-label { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: #8b9a88; margin-bottom: 10px; }
     .highscore-list { font-size: 12px; color: rgba(255,255,255,0.4); line-height: 2; min-height: 100px; }
     .highscore-list span { color: var(--red); font-weight: 700; }
 
@@ -189,8 +189,8 @@
     #ach-overlay.show #ach-icon-big { animation: achIconPop 0.55s 0.2s both cubic-bezier(0.34,1.56,0.64,1); }
     @keyframes achIconPop { from { transform: scale(0) rotate(-15deg); } to { transform: scale(1) rotate(0deg); } }
     #ach-name-big { font-size: 22px; font-weight: 900; color: #fff; margin-bottom: 8px; letter-spacing: -0.5px; }
-    #ach-desc-big { font-size: 12px; color: rgba(255,255,255,0.3); line-height: 1.5; }
-    .ach-hint { font-size: 12px; color: rgba(255,255,255,0.12); text-transform: uppercase; letter-spacing: 2px; margin-top: 28px; opacity: 0; }
+    #ach-desc-big { font-size: 12px; color: #8b9a88; line-height: 1.5; }
+    .ach-hint { font-size: 12px; color: #8b9a88; text-transform: uppercase; letter-spacing: 2px; margin-top: 28px; opacity: 0; }
     #ach-overlay.show .ach-hint { animation: achHintFade 0.6s 1.8s both; }
     @keyframes achHintFade { from { opacity:0; } to { opacity:1; } }
 
@@ -292,6 +292,7 @@
       .nav-stat-val { font-size: 12px; }
       .nav-stat-lbl { font-size: 12px; letter-spacing: 1px; }
       .nav-divider { height: 18px; }
+      .nav-score-display, .nav-stat { white-space: nowrap; }
 
       #wrapper { flex-direction: column; gap: 10px; align-items: center; }
       #left-panel, #right-panel { width: min(100vw - 24px, 380px); flex-direction: row; gap: 8px; flex-wrap: wrap; }
@@ -329,6 +330,9 @@
       #hs-mode-label { font-size: 12px; letter-spacing: 1.5px; margin-bottom: 6px; }
     }
 
+    @media (max-width: 560px) {
+      .nav-game-title { display: none; }
+    }
     @media (max-width: 380px) {
       #overlay h1 { font-size: 22px; }
       .panel-box .value { font-size: 16px; }
