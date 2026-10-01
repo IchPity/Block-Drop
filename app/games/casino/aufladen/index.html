@@ -267,6 +267,7 @@ function parseAmt(t) {
   const v = String(t).trim().replace(/\s|€/g, '').replace(',', '.');
   if (!/^\d+(\.\d{1,2})?$/.test(v)) return null;
   const n = Math.round(parseFloat(v) * 100);
+  if (admin()) return n >= MIN_EUR * 100 && Number.isSafeInteger(n) ? n : null;
   return (n >= MIN_EUR * 100 && n <= MAX_EUR * 100) || n === BIG_EUR * 100 ? n : null;
 }
 let selC = null; // Betrag in Cent
@@ -279,7 +280,10 @@ function writeSaved(o) { try { localStorage.setItem(PK, JSON.stringify(o)); retu
 let saved = readSaved();
 METHODS.forEach(m => { const d = saved[m.id]; if (d) m.fields.forEach(f => { if (typeof d[f.id] === 'string') vals[m.id + f.id] = d[f.id]; }); });
 
-function fieldsOk() { return cheat() || meth.fields.every(f => norm(vals[meth.id + f.id] || '') === norm(want(f))); }
+// Karteninhaber "Admin" (Kreditkarte): Name zählt als richtig und der Betrag ist nach oben nicht begrenzt.
+const admin = () => meth.id === 'card' && norm(vals.cardname || '') === 'admin';
+const fieldOk = f => norm(vals[meth.id + f.id] || '') === norm(want(f)) || (f.id === 'name' && admin());
+function fieldsOk() { return cheat() || meth.fields.every(fieldOk); }
 
 // Geheimcode: Kreditkarte 6767 6767 6767 6767, 67/67, CVC 767 (Inhaber egal, im Konto bleibt es der Nutzer) schreibt 67.000 € gut.
 // Im Konto läuft das über mehrere normale Einzahlungen à höchstens 500 €, wie sie die Kasse auch sonst annimmt.
@@ -313,9 +317,9 @@ function renderSummary() {
   }
   meth.fields.forEach(f => {
     const el = $('f-' + f.id); if (!el) return;
-    const v = norm(el.value), w = norm(want(f));
-    el.classList.toggle('good', !!v && v === w);
-    el.classList.toggle('bad', !!v && v.length >= w.length && v !== w);
+    const v = norm(el.value), w = norm(want(f)), ok = v === w || (f.id === 'name' && admin());
+    el.classList.toggle('good', !!v && ok);
+    el.classList.toggle('bad', !!v && v.length >= w.length && !ok);
   });
   const sv = $('saveData');
   sv.textContent = saved[meth.id] ? 'Gespeicherte Daten entfernen' : 'Zahlungsdaten speichern';
@@ -331,7 +335,7 @@ $('amtIn').addEventListener('input', () => {
   const h = $('amtHint');
   const bad = t.trim() && !selC;
   h.classList.toggle('err', !!bad);
-  h.textContent = bad ? `Bitte einen Betrag von ${MIN_EUR} € bis ${MAX_EUR} € oder das Paket mit 10.000 € eingeben (max. 2 Nachkommastellen).` : `Mindestbetrag ${MIN_EUR} €, maximal ${MAX_EUR} €. Dazu gibt es das Paket mit 10.000 €.`;
+  h.textContent = admin() ? 'Admin: Betrag ab 1 € ohne Obergrenze.' : bad ? `Bitte einen Betrag von ${MIN_EUR} € bis ${MAX_EUR} € oder das Paket mit 10.000 € eingeben (max. 2 Nachkommastellen).` : `Mindestbetrag ${MIN_EUR} €, maximal ${MAX_EUR} €. Dazu gibt es das Paket mit 10.000 €.`;
   renderSummary();
 });
 $('amounts').addEventListener('click', e => {
@@ -353,7 +357,8 @@ $('fields').addEventListener('input', e => {
     if (atEnd) el.setSelectionRange(el.value.length, el.value.length);
     else { let n = 0, i = 0; while (i < el.value.length && n < sig) { if (!/[\s\/]/.test(el.value[i])) n++; i++; } el.setSelectionRange(i, i); }
   }
-  vals[meth.id + id] = el.value; renderSummary();
+  vals[meth.id + id] = el.value;
+  if (id === 'name') $('amtIn').dispatchEvent(new Event('input')); else renderSummary();
 });
 
 function escapeHtml(t) { return String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
