@@ -942,6 +942,9 @@ async function spin() {
   } else if (luckStart) {
     cab.classList.add('jackpot');
     banner(`${res.luckCount}× ENYA · ${secs(luckSec)} ×${xf(LUCK[res.luckCount][1])} Glück (aktiv ×${xf(luckFactor())})${res.win ? ' · +' + money(res.win) : ''}`, 'jackpot');
+  } else if (res.win > 0 && M.cluster) {
+    cab.classList.add('win');
+    banner(`${res.lines} Cluster · +${money(res.win)}${extra}`, 'win');
   } else if (res.win > 0 && many) {
     cab.classList.add('win');
     banner(`${res.lines} ${res.lines === 1 ? 'Gewinnlinie' : 'Gewinnlinien'} · +${money(res.win)}${extra}`, 'win');
@@ -1139,7 +1142,7 @@ if (window.Auth && Auth.onChange) {
 // ── Gewinntabelle ───────────────────────────────────────────────────
 function trio(id) { return `<span class="trio">${`<svg viewBox="0 0 48 48" aria-hidden="true"><use href="#s-${id}"/></svg>`.repeat(3)}</span>`; }
 function renderPayTable() {
-  const many = M.lines.length > 1;
+  const many = M.lines.length > 1 && !M.cluster;
   const rows = M.syms.filter(s => s.m > 0 && !(M.noPay || []).includes(s.id))
     .map(s => `<tr><td>${trio(s.id)}</td><td class="txt">${s.name}</td><td>×${fmt(s.m)}</td></tr>`).join('');
   const rules = M.rules.map(r => { const [l, v] = r.split(';'); return `<tr><td class="txt" colspan="2">${l}</td><td class="rv">${v}</td></tr>`; }).join('');
@@ -1159,7 +1162,7 @@ function useMode(id) {
   if (state.betIdx > maxBetIdx()) state.betIdx = maxBetIdx();
   buildReels();
   $('cabinet').dataset.mode = M.id;
-  $('reels').classList.toggle('multi', M.lines.length > 1);
+  $('reels').classList.toggle('multi', M.lines.length > 1 || !!M.cluster);
   $('modeNote').textContent = M.note;
   renderPayTable();
 }

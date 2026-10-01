@@ -2,6 +2,8 @@
 // Spielmodi des Automaten: reine Regeln ohne DOM, damit sie sich auch in Node durchrechnen lassen.
 (function (root) {
   const FIVE = [[1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [2, 2, 2, 2, 2], [0, 1, 2, 1, 0], [2, 1, 0, 1, 2]]; // Zeile je Walze
+  // Cluster-Faktoren nach Größe (3 bis 9+), k stellt die Quote ein
+  const CL = k => ({ 3: 0.11 * k, 4: 0.28 * k, 5: 0.55 * k, 6: k, 7: 1.65 * k, 8: 2.75 * k, 9: 4.4 * k });
   const MAX_X = 200; // Gewinn pro Runde nie über das 200-Fache des Einsatzes
 
   const MODES = {
@@ -31,8 +33,8 @@
     },
 
     fruit: {
-      id: 'fruit', name: 'Fruchtfieber', tag: '5 Linien',
-      note: '5 Linien · Stern ist Wild (außer für die Sieben)',
+      id: 'fruit', name: 'Fruchtfieber', tag: 'Cluster',
+      note: 'Cluster-Gewinn · Stern ist Wild (außer für die Sieben)',
       reels: 5, lines: FIVE, top: 'seven', wild: 'star', wildPays: 'diamond', noWild: ['seven'],
       syms: [
         { id: 'seven',   name: 'Sieben',  w: 2,  m: 32 },
@@ -44,21 +46,20 @@
         { id: 'grape',   name: 'Traube',  w: 12, m: 2 },
         { id: 'bar',     name: 'BAR',     w: 13, m: 1.3 },
       ],
-      pair: 0.2, lenMult: { 4: 3, 5: 10 }, anyRun: true, strayPay: 0.1, splitPair: 0.02,
+      cluster: CL(0.9), pair: 0.01,
       rules: [
-        'Drei gleiche in Folge auf einer Linie;Wert × Linieneinsatz, egal wo sie beginnen',
-        'Vier / fünf gleiche in Folge;Wert ×3 / ×10',
-        'Weiteres gleiches Symbol auf der Linie;je ×0,1 des Werts dazu',
-        'Zwei gleiche nebeneinander;×0,2',
-        'Zwei gleiche getrennt;×0,02',
-        'Verschiedene Symbole auf einer Linie;Gewinne addieren sich',
+        'Gleiche Symbole, die sich berühren (oben, unten, seitlich);bilden ein Cluster, egal auf welcher Reihe',
+        'Zwei im Cluster;×0,01',
+        'Drei / vier / fünf im Cluster;Wert ×0,1 / ×0,25 / ×0,5',
+        'Sechs / sieben / acht / neun+ im Cluster;Wert ×0,9 / ×1,5 / ×2,5 / ×4',
+        'Mehrere Cluster;Gewinne addieren sich',
         'Stern;ersetzt alle außer Sieben',
       ],
     },
 
     enya: {
       id: 'enya', name: 'Enya Special', tag: 'Spezial',
-      note: '5 Linien · Enya ist Wild · nur 1 Stunde pro Tag',
+      note: 'Cluster-Gewinn · Enya ist Wild · nur 1 Stunde pro Tag',
       reels: 5, lines: FIVE, top: 'crown', wild: 'enya', wildPays: 'crown', expand: 2,
       syms: [
         { id: 'crown', name: 'Krone',  w: 2,  m: 15 },
@@ -69,17 +70,15 @@
         { id: 'star',  name: 'Stern',  w: 14, m: 1.2 },
         { id: 'enya',  name: 'Enya (Wild)', w: 3, m: 0 },
       ],
-      pair: 0.03, anyRun: true, strayPay: 0.1, splitPair: 0.01,
-      lenMult: { 4: 3, 5: 10 },
+      cluster: CL(0.55), pair: 0.01,
       scatter: { sym: 'enya', awards: { 4: 3, 5: 5, 6: 8, 7: 12 } },
       freeMult: 2, scatterLuck: true,
       rules: [
-        'Drei gleiche in Folge auf einer Linie;Wert × Linieneinsatz, egal wo sie beginnen',
-        'Vier / fünf gleiche in Folge;Wert ×3 / ×10',
-        'Weiteres gleiches Symbol auf der Linie;je ×0,1 des Werts dazu',
-        'Zwei gleiche nebeneinander;×0,03',
-        'Zwei gleiche getrennt;×0,01',
-        'Verschiedene Symbole auf einer Linie;Gewinne addieren sich',
+        'Gleiche Symbole, die sich berühren (oben, unten, seitlich);bilden ein Cluster, egal auf welcher Reihe',
+        'Zwei im Cluster;×0,01',
+        'Drei / vier / fünf im Cluster;Wert ×0,06 / ×0,15 / ×0,3',
+        'Sechs / sieben / acht / neun+ im Cluster;Wert ×0,55 / ×0,9 / ×1,5 / ×2,4',
+        'Mehrere Cluster;Gewinne addieren sich',
         'Enya;Wild, ersetzt alles',
         'Enya in der Mitte;füllt die ganze Walze',
         '4 / 5 / 6 / 7+ Enya irgendwo;3 / 5 / 8 / 12 Freispiele + 30 Sek ×1,5 Glück',
@@ -92,7 +91,7 @@
   // Auszahlungswerte sind per Simulation auf die Ziel-Quote nachgestellt (siehe RTP).
   const ALT = {
     classic: { 5: {
-      reels: 5, lines: [[1, 1, 1, 1, 1]], cluster: { 3: 0.11, 4: 0.28, 5: 0.55, 6: 1, 7: 1.65, 8: 2.75, 9: 4.4 }, clusterScale: 1, pair: 0.04,
+      reels: 5, lines: [[1, 1, 1, 1, 1]], cluster: CL(1), pair: 0.04,
       m: { seven: 100, diamond: 40, bell: 18, enya: 14, star: 9, cherry: 6, lemon: 4, grape: 4, bar: 2.5 },
       note: 'Cluster-Gewinn: Gleiche, die sich berühren, zählen · egal auf welcher Reihe',
       rules: [
@@ -106,7 +105,7 @@
       ],
     } },
     fruit: { 3: {
-      reels: 3, lines: FIVE.map(l => l.slice(0, 3)), lenMult: null, anyRun: false, pair: 1.2,
+      reels: 3, lines: FIVE.map(l => l.slice(0, 3)), cluster: null, lenMult: null, anyRun: false, pair: 1.2,
       m: { seven: 85, diamond: 34, bell: 17, cherry: 9, lemon: 7, grape: 5, bar: 4 },
       rules: [
         'Drei gleiche auf einer Linie;Wert × Linieneinsatz',
@@ -115,7 +114,7 @@
       ],
     } },
     enya: { 3: {
-      reels: 3, lines: FIVE.map(l => l.slice(0, 3)), lenMult: null, anyRun: false, expand: 1, pair: 0.4,
+      reels: 3, lines: FIVE.map(l => l.slice(0, 3)), cluster: null, lenMult: null, anyRun: false, expand: 1, pair: 0.4,
       m: { crown: 50, harp: 20, moon: 10, note: 6, wave: 3, star: 3 },
       scatter: { sym: 'enya', awards: { 3: 3, 4: 5, 5: 8, 6: 12 } },
       rules: [
@@ -248,30 +247,48 @@
     return null;
   }
 
-  // Cluster-Gewinn: zusammenhängende Gruppen gleicher Symbole (oben/unten/links/rechts), egal auf welcher Reihe
+  // Cluster-Gewinn: zusammenhängende Gruppen gleicher Symbole (oben/unten/links/rechts), egal auf welcher Reihe.
+  // Wilds schließen sich dem Cluster an, jedes Feld zählt aber nur einmal (teuerstes Symbol zuerst).
   function scoreCluster(mode, g) {
-    const seen = new Set(), found = [];
-    const R = g.length;
-    for (let i = 0; i < R; i++) for (let row = 0; row < 3; row++) {
-      if (seen.has(i * 3 + row)) continue;
-      const id = g[i][row], cells = [], stack = [[i, row]];
-      seen.add(i * 3 + row);
-      while (stack.length) {
-        const [x, y] = stack.pop();
-        cells.push([x, y]);
-        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-          const nx = x + dx, ny = y + dy;
-          if (nx < 0 || nx >= R || ny < 0 || ny > 2 || seen.has(nx * 3 + ny) || g[nx][ny] !== id) continue;
-          seen.add(nx * 3 + ny);
-          stack.push([nx, ny]);
+    const R = g.length, found = [], used = new Set();
+    const isW = id => !!mode.wild && id === mode.wild;
+    const fits = (id, base) => id === base || (isW(id) && !(mode.noWild && mode.noWild.includes(base)));
+    const flat = g.flat();
+    const reals = [...new Set(flat.filter(id => !isW(id) && !(mode.noPay && mode.noPay.includes(id))))].sort((x, y) => mode.by[y].m - mode.by[x].m);
+    if (mode.wild && !reals.length && flat.some(isW)) reals.push(mode.wildPays);
+    for (const b of reals) {
+      const seen = new Set();
+      let best = [];
+      for (let i = 0; i < R; i++) for (let row = 0; row < 3; row++) {
+        const k0 = i * 3 + row;
+        if (seen.has(k0) || used.has(k0) || !fits(g[i][row], b)) continue;
+        const cells = [], stack = [[i, row]];
+        seen.add(k0);
+        while (stack.length) {
+          const [x, y] = stack.pop();
+          cells.push([x, y]);
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const nx = x + dx, ny = y + dy, k = nx * 3 + ny;
+            if (nx < 0 || nx >= R || ny < 0 || ny > 2 || seen.has(k) || used.has(k) || !fits(g[nx][ny], b)) continue;
+            seen.add(k);
+            stack.push([nx, ny]);
+          }
         }
+        // Gruppe nur aus Wilds zählt nur für das Wild-Symbol (wildPays)
+        if (cells.length >= 2 && (cells.some(([x, y]) => g[x][y] === b) || (b === mode.wildPays && !flat.some(id => id === b)))) found.push({ b, cells });
       }
-      if (cells.length < 2 || (mode.noPay && mode.noPay.includes(id))) continue;
-      const n = cells.length;
-      const mult = n === 2 ? mode.pair : mode.by[id].m * mode.cluster[Math.min(n, 9)] * mode.clusterScale;
-      found.push({ mult, cells, sym: id, kind: n === 2 ? 'pair' : 'trio' });
     }
-    return found;
+    const out = [];
+    for (const b of reals) {
+      for (const f of found.filter(f => f.b === b)) {
+        const cells = f.cells.filter(([x, y]) => !used.has(x * 3 + y));
+        if (cells.length < 2) continue;
+        cells.forEach(([x, y]) => used.add(x * 3 + y));
+        const n = cells.length;
+        out.push({ mult: n === 2 ? mode.pair : mode.by[b].m * mode.cluster[Math.min(n, 9)], cells, sym: b, kind: n === 2 ? 'pair' : 'trio' });
+      }
+    }
+    return out;
   }
 
   // Rechnet ein Gitter (3 oder 5 Walzen à 3 Zeilen) aus (grid[walze][zeile]). Glück und Deckel kommen erst in finalWin.
@@ -283,7 +300,7 @@
       g[mode.expand] = g[mode.expand].map(() => mode.wild);
       out.expanded = true;
     }
-    const lineStake = stake / mode.lines.length;
+    const lineStake = mode.cluster ? stake : stake / mode.lines.length;
     let sum = 0;
     const hit = new Set();
     let best = null;
