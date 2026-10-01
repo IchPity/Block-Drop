@@ -463,6 +463,7 @@ async function spin() {
     banner(`${n} ${{ red: 'Rot', black: 'Schwarz', green: 'Grün' }[colorOf(n)]} · nichts getroffen.`, 'lose');
   }
   if (balance < CHIPS[0]) banner('Guthaben aufgebraucht. Drück DREHEN oder die Leertaste zum Aufladen.', 'warn');
+  if (syncMsg) { banner(syncMsg, 'warn'); syncMsg = ''; }
 }
 $('spin').addEventListener('click', spin);
 document.addEventListener('keydown', e => {
@@ -476,7 +477,7 @@ document.addEventListener('keyup', e => { if (e.code === 'Space') e.preventDefau
 
 // ── Konto / Wallet (Supabase) ───────────────────────────────────────
 const rpc = (fn, args) => Auth.client.rpc(fn, args || {});
-let pending = 0, chain = Promise.resolve();
+let pending = 0, chain = Promise.resolve(), syncMsg = '';
 function adopt(w) {
   if (!w || pending > 0 || !Number.isFinite(w.balance)) return;
   balance = w.balance;
@@ -487,7 +488,7 @@ function syncRound(bet, win) {
   chain = chain.then(async () => {
     const { data, error } = await rpc('casino_round', { p_bet: bet, p_paid: bet, p_win: win });
     pending--;
-    if (error) { console.warn('[Roulette]', error.message); await loadWallet(); return; }
+    if (error) { console.warn('[Roulette]', error.message); syncMsg = 'Die Runde wurde vom Konto abgelehnt (' + error.message + '), dein Guthaben wurde zurückgesetzt.'; await loadWallet(); if (!spinning) banner(syncMsg, 'warn'); return; }
     adopt(data);
   });
 }
