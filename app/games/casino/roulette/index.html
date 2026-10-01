@@ -318,17 +318,17 @@ function render(shownBalance) {
   sp.disabled = spinning || (!broke && !t);
 }
 
-function place(k, amount) {
+function place(k, amount, allIn) {
   if (spinning) return;
   const t = total();
   if (amount <= 0) { banner('Es ist nichts mehr zum Setzen übrig.', 'warn'); return; }
   if (t + amount > balance) { banner('Dafür reicht das Guthaben nicht.', 'warn'); return; }
-  if (t + amount > MAX_TOTAL) { banner(`Pro Runde höchstens ${money(MAX_TOTAL)} setzen.`, 'warn'); return; }
+  if (!allIn && t + amount > MAX_TOTAL) { banner(`Pro Runde höchstens ${money(MAX_TOTAL)} setzen.`, 'warn'); return; }
   bets[k] = (bets[k] || 0) + amount;
   stack.push([k, amount]);
   render();
 }
-$('board').addEventListener('click', e => { const b = e.target.closest('.cell'); if (b) place(b.dataset.k, chipIdx < 0 ? Math.min(balance, MAX_TOTAL) - total() : CHIPS[chipIdx]); });
+$('board').addEventListener('click', e => { const b = e.target.closest('.cell'); if (b) place(b.dataset.k, chipIdx < 0 ? balance - total() : CHIPS[chipIdx], chipIdx < 0); });
 $('board').addEventListener('contextmenu', e => {
   const b = e.target.closest('.cell'); if (!b) return;
   e.preventDefault();
