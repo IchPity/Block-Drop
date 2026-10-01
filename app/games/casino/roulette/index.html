@@ -122,6 +122,7 @@
     <p class="hero-sub" id="heroSub">Europäisches Roulette mit einer Null, Spielgeld und kein Risiko. Es gilt dasselbe Guthaben wie am Automaten.</p>
     <a class="more" href="../blackjack/">Blackjack &rarr;</a> <a class="more" href="../">Automat &rarr;</a>
     <p class="save-warn" id="saveWarn" hidden>Dein Browser erlaubt kein Speichern (privates Fenster?). Das Guthaben geht beim Schließen der Seite verloren.</p>
+    <p class="save-warn" id="syncWarn" role="alert" hidden></p>
   </header>
 
   <section class="table" id="tbl" aria-label="Roulette-Tisch">
@@ -488,7 +489,8 @@ function syncRound(bet, win) {
   chain = chain.then(async () => {
     const { data, error } = await rpc('casino_round', { p_bet: bet, p_paid: bet, p_win: win });
     pending--;
-    if (error) { console.warn('[Roulette]', error.message); syncMsg = 'Die Runde wurde vom Konto abgelehnt (' + error.message + '), dein Guthaben wurde zurückgesetzt.'; await loadWallet(); if (!spinning) banner(syncMsg, 'warn'); return; }
+    if (error) { console.warn('[Roulette]', error.message); syncMsg = 'Die Runde wurde vom Konto abgelehnt (' + error.message + '), dein Guthaben wurde zurückgesetzt.'; $('syncWarn').textContent = syncMsg + ' Bitte melde diesen Text.'; $('syncWarn').hidden = false; await loadWallet(); if (!spinning) banner(syncMsg, 'warn'); return; }
+    $('syncWarn').hidden = true;
     adopt(data);
   });
 }

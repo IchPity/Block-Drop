@@ -120,6 +120,7 @@
     <p class="hero-sub" id="heroSub">Schlag den Geber, ohne über 21 zu kommen. Spielgeld und kein Risiko, es gilt dasselbe Guthaben wie am Automaten.</p>
     <a class="more" href="../roulette/">Roulette &rarr;</a> <a class="more" href="../">Automat &rarr;</a>
     <p class="save-warn" id="saveWarn" hidden>Dein Browser erlaubt kein Speichern (privates Fenster?). Das Guthaben geht beim Schließen der Seite verloren.</p>
+    <p class="save-warn" id="syncWarn" role="alert" hidden></p>
   </header>
 
   <section class="table" id="tbl" aria-label="Blackjack-Tisch">
@@ -298,7 +299,8 @@ function syncRound(b, paid, win) {
   chain = chain.then(async () => {
     const { data, error } = await rpc('casino_round', { p_bet: b, p_paid: paid, p_win: win });
     pending--;
-    if (error) { console.warn('[Blackjack]', error.message); await loadWallet(); return; }
+    if (error) { console.warn('[Blackjack]', error.message); $('syncWarn').textContent = 'Das Konto hat eine Runde abgelehnt (' + error.message + '), dein Guthaben wurde zurückgesetzt. Bitte melde diesen Text.'; $('syncWarn').hidden = false; await loadWallet(); return; }
+    $('syncWarn').hidden = true;
     adopt(data);
   });
 }
