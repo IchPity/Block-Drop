@@ -35,20 +35,23 @@
       note: '5 Linien · Stern ist Wild (außer für die Sieben)',
       reels: 5, lines: FIVE, top: 'seven', wild: 'star', wildPays: 'diamond', noWild: ['seven'],
       syms: [
-        { id: 'seven',   name: 'Sieben',  w: 2,  m: 50 },
-        { id: 'diamond', name: 'Diamant', w: 3,  m: 20 },
-        { id: 'bell',    name: 'Glocke',  w: 5,  m: 10 },
+        { id: 'seven',   name: 'Sieben',  w: 2,  m: 32 },
+        { id: 'diamond', name: 'Diamant', w: 3,  m: 13 },
+        { id: 'bell',    name: 'Glocke',  w: 5,  m: 6.5 },
         { id: 'star',    name: 'Stern (Wild)', w: 5, m: 0 },
-        { id: 'cherry',  name: 'Kirsche', w: 9,  m: 5 },
-        { id: 'lemon',   name: 'Zitrone', w: 11, m: 4 },
-        { id: 'grape',   name: 'Traube',  w: 12, m: 3 },
-        { id: 'bar',     name: 'BAR',     w: 13, m: 2 },
+        { id: 'cherry',  name: 'Kirsche', w: 9,  m: 3 },
+        { id: 'lemon',   name: 'Zitrone', w: 11, m: 2.3 },
+        { id: 'grape',   name: 'Traube',  w: 12, m: 2 },
+        { id: 'bar',     name: 'BAR',     w: 13, m: 1.3 },
       ],
-      pair: 1.0, lenMult: { 4: 3, 5: 10 },
+      pair: 0.2, lenMult: { 4: 3, 5: 10 }, anyRun: true, strayPay: 0.1, splitPair: 0.02,
       rules: [
-        'Drei gleiche auf einer Linie;Wert × Linieneinsatz',
-        'Vier / fünf gleiche;Wert ×3 / ×10',
-        'Zwei gleiche von links;×1,2',
+        'Drei gleiche in Folge auf einer Linie;Wert × Linieneinsatz, egal wo sie beginnen',
+        'Vier / fünf gleiche in Folge;Wert ×3 / ×10',
+        'Weiteres gleiches Symbol auf der Linie;je ×0,1 des Werts dazu',
+        'Zwei gleiche nebeneinander;×0,2',
+        'Zwei gleiche getrennt;×0,02',
+        'Verschiedene Symbole auf einer Linie;Gewinne addieren sich',
         'Stern;ersetzt alle außer Sieben',
       ],
     },
@@ -58,22 +61,25 @@
       note: '5 Linien · Enya ist Wild · nur 1 Stunde pro Tag',
       reels: 5, lines: FIVE, top: 'crown', wild: 'enya', wildPays: 'crown', expand: 2,
       syms: [
-        { id: 'crown', name: 'Krone',  w: 2,  m: 25 },
-        { id: 'harp',  name: 'Harfe',  w: 3,  m: 10 },
-        { id: 'moon',  name: 'Mond',   w: 5,  m: 5 },
-        { id: 'note',  name: 'Note',   w: 8,  m: 3 },
-        { id: 'wave',  name: 'Welle',  w: 11, m: 2 },
-        { id: 'star',  name: 'Stern',  w: 14, m: 2 },
+        { id: 'crown', name: 'Krone',  w: 2,  m: 15 },
+        { id: 'harp',  name: 'Harfe',  w: 3,  m: 6 },
+        { id: 'moon',  name: 'Mond',   w: 5,  m: 3 },
+        { id: 'note',  name: 'Note',   w: 8,  m: 2 },
+        { id: 'wave',  name: 'Welle',  w: 11, m: 1.2 },
+        { id: 'star',  name: 'Stern',  w: 14, m: 1.2 },
         { id: 'enya',  name: 'Enya (Wild)', w: 3, m: 0 },
       ],
-      pair: 0.1,
+      pair: 0.03, anyRun: true, strayPay: 0.1, splitPair: 0.01,
       lenMult: { 4: 3, 5: 10 },
       scatter: { sym: 'enya', awards: { 4: 3, 5: 5, 6: 8, 7: 12 } },
       freeMult: 2, scatterLuck: true,
       rules: [
-        'Drei gleiche auf einer Linie;Wert × Linieneinsatz',
-        'Vier / fünf gleiche;Wert ×3 / ×10',
-        'Zwei gleiche von links;×0,1',
+        'Drei gleiche in Folge auf einer Linie;Wert × Linieneinsatz, egal wo sie beginnen',
+        'Vier / fünf gleiche in Folge;Wert ×3 / ×10',
+        'Weiteres gleiches Symbol auf der Linie;je ×0,1 des Werts dazu',
+        'Zwei gleiche nebeneinander;×0,03',
+        'Zwei gleiche getrennt;×0,01',
+        'Verschiedene Symbole auf einer Linie;Gewinne addieren sich',
         'Enya;Wild, ersetzt alles',
         'Enya in der Mitte;füllt die ganze Walze',
         '4 / 5 / 6 / 7+ Enya irgendwo;3 / 5 / 8 / 12 Freispiele + 30 Sek ×1,5 Glück',
@@ -102,7 +108,7 @@
       ],
     } },
     fruit: { 3: {
-      reels: 3, lines: FIVE.map(l => l.slice(0, 3)), lenMult: null, pair: 1.2,
+      reels: 3, lines: FIVE.map(l => l.slice(0, 3)), lenMult: null, anyRun: false, pair: 1.2,
       m: { seven: 85, diamond: 34, bell: 17, cherry: 9, lemon: 7, grape: 5, bar: 4 },
       rules: [
         'Drei gleiche auf einer Linie;Wert × Linieneinsatz',
@@ -111,7 +117,7 @@
       ],
     } },
     enya: { 3: {
-      reels: 3, lines: FIVE.map(l => l.slice(0, 3)), lenMult: null, expand: 1, pair: 0.4,
+      reels: 3, lines: FIVE.map(l => l.slice(0, 3)), lenMult: null, anyRun: false, expand: 1, pair: 0.4,
       m: { crown: 50, harp: 20, moon: 10, note: 6, wave: 3, star: 3 },
       scatter: { sym: 'enya', awards: { 3: 3, 4: 5, 5: 8, 6: 12 } },
       rules: [
@@ -201,6 +207,35 @@
     const isW = id => id === mode.wild;
     const subst = base => !(mode.noWild && mode.noWild.includes(base));
     const fits = (id, base) => id === base || (isW(id) && subst(base));
+    if (mode.anyRun) { // Serie egal wo, Einzelne dazu, verschiedene Symbole addieren sich (Wilds nur für ein Symbol)
+      const used = new Set(), found = [];
+      const reals = [...new Set(ids.filter(id => !isW(id)))].sort((a, b) => mode.by[b].m - mode.by[a].m);
+      if (!reals.length) reals.push(mode.wildPays);
+      for (const b of reals) {
+        let bestRun = null;
+        for (let i = 0; i < ids.length;) {
+          if (used.has(i) || !fits(ids[i], b)) { i++; continue; }
+          let j = i; while (j < ids.length && !used.has(j) && fits(ids[j], b)) j++;
+          if (ids.slice(i, j).some(id => id === b || reals.length === 1 && b === mode.wildPays) && (!bestRun || j - i > bestRun[1] - bestRun[0])) bestRun = [i, j];
+          i = j;
+        }
+        const own = ids.map((id, i) => (id === b && !used.has(i) ? i : -1)).filter(i => i >= 0);
+        let r = null;
+        if (bestRun && bestRun[1] - bestRun[0] >= 3) {
+          const n = bestRun[1] - bestRun[0], cells = ids.slice(bestRun[0], bestRun[1]).map((_, x) => bestRun[0] + x);
+          const stray = own.filter(i => !cells.includes(i));
+          r = { mult: mode.by[b].m * ((mode.lenMult && mode.lenMult[n]) || 1) + mode.by[b].m * mode.strayPay * stray.length, cells: cells.concat(stray), sym: b, kind: 'trio' };
+        } else if (bestRun && bestRun[1] - bestRun[0] === 2 && mode.pair) {
+          r = { mult: mode.pair, cells: [bestRun[0], bestRun[0] + 1], sym: b, kind: 'pair' };
+        } else if (own.length === 2 && mode.splitPair) {
+          r = { mult: mode.splitPair, cells: own, sym: b, kind: 'pair' };
+        }
+        if (r) { r.cells.forEach(c => used.add(c)); found.push(r); }
+      }
+      if (!found.length) return null;
+      const top = found.reduce((a, b) => (b.mult > a.mult ? b : a));
+      return { mult: found.reduce((t, r) => t + r.mult, 0), cells: found.flatMap(r => r.cells), sym: top.sym, kind: top.kind };
+    }
     // Serie von links: Basis ist das erste echte Symbol (nur Wilds: wildPays), gezählt wird, solange es passt
     const base = ids.find(id => !isW(id)) || mode.wildPays;
     let k = 0;
