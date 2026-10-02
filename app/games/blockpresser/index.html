@@ -133,14 +133,59 @@
     .goal { margin-top: 10px; height: 6px; border-radius: 3px; background: rgba(238,242,234,.08); overflow: hidden; }
     .goal > i { display: block; height: 100%; width: 0; background: var(--marquee); transition: width .3s; }
     .goal-lbl { font-size: 11px; color: var(--chalk-faint); margin-top: 4px; font-family: 'Share Tech Mono', monospace; }
-    .ending { position: fixed; inset: 0; z-index: 100; display: none; place-items: center; padding: 20px; background: rgba(8,12,8,.88); }
-    .ending.show { display: grid; }
-    .ending-box { max-width: 420px; text-align: center; background: var(--board-raised); border: 2px solid var(--marquee); border-radius: 18px; padding: 28px 22px; }
-    .ending-box .big { font-size: 56px; line-height: 1; }
-    .ending-box h2 { font-family: 'Baloo 2', sans-serif; font-size: 26px; color: var(--chalk); margin: 10px 0 8px; text-transform: none; letter-spacing: 0; }
-    .ending-box p { color: var(--chalk-dim); font-size: 14px; line-height: 1.5; margin-bottom: 16px; }
-    .ending-box button { font: inherit; font-weight: 700; padding: 10px 18px; border-radius: 10px; border: 0; cursor: pointer; background: var(--marquee); color: #0e130d; }
-    @media (prefers-reduced-motion: reduce) { .bell { animation: none; } .pop { animation-duration: .01s; } }
+    /* ── Belohnungs-Screen ── */
+    .ending {
+      --rc: #ffb703; position: fixed; inset: 0; z-index: 100; display: none; place-items: center; padding: 20px; overflow: hidden;
+      background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--rc) 38%, #050805), rgba(5,8,5,.97) 72%);
+    }
+    .ending.show { display: grid; animation: fadein .35s ease-out; }
+    @keyframes fadein { from { opacity: 0; } }
+    .rays {
+      position: absolute; left: 50%; top: 40%; width: 1500px; height: 1500px; margin: -750px 0 0 -750px; pointer-events: none;
+      background: repeating-conic-gradient(color-mix(in srgb, var(--rc) 30%, transparent) 0 8deg, transparent 8deg 22.5deg);
+      -webkit-mask-image: radial-gradient(circle, #000 0, transparent 62%); mask-image: radial-gradient(circle, #000 0, transparent 62%);
+      animation: spin 30s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .ending-box {
+      position: relative; z-index: 2; max-width: 440px; text-align: center; background: rgba(20,28,19,.92);
+      border: 3px solid var(--rc); border-radius: 22px; padding: 30px 24px 26px;
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--rc) 18%, transparent), 0 0 70px color-mix(in srgb, var(--rc) 55%, transparent);
+      animation: boxin .65s cubic-bezier(.2, 1.5, .4, 1);
+    }
+    @keyframes boxin { from { transform: scale(.3) rotate(-6deg); opacity: 0; } }
+    .ending-tag { font-family: 'Share Tech Mono', monospace; font-size: 12px; letter-spacing: .25em; color: var(--rc); text-transform: uppercase; }
+    .ending-box .big { font-size: 84px; line-height: 1.1; margin: 8px 0 2px; filter: drop-shadow(0 0 22px var(--rc)); animation: bigpop 1s cubic-bezier(.2, 1.6, .4, 1) .15s both, bob 2.4s ease-in-out 1.2s infinite; }
+    @keyframes bigpop { from { transform: scale(0) rotate(-40deg); } }
+    @keyframes bob { 50% { transform: translateY(-8px) scale(1.06); } }
+    .ending-box h2 { font-family: 'Baloo 2', sans-serif; font-size: 28px; line-height: 1.15; color: var(--chalk); margin: 6px 0 8px; text-transform: none; letter-spacing: 0; text-shadow: 0 0 24px var(--rc); }
+    .ending-box p { color: var(--chalk-dim); font-size: 14px; line-height: 1.5; margin-bottom: 14px; }
+    .rew { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 18px; }
+    .rew span {
+      font-family: 'Share Tech Mono', monospace; font-size: 13px; font-weight: 700; padding: 6px 11px; border-radius: 999px;
+      color: #0e130d; background: var(--rc); animation: chipin .5s cubic-bezier(.2, 1.6, .4, 1) both;
+    }
+    @keyframes chipin { from { transform: translateY(14px) scale(.4); opacity: 0; } }
+    .ending-box button { font: inherit; font-weight: 800; font-size: 15px; padding: 11px 24px; border-radius: 12px; border: 0; cursor: pointer; background: var(--rc); color: #0e130d; box-shadow: 0 5px 0 rgba(0,0,0,.4); }
+    .ending-box button:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0,0,0,.4); }
+
+    /* ── Menü (Esc) ── */
+    .menu { position: fixed; inset: 0; z-index: 90; display: none; place-items: center; padding: 16px; background: rgba(8,12,8,.88); overflow-y: auto; }
+    .menu.show { display: grid; }
+    .menu-box { width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; background: var(--board-raised); border: 2px solid var(--marquee); border-radius: 18px; padding: 20px; }
+    .menu-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .menu-head h2 { margin: 0; }
+    .sp-bal { font-family: 'Baloo 2', sans-serif; font-size: 20px; font-weight: 800; color: var(--marquee); margin-bottom: 12px; }
+    .sp-shop { display: flex; flex-direction: column; gap: 8px; }
+    .spu .up-cost::before { content: '⭐ '; }
+    .menu-reset { margin-top: 18px; padding: 14px; border-radius: 12px; border: 1px dashed rgba(233,69,96,.6); background: rgba(233,69,96,.07); text-align: center; }
+    .menu-reset p { font-size: 13px; color: var(--chalk-dim); line-height: 1.5; margin-bottom: 10px; }
+    .menu-reset button { font: inherit; font-weight: 700; font-size: 13px; padding: 9px 14px; border-radius: 10px; cursor: pointer; color: #fff; background: #e94560; border: 0; }
+    .menu-reset button:disabled { background: rgba(238,242,234,.08); color: var(--chalk-faint); cursor: not-allowed; }
+    .up.flash { animation: flash .9s ease-out; }
+    @keyframes flash { 0% { box-shadow: 0 0 0 0 rgba(255,183,3,.9); background: rgba(255,183,3,.35); } 100% { box-shadow: 0 0 0 18px rgba(255,183,3,0); } }
+    @media (prefers-reduced-motion: reduce) { .bell, .rays, .ending-box, .ending-box .big, .rew span, .up.flash { animation: none; } .pop { animation-duration: .01s; } }
   </style>
 </head>
 <body>
@@ -176,7 +221,7 @@
     </div>
     <div class="tools">
       <button class="tool" id="save">Speichern</button>
-      <button class="tool" id="reset">Zurücksetzen</button>
+      <button class="tool" id="reset">Menü (Esc)</button>
     </div>
   </section>
 
@@ -190,11 +235,28 @@
 </main>
 
 <div class="ending" id="ending" role="dialog" aria-modal="true" aria-labelledby="ending-h">
+  <div class="rays"></div>
+  <canvas id="confetti"></canvas>
   <div class="ending-box">
+    <div class="ending-tag">Meilenstein erreicht</div>
     <div class="big" id="ending-ico">🏆</div>
     <h2 id="ending-h"></h2>
     <p id="ending-p"></p>
+    <div class="rew" id="ending-rew"></div>
     <button id="ending-ok">Weiterspielen</button>
+  </div>
+</div>
+
+<div class="menu" id="menu" role="dialog" aria-modal="true" aria-labelledby="menu-h">
+  <div class="menu-box">
+    <div class="menu-head"><h2 id="menu-h">Menü</h2><button class="tool" id="menu-x">✕ Schließen (Esc)</button></div>
+    <div class="sp-bal">⭐ Spezialpunkte: <span id="sp">0</span></div>
+    <div class="sp-shop" id="sp-shop"></div>
+    <div class="menu-reset">
+      <p id="reset-info"></p>
+      <button id="prestige"></button>
+    </div>
+    <div class="tools"><button class="tool" id="save2">Speichern</button></div>
   </div>
 </div>
 
@@ -223,17 +285,18 @@
   const OFFLINE_RATE = 0.5;
   const MATURA_BONUS = 15; // % pro Zeugnispunkt
 
-  const fresh = () => ({ blocks: 0, total: 0, life: 0, pts: 0, clicks: 0, owned: {}, last: Date.now(), start: Date.now() });
+  const fresh = () => ({ blocks: 0, total: 0, life: 0, allTime: 0, pts: 0, sp: 0, up: {}, reached: {}, clicks: 0, owned: {}, last: Date.now(), start: Date.now() });
   let S = fresh();
 
   const $ = id => document.getElementById(id);
   const own = id => S.owned[id] || 0;
-  const cost = u => Math.ceil(u.base * Math.pow(GROWTH, own(u.id)));
+  const lv = id => (S.up && S.up[id]) || 0;
+  const cost = u => Math.ceil(u.base * Math.pow(GROWTH, own(u.id)) * Math.max(0.5, 1 - 0.04 * lv('cheap')));
 
   let buffUntil = 0, buffMult = 1;
   const buffed = () => Date.now() < buffUntil;
   const mult = () => (buffed() ? buffMult : 1);
-  const earn = n => { S.blocks += n; S.total += n; S.life += n; };
+  const earn = n => { S.blocks += n; S.total += n; S.life += n; S.allTime = (S.allTime || 0) + n; };
 
   // Meilensteine: ab 10 / 25 / 50 / 100 / 200 Stück verdoppelt sich die Leistung dieser Maschine
   const MILES = [10, 25, 50, 100, 200];
@@ -243,8 +306,11 @@
   const maturaMult = () => 1 + MATURA_BONUS / 100 * (S.pts || 0);
   const maturaGain = () => S.total >= MATURA_MIN ? Math.floor(Math.sqrt(S.total / 1e6)) : 0;
 
-  const clickPower = () => (1 + own('finger') * milestoneMult(UPS[0])) * maturaMult() * mult();
-  const bps = () => UPS.reduce((a, u) => a + (u.bps || 0) * own(u.id) * milestoneMult(u), 0) * maturaMult() * mult();
+  // Dauerhafte Boni: Matura-Punkte, Gold-Presse (Spezialpunkte), +10 % je erreichtem Meilenstein
+  const msCount = () => Object.keys(S.reached || {}).length;
+  const bonusMult = () => maturaMult() * (1 + 0.5 * lv('gold')) * (1 + 0.1 * msCount());
+  const clickPower = () => (1 + own('finger') * milestoneMult(UPS[0])) * Math.pow(1.5, lv('click')) * bonusMult() * mult();
+  const bps = () => UPS.reduce((a, u) => a + (u.bps || 0) * own(u.id) * milestoneMult(u), 0) * bonusMult() * mult();
 
   const SUF = ['', 'Tsd', 'Mio', 'Mrd', 'Bio', 'Brd', 'Trl'];
   function fmt(n) {
@@ -263,8 +329,11 @@
       if (raw && typeof raw.blocks === 'number') {
         S = Object.assign(fresh(), raw);
         if (!(S.life >= S.total)) S.life = S.total;
+        if (!(S.allTime >= S.life)) S.allTime = S.life;
+        if (!S.up) S.up = {};
+        if (!S.reached) S.reached = {};
         const away = Math.max(0, Math.min((Date.now() - S.last) / 1000, 8 * 3600));
-        const gain = bps() * away * OFFLINE_RATE; // offline nur zur Hälfte, damit aktives Spielen lohnt
+        const gain = bps() * away * (OFFLINE_RATE + 0.1 * lv('night')); // offline nur zur Hälfte, damit aktives Spielen lohnt
         if (gain >= 1) { earn(gain); toast('Willkommen zurück! Während du weg warst: +' + fmt(gain) + ' Blöcke'); }
       }
     } catch (e) {}
@@ -288,6 +357,10 @@
       if (S.blocks < c) return;
       S.blocks -= c; S.owned[u.id] = own(u.id) + 1;
       btn.blur(); // Leertaste soll danach wieder den Block pressen, nicht nochmal kaufen
+      if (MILES.includes(own(u.id))) {
+        btn.classList.remove('flash'); void btn.offsetWidth; btn.classList.add('flash');
+        toast('🔥 Meilenstein! ' + u.name + ' ×' + milestoneMult(u) + ' Leistung');
+      }
       render(); save();
     });
   }
@@ -302,13 +375,13 @@
       el.querySelector('.up-cost').textContent = fmt(c);
       el.querySelector('.up-own').textContent = own(u.id);
       const m = nextMile(u), x = milestoneMult(u);
-      el.querySelector('.up-mile').textContent = (u.bps && own(u.id) ? fmt(u.bps * own(u.id) * x * maturaMult()) + '/s · ' : '') + (x > 1 ? '×' + x + ' aktiv · ' : '') + (m ? 'bei ' + m + ' Stück ×2' : 'Maximal ausgebaut');
+      el.querySelector('.up-mile').textContent = (u.bps && own(u.id) ? fmt(u.bps * own(u.id) * x * bonusMult()) + '/s · ' : '') + (x > 1 ? '×' + x + ' aktiv · ' : '') + (m ? 'bei ' + m + ' Stück ×2' : 'Maximal ausgebaut');
     });
     const mg = maturaGain();
     $('matura').disabled = mg < 1;
     $('matura-txt').textContent = mg >= 1
       ? 'Matura ablegen: +' + mg + ' Zeugnispunkt' + (mg > 1 ? 'e' : '') + ' (+' + (mg * MATURA_BONUS) + ' % dauerhaft)'
-      : 'Matura ab 10 Mio. Blöcken in diesem Durchlauf';
+      : 'Matura ab 10 Mio. Blöcken (Werkstätten bleiben)';
     $('pts').textContent = (S.pts || 0) ? 'Zeugnispunkte: ' + S.pts + ' (×' + maturaMult().toFixed(2).replace('.', ',') + ' auf alles)' : '';
     if (mg >= 1) $('pts').textContent += ((S.pts || 0) ? ' · ' : '') + 'Nächster Punkt bei ' + fmt(Math.pow(mg + 1, 2) * 1e6) + ' Blöcken';
     const goal = S.life >= UNI_GOAL ? END_GOAL : UNI_GOAL;
@@ -316,6 +389,7 @@
     $('goal-lbl').textContent = S.life >= END_GOAL ? '🏆 Durchgespielt — Schulleben komplett'
       : (S.life >= UNI_GOAL ? '🔧 Hausmeister Jürgen · Weg zum Ende: ' : 'Weg zum Uni-Abschluss: ') + fmt(S.life) + ' / ' + fmt(goal);
     checkAchievements();
+    if (menuOpen()) updateMenu();
     const mins = Math.floor((Date.now() - S.start) / 60000);
     $('stats').innerHTML = 'Pro Klick: <b>' + fmt(clickPower()) + '</b> · Geklickt: ' + fmt(S.clicks) +
       '<br>Insgesamt gepresst: ' + fmt(S.life) + ' · Spielzeit: ' + mins + ' Min.';
@@ -339,7 +413,7 @@
     press(e.clientX || r.left + r.width / 2, e.clientY || r.top + r.height / 2);
   });
   document.addEventListener('keydown', e => {
-    if (e.code === 'Space' && document.activeElement === document.body) {
+    if (e.code === 'Space' && document.activeElement === document.body && !menuOpen() && !rewardOpen()) {
       e.preventDefault();
       if (e.repeat) return;
       const b = $('block'), r = b.getBoundingClientRect();
@@ -356,7 +430,7 @@
       b.style.top = (18 + Math.random() * 60) + 'vh';
       b.classList.add('show');
       b.timeout = setTimeout(() => { b.classList.remove('show'); scheduleBell(); }, 12000);
-    }, 45000 + Math.random() * 75000);
+    }, (45000 + Math.random() * 75000) * (1 - 0.12 * lv('bell')));
   }
   $('bell').addEventListener('click', () => {
     const b = $('bell'); clearTimeout(b.timeout); b.classList.remove('show');
@@ -386,8 +460,8 @@
 
   $('matura').addEventListener('click', () => {
     const g = maturaGain(); if (g < 1) return;
-    if (!confirm('Matura ablegen? Blöcke und Maschinen werden zurückgesetzt, du bekommst dauerhaft +' + (g * MATURA_BONUS) + ' % auf alles.')) return;
-    S.pts = (S.pts || 0) + g; S.blocks = 0; S.total = 0; S.owned = {};
+    if (!confirm('Matura ablegen? Deine Werkstätten und Meilensteine bleiben, nur die Blöcke werden zurückgesetzt. Du bekommst dauerhaft +' + (g * MATURA_BONUS) + ' % auf alles.')) return;
+    S.pts = (S.pts || 0) + g; S.blocks = 0; S.total = 0;
     grant('bp_matura'); render(); save();
   });
 
@@ -411,33 +485,140 @@
     if (window.showAchToast) window.showAchToast(def);
     if (window.Auth && window.Auth.user && window.Auth.saveAchievements) window.Auth.saveAchievements(list).catch(() => {});
   }
-  function showEnding(ico, title, text) {
-    $('ending-ico').textContent = ico; $('ending-h').textContent = title; $('ending-p').textContent = text;
-    $('ending').classList.add('show');
+  // ── Meilensteine mit Belohnungs-Screen (+10 % auf alles je Meilenstein, plus Sofort-Geschenk) ──
+  const MS = [
+    { id: 'm1k',   at: 1e3, ico: '🏭', col: '#4ade80', title: 'Kleinbetrieb eröffnet!',  text: '1.000 Blöcke gepresst. In der Werkstatt brummt es zum ersten Mal richtig.' },
+    { id: 'm10k',  at: 1e4, ico: '⚙️', col: '#38bdf8', title: 'Serienproduktion läuft!', text: '10.000 Blöcke. Das ist keine Bastelei mehr, das ist ein Betrieb.' },
+    { id: 'm100k', at: 1e5, ico: '🚚', col: '#fb923c', title: 'Die Lieferwagen rollen!', text: '100.000 Blöcke. Die ganze Schule wird jetzt von dir beliefert.', extra: 'Menü (Esc) freigeschaltet' },
+    { id: 'm1m',   at: 1e6, ico: '💎', col: '#a78bfa', title: 'Block-Millionär!',        text: 'Eine Million Blöcke. Selbst der Direktor schaut neidisch.' },
+    { id: 'm10m',  at: 1e7, ico: '🎓', col: '#ffb703', title: 'Matura-Reife!',           text: '10 Millionen Blöcke. Die Matura ist freigeschaltet — und deine Werkstätten darfst du dabei behalten!', extra: 'Matura freigeschaltet' },
+    { id: 'm100m', at: 1e8, ico: '🔧', col: '#e94560', title: 'Uni geschafft — du bist jetzt Hausmeister Jürgen!', text: '100 Millionen Blöcke, Abschluss in der Tasche … und der Schulwart geht in Pension. Du übernimmst seinen Schlüsselbund. Jetzt gehört die ganze Schule dir.', extra: 'Schlüsselbund erhalten' },
+    { id: 'm500m', at: 5e8, ico: '🏆', col: '#ffd60a', title: 'Schulleben komplett!',    text: '500 Millionen Blöcke — von der Schulbank bis zum Hausmeister. Block Presser ist durchgespielt. Presse frei weiter, die Bestenliste zählt mit.', extra: 'Durchgespielt' },
+  ];
+  let rewardQueue = [];
+  const rewardOpen = () => $('ending').classList.contains('show');
+
+  function confetti(col) {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const c = $('confetti'), x = c.getContext('2d'), id = ++confetti.id;
+    c.width = innerWidth; c.height = innerHeight;
+    const cols = [col, '#ffffff', '#ffb703', '#e94560', '#38bdf8', '#4ade80'];
+    const burst = n => Array.from({ length: n }, () => ({
+      x: innerWidth / 2, y: innerHeight * 0.4, vx: (Math.random() - .5) * 18, vy: -Math.random() * 17 - 4,
+      s: 6 + Math.random() * 8, r: Math.random() * 6, vr: (Math.random() - .5) * .4, c: cols[Math.random() * cols.length | 0],
+    }));
+    let P = burst(170);
+    setTimeout(() => { if (id === confetti.id) P = P.concat(burst(90)); }, 700);
+    (function f() {
+      x.clearRect(0, 0, c.width, c.height);
+      if (id !== confetti.id || !rewardOpen()) return;
+      P = P.filter(p => p.y < innerHeight + 30);
+      P.forEach(p => {
+        p.vy += .35; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+        x.save(); x.translate(p.x, p.y); x.rotate(p.r); x.fillStyle = p.c; x.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); x.restore();
+      });
+      requestAnimationFrame(f);
+    })();
+  }
+  confetti.id = 0;
+
+  function showReward(m, gift) {
+    const box = $('ending');
+    box.style.setProperty('--rc', m.col);
+    $('ending-ico').textContent = m.ico; $('ending-h').textContent = m.title; $('ending-p').textContent = m.text;
+    const chips = ['+10 % auf alles', '🎁 +' + fmt(gift) + ' Blöcke'];
+    if (m.extra) chips.unshift('✨ ' + m.extra);
+    $('ending-rew').innerHTML = chips.map((t, i) => '<span style="animation-delay:' + (0.5 + i * 0.25) + 's">' + t + '</span>').join('');
+    box.classList.add('show');
+    $('ending-ok').focus();
+    confetti(m.col);
+  }
+  function nextReward() {
+    $('ending').classList.remove('show');
+    $('ending-ok').blur();
+    if (rewardQueue.length) { const r = rewardQueue.shift(); showReward(r.m, r.gift); }
+  }
+  function checkMilestones() {
+    const fresh = MS.filter(m => S.life >= m.at && !S.reached[m.id]);
+    if (!fresh.length) return;
+    fresh.forEach(m => { S.reached[m.id] = true; });
+    // Nach dem Laden eines alten Spielstands nicht alle Screens hintereinander zeigen
+    const show = fresh.length > 2 ? fresh.slice(-1) : fresh;
+    show.forEach(m => {
+      const gift = Math.max(bps() * 600, clickPower() * 100);
+      earn(gift);
+      if (rewardOpen()) rewardQueue.push({ m, gift }); else showReward(m, gift);
+    });
+    save();
   }
   function checkAchievements() {
     if (S.clicks >= 1) grant('bp_first');
     if (S.life >= 1e3) grant('bp_1k');
     if (S.life >= 1e6) grant('bp_1m');
     if (own('automat') >= 1) grant('bp_automat');
-    if (S.life >= UNI_GOAL && !S.uni) {
-      S.uni = true; grant('bp_uni'); save();
-      showEnding('🔧', 'Uni geschafft — du bist jetzt Hausmeister Jürgen!',
-        '100 Millionen Blöcke, Abschluss in der Tasche … und der Schulwart geht in Pension. Du übernimmst seinen Schlüsselbund. Jetzt gehört die ganze Schule dir. Presse weiter bis 500 Millionen, dann hast du alles durchgespielt.');
-    }
-    if (S.life >= END_GOAL && !S.done) {
-      S.done = true; grant('bp_end'); save();
-      showEnding('🏆', 'Durchgespielt!',
-        '500 Millionen Blöcke — von der Schulbank bis zum Hausmeister. Block Presser ist komplett durch. Du kannst frei weiterpressen, die Bestenliste zählt weiter.');
-    }
+    if (S.life >= UNI_GOAL) grant('bp_uni');
+    if (S.life >= END_GOAL) grant('bp_end');
+    checkMilestones();
   }
 
-  $('ending-ok').addEventListener('click', () => $('ending').classList.remove('show'));
-  $('save').addEventListener('click', () => { save(); toast('Gespeichert ✔'); });
-  $('reset').addEventListener('click', () => {
-    if (!confirm('Wirklich alles zurücksetzen? Der Fortschritt ist dann weg.')) return;
-    S = fresh(); save(); render();
+  // ── Menü (Esc): Spezialpunkte-Shop + kompletter Reset ──
+  const SPU = [
+    { id: 'gold',  ico: '🥇', name: 'Goldene Presse', desc: '+50 % auf alles',                        max: 10, cost: l => 2 + l * 2 },
+    { id: 'click', ico: '🔨', name: 'Hammer-Finger',  desc: 'Klickkraft ×1,5',                        max: 8,  cost: l => 2 + l * 2 },
+    { id: 'cheap', ico: '🏷️', name: 'Mengenrabatt',   desc: 'Werkstätten 4 % billiger (max. 50 %)',   max: 10, cost: l => 1 + l * 2 },
+    { id: 'start', ico: '🎒', name: 'Starthilfe',     desc: 'Nach einem Reset 5 Praktikanten gratis', max: 10, cost: l => 2 + l },
+    { id: 'night', ico: '🌙', name: 'Nachtschicht',   desc: '+10 % Ertrag, während du weg bist',      max: 5,  cost: l => 2 + l * 2 },
+    { id: 'bell',  ico: '🔔', name: 'Glocken-Magnet', desc: 'Schulglocke erscheint 12 % öfter',       max: 5,  cost: l => 3 + l * 2 },
+  ];
+  const spGain = () => Math.floor(Math.sqrt(S.life / 1e5));
+  const menuOpen = () => $('menu').classList.contains('show');
+
+  function buildSpShop() {
+    $('sp-shop').innerHTML = SPU.map(u => {
+      const l = lv(u.id), maxed = l >= u.max, c = u.cost(l), ok = !maxed && S.sp >= c;
+      return '<button class="up spu' + (ok ? ' can' : '') + '" data-id="' + u.id + '"' + (ok ? '' : ' disabled') + '>' +
+        '<span class="up-ico">' + u.ico + '</span>' +
+        '<span><span class="up-name">' + u.name + '</span><br><span class="up-desc">' + u.desc + '</span></span>' +
+        '<span class="up-side"><div class="up-cost">' + (maxed ? 'MAX' : c) + '</div><div class="up-own">' + l + '/' + u.max + '</div></span></button>';
+    }).join('');
+  }
+  function updateMenu() {
+    $('sp').textContent = S.sp || 0;
+    const g = spGain();
+    $('prestige').disabled = g < 1;
+    $('prestige').textContent = g >= 1 ? 'Alles auf 0 setzen: +' + g + ' Spezialpunkt' + (g > 1 ? 'e' : '') : 'Noch nicht genug gepresst (ab 100.000 Blöcken im Durchlauf)';
+    $('reset-info').innerHTML = 'Setzt <b>Blöcke, Werkstätten und Meilensteine</b> auf 0. Dafür bekommst du Spezialpunkte, je nachdem wie viel du in diesem Durchlauf gepresst hast (' + fmt(S.life) + '). Zeugnispunkte und Spezial-Upgrades bleiben für immer.';
+  }
+  function openMenu() { if (rewardOpen()) return; if (document.activeElement) document.activeElement.blur(); buildSpShop(); updateMenu(); $('menu').classList.add('show'); }
+  function closeMenu() { $('menu').classList.remove('show'); if (document.activeElement) document.activeElement.blur(); }
+
+  $('sp-shop').addEventListener('click', e => {
+    const btn = e.target.closest('.spu'); if (!btn || btn.disabled) return;
+    const u = SPU.find(x => x.id === btn.dataset.id), c = u.cost(lv(u.id));
+    if (S.sp < c || lv(u.id) >= u.max) return;
+    S.sp -= c; S.up[u.id] = lv(u.id) + 1;
+    buildSpShop(); updateMenu(); render(); save();
   });
+  $('prestige').addEventListener('click', () => {
+    const g = spGain(); if (g < 1) return;
+    if (!confirm('Wirklich alles auf 0 setzen (Blöcke, Werkstätten, Meilensteine)? Du bekommst ' + g + ' Spezialpunkt' + (g > 1 ? 'e' : '') + '.')) return;
+    S.sp = (S.sp || 0) + g;
+    S.blocks = 0; S.total = 0; S.life = 0; S.owned = {}; S.reached = {};
+    if (lv('start')) S.owned.prakt = 5 * lv('start');
+    buildSpShop(); updateMenu(); render(); save();
+    toast('Neustart! +' + g + ' Spezialpunkte');
+  });
+  $('reset').addEventListener('click', openMenu);
+  $('menu-x').addEventListener('click', closeMenu);
+  $('menu').addEventListener('click', e => { if (e.target === $('menu')) closeMenu(); });
+  $('save2').addEventListener('click', () => { save(); toast('Gespeichert ✔'); });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (rewardOpen()) nextReward(); else if (menuOpen()) closeMenu(); else openMenu();
+  });
+  $('ending-ok').addEventListener('click', nextReward);
+  $('save').addEventListener('click', () => { save(); toast('Gespeichert ✔'); });
+
   window.addEventListener('beforeunload', save);
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
 
@@ -446,7 +627,7 @@
   let synced = 0;
   const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   async function syncScore() {
-    const A = window.Auth, score = Math.floor(S.life);
+    const A = window.Auth, score = Math.floor(S.allTime || S.life);
     if (!A || !A.user || score <= synced || score < 1) return;
     const { error } = await A.saveBestScore({ game: 'blockpresser', mode: 'total', score });
     if (error) console.warn('[Block Presser] saveBestScore:', error.message); else synced = score;
