@@ -362,9 +362,15 @@
       if (S.blocks < c) return;
       S.blocks -= c; S.owned[u.id] = own(u.id) + 1;
       btn.blur(); // Leertaste soll danach wieder den Block pressen, nicht nochmal kaufen
+      const col = COLORS[UPS.indexOf(u) % COLORS.length];
       if (MILES.includes(own(u.id))) {
         btn.classList.remove('flash'); void btn.offsetWidth; btn.classList.add('flash');
-        toast('🔥 Meilenstein! ' + u.name + ' ×' + milestoneMult(u) + ' Leistung');
+        pushReward({ ico: u.ico, col, title: own(u.id) + '× ' + u.name + '!',
+          text: 'Meilenstein in der Werkstatt: ' + u.name + ' arbeitet jetzt doppelt so schnell.',
+          chips: ['🔥 ×2 Leistung', 'gesamt ×' + milestoneMult(u)] });
+      } else if (own(u.id) === 1 && firstTime('buy_' + u.id)) {
+        pushReward({ ico: u.ico, col, title: u.name + ' eingeweiht!',
+          text: 'Neue Maschine in der Werkstatt: ' + u.desc + '.', chips: ['🆕 Neue Maschine', 'nächster Meilenstein bei ' + MILES[0] + ' Stück'] });
       }
       render(); save();
     });
@@ -440,6 +446,7 @@
   $('bell').addEventListener('click', () => {
     const b = $('bell'); clearTimeout(b.timeout); b.classList.remove('show');
     grant('bp_bell');
+    if (firstTime('bell')) pushReward({ ico: '🔔', col: '#38bdf8', title: 'Pausenglocke erwischt!', text: 'Die Schulglocke läutet zufällig und gibt dir Bonus. Bleib wachsam, sie kommt wieder.', chips: ['🔔 Bonus-Glocke', 'Boost ×7 oder Sofort-Gewinn'] });
     if (Math.random() < 0.5) {
       buffMult = 7; buffUntil = Date.now() + 30000;
     } else {
@@ -468,6 +475,8 @@
     if (!confirm('Matura ablegen? Deine Werkstätten und Meilensteine bleiben, nur die Blöcke werden zurückgesetzt. Du bekommst dauerhaft +' + (g * MATURA_BONUS) + ' % auf alles.')) return;
     S.pts = (S.pts || 0) + g; S.blocks = 0; S.total = 0;
     grant('bp_matura'); render(); save();
+    pushReward({ ico: '🎓', col: '#ffb703', title: 'Matura bestanden!', text: 'Zeugnis in der Hand. Deine Werkstätten und Meilensteine bleiben, nur die Blöcke fangen neu an.',
+      chips: ['🎓 +' + g + ' Zeugnispunkt' + (g > 1 ? 'e' : ''), '+' + (g * MATURA_BONUS) + ' % dauerhaft'] });
   });
 
   // ── Erfolge (gleiches System wie auf der Erfolge-Seite) ──
@@ -527,21 +536,22 @@
   }
   confetti.id = 0;
 
-  function showReward(m, gift) {
+  function showReward(r) {
     const box = $('ending');
-    box.style.setProperty('--rc', m.col);
-    $('ending-ico').textContent = m.ico; $('ending-h').textContent = m.title; $('ending-p').textContent = m.text;
-    const chips = ['+10 % auf alles', '🎁 +' + fmt(gift) + ' Blöcke'];
-    if (m.extra) chips.unshift('✨ ' + m.extra);
-    $('ending-rew').innerHTML = chips.map((t, i) => '<span style="animation-delay:' + (0.5 + i * 0.25) + 's">' + t + '</span>').join('');
+    box.style.setProperty('--rc', r.col);
+    $('ending-ico').textContent = r.ico; $('ending-h').textContent = r.title; $('ending-p').textContent = r.text;
+    $('ending-rew').innerHTML = r.chips.map((t, i) => '<span style="animation-delay:' + (0.5 + i * 0.25) + 's">' + t + '</span>').join('');
     box.classList.add('show');
     $('ending-ok').focus();
-    confetti(m.col);
+    confetti(r.col);
   }
+  // Jeder Fortschritt bekommt einen Screen; laufen mehrere gleichzeitig ein, kommen sie nacheinander
+  function pushReward(r) { if (rewardOpen()) rewardQueue.push(r); else showReward(r); }
+  const firstTime = key => { S.firsts = S.firsts || {}; if (S.firsts[key]) return false; S.firsts[key] = true; return true; };
   function nextReward() {
     $('ending').classList.remove('show');
     $('ending-ok').blur();
-    if (rewardQueue.length) { const r = rewardQueue.shift(); showReward(r.m, r.gift); }
+    if (rewardQueue.length) showReward(rewardQueue.shift());
   }
   function checkMilestones() {
     const fresh = MS.filter(m => S.life >= m.at && !S.reached[m.id]);
@@ -552,7 +562,8 @@
     show.forEach(m => {
       const gift = Math.max(bps() * 600, clickPower() * 100);
       earn(gift);
-      if (rewardOpen()) rewardQueue.push({ m, gift }); else showReward(m, gift);
+      pushReward({ ico: m.ico, col: m.col, title: m.title, text: m.text,
+        chips: (m.extra ? ['✨ ' + m.extra] : []).concat(['+10 % auf alles', '🎁 +' + fmt(gift) + ' Blöcke']) });
     });
     save();
   }
@@ -603,6 +614,9 @@
     if (S.sp < c || lv(u.id) >= u.max) return;
     S.sp -= c; S.up[u.id] = lv(u.id) + 1;
     buildSpShop(); updateMenu(); render(); save();
+    const maxed = lv(u.id) >= u.max;
+    if (maxed || firstTime('sp_' + u.id)) pushReward({ ico: u.ico, col: '#ffd60a', title: maxed ? u.name + ' voll ausgebaut!' : u.name + ' freigeschaltet!',
+      text: u.desc + '.', chips: [maxed ? '★ Maximale Stufe' : '★ Stufe ' + lv(u.id) + ' von ' + u.max, 'bleibt für immer'] });
   });
   $('prestige').addEventListener('click', () => {
     const g = spGain(); if (g < 1) return;
@@ -611,7 +625,8 @@
     S.blocks = 0; S.total = 0; S.life = 0; S.owned = {}; S.reached = {};
     if (lv('start')) S.owned.prakt = 5 * lv('start');
     buildSpShop(); updateMenu(); render(); save();
-    toast('Neustart! +' + g + ' Spezialpunkte');
+    pushReward({ ico: '♻️', col: '#a78bfa', title: 'Alles auf Anfang!', text: 'Blöcke, Werkstätten und Meilensteine sind zurückgesetzt. Dafür gibt es Spezialpunkte für richtig starke Upgrades.',
+      chips: ['★ +' + g + ' Spezialpunkt' + (g > 1 ? 'e' : ''), 'Konto: ' + S.sp + ' ★'] });
   });
   $('reset').addEventListener('click', openMenu);
   $('menu-x').addEventListener('click', closeMenu);
