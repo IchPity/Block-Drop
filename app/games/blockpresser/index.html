@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <title>Block Presser — Arcade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/theme.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --accent: #ffb703; }
+    body { min-height: 100vh; padding: 72px 14px 32px; overflow-x: clip; }
+
+    .wrap {
+      position: relative; z-index: 1; max-width: 980px; margin: 0 auto;
+      display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 20px;
+    }
+    @media (max-width: 760px) { .wrap { grid-template-columns: 1fr; } .press { position: static; } }
+
+    .panel {
+      background: var(--board-raised); border: 1px solid var(--board-line);
+      border-radius: 16px; padding: 18px;
+    }
+    .panel h2 {
+      font-family: 'Baloo 2', sans-serif; font-size: 15px; font-weight: 700;
+      color: var(--chalk-dim); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px;
+    }
+
+    /* ── Presse ── */
+    .press { text-align: center; position: sticky; top: 84px; align-self: start; }
+    .count {
+      font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(34px, 7vw, 52px);
+      color: var(--chalk); line-height: 1;
+    }
+    .count small { display: block; font-size: 14px; font-weight: 600; color: var(--chalk-dim); margin-top: 6px; }
+    .rate { font-family: 'Share Tech Mono', monospace; color: var(--marquee); margin-top: 6px; font-size: 14px; }
+
+    .stage { position: relative; height: 260px; margin: 18px 0 8px; display: grid; place-items: center; --blockcol: #ffb703; }
+    .block-btn {
+      position: relative; width: 180px; height: 180px; border: 0; cursor: pointer;
+      background: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+      transition: transform .06s; margin-top: 30px;
+    }
+    .block-btn:active, .block-btn.hit { transform: translateY(8px) scale(.97); }
+    .block-btn:focus-visible { outline: 3px solid var(--chalk); outline-offset: 8px; border-radius: 18px; }
+    .block-face {
+      position: absolute; inset: 0; border-radius: 18px;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.28), transparent 45%),
+        var(--blockcol);
+      box-shadow: inset 0 -12px 0 rgba(0,0,0,.22), inset 0 0 0 4px rgba(255,255,255,.18), 0 14px 0 rgba(0,0,0,.35);
+      display: grid; place-items: center;
+      font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 54px; color: rgba(16,22,15,.55);
+    }
+    .plate {
+      position: absolute; top: 14px; left: 50%; width: 220px; height: 22px; margin-left: -110px;
+      border-radius: 6px; background: #3a4639; border: 1px solid var(--board-line);
+      box-shadow: 0 6px 0 rgba(0,0,0,.35); transition: transform .06s; pointer-events: none;
+    }
+    .stage:has(.block-btn:active) .plate, .stage:has(.hit) .plate { transform: translateY(20px); }
+
+    .pop {
+      position: absolute; pointer-events: none; font-family: 'Share Tech Mono', monospace;
+      font-weight: 700; font-size: 20px; color: var(--chalk); text-shadow: 0 2px 0 rgba(0,0,0,.5);
+      animation: pop .9s ease-out forwards; z-index: 5;
+    }
+    @keyframes pop { to { transform: translateY(-90px); opacity: 0; } }
+
+    .hint { font-size: 12px; color: var(--chalk-faint); }
+
+    /* Schulglocke (Bonus) */
+    .bell {
+      position: fixed; z-index: 60; width: 64px; height: 64px; border: 0; border-radius: 50%;
+      background: var(--bell); color: #fff; font-size: 30px; cursor: pointer;
+      border: 3px solid var(--chalk); box-shadow: 0 6px 0 rgba(0,0,0,.4);
+      animation: bellshake .5s ease-in-out infinite alternate; display: none;
+    }
+    .bell.show { display: block; }
+    @keyframes bellshake { from { transform: rotate(-14deg); } to { transform: rotate(14deg); } }
+
+    .buff {
+      display: none; margin-top: 10px; font-family: 'Share Tech Mono', monospace; font-size: 13px;
+      color: #0e130d; background: var(--marquee); padding: 4px 10px; border-radius: 6px;
+    }
+    .buff.show { display: inline-block; }
+
+    /* ── Shop ── */
+    .shop { display: flex; flex-direction: column; gap: 8px; }
+    .up {
+      display: grid; grid-template-columns: 42px 1fr auto; gap: 12px; align-items: center; text-align: left;
+      width: 100%; padding: 10px 12px; border-radius: 12px; cursor: pointer;
+      background: rgba(238,242,234,.04); border: 1px solid var(--board-line); color: var(--chalk);
+      font-family: inherit; transition: background .15s, border-color .15s, opacity .15s;
+    }
+    .up:hover:not(:disabled) { background: rgba(255,183,3,.08); border-color: rgba(255,183,3,.4); }
+    .up:disabled { opacity: .42; cursor: not-allowed; }
+    .up:focus-visible { outline: 2px solid var(--marquee); }
+    .up-ico {
+      width: 42px; height: 42px; border-radius: 10px; display: grid; place-items: center;
+      font-size: 22px; background: rgba(238,242,234,.07);
+    }
+    .up-name { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 15px; }
+    .up-desc { font-size: 12px; color: var(--chalk-dim); line-height: 1.35; }
+    .up-side { text-align: right; }
+    .up-cost { font-family: 'Share Tech Mono', monospace; font-size: 14px; color: var(--marquee); }
+    .up-own { font-family: 'Baloo 2', sans-serif; font-size: 22px; font-weight: 800; color: var(--chalk-faint); line-height: 1; margin-top: 2px; }
+
+    .board { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .board li {
+      display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; padding: 7px 10px; border-radius: 8px;
+      background: rgba(238,242,234,.04); font-size: 14px;
+    }
+    .board li.me { background: rgba(255,183,3,.12); }
+    .board .rk { font-family: 'Share Tech Mono', monospace; color: var(--chalk-faint); }
+    .board .sc { font-family: 'Share Tech Mono', monospace; color: var(--marquee); }
+    .board-empty { display: block !important; color: var(--chalk-faint); }
+    .tools { display: flex; gap: 8px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+    .tool {
+      font: inherit; font-size: 12px; font-weight: 600; color: var(--chalk-dim); background: none;
+      border: 1px solid var(--board-line); border-radius: 8px; padding: 6px 12px; cursor: pointer;
+    }
+    .tool:hover { color: var(--chalk); border-color: rgba(238,242,234,.25); }
+    .stats { font-size: 12px; color: var(--chalk-faint); margin-top: 12px; line-height: 1.6; }
+    @media (prefers-reduced-motion: reduce) { .bell { animation: none; } .pop { animation-duration: .01s; } }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="../../" class="nav-back">&larr; Arcade</a>
+    <div class="nav-title"><span class="pill">BP</span> Block Presser</div>
+  </div>
+  <div class="nav-right">
+    <div data-auth-slot></div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <section class="panel press" aria-label="Presse">
+    <div class="count"><span id="count">0</span><small>Blöcke</small></div>
+    <div class="rate"><span id="rate">0</span> Blöcke / Sek.</div>
+    <div class="stage" id="stage">
+      <div class="plate"></div>
+      <button class="block-btn" id="block" aria-label="Block pressen"><div class="block-face">▮</div></button>
+    </div>
+    <div class="hint">Klick, Tippen oder Leertaste</div>
+    <div class="buff" id="buff"></div>
+    <div class="stats" id="stats"></div>
+    <div class="tools">
+      <button class="tool" id="save">Speichern</button>
+      <button class="tool" id="reset">Zurücksetzen</button>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Verbesserungen">
+    <h2>Werkstatt</h2>
+    <div class="shop" id="shop"></div>
+    <h2 style="margin-top:22px">Bestenliste</h2>
+    <ol class="board" id="board"><li class="board-empty">Lädt …</li></ol>
+    <div class="hint" id="board-note" style="margin-top:8px"></div>
+  </section>
+</main>
+
+<button class="bell" id="bell" aria-label="Schulglocke — Bonus einsammeln">🔔</button>
+
+<script src="/auth.js"></script>
+<script>
+(() => {
+  const KEY = 'blockpresser_v1';
+  const COLORS = ['#ffb703', '#e94560', '#38bdf8', '#4ade80', '#a78bfa', '#fb923c'];
+
+  const UPS = [
+    { id: 'finger',  ico: '✋', name: 'Kreide-Finger',        desc: '+1 Block pro Klick',            base: 15 },
+    { id: 'prakt',   ico: '🎒', name: 'Praktikant',           desc: 'Presst 0,2 Blöcke pro Sekunde', base: 30,    bps: 0.2 },
+    { id: 'bank',    ico: '🪑', name: 'Schulbank-Presse',     desc: '1 Block pro Sekunde',           base: 150,   bps: 1 },
+    { id: 'kantine', ico: '🥨', name: 'Kantinen-Bäckerei',    desc: '6 Blöcke pro Sekunde',          base: 1100,  bps: 6 },
+    { id: 'plan',    ico: '📅', name: 'Stundenplan-Fabrik',   desc: '35 Blöcke pro Sekunde',         base: 12000, bps: 35 },
+    { id: 'tetris',  ico: '🧱', name: 'Fallblock-Turm',       desc: '200 Blöcke pro Sekunde',        base: 130000, bps: 200 },
+    { id: 'dir',     ico: '🏫', name: 'Direktorats-Presswerk', desc: '1.400 Blöcke pro Sekunde',     base: 1.4e6, bps: 1400 },
+    { id: 'automat', ico: '🕹️', name: 'Der Automat der 5DK',  desc: '10.000 Blöcke pro Sekunde',     base: 2e7,   bps: 10000 },
+  ];
+  const GROWTH = 1.15;
+
+  const fresh = () => ({ blocks: 0, total: 0, clicks: 0, owned: {}, last: Date.now(), start: Date.now() });
+  let S = fresh();
+
+  const $ = id => document.getElementById(id);
+  const own = id => S.owned[id] || 0;
+  const cost = u => Math.ceil(u.base * Math.pow(GROWTH, own(u.id)));
+
+  let buffUntil = 0, buffMult = 1;
+  const buffed = () => Date.now() < buffUntil;
+  const mult = () => (buffed() ? buffMult : 1);
+  const clickPower = () => (1 + own('finger')) * mult();
+  const bps = () => UPS.reduce((a, u) => a + (u.bps || 0) * own(u.id), 0) * mult();
+
+  const SUF = ['', 'Tsd', 'Mio', 'Mrd', 'Bio', 'Brd', 'Trl'];
+  function fmt(n) {
+    if (n < 1000) return n < 10 && n % 1 ? n.toFixed(1).replace('.', ',') : Math.floor(n).toLocaleString('de-AT');
+    const e = Math.min(Math.floor(Math.log10(n) / 3), SUF.length - 1);
+    return (n / Math.pow(1000, e)).toFixed(2).replace('.', ',') + ' ' + SUF[e];
+  }
+
+  function save() {
+    S.last = Date.now();
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
+  }
+  function load() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(KEY));
+      if (raw && typeof raw.blocks === 'number') {
+        S = Object.assign(fresh(), raw);
+        const away = Math.max(0, Math.min((Date.now() - S.last) / 1000, 8 * 3600));
+        const gain = bps() * away;
+        if (gain >= 1) { S.blocks += gain; S.total += gain; toast('Willkommen zurück! Während du weg warst: +' + fmt(gain) + ' Blöcke'); }
+      }
+    } catch (e) {}
+  }
+
+  function toast(msg) {
+    const b = $('buff'); b.textContent = msg; b.classList.add('show');
+    clearTimeout(toast.t); toast.t = setTimeout(() => { if (!buffed()) b.classList.remove('show'); }, 4000);
+  }
+
+  function buildShop() {
+    $('shop').innerHTML = UPS.map(u =>
+      '<button class="up" data-id="' + u.id + '">' +
+        '<span class="up-ico">' + u.ico + '</span>' +
+        '<span><span class="up-name">' + u.name + '</span><br><span class="up-desc">' + u.desc + '</span></span>' +
+        '<span class="up-side"><div class="up-cost"></div><div class="up-own"></div></span>' +
+      '</button>').join('');
+    $('shop').addEventListener('click', e => {
+      const btn = e.target.closest('.up'); if (!btn) return;
+      const u = UPS.find(x => x.id === btn.dataset.id), c = cost(u);
+      if (S.blocks < c) return;
+      S.blocks -= c; S.owned[u.id] = own(u.id) + 1;
+      render(); save();
+    });
+  }
+
+  function render() {
+    $('count').textContent = fmt(S.blocks);
+    $('rate').textContent = fmt(bps());
+    document.querySelectorAll('.up').forEach(el => {
+      const u = UPS.find(x => x.id === el.dataset.id), c = cost(u);
+      el.disabled = S.blocks < c;
+      el.querySelector('.up-cost').textContent = fmt(c);
+      el.querySelector('.up-own').textContent = own(u.id);
+    });
+    const mins = Math.floor((Date.now() - S.start) / 60000);
+    $('stats').innerHTML = 'Pro Klick: <b>' + fmt(clickPower()) + '</b> · Geklickt: ' + fmt(S.clicks) +
+      '<br>Insgesamt gepresst: ' + fmt(S.total) + ' · Spielzeit: ' + mins + ' Min.';
+    document.title = fmt(S.blocks) + ' Blöcke — Block Presser';
+  }
+
+  function press(x, y) {
+    const p = clickPower();
+    S.blocks += p; S.total += p; S.clicks++;
+    $('stage').style.setProperty('--blockcol', COLORS[Math.floor(S.total / 50) % COLORS.length]);
+    const el = document.createElement('div');
+    el.className = 'pop'; el.textContent = '+' + fmt(p);
+    const r = $('stage').getBoundingClientRect();
+    el.style.left = (x - r.left - 14 + (Math.random() * 40 - 20)) + 'px';
+    el.style.top = (y - r.top - 20) + 'px';
+    $('stage').appendChild(el); setTimeout(() => el.remove(), 900);
+    render();
+  }
+  $('block').addEventListener('click', e => {
+    const r = $('block').getBoundingClientRect();
+    press(e.clientX || r.left + r.width / 2, e.clientY || r.top + r.height / 2);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space' && document.activeElement === document.body) {
+      e.preventDefault();
+      const b = $('block'), r = b.getBoundingClientRect();
+      b.classList.add('hit'); setTimeout(() => b.classList.remove('hit'), 80);
+      press(r.left + r.width / 2, r.top + r.height / 2);
+    }
+  });
+
+  // Schulglocke: erscheint zufällig, 50 % Pausen-Boost (×7, 30 s), 50 % Sofort-Gewinn
+  function scheduleBell() {
+    setTimeout(() => {
+      const b = $('bell');
+      b.style.left = (10 + Math.random() * 75) + 'vw';
+      b.style.top = (18 + Math.random() * 60) + 'vh';
+      b.classList.add('show');
+      b.timeout = setTimeout(() => { b.classList.remove('show'); scheduleBell(); }, 12000);
+    }, 45000 + Math.random() * 75000);
+  }
+  $('bell').addEventListener('click', () => {
+    const b = $('bell'); clearTimeout(b.timeout); b.classList.remove('show');
+    if (Math.random() < 0.5) {
+      buffMult = 7; buffUntil = Date.now() + 30000;
+    } else {
+      const g = Math.max(bps() * 600, clickPower() * 100);
+      S.blocks += g; S.total += g; toast('Schulglocke! +' + fmt(g) + ' Blöcke');
+    }
+    render(); save(); scheduleBell();
+  });
+
+  let last = performance.now(), lastSave = performance.now();
+  function tick() {
+    const now = performance.now();
+    const dt = Math.min((now - last) / 1000, 1); last = now;
+    const g = bps() * dt; S.blocks += g; S.total += g;
+    if (buffed()) {
+      const b = $('buff');
+      b.textContent = 'Pausenglocke! Alles ×' + buffMult + ' — noch ' + Math.ceil((buffUntil - Date.now()) / 1000) + 's';
+      b.classList.add('show');
+    } else if (buffUntil) { buffUntil = 0; $('buff').classList.remove('show'); }
+    if (now - lastSave > 10000) { lastSave = now; save(); }
+    render();
+  }
+
+  $('save').addEventListener('click', () => { save(); toast('Gespeichert ✔'); });
+  $('reset').addEventListener('click', () => {
+    if (!confirm('Wirklich alles zurücksetzen? Der Fortschritt ist dann weg.')) return;
+    S = fresh(); save(); render();
+  });
+  window.addEventListener('beforeunload', save);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+
+
+  // ── Konto-Highscore: Wert = insgesamt gepresste Blöcke ──
+  let synced = 0;
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  async function syncScore() {
+    const A = window.Auth, score = Math.floor(S.total);
+    if (!A || !A.user || score <= synced || score < 1) return;
+    const { error } = await A.saveBestScore({ game: 'blockpresser', mode: 'total', score });
+    if (error) console.warn('[Block Presser] saveBestScore:', error.message); else synced = score;
+  }
+  async function loadBoard() {
+    const A = window.Auth, ol = $('board');
+    if (!A || !A.getLeaderboard) { ol.innerHTML = '<li class="board-empty">Bestenliste nicht verfügbar.</li>'; return; }
+    const rows = await A.getLeaderboard('blockpresser', 'total', 10);
+    if (!rows.length) { ol.innerHTML = '<li class="board-empty">Noch niemand drin — sei der Erste!</li>'; }
+    else ol.innerHTML = rows.map((r, i) =>
+      '<li' + (A.user && r.user_id === A.user.id ? ' class="me"' : '') + '><span class="rk">' + (i + 1) + '.</span><span>' +
+      esc(r.username) + '</span><span class="sc">' + fmt(r.best_score) + '</span></li>').join('');
+    $('board-note').textContent = A.user ? 'Gewertet: insgesamt gepresste Blöcke.' : 'Melde dich an, um in die Bestenliste zu kommen.';
+  }
+  setInterval(() => { syncScore(); }, 60000);
+  setInterval(loadBoard, 120000);
+  setTimeout(() => { loadBoard(); syncScore(); }, 1500);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) syncScore(); });
+
+  buildShop(); load(); render(); scheduleBell(); setInterval(tick, 100);
+})();
+</script>
+</body>
+</html>

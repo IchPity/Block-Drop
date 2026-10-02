@@ -539,6 +539,19 @@
       });
     },
 
+    // Genau EIN Bestwert pro Spieler und Spiel (Idle-Spiele): legt die Zeile an
+    // oder hebt sie nur an, wenn der neue Wert höher ist. Braucht
+    // blockpresser_scores_setup.sql (Update-Policy + Unique-Index).
+    async saveBestScore({ game, mode, score }) {
+      if (!this.user) return { error: { message: 'Nicht angemeldet' } };
+      const { data: row, error: selErr } = await client.from('scores')
+        .select('id, score').eq('user_id', this.user.id).eq('game', game).maybeSingle();
+      if (selErr) return { error: selErr };
+      if (!row) return await client.from('scores').insert({ user_id: this.user.id, game, mode, score });
+      if (score <= row.score) return { data: row, error: null };
+      return await client.from('scores').update({ score }).eq('id', row.id);
+    },
+
     async getMyScores(game, mode, limit = 10) {
       if (!this.user) return [];
       let q = client.from('scores').select('*')
