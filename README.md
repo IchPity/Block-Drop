@@ -67,12 +67,15 @@ npm start
 ```
 Alternativ: Doppelklick auf `block-games/Block Games starten.bat`.
 
-## Deployment
+## Branches & Deployment
 
-Aktuell offen. Das frühere Cloudflare-Worker-Gate (`worker.js` +
-`wrangler.jsonc`) wurde am 2026-09-11 beim Umstieg zurück auf die
-Arcade-Seite entfernt — der Deploy-Weg für `app/` muss vor dem nächsten
-Release neu geklärt werden.
+`main` = Live-Version, `develop` = Sammelbecken, neue Arbeit auf
+`feature/*` / `fix/*`. Nur der Merge `develop` → `main` deployed.
+Alle Regeln und die einmalige Einrichtung (GitHub-Branch-Schutz,
+Cloudflare-Production-Branch) stehen in [BRANCHING.md](BRANCHING.md).
+
+Hinweis: Der konkrete Deploy-Weg für `app/` ist noch zu klären (das frühere
+Cloudflare-Worker-Gate wurde am 2026-09-11 entfernt).
 
 ## Lizenz
 
