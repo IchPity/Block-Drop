@@ -173,7 +173,7 @@
     /* ── Menü (Esc) ── */
     .menu { position: fixed; inset: 0; z-index: 90; display: none; place-items: center; padding: 16px; background: rgba(8,12,8,.88); overflow-y: auto; }
     .menu.show { display: grid; }
-    .menu-box { width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; background: var(--board-raised); border: 2px solid var(--marquee); border-radius: 18px; padding: 20px; }
+    .menu-box { width: 100%; max-width: 440px; max-height: 86vh; overflow-y: auto; background: var(--board-raised); border: 2px solid var(--marquee); border-radius: 18px; padding: 20px; }
     .menu-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .menu-head h2 { margin: 0; }
     .sp-bal { font-family: 'Baloo 2', sans-serif; font-size: 20px; font-weight: 800; color: var(--marquee); margin-bottom: 12px; }
@@ -368,7 +368,7 @@
   function render() {
     $('count').textContent = fmt(S.blocks);
     $('rate').textContent = fmt(bps());
-    document.querySelectorAll('.up').forEach(el => {
+    document.querySelectorAll('#shop .up').forEach(el => {
       const u = UPS.find(x => x.id === el.dataset.id), c = cost(u);
       el.disabled = S.blocks < c;
       el.classList.toggle('can', !el.disabled);
