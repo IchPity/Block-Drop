@@ -1,5 +1,5 @@
 ---
-name: Der Automat der 5DK
+name: Alkomat
 description: Klassen-Arcade der 5DK als Spielhalle nach Ladenschluss, in der nur die Geräte leuchten.
 colors:
   neon-pink: "#ff3d9a"
@@ -124,7 +124,7 @@ components:
     padding: "8px 10px"
 ---
 
-# Design System: Der Automat der 5DK
+# Design System: Alkomat
 
 ## Overview
 

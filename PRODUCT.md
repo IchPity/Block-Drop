@@ -12,7 +12,7 @@ Schülerinnen und Schüler der Klasse 5DK (abgeleitet aus README und Seitentexte
 
 ## Product Purpose
 
-„Der Automat der 5DK" ist die Klassenwebsite der 5DK: Browser-Spiele, Alltagshelfer fürs Schulleben und ein Konto-System mit Freunden, Erfolgen und Bestenlisten, alles auf einer Seite. Erfolg heißt: die Klasse kommt gern wieder, spielt, vergleicht Punkte und findet Stundenplan und Uhr ohne Umweg.
+„Alkomat" ist die Klassenwebsite der 5DK: Browser-Spiele, Alltagshelfer fürs Schulleben und ein Konto-System mit Freunden, Erfolgen und Bestenlisten, alles auf einer Seite. Erfolg heißt: die Klasse kommt gern wieder, spielt, vergleicht Punkte und findet Stundenplan und Uhr ohne Umweg.
 
 ## Positioning
 
@@ -36,7 +36,7 @@ Eine Seite, die nur dieser Klasse gehört: der echte Stundenplan der 5DK, Schul-
 
 ## Brand Commitments
 
-- Name: „Der Automat der 5DK" / „Arcade".
+- Name: „Alkomat" (vorher „Der Automat der 5DK") / „Arcade".
 - Sprache: Deutsch (österreichisch), locker, mit Schulhumor.
 - Visuelle Welt (vom Nutzer am 2026-10-02 festgelegt): Arcade-Halle bei Nacht. Der bisherige Kreidetafel-Look wird ersetzt.
 - Anspruch (vom Nutzer festgelegt): so aufwendig und cineastisch wie möglich, auch in den Spielfeldern selbst („alles volle Kanne").

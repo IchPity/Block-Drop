@@ -1,4 +1,4 @@
-# Der Automat der 5DK
+# Alkomat
 
 > Drei Spiele, ein paar nützliche Sachen für dazwischen, und dein Stundenplan
 > — alles auf einer Seite, kein zweiter Tab nötig.
