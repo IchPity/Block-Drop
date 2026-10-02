@@ -108,6 +108,15 @@
     .up-cost { font-family: 'Share Tech Mono', monospace; font-size: 14px; color: var(--marquee); }
     .up-own { font-family: 'Baloo 2', sans-serif; font-size: 22px; font-weight: 800; color: var(--chalk-faint); line-height: 1; margin-top: 2px; }
 
+    .board { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .board li {
+      display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; padding: 7px 10px; border-radius: 8px;
+      background: rgba(238,242,234,.04); font-size: 14px;
+    }
+    .board li.me { background: rgba(255,183,3,.12); }
+    .board .rk { font-family: 'Share Tech Mono', monospace; color: var(--chalk-faint); }
+    .board .sc { font-family: 'Share Tech Mono', monospace; color: var(--marquee); }
+    .board-empty { display: block !important; color: var(--chalk-faint); }
     .tools { display: flex; gap: 8px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
     .tool {
       font: inherit; font-size: 12px; font-weight: 600; color: var(--chalk-dim); background: none;
@@ -150,6 +159,9 @@
   <section class="panel" aria-label="Verbesserungen">
     <h2>Werkstatt</h2>
     <div class="shop" id="shop"></div>
+    <h2 style="margin-top:22px">Bestenliste</h2>
+    <ol class="board" id="board"><li class="board-empty">Lädt …</li></ol>
+    <div class="hint" id="board-note" style="margin-top:8px"></div>
   </section>
 </main>
 
@@ -312,6 +324,31 @@
   });
   window.addEventListener('beforeunload', save);
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+
+
+  // ── Konto-Highscore: Wert = insgesamt gepresste Blöcke ──
+  let synced = 0;
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  async function syncScore() {
+    const A = window.Auth, score = Math.floor(S.total);
+    if (!A || !A.user || score <= synced || score < 1) return;
+    const { error } = await A.saveBestScore({ game: 'blockpresser', mode: 'total', score });
+    if (error) console.warn('[Block Presser] saveBestScore:', error.message); else synced = score;
+  }
+  async function loadBoard() {
+    const A = window.Auth, ol = $('board');
+    if (!A || !A.getLeaderboard) { ol.innerHTML = '<li class="board-empty">Bestenliste nicht verfügbar.</li>'; return; }
+    const rows = await A.getLeaderboard('blockpresser', 'total', 10);
+    if (!rows.length) { ol.innerHTML = '<li class="board-empty">Noch niemand drin — sei der Erste!</li>'; }
+    else ol.innerHTML = rows.map((r, i) =>
+      '<li' + (A.user && r.user_id === A.user.id ? ' class="me"' : '') + '><span class="rk">' + (i + 1) + '.</span><span>' +
+      esc(r.username) + '</span><span class="sc">' + fmt(r.best_score) + '</span></li>').join('');
+    $('board-note').textContent = A.user ? 'Gewertet: insgesamt gepresste Blöcke.' : 'Melde dich an, um in die Bestenliste zu kommen.';
+  }
+  setInterval(() => { syncScore(); }, 60000);
+  setInterval(loadBoard, 120000);
+  setTimeout(() => { loadBoard(); syncScore(); }, 1500);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) syncScore(); });
 
   buildShop(); load(); render(); scheduleBell(); setInterval(tick, 100);
 })();
