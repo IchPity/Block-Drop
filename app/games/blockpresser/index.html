@@ -123,6 +123,7 @@
     .board .rk { font-family: 'Share Tech Mono', monospace; color: var(--chalk-faint); }
     .board .sc { font-family: 'Share Tech Mono', monospace; color: var(--marquee); }
     .board-empty { display: block !important; color: var(--chalk-faint); }
+    .menu-box .tools { margin-top: 12px; }
     .tools { display: flex; gap: 8px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
     .tool {
       font: inherit; font-size: 12px; font-weight: 600; color: var(--chalk-dim); background: none;
@@ -151,15 +152,14 @@
     .ending-box {
       position: relative; z-index: 2; max-width: 440px; text-align: center; background: rgba(20,28,19,.92);
       border: 3px solid var(--rc); border-radius: 22px; padding: 30px 24px 26px;
-      box-shadow: 0 0 0 6px color-mix(in srgb, var(--rc) 18%, transparent), 0 0 70px color-mix(in srgb, var(--rc) 55%, transparent);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--rc) 18%, transparent), 0 24px 60px rgba(0,0,0,.55);
       animation: boxin .65s cubic-bezier(.2, 1.5, .4, 1);
     }
     @keyframes boxin { from { transform: scale(.3) rotate(-6deg); opacity: 0; } }
-    .ending-tag { font-family: 'Share Tech Mono', monospace; font-size: 12px; letter-spacing: .25em; color: var(--rc); text-transform: uppercase; }
-    .ending-box .big { font-size: 84px; line-height: 1.1; margin: 8px 0 2px; filter: drop-shadow(0 0 22px var(--rc)); animation: bigpop 1s cubic-bezier(.2, 1.6, .4, 1) .15s both, bob 2.4s ease-in-out 1.2s infinite; }
+    .ending-box .big { font-size: 84px; line-height: 1.1; margin: 0 0 4px; filter: drop-shadow(0 8px 12px rgba(0,0,0,.5)); animation: bigpop 1s cubic-bezier(.2, 1.6, .4, 1) .15s both, bob 2.4s ease-in-out 1.2s infinite; }
     @keyframes bigpop { from { transform: scale(0) rotate(-40deg); } }
     @keyframes bob { 50% { transform: translateY(-8px) scale(1.06); } }
-    .ending-box h2 { font-family: 'Baloo 2', sans-serif; font-size: 28px; line-height: 1.15; color: var(--chalk); margin: 6px 0 8px; text-transform: none; letter-spacing: 0; text-shadow: 0 0 24px var(--rc); }
+    .ending-box h2 { font-family: 'Baloo 2', sans-serif; font-size: 28px; line-height: 1.15; color: var(--chalk); margin: 6px 0 8px; text-transform: none; letter-spacing: 0; text-shadow: 0 3px 0 rgba(0,0,0,.45); text-wrap: balance; }
     .ending-box p { color: var(--chalk-dim); font-size: 14px; line-height: 1.5; margin-bottom: 14px; }
     .rew { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 18px; }
     .rew span {
@@ -168,20 +168,26 @@
     }
     @keyframes chipin { from { transform: translateY(14px) scale(.4); opacity: 0; } }
     .ending-box button { font: inherit; font-weight: 800; font-size: 15px; padding: 11px 24px; border-radius: 12px; border: 0; cursor: pointer; background: var(--rc); color: #0e130d; box-shadow: 0 5px 0 rgba(0,0,0,.4); }
+    .ending-box button:focus-visible { outline: 3px solid var(--chalk); outline-offset: 3px; }
     .ending-box button:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0,0,0,.4); }
 
     /* ── Menü (Esc) ── */
-    .menu { position: fixed; inset: 0; z-index: 90; display: none; place-items: center; padding: 16px; background: rgba(8,12,8,.88); overflow-y: auto; }
-    .menu.show { display: grid; }
-    .menu-box { width: 100%; max-width: 440px; max-height: 86vh; overflow-y: auto; background: var(--board-raised); border: 2px solid var(--marquee); border-radius: 18px; padding: 20px; }
-    .menu-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .menu { position: fixed; inset: 0; z-index: 90; display: none; padding: 76px 16px 16px; background: rgba(8,12,8,.88); overflow-y: auto; }
+    .menu.show { display: flex; animation: fadein .2s ease-out; }
+    .menu-box { width: 100%; max-width: 420px; margin: auto; background: var(--board-raised); border: 1px solid var(--board-line); border-radius: 16px; padding: 16px; box-shadow: 0 24px 60px rgba(0,0,0,.5); }
+    .menu-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px; }
     .menu-head h2 { margin: 0; }
-    .sp-bal { font-family: 'Baloo 2', sans-serif; font-size: 20px; font-weight: 800; color: var(--marquee); margin-bottom: 12px; }
-    .sp-shop { display: flex; flex-direction: column; gap: 8px; }
-    .spu .up-cost::before { content: '⭐ '; }
-    .menu-reset { margin-top: 18px; padding: 14px; border-radius: 12px; border: 1px dashed rgba(233,69,96,.6); background: rgba(233,69,96,.07); text-align: center; }
-    .menu-reset p { font-size: 13px; color: var(--chalk-dim); line-height: 1.5; margin-bottom: 10px; }
-    .menu-reset button { font: inherit; font-weight: 700; font-size: 13px; padding: 9px 14px; border-radius: 10px; cursor: pointer; color: #fff; background: #e94560; border: 0; }
+    .sp-bal { font-family: 'Baloo 2', sans-serif; font-size: 22px; font-weight: 800; color: var(--marquee); margin-bottom: 12px; }
+    .sp-shop { display: flex; flex-direction: column; gap: 6px; }
+    .spu { padding: 7px 10px; grid-template-columns: 36px 1fr auto; gap: 10px; }
+    .spu .up-ico { width: 36px; height: 36px; font-size: 19px; }
+    .spu .up-cost { font-size: 15px; font-weight: 700; }
+    .spu .up-cost::before { content: '★ '; }
+    .spu .up-own { font-family: 'Share Tech Mono', monospace; font-size: 12px; font-weight: 400; color: var(--chalk-dim); margin-top: 1px; }
+    .menu-reset { margin-top: 14px; padding: 12px; border-radius: 12px; border: 1px solid rgba(233,69,96,.45); background: rgba(233,69,96,.07); text-align: center; }
+    .menu-reset p { font-size: 12px; color: var(--chalk-dim); line-height: 1.45; margin-bottom: 10px; text-wrap: pretty; }
+    .menu-reset button { font: inherit; font-weight: 700; font-size: 13px; padding: 10px 14px; width: 100%; border-radius: 10px; cursor: pointer; color: #fff; background: #e94560; border: 0; }
+    .menu-reset button:focus-visible { outline: 2px solid var(--chalk); outline-offset: 2px; }
     .menu-reset button:disabled { background: rgba(238,242,234,.08); color: var(--chalk-faint); cursor: not-allowed; }
     .up.flash { animation: flash .9s ease-out; }
     @keyframes flash { 0% { box-shadow: 0 0 0 0 rgba(255,183,3,.9); background: rgba(255,183,3,.35); } 100% { box-shadow: 0 0 0 18px rgba(255,183,3,0); } }
@@ -238,7 +244,6 @@
   <div class="rays"></div>
   <canvas id="confetti"></canvas>
   <div class="ending-box">
-    <div class="ending-tag">Meilenstein erreicht</div>
     <div class="big" id="ending-ico">🏆</div>
     <h2 id="ending-h"></h2>
     <p id="ending-p"></p>
@@ -250,7 +255,7 @@
 <div class="menu" id="menu" role="dialog" aria-modal="true" aria-labelledby="menu-h">
   <div class="menu-box">
     <div class="menu-head"><h2 id="menu-h">Menü</h2><button class="tool" id="menu-x">✕ Schließen (Esc)</button></div>
-    <div class="sp-bal">⭐ Spezialpunkte: <span id="sp">0</span></div>
+    <div class="sp-bal">★ Spezialpunkte: <span id="sp">0</span></div>
     <div class="sp-shop" id="sp-shop"></div>
     <div class="menu-reset">
       <p id="reset-info"></p>
@@ -586,8 +591,8 @@
     $('sp').textContent = S.sp || 0;
     const g = spGain();
     $('prestige').disabled = g < 1;
-    $('prestige').textContent = g >= 1 ? 'Alles auf 0 setzen: +' + g + ' Spezialpunkt' + (g > 1 ? 'e' : '') : 'Noch nicht genug gepresst (ab 100.000 Blöcken im Durchlauf)';
-    $('reset-info').innerHTML = 'Setzt <b>Blöcke, Werkstätten und Meilensteine</b> auf 0. Dafür bekommst du Spezialpunkte, je nachdem wie viel du in diesem Durchlauf gepresst hast (' + fmt(S.life) + '). Zeugnispunkte und Spezial-Upgrades bleiben für immer.';
+    $('prestige').textContent = g >= 1 ? 'Alles auf 0 setzen · +' + g + ' ★' : 'Ab 100.000 Blöcken im Durchlauf';
+    $('reset-info').innerHTML = 'Setzt <b>Blöcke, Werkstätten und Meilensteine</b> auf 0. Spezialpunkte gibt es für diesen Durchlauf (' + fmt(S.life) + '). Zeugnispunkte und Upgrades bleiben.';
   }
   function openMenu() { if (rewardOpen()) return; if (document.activeElement) document.activeElement.blur(); buildSpShop(); updateMenu(); $('menu').classList.add('show'); }
   function closeMenu() { $('menu').classList.remove('show'); if (document.activeElement) document.activeElement.blur(); }
