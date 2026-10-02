@@ -130,6 +130,16 @@
     }
     .tool:hover { color: var(--chalk); border-color: rgba(238,242,234,.25); }
     .stats { font-size: 12px; color: var(--chalk-faint); margin-top: 12px; line-height: 1.6; }
+    .goal { margin-top: 10px; height: 6px; border-radius: 3px; background: rgba(238,242,234,.08); overflow: hidden; }
+    .goal > i { display: block; height: 100%; width: 0; background: var(--marquee); transition: width .3s; }
+    .goal-lbl { font-size: 11px; color: var(--chalk-faint); margin-top: 4px; font-family: 'Share Tech Mono', monospace; }
+    .ending { position: fixed; inset: 0; z-index: 100; display: none; place-items: center; padding: 20px; background: rgba(8,12,8,.88); }
+    .ending.show { display: grid; }
+    .ending-box { max-width: 420px; text-align: center; background: var(--board-raised); border: 2px solid var(--marquee); border-radius: 18px; padding: 28px 22px; }
+    .ending-box .big { font-size: 56px; line-height: 1; }
+    .ending-box h2 { font-family: 'Baloo 2', sans-serif; font-size: 26px; color: var(--chalk); margin: 10px 0 8px; text-transform: none; letter-spacing: 0; }
+    .ending-box p { color: var(--chalk-dim); font-size: 14px; line-height: 1.5; margin-bottom: 16px; }
+    .ending-box button { font: inherit; font-weight: 700; padding: 10px 18px; border-radius: 10px; border: 0; cursor: pointer; background: var(--marquee); color: #0e130d; }
     @media (prefers-reduced-motion: reduce) { .bell { animation: none; } .pop { animation-duration: .01s; } }
   </style>
 </head>
@@ -160,6 +170,10 @@
       <button id="matura"><span id="matura-txt"></span></button>
       <div class="hint" id="pts" style="margin-top:6px"></div>
     </div>
+    <div class="goal-wrap">
+      <div class="goal"><i id="goal-bar"></i></div>
+      <div class="goal-lbl" id="goal-lbl"></div>
+    </div>
     <div class="tools">
       <button class="tool" id="save">Speichern</button>
       <button class="tool" id="reset">Zurücksetzen</button>
@@ -174,6 +188,15 @@
     <div class="hint" id="board-note" style="margin-top:8px"></div>
   </section>
 </main>
+
+<div class="ending" id="ending" role="dialog" aria-modal="true" aria-labelledby="ending-h">
+  <div class="ending-box">
+    <div class="big" id="ending-ico">🏆</div>
+    <h2 id="ending-h"></h2>
+    <p id="ending-p"></p>
+    <button id="ending-ok">Weiterspielen</button>
+  </div>
+</div>
 
 <button class="bell" id="bell" aria-label="Schulglocke — Bonus einsammeln">🔔</button>
 
@@ -194,6 +217,9 @@
     { id: 'automat', ico: '🕹️', name: 'Der Automat der 5DK',  desc: '10.000 Blöcke pro Sekunde',     base: 2e7,   bps: 10000 },
   ];
   const GROWTH = 1.15;
+  const MATURA_MIN = 1e7;  // Matura ab 10 Mio. Blöcken im Durchlauf
+  const UNI_GOAL = 1e8;    // Uni-Abschluss bei 100 Mio. insgesamt: du wirst Hausmeister Jürgen
+  const END_GOAL = 5e8;    // 500 Mio. insgesamt = durchgespielt
   const OFFLINE_RATE = 0.5;
   const MATURA_BONUS = 15; // % pro Zeugnispunkt
 
@@ -215,7 +241,7 @@
   const nextMile = u => MILES.find(m => own(u.id) < m);
   // Matura: jeder Zeugnispunkt = +15 % auf alles, dauerhaft
   const maturaMult = () => 1 + MATURA_BONUS / 100 * (S.pts || 0);
-  const maturaGain = () => Math.floor(Math.sqrt(S.total / 1e6));
+  const maturaGain = () => S.total >= MATURA_MIN ? Math.floor(Math.sqrt(S.total / 1e6)) : 0;
 
   const clickPower = () => (1 + own('finger') * milestoneMult(UPS[0])) * maturaMult() * mult();
   const bps = () => UPS.reduce((a, u) => a + (u.bps || 0) * own(u.id) * milestoneMult(u), 0) * maturaMult() * mult();
@@ -282,9 +308,13 @@
     $('matura').disabled = mg < 1;
     $('matura-txt').textContent = mg >= 1
       ? 'Matura ablegen: +' + mg + ' Zeugnispunkt' + (mg > 1 ? 'e' : '') + ' (+' + (mg * MATURA_BONUS) + ' % dauerhaft)'
-      : 'Matura ab 1 Mio. Blöcken in diesem Durchlauf';
+      : 'Matura ab 10 Mio. Blöcken in diesem Durchlauf';
     $('pts').textContent = (S.pts || 0) ? 'Zeugnispunkte: ' + S.pts + ' (×' + maturaMult().toFixed(2).replace('.', ',') + ' auf alles)' : '';
     if (mg >= 1) $('pts').textContent += ((S.pts || 0) ? ' · ' : '') + 'Nächster Punkt bei ' + fmt(Math.pow(mg + 1, 2) * 1e6) + ' Blöcken';
+    const goal = S.life >= UNI_GOAL ? END_GOAL : UNI_GOAL;
+    $('goal-bar').style.width = Math.min(100, S.life / goal * 100) + '%';
+    $('goal-lbl').textContent = S.life >= END_GOAL ? '🏆 Durchgespielt — Schulleben komplett'
+      : (S.life >= UNI_GOAL ? '🔧 Hausmeister Jürgen · Weg zum Ende: ' : 'Weg zum Uni-Abschluss: ') + fmt(S.life) + ' / ' + fmt(goal);
     checkAchievements();
     const mins = Math.floor((Date.now() - S.start) / 60000);
     $('stats').innerHTML = 'Pro Klick: <b>' + fmt(clickPower()) + '</b> · Geklickt: ' + fmt(S.clicks) +
@@ -368,7 +398,9 @@
     bp_1m:      { name: 'Block-Millionär', desc: 'Presse insgesamt 1 Million Blöcke', icon: '💎' },
     bp_bell:    { name: 'Pausenglocke',    desc: 'Erwische eine Schulglocke',         icon: '🔔' },
     bp_automat: { name: 'Der Automat',     desc: 'Kaufe „Der Automat der 5DK"',       icon: '🕹️' },
-    bp_matura:  { name: 'Bestanden!',      desc: 'Lege die Matura ab',                icon: '🎓' },
+    bp_matura:  { name: 'Bestanden!',      desc: 'Lege die Matura ab (ab 10 Mio. Blöcken)', icon: '🎓' },
+    bp_uni:     { name: 'Hausmeister Jürgen', desc: 'Schließe die Uni ab (100 Mio. Blöcke) und werde Hausmeister', icon: '🔧' },
+    bp_end:     { name: 'Schulleben komplett', desc: 'Presse 500 Mio. Blöcke — durchgespielt', icon: '🏆' },
   };
   function grant(id) {
     const def = ACH[id]; if (!def) return;
@@ -379,13 +411,28 @@
     if (window.showAchToast) window.showAchToast(def);
     if (window.Auth && window.Auth.user && window.Auth.saveAchievements) window.Auth.saveAchievements(list).catch(() => {});
   }
+  function showEnding(ico, title, text) {
+    $('ending-ico').textContent = ico; $('ending-h').textContent = title; $('ending-p').textContent = text;
+    $('ending').classList.add('show');
+  }
   function checkAchievements() {
     if (S.clicks >= 1) grant('bp_first');
     if (S.life >= 1e3) grant('bp_1k');
     if (S.life >= 1e6) grant('bp_1m');
     if (own('automat') >= 1) grant('bp_automat');
+    if (S.life >= UNI_GOAL && !S.uni) {
+      S.uni = true; grant('bp_uni'); save();
+      showEnding('🔧', 'Uni geschafft — du bist jetzt Hausmeister Jürgen!',
+        '100 Millionen Blöcke, Abschluss in der Tasche … und der Schulwart geht in Pension. Du übernimmst seinen Schlüsselbund. Jetzt gehört die ganze Schule dir. Presse weiter bis 500 Millionen, dann hast du alles durchgespielt.');
+    }
+    if (S.life >= END_GOAL && !S.done) {
+      S.done = true; grant('bp_end'); save();
+      showEnding('🏆', 'Durchgespielt!',
+        '500 Millionen Blöcke — von der Schulbank bis zum Hausmeister. Block Presser ist komplett durch. Du kannst frei weiterpressen, die Bestenliste zählt weiter.');
+    }
   }
 
+  $('ending-ok').addEventListener('click', () => $('ending').classList.remove('show'));
   $('save').addEventListener('click', () => { save(); toast('Gespeichert ✔'); });
   $('reset').addEventListener('click', () => {
     if (!confirm('Wirklich alles zurücksetzen? Der Fortschritt ist dann weg.')) return;
