@@ -93,6 +93,11 @@ function celebrateTetris() {
   setTimeout(() => banner.remove(), 1600);
 
   // ── Screen-Shake aufs Spielfeld ──
+  if (!reduceMotion && window.FX) {
+    FX.flash('#ffb000', 520); FX.pulse('#ffb000', 1.4); FX.streak(innerHeight * 0.4, '#ffb000');
+    FX.rain({ kind: 'block', ms: 2000, per: 5, colors: COLORS_CONFETTI, bounce: true });
+    FX.shake(document.getElementById('wrapper'), 12, 600);
+  }
   if (!reduceMotion) {
     const area = document.getElementById('game-area');
     if (area) {
@@ -378,6 +383,14 @@ class BlockDrop {
     this.score += dropped * 2;
     this.hardDropCount++;
     if (this.hardDropCount === 25) tryUnlock('bd_harddrop');
+    // Aufschlag: Staub unter dem Stein, das Spielfeld ruckt kurz
+    if (window.FX && !FX.reduced && dropped > 1 && this.current) {
+      const br = this.boardCanvas.getBoundingClientRect(), cell = br.width / COLS, sh = this.current.shape;
+      const bottom = sh.reduce((m, row, i) => (row.some(v => v) ? i : m), 0);
+      const x = br.left + (this.current.x + sh[0].length / 2) * cell, y = br.top + (this.current.y + bottom + 1) * cell;
+      FX.burst(x, y, { kind: 'spark', n: 8 + Math.min(18, dropped), speed: 6 + dropped * 0.35, spread: 3.3, radius: cell * sh[0].length / 2, radiusY: 1, color: this.current.color || '#ffffff' });
+      if (dropped > 6) FX.shake(document.getElementById('game-area'), Math.min(7, dropped / 3), 160);
+    }
     this.lock();
   }
 
@@ -488,6 +501,20 @@ class BlockDrop {
       }
     }
 
+    // Funken und Splitter fliegen aus jeder geräumten Reihe über die ganze Seite
+    if (window.FX && !FX.reduced) {
+      const br = this.boardCanvas.getBoundingClientRect(), cell = br.height / ROWS, cx = br.left + br.width / 2;
+      const NEON = ['#2ee6ff', '#ffb000', '#ff3d9a', '#b8ff3d', '#a78bfa', '#ffffff'];
+      rows.forEach((r, i) => setTimeout(() => {
+        const y = br.top + (r + 0.5) * cell;
+        FX.burst(cx, y, { kind: 'spark', n: 34, speed: 16, radius: br.width / 2, radiusY: 2, colors: NEON });
+        FX.burst(cx, y, { kind: 'block', n: 12, speed: 13, lift: -5, radius: br.width / 2, radiusY: 2, size: 5, life: 1.4, colors: NEON });
+      }, i * 45));
+      const mid = br.top + (rows[0] + rows.length / 2) * cell;
+      FX.pulse(NEON[lineCount % NEON.length], 0.4 + lineCount * 0.3);
+      if (lineCount >= 2) FX.ring(cx, mid, '#2ee6ff', { to: 380 + lineCount * 90, width: 4 + lineCount, dur: 0.6 });
+      if (lineCount >= 3) { FX.streak(mid, '#2ee6ff'); FX.flash('#2ee6ff', 260); }
+    }
     const shakeIntensity = [0, 0, 4, 7, 13][lineCount] || 13;
     if (shakeIntensity > 0) {
       this.shake = { intensity: shakeIntensity, start: performance.now(), duration: 350 };
@@ -543,7 +570,15 @@ class BlockDrop {
       const comboBonus = this.combo > 0 ? 50 * this.combo * this.level : 0;
       this.score += base + comboBonus;
       this.lines += lines;
+      const levelBefore = this.level;
       this.level = Math.floor(this.lines / 10) + 1;
+      if (this.level > levelBefore && window.FX && !FX.reduced) {
+        // Levelaufstieg: Lichtstreifen und Einblendung
+        FX.streak(innerHeight * 0.3, '#ffb000'); FX.pulse('#ffb000', 1.2);
+        const lb = document.createElement('div');
+        lb.className = 'tetris-banner level-banner'; lb.textContent = 'LEVEL ' + this.level;
+        document.body.appendChild(lb); setTimeout(() => lb.remove(), 1600);
+      }
 
       if (lines === 4)                               { tryUnlock('bd_tetris'); celebrateTetris(); }
       if (this.combo >= 4)                             tryUnlock('bd_combo5');
@@ -795,7 +830,7 @@ class BlockDrop {
           `${i + 1}. <span>${s.score.toLocaleString()}</span>` +
           `<small style="color:#555;font-size:10px"> &nbsp;L${s.level} · ${s.lines}ln</small>`
         ).join('<br>')
-      : '<em style="color:#555">None yet</em>';
+      : '<em style="color:#9d92c4">Noch keine</em>';
   }
 
   async gameOver() {
@@ -803,20 +838,27 @@ class BlockDrop {
     cancelAnimationFrame(this.animFrame);
     this.clearLockDelay();
     this.clearAnim = null;
+    // Game Over: roter Blitz, das Feld zerbröselt
+    if (window.FX && !FX.reduced) {
+      const br = this.boardCanvas.getBoundingClientRect();
+      FX.flash('#ff2e63', 520); FX.pulse('#ff2e63', 1.4); FX.shake(document.getElementById('wrapper'), 14, 620);
+      FX.burst(br.left + br.width / 2, br.top + br.height * 0.3, { kind: 'block', n: 90, speed: 12, lift: -3, radius: br.width / 2, radiusY: br.height * 0.3, size: 7, life: 2.2, colors: Object.values(COLORS).filter(c => /^#/.test(c)), bounce: true });
+      FX.ring(br.left + br.width / 2, br.top + br.height / 2, '#ff2e63', { width: 9 });
+    }
     if (!this.holdEverUsed && this.score > 0) tryUnlock('bd_no_hold');
     await dbSaveScore(this.score, this.mode, this.level, this.lines);
     await this.renderHighScores(this.mode);
     const modeLabel = this.mode === 'standard' ? 'Standard' : 'Classic';
     this.overlay.innerHTML = `
       <h1 style="color:#e94560">GAME OVER</h1>
-      <p>Mode: <strong>${modeLabel}</strong></p>
+      <p>Modus: <strong>${modeLabel}</strong></p>
       <p>Score: <strong>${this.score.toLocaleString()}</strong></p>
-      <p>Level: <strong>${this.level}</strong> &nbsp; Lines: <strong>${this.lines}</strong></p>
+      <p>Level: <strong>${this.level}</strong> &nbsp; Reihen: <strong>${this.lines}</strong></p>
       <div class="mode-btns">
-        <button class="mode-btn ${this.mode === 'classic'  ? 'selected' : ''}" id="mode-classic">Classic<small>Speed increases</small></button>
-        <button class="mode-btn ${this.mode === 'standard' ? 'selected' : ''}" id="mode-standard">Standard<small>Fixed speed</small></button>
+        <button class="mode-btn ${this.mode === 'classic'  ? 'selected' : ''}" id="mode-classic">Classic<small>Wird schneller</small></button>
+        <button class="mode-btn ${this.mode === 'standard' ? 'selected' : ''}" id="mode-standard">Standard<small>Festes Tempo</small></button>
       </div>
-      <button class="btn" id="start-btn">Play Again</button>
+      <button class="btn" id="start-btn">Nochmal spielen</button>
     `;
     this.overlay.style.display = 'flex';
     this._bindModeButtons();
@@ -830,9 +872,9 @@ class BlockDrop {
       this.clearLockDelay();
       const modeLabel = this.mode === 'standard' ? 'Standard' : 'Classic';
       this.overlay.innerHTML = `
-        <h1>PAUSED</h1>
-        <p style="color:#888">Mode: ${modeLabel}</p>
-        <button class="btn" id="start-btn">Resume</button>
+        <h1>PAUSE</h1>
+        <p>Modus: ${modeLabel}</p>
+        <button class="btn" id="start-btn">Weiter</button>
       `;
       this.overlay.style.display = 'flex';
       document.getElementById('start-btn').addEventListener('click', () => this.resume());

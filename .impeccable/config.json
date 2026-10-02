@@ -122,6 +122,852 @@
         ],
         "createdAt": "2026-09-16T11:16:09.436Z",
         "reason": "matches the project's existing beveled-card pattern (.overlay-card, .lobby-card, .mg-map-card all pair a thick border-bottom accent with border-radius) -- established Kreidetafel-Arcade design language, not a new pattern"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/index.html"
+        ],
+        "createdAt": "2026-10-02T07:13:02.831Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/games/blockpresser/index.html"
+        ],
+        "createdAt": "2026-10-02T07:13:03.027Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/theme.css"
+        ],
+        "createdAt": "2026-10-02T07:13:03.220Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme) gewählt; farbiges Leuchten ist dort Lichtquelle, kein Deko-Halo"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/achievements/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:07.675Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/achievements/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:07.891Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/achievements/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:08.110Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/blockgames/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:08.309Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/blockgames/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:08.498Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/blockgames/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:08.683Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/datenschutz/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:08.874Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/datenschutz/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:09.061Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/datenschutz/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:09.246Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/f1-wetten/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:09.431Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/f1-wetten/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:09.615Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/f1-wetten/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:09.800Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/f1/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:09.991Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/f1/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:10.174Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/f1/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:10.358Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/freunde/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:10.542Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/freunde/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:10.726Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/freunde/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:10.918Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/games/blockdrop/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:11.104Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/games/blockdrop/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:11.287Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/games/blockdrop/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:11.473Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/games/blockpresser/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:11.838Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/games/blockpresser/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:12.032Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/games/casino/aufladen/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:12.214Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/games/casino/aufladen/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:12.398Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/games/casino/aufladen/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:12.586Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/games/casino/belege/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:12.788Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/games/casino/belege/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:13.033Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/games/casino/belege/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:13.264Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/games/casino/blackjack/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:13.494Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/games/casino/blackjack/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:13.733Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/games/casino/blackjack/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:13.975Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/games/casino/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:14.201Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/games/casino/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:14.425Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/games/casino/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:14.657Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/games/casino/roulette/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:14.892Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/games/casino/roulette/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:15.151Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/games/casino/roulette/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:15.390Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/games/schach/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:15.617Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/games/schach/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:15.844Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/games/schach/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:16.081Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/games/schuluhr/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:16.308Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/games/schuluhr/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:16.539Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/games/schuluhr/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:16.765Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/impressum/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:17.010Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/impressum/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:17.240Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/impressum/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:17.485Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:17.957Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:18.181Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/metar/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:18.420Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/metar/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:18.644Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/metar/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:18.869Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/profile/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:19.113Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/profile/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:19.342Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/profile/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:19.579Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/stundenplan/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:19.795Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/stundenplan/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:20.032Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/stundenplan/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:20.264Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/u/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:20.507Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/u/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:20.731Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/u/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:20.978Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "app/weather/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:21.214Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "app/weather/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:21.445Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "repeating-stripes-gradient",
+        "value": "*",
+        "files": [
+          "app/weather/index.html"
+        ],
+        "createdAt": "2026-10-02T07:23:21.674Z",
+        "reason": "Agent - Nutzer hat am 2026-10-02 per Rückfrage die Welt 'Arcade-Halle bei Nacht' (Neonröhren, Röhrenbildschirme mit Scanlines, Lichtinseln der Automaten) gewählt; diese Mittel sind dort Lichtquelle und Material, geteilt über theme.css"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/theme.css"
+        ],
+        "createdAt": "2026-10-02T07:25:25.135Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/achievements/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:25.323Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/blockgames/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:25.507Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/datenschutz/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:25.692Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/f1-wetten/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:25.873Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/f1/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:26.069Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/freunde/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:26.256Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/games/blockdrop/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:26.441Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/games/blockpresser/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:26.632Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/games/casino/aufladen/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:26.816Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/games/casino/belege/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:27.013Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/games/casino/blackjack/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:27.202Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/games/casino/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:27.386Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/games/casino/roulette/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:27.569Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/games/schach/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:27.754Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/games/schuluhr/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:27.943Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/impressum/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:28.136Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:28.323Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/metar/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:28.508Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/profile/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:28.708Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/stundenplan/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:28.934Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/u/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:29.185Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/weather/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:29.414Z",
+        "reason": "Agent - Fehlalarm: body::after ist die durchgehende Deckenröhre über die volle Seitenbreite (theme.css), keine Akzentkante an einer Karte"
+      },
+      {
+        "rule": "pulsing-dot",
+        "value": "*",
+        "files": [
+          "app/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:29.655Z",
+        "reason": "Agent - blinkende Münzlampe im Logo, Automaten-Idiom der vom Nutzer gewählten Arcade-Welt, kein Status-Indikator"
+      },
+      {
+        "rule": "gpt-thin-border-wide-shadow",
+        "value": "*",
+        "files": [
+          "app/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:29.902Z",
+        "reason": "Agent - Gehäuse-Elevation der Automaten: 1px Kante plus Schatten mit echtem Y-Versatz, einheitlich über alle Automaten, kein Zero-Offset-Glow"
+      },
+      {
+        "rule": "gpt-thin-border-wide-shadow",
+        "value": "*",
+        "files": [
+          "app/games/blockpresser/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:30.164Z",
+        "reason": "Agent - Gehäuse-Elevation der Automaten: 1px Kante plus Schatten mit echtem Y-Versatz, einheitlich über alle Automaten, kein Zero-Offset-Glow"
+      },
+      {
+        "rule": "gpt-thin-border-wide-shadow",
+        "value": "*",
+        "files": [
+          "app/games/blockdrop/index.html"
+        ],
+        "createdAt": "2026-10-02T07:25:30.419Z",
+        "reason": "Agent - Gehäuse-Elevation der Automaten: 1px Kante plus Schatten mit echtem Y-Versatz, einheitlich über alle Automaten, kein Zero-Offset-Glow"
       }
     ]
   }

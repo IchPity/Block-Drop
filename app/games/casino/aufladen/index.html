@@ -7,11 +7,11 @@
 <title>Guthaben aufladen — Casino</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Kanit:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600;1,700;1,800;1,900&family=Share+Tech+Mono&family=Tilt+Neon&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/theme.css">
 <script src="../reset.js"></script>
 <style>
-  :root { --amber: var(--marquee); --win: #4ade80; --ink: #0b100a; }
+  :root { --amber: var(--marquee); --win: #4ade80; --ink: #0a0520; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { min-height: 100vh; overflow-x: clip; padding: 76px 0 72px; }
   ::selection { background: var(--amber); color: var(--ink); }
@@ -25,7 +25,7 @@
 
   .shop { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start; }
   .panel { background: var(--board-raised); border: 1px solid var(--board-line); border-radius: 12px; padding: 20px; }
-  .panel h2 { font-family: 'Baloo 2', sans-serif; font-size: 18px; font-weight: 600; color: var(--chalk); margin-bottom: 14px; }
+  .panel h2 { font-family: 'Kanit', sans-serif; font-size: 18px; font-weight: 600; color: var(--chalk); margin-bottom: 14px; }
   .panel h3 { font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--chalk-dim); margin: 20px 0 8px; }
 
   .balance { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 14px; margin-bottom: 18px; background: var(--ink); border: 1px solid var(--board-line); border-radius: 10px; }
@@ -61,15 +61,15 @@
   .show { min-height: 44px; margin-top: 12px; background: none; border: 1px dashed var(--amber); color: var(--amber); border-radius: 8px; padding: 9px 12px; cursor: pointer; font-size: 14px; width: 100%; }
   .show:hover { background: rgba(255,183,3,.08); }
   dialog { position: fixed; margin: 0; right: 16px; bottom: 16px; left: auto; top: auto; z-index: 50; border: 1px solid var(--board-line); border-radius: 14px; background: var(--board-raised); color: var(--chalk); padding: 20px; width: min(92vw, 400px); box-shadow: 0 12px 40px rgba(0,0,0,.55); }
-  dialog h2 { font: 600 18px 'Baloo 2', sans-serif; margin-bottom: 12px; cursor: move; touch-action: none; user-select: none; }
+  dialog h2 { font: 600 18px 'Kanit', sans-serif; margin-bottom: 12px; cursor: move; touch-action: none; user-select: none; }
   dialog h2::after { content: ' ⠿'; opacity: .5; }
   .cc { border-radius: 14px; padding: 18px; background: linear-gradient(135deg, #2b3a67, #6a3d8f); color: #fff; font-family: 'Share Tech Mono', monospace; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
-  .cc .brand { font: 700 13px 'IBM Plex Sans', sans-serif; letter-spacing: .1em; opacity: .85; }
+  .cc .brand { font: 700 13px 'Barlow', sans-serif; letter-spacing: .1em; opacity: .85; }
   .cc .num { font-size: 21px; letter-spacing: .08em; margin: 22px 0 16px; }
   .cc .meta { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
   .cc small { display: block; font-size: 9px; opacity: .7; letter-spacing: .1em; }
   .acct { background: var(--ink); border: 1px solid var(--board-line); border-radius: 12px; padding: 14px; font-family: 'Share Tech Mono', monospace; font-size: 14px; line-height: 1.9; }
-  .acct small { display: block; font: 600 10px 'IBM Plex Sans', sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--chalk-dim); line-height: 1.2; margin-top: 8px; }
+  .acct small { display: block; font: 600 10px 'Barlow', sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--chalk-dim); line-height: 1.2; margin-top: 8px; }
   .methods { display: grid; gap: 8px; }
   .method { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 10px; cursor: pointer; background: var(--ink); border: 1px solid var(--board-line); color: var(--chalk); text-align: left; font-size: 14px; }
   .method:hover { border-color: rgba(255,183,3,.6); }
@@ -83,7 +83,7 @@
   .row b { color: var(--chalk); font-weight: 500; font-family: 'Share Tech Mono', monospace; font-variant-numeric: tabular-nums; }
   .row.total { border-bottom: 0; font-size: 16px; color: var(--chalk); }
   .row.total b { color: var(--amber); font-size: 20px; }
-  .pay { width: 100%; margin-top: 14px; padding: 14px; border: 0; border-radius: 10px; background: var(--amber); color: var(--ink); font: 700 16px 'Baloo 2', sans-serif; cursor: pointer; transition: filter .15s; }
+  .pay { width: 100%; margin-top: 14px; padding: 14px; border: 0; border-radius: 10px; background: var(--amber); color: var(--ink); font: 700 16px 'Kanit', sans-serif; cursor: pointer; transition: filter .15s; }
   .pay:hover:not(:disabled) { filter: brightness(1.08); }
   .pay:disabled { background: #3a2226; color: #d2b8bc; cursor: not-allowed; }
   .note { margin-top: 12px; font-size: 12px; line-height: 1.55; color: var(--chalk-faint); }
@@ -92,7 +92,8 @@
   .state { text-align: center; padding: 26px 0 6px; }
   .spinner { width: 44px; height: 44px; margin: 0 auto 14px; border: 4px solid #3a2a30; border-top-color: var(--amber); border-radius: 50%; animation: spin .8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .ok { width: 54px; height: 54px; margin: 0 auto 12px; border-radius: 50%; background: var(--win); color: var(--ink); display: grid; place-items: center; font-size: 30px; font-weight: 800; }
+  .ok { width: 54px; height: 54px; margin: 0 auto 12px; border-radius: 50%; background: var(--win); color: var(--ink); display: grid; place-items: center; font-size: 30px; font-weight: 800; box-shadow: 0 10px 34px rgba(74,222,128,.6); animation: okPop .6s cubic-bezier(0.16,1,0.3,1) both; }
+  @keyframes okPop { from { transform: scale(0) rotate(-90deg); } }
   .receipt { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--chalk-dim); margin: 10px 0 4px; line-height: 1.6; }
   .back { display: inline-block; margin-top: 14px; text-decoration: none; text-align: center; }
 
@@ -173,6 +174,7 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/fx.js"></script>
 <script src="/auth.js"></script>
 <script src="../beleg.js"></script>
 <script>
@@ -425,6 +427,17 @@ $('pay').addEventListener('click', () => {
     busy = false;
     view('viewDone');
     renderSummary();
+    // Für den Kino-Screen beim Zurückkehren zu den Automaten (siehe ../index.html)
+    try {
+      let prev = null; try { prev = JSON.parse(sessionStorage.getItem('automat5dk.casino.credit')); } catch (e) {}
+      sessionStorage.setItem('automat5dk.casino.credit', JSON.stringify({ cents: ((prev && prev.cents) || 0) + c, balance: newBal, method: m.name, no, ts: now }));
+    } catch (e) {}
+    if (window.FX) {
+      const r = document.querySelector('#viewDone .ok').getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+      FX.flash('#4ade80', 360); FX.ring(x, y, '#4ade80', { to: 420, width: 8 }); FX.pulse('#4ade80', 1.1);
+      FX.burst(x, y, { kind: 'coin', n: 40, speed: 15, lift: -7, bounce: true });
+      FX.burst(x, y, { kind: 'spark', n: 60, speed: 14, colors: ['#4ade80', '#ffffff'] });
+    }
   };
   setTimeout(async () => {
     if (wallet) {

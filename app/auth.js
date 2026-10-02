@@ -111,9 +111,9 @@
     position: relative; z-index: 1;
     margin-top: 48px;
     padding: 22px 24px 28px;
-    border-top: 1px solid var(--board-line, rgba(238,242,234,0.09));
+    border-top: 1px solid var(--board-line, rgba(196,178,255,0.09));
     text-align: center;
-    font-family: 'IBM Plex Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Barlow', 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
   .site-footer-inner {
     display: flex; justify-content: center; align-items: center;
@@ -179,13 +179,13 @@
   const css = `
   .auth-chip {
     display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(238,242,234,0.05);
-    border: 1px solid var(--board-line, rgba(238,242,234,0.09));
+    background: rgba(196,178,255,0.05);
+    border: 1px solid var(--board-line, rgba(196,178,255,0.09));
     border-radius: 999px; padding: 5px 12px 5px 5px;
     cursor: pointer; font-family: inherit;
     transition: all 0.2s;
   }
-  .auth-chip:hover { background: rgba(238,242,234,0.08); border-color: rgba(238,242,234,0.2); }
+  .auth-chip:hover { background: rgba(196,178,255,0.08); border-color: rgba(196,178,255,0.2); }
   .auth-chip-avatar {
     width: 26px; height: 26px; border-radius: 50%;
     background: linear-gradient(135deg, var(--bell, #d7263d), #a81c30);
@@ -208,8 +208,8 @@
 
   .auth-menu {
     position: absolute; top: calc(100% + 8px); right: 0;
-    background: var(--board-raised, rgba(16,22,15,0.98));
-    border: 1px solid var(--board-line, rgba(238,242,234,0.1)); border-radius: 14px;
+    background: var(--board-raised, rgba(18,10,48,0.98));
+    border: 1px solid var(--board-line, rgba(196,178,255,0.1)); border-radius: 14px;
     padding: 8px; min-width: 200px;
     box-shadow: 0 16px 40px rgba(0,0,0,0.6);
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -219,10 +219,10 @@
   }
   .auth-menu.open { opacity: 1; transform: translateY(0) scale(1); pointer-events: all; }
   .auth-menu-header {
-    padding: 10px 12px 12px; border-bottom: 1px solid var(--board-line, rgba(238,242,234,0.06));
+    padding: 10px 12px 12px; border-bottom: 1px solid var(--board-line, rgba(196,178,255,0.06));
     margin-bottom: 6px;
   }
-  .auth-menu-name { font-family: 'Baloo 2', inherit; font-size: 13px; font-weight: 700; color: var(--chalk, #fff); }
+  .auth-menu-name { font-family: 'Kanit', inherit; font-size: 13px; font-weight: 700; color: var(--chalk, #fff); }
   .auth-menu-email { font-size: 10px; color: var(--chalk-faint, rgba(255,255,255,0.4)); margin-top: 2px; }
   .auth-menu-item {
     display: block; width: 100%; text-align: left;
@@ -232,7 +232,7 @@
     color: var(--chalk-dim, rgba(255,255,255,0.7)); cursor: pointer;
     transition: all 0.15s;
   }
-  .auth-menu-item:hover { background: rgba(238,242,234,0.06); color: var(--chalk, #fff); }
+  .auth-menu-item:hover { background: rgba(196,178,255,0.06); color: var(--chalk, #fff); }
   .auth-menu-item.danger { color: #ff7a90; }
   .auth-menu-item.danger:hover { background: rgba(215,38,61,0.1); color: #ff97aa; }
 
@@ -253,7 +253,7 @@
   /* ─── Modal ──────────────────────────────────────────────────────────── */
   .auth-modal-backdrop {
     position: fixed; inset: 0; z-index: 1000;
-    background: rgba(4,6,4,0.75); backdrop-filter: blur(8px);
+    background: rgba(12,6,34,0.75); backdrop-filter: blur(8px);
     display: flex; align-items: center; justify-content: center;
     padding: 16px;
     opacity: 0; pointer-events: none;
@@ -261,8 +261,8 @@
   }
   .auth-modal-backdrop.open { opacity: 1; pointer-events: all; }
   .auth-modal {
-    background: var(--board-raised, rgba(16,22,15,0.98));
-    border: 1px solid var(--board-line, rgba(238,242,234,0.1)); border-radius: 20px 20px 10px 10px;
+    background: var(--board-raised, rgba(18,10,48,0.98));
+    border: 1px solid var(--board-line, rgba(196,178,255,0.1)); border-radius: 20px 20px 10px 10px;
     padding: 36px; width: 100%; max-width: 380px;
     max-height: calc(100vh - 32px); overflow-y: auto;
     box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 16px 40px rgba(0,0,0,0.4);
@@ -280,7 +280,7 @@
     color: var(--marquee, #ffb703); margin-bottom: 10px;
   }
   .auth-modal h2 {
-    font-family: 'Baloo 2', inherit;
+    font-family: 'Kanit', inherit;
     font-size: 24px; font-weight: 700; color: var(--chalk, #fff);
     margin: 0 0 6px;
   }
@@ -294,13 +294,13 @@
     color: var(--chalk-faint, rgba(255,255,255,0.35)); margin-bottom: 6px;
   }
   .auth-field input {
-    width: 100%; background: rgba(238,242,234,0.04);
-    border: 1px solid var(--board-line, rgba(238,242,234,0.1)); border-radius: 10px;
+    width: 100%; background: rgba(196,178,255,0.04);
+    border: 1px solid var(--board-line, rgba(196,178,255,0.1)); border-radius: 10px;
     padding: 12px 14px; color: var(--chalk, #fff);
     font-family: inherit; font-size: 14px; font-weight: 500;
     outline: none; transition: border-color 0.2s, background 0.2s;
   }
-  .auth-field input:focus { border-color: rgba(215,38,61,0.5); background: rgba(238,242,234,0.06); }
+  .auth-field input:focus { border-color: rgba(215,38,61,0.5); background: rgba(196,178,255,0.06); }
   .auth-submit {
     width: 100%; background: var(--bell, #d7263d); color: var(--chalk, #fff);
     border: none; border-radius: 10px; padding: 14px;
@@ -336,13 +336,13 @@
   .auth-close {
     position: absolute; top: 14px; right: 14px;
     width: 40px; height: 40px; border-radius: 50%;
-    background: rgba(238,242,234,0.04); border: 1px solid var(--board-line, rgba(238,242,234,0.08));
+    background: rgba(196,178,255,0.04); border: 1px solid var(--board-line, rgba(196,178,255,0.08));
     color: var(--chalk-dim, rgba(255,255,255,0.5)); cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     font-size: 14px; font-family: inherit;
     transition: all 0.2s;
   }
-  .auth-close:hover { background: rgba(238,242,234,0.08); color: var(--chalk, #fff); }
+  .auth-close:hover { background: rgba(196,178,255,0.08); color: var(--chalk, #fff); }
 
   /* ─── Achievement Toasts ─────────────────────────────────────────────── */
   #ach-toast-container {
@@ -361,7 +361,7 @@
   }
   .ach-toast {
     pointer-events: all;
-    background: var(--board-raised, rgba(16,22,15,0.96));
+    background: var(--board-raised, rgba(18,10,48,0.96));
     border: 1px solid rgba(240,192,0,0.35);
     border-radius: 14px 14px 8px 8px;
     padding: 14px 18px;
@@ -392,7 +392,7 @@
     font-size: 10px; font-weight: 700;
     color: #f0c000; margin-bottom: 3px;
   }
-  .ach-toast-name { font-family: 'Baloo 2', inherit; font-size: 14px; font-weight: 700; color: var(--chalk, #fff); }
+  .ach-toast-name { font-family: 'Kanit', inherit; font-size: 14px; font-weight: 700; color: var(--chalk, #fff); }
   .ach-toast-desc { font-size: 11px; color: var(--chalk-dim, rgba(255,255,255,0.5)); margin-top: 2px; line-height: 1.4; }
   `;
   const styleEl = document.createElement('style');

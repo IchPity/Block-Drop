@@ -7,8 +7,7 @@
   <title>Achievements — Arcade</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Kanit:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600;1,700;1,800;1,900&family=Share+Tech+Mono&family=Tilt+Neon&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/theme.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -16,7 +15,7 @@
     html { scroll-behavior: smooth; }
     body {
       background: var(--bg); min-height: 100vh;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       color: var(--chalk); overflow-x: clip;
     }
 
@@ -41,15 +40,15 @@
     .nav-left { display: flex; align-items: center; gap: 16px; }
     .nav-back {
       display: inline-flex; align-items: center; gap: 6px;
-      text-decoration: none; color: #8b9a88;
+      text-decoration: none; color: #aaa0cc;
       font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
       border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
       padding: 7px 14px; transition: all 0.2s;
     }
-    .nav-back:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.04); }
+    .nav-back:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); background: color-mix(in srgb, #fff 4%, var(--board-raised)); }
     .nav-title { font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.5); letter-spacing: 0.3px; }
     .nav-right { display: flex; align-items: center; gap: 10px; }
-    .user-chip { display: flex; align-items: center; gap: 7px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); border-radius: 999px; padding: 6px 14px 6px 8px; }
+    .user-chip { display: flex; align-items: center; gap: 7px; background: color-mix(in srgb, #fff 5%, var(--board-raised)); border: 1px solid rgba(255,255,255,0.09); border-radius: 999px; padding: 6px 14px 6px 8px; }
     .user-avatar { width: 24px; height: 24px; border-radius: 50%; background: #d23e56; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; color: #fff; }
     .user-label { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); }
     .nav-btn { background: transparent; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 7px 14px; color: rgba(255,255,255,0.4); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s; }
@@ -102,11 +101,11 @@
       border-radius: 18px; padding: 20px 24px;
     }
     .stat-card.red { background: rgba(233,69,96,0.06); border-color: rgba(233,69,96,0.18); }
-    .stat-card.neutral { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.07); }
+    .stat-card.neutral { background: color-mix(in srgb, #fff 3%, var(--board-raised)); border-color: rgba(255,255,255,0.07); }
     .stat-val { font-size: 36px; font-weight: 900; color: #fff; letter-spacing: -2px; line-height: 1; margin-bottom: 4px; }
     .stat-val .accent { color: var(--gold); }
     .stat-card.red .accent { color: var(--red); }
-    .stat-lbl { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #8b9a88; }
+    .stat-lbl { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #aaa0cc; }
 
     /* ── Progress ───────────────────────────────────────── */
     .progress-section {
@@ -115,16 +114,16 @@
       animation: fadeUp 0.7s 0.3s both;
     }
     .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .progress-title { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #8b9a88; }
+    .progress-title { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #aaa0cc; }
     .progress-label { font-size: 12px; font-weight: 700; color: var(--gold); }
-    .progress-track { background: rgba(255,255,255,0.05); border-radius: 100px; height: 8px; overflow: hidden; }
+    .progress-track { background: color-mix(in srgb, #fff 5%, var(--board-raised)); border-radius: 100px; height: 8px; overflow: hidden; }
     .progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--red)); border-radius: 100px; transform-origin: 0 50%; transform: scaleX(0); transition: transform 1s cubic-bezier(0.22,1,0.36,1); width: 100%; box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
 
     /* ── Section Header ─────────────────────────────────── */
     .section-header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px; margin-top: 8px; }
     .section-label { font-size: 11px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.4); }
-    .section-divider { flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
-    .section-count { font-size: 11px; font-weight: 600; color: #8b9a88; }
+    .section-divider { flex: 1; height: 1px; background: color-mix(in srgb, #fff 6%, var(--board-raised)); }
+    .section-count { font-size: 11px; font-weight: 600; color: #aaa0cc; }
 
     /* ── Achievement Grid ───────────────────────────────── */
     .ach-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 40px; }
@@ -147,21 +146,21 @@
     .ach-icon { font-size: 28px; margin-bottom: 4px; }
     .ach-name { font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
     .ach-card.locked { border-style: dashed; }
-    .ach-card.locked .ach-icon { color: #8b9a88; line-height: 0; }
+    .ach-card.locked .ach-icon { color: #aaa0cc; line-height: 0; }
     .ach-card.locked .ach-name { color: var(--chalk-dim); }
-    .ach-desc { font-size: 11px; color: #8b9a88; line-height: 1.55; }
+    .ach-desc { font-size: 11px; color: #aaa0cc; line-height: 1.55; }
     .ach-card.locked .ach-desc { color: var(--chalk-faint); }
 
     .ach-status { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 8px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
     .ach-status.done { color: var(--gold); }
     .ach-status.done::before { content: '✓'; }
-    .ach-status.todo { color: #8b9a88; }
+    .ach-status.todo { color: #aaa0cc; }
 
     /* ── Leaderboard ────────────────────────────────────── */
     .lb-section { margin-bottom: 48px; }
     .lb-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
     .lb-tab {
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      background: color-mix(in srgb, #fff 4%, var(--board-raised)); border: 1px solid rgba(255,255,255,0.08);
       color: rgba(255,255,255,0.45);
       padding: 7px 14px; border-radius: 10px;
       font-family: inherit; font-size: 11px; font-weight: 700;
@@ -184,9 +183,9 @@
     }
     .lb-row:last-child { border-bottom: none; }
     .lb-row.head {
-      background: rgba(255,255,255,0.02);
+      background: color-mix(in srgb, #fff 2%, var(--board-raised));
       font-size: 11px; font-weight: 700; letter-spacing: 2px;
-      text-transform: uppercase; color: #8b9a88;
+      text-transform: uppercase; color: #aaa0cc;
     }
     .lb-row.me { background: rgba(233,69,96,0.08); }
     .lb-rank { font-weight: 900; color: rgba(255,255,255,0.5); }
@@ -197,10 +196,10 @@
     a.lb-name { text-decoration: none; transition: color 0.15s; cursor: pointer; }
     a.lb-name:hover { color: var(--red); }
     .lb-score { color: var(--red); font-weight: 800; text-align: right; }
-    .lb-plays { color: #8b9a88; font-weight: 600; text-align: right; }
+    .lb-plays { color: #aaa0cc; font-weight: 600; text-align: right; }
     .lb-empty {
       padding: 36px 20px; text-align: center;
-      color: #8b9a88; font-size: 12px;
+      color: #aaa0cc; font-size: 12px;
     }
 
     /* ── Bottom CTA ─────────────────────────────────────── */
@@ -210,16 +209,16 @@
       margin-top: 32px;
     }
     .bottom-cta h2 { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: -0.5px; margin-bottom: 8px; }
-    .bottom-cta p { font-size: 13px; color: #8b9a88; margin-bottom: 24px; }
+    .bottom-cta p { font-size: 13px; color: #aaa0cc; margin-bottom: 24px; }
     .cta-buttons { display: flex; justify-content: center; gap: 12px; }
 
     .btn-secondary {
       display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px;
+      background: color-mix(in srgb, #fff 5%, var(--board-raised)); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px;
       padding: 13px 24px; color: rgba(255,255,255,0.55); font-family: inherit; font-size: 14px; font-weight: 600;
       cursor: pointer; text-decoration: none; transition: all 0.22s;
     }
-    .btn-secondary:hover { color: #fff; border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.08); }
+    .btn-secondary:hover { color: #fff; border-color: rgba(255,255,255,0.22); background: color-mix(in srgb, #fff 8%, var(--board-raised)); }
 
     @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -264,7 +263,7 @@
 
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: color-mix(in srgb, #fff 7%, var(--board-raised)); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
   </style>
 </head>
@@ -309,7 +308,7 @@
         <div class="stat-lbl">Gesamt</div>
       </div>
       <div class="stat-card red">
-        <div class="stat-val"><span class="accent" style="color:var(--red)" id="pct-count">—</span><span style="font-size:20px;color:#8b9a88">%</span></div>
+        <div class="stat-val"><span class="accent" style="color:var(--red)" id="pct-count">—</span><span style="font-size:20px;color:#aaa0cc">%</span></div>
         <div class="stat-lbl">Abgeschlossen</div>
       </div>
     </div>
@@ -354,6 +353,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/fx.js"></script>
 <script src="/auth.js"></script>
 <script>
 const ACHIEVEMENTS = [

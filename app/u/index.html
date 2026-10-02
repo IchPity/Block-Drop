@@ -7,8 +7,7 @@
   <title>Spielerprofil — Arcade</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Kanit:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600;1,700;1,800;1,900&family=Share+Tech+Mono&family=Tilt+Neon&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/theme.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -16,7 +15,7 @@
     html { scroll-behavior: smooth; }
     body {
       background: var(--bg); min-height: 100vh;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       color: var(--chalk); overflow-x: clip;
     }
 
@@ -39,12 +38,12 @@
     .nav-left { display: flex; align-items: center; gap: 16px; }
     .nav-back {
       display: inline-flex; align-items: center; gap: 6px;
-      text-decoration: none; color: #8b9a88;
+      text-decoration: none; color: #aaa0cc;
       font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
       border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
       padding: 7px 14px; transition: all 0.2s;
     }
-    .nav-back:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.04); }
+    .nav-back:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); background: color-mix(in srgb, #fff 4%, var(--board-raised)); }
     .nav-title { font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.5); letter-spacing: 0.3px; }
     .nav-right { display: flex; align-items: center; gap: 10px; }
 
@@ -95,7 +94,7 @@
     img.avatar { display: block; }
     .p-info { min-width: 0; flex: 1; }
     .p-name { font-size: 26px; font-weight: 900; color: #fff; letter-spacing: -0.8px; overflow: hidden; text-overflow: ellipsis; }
-    .p-since { font-size: 11px; color: #8b9a88; margin-top: 6px; font-weight: 600; letter-spacing: 0.3px; }
+    .p-since { font-size: 11px; color: #aaa0cc; margin-top: 6px; font-weight: 600; letter-spacing: 0.3px; }
 
     /* Friend action button */
     .friend-row { margin-top: 16px; }
@@ -110,10 +109,10 @@
     .friend-btn.accept { background: var(--green); color: #06210f; box-shadow: 0 5px 12px rgba(0,0,0,0.35); }
     .friend-btn.accept:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.08); }
     .friend-btn.ghost {
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.14);
+      background: color-mix(in srgb, #fff 5%, var(--board-raised)); border: 1px solid rgba(255,255,255,0.14);
       color: rgba(255,255,255,0.7);
     }
-    .friend-btn.ghost:hover:not(:disabled) { color: #fff; border-color: rgba(255,255,255,0.28); background: rgba(255,255,255,0.09); }
+    .friend-btn.ghost:hover:not(:disabled) { color: #fff; border-color: rgba(255,255,255,0.28); background: color-mix(in srgb, #fff 9%, var(--board-raised)); }
     .friend-btn.danger { background: rgba(233,69,96,0.1); border: 1px solid rgba(233,69,96,0.3); color: #ff7a90; }
     .friend-btn.danger:hover:not(:disabled) { background: rgba(233,69,96,0.18); color: #ff97aa; }
     .friend-btn:disabled { opacity: 0.55; cursor: not-allowed; }
@@ -157,7 +156,7 @@
     }
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: color-mix(in srgb, #fff 7%, var(--board-raised)); border-radius: 3px; }
   </style>
 </head>
 <body>
@@ -208,6 +207,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/fx.js"></script>
 <script src="/auth.js"></script>
 <script>
 (function () {

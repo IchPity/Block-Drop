@@ -1,132 +1,186 @@
 /* ─────────────────────────────────────────────────────────────────────────
-   Arcade shared theme — "Der Automat der 5DK"
-   Chalkboard-room chrome shared by every page: tokens, background layers,
-   navbar, hero, doc-card, cabinet start-button. Each page keeps its own
-   accent color and page-specific UI on top of this.
+   Arcade shared theme — „Die Halle nach Ladenschluss"
+   Die Halle ist zu, das Licht ist aus, alle Automaten laufen im
+   Attract-Modus. Licht kommt nur aus Geräten: Röhren-Phosphor (Cyan),
+   Münzlampen (Bernstein), die Neonschrift (Magenta), der Teppich unter
+   Schwarzlicht. Jede Seite behält ihre eigene Akzentfarbe (--accent)
+   und ihr eigenes UI; das hier ist der Raum, in dem sie steht.
+   Die Token-Namen (--board, --chalk …) stammen noch aus dem alten
+   Kreidetafel-Look und bleiben, damit keine Seite angefasst werden muss.
+   Bewegte Ebene (WebGL-Halle, Partikel, Kino-Screens): /fx.js
    ───────────────────────────────────────────────────────────────────────── */
 
 :root {
-  --board:        #10160f;
-  --board-raised: #1a2219;
-  --board-line:   rgba(238,242,234,0.09);
-  --chalk:        #eef2ea;
-  --chalk-dim:    #8b9a88;
-  --chalk-faint:  #848c82;
-  --marquee:      #ffb703;
-  --bell:         #d7263d;
+  --board:        #120a30;
+  --board-raised: #1c1246;
+  --board-line:   rgba(196,178,255,0.14);
+  --chalk:        #f3eeff;
+  --chalk-dim:    #aaa0cc;
+  --chalk-faint:  #9d92c4;
+  --marquee:      #ffb000;
+  --bell:         #ff2e63;
+
+  --ink:        #0a0520;
+  --neon-pink:  #ff3d9a;
+  --neon-cyan:  #2ee6ff;
+  --neon-lime:  #b8ff3d;
+  --uv:         #7b4dff;
+  --tube:       var(--accent, var(--neon-pink));
+
+  --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
+  --font-sign:  'Tilt Neon', 'Kanit', sans-serif;
+  --font-cab:   'Kanit', 'Barlow', sans-serif;
+  --font-body:  'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-data:  'Share Tech Mono', ui-monospace, monospace;
 }
 
 html { scroll-behavior: smooth; }
 
+/* Der body-Hintergrund wandert auf die Wurzel und liegt damit unter der
+   Halle (z-index -1/-2). <html> darf deshalb keinen eigenen bekommen. */
 body {
   background: var(--board);
   color: var(--chalk);
-  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-body);
 }
 
-h1, .display { font-family: 'Baloo 2', 'IBM Plex Sans', sans-serif; }
+h1, .display { font-family: var(--font-cab); }
 
-/* ── Retire the old glass/orb look on every page automatically ──────
-   Older pages still carry their own .orb/.dot-grid/.vignette markup
-   and CSS — hide it here instead of editing 12 files by hand, and
-   paint the new chalkboard/grid-paper/vignette in as body pseudo-
-   elements so no per-page markup changes are needed either. */
-.orb, .dot-grid, .vignette, .hero-eyebrow { display: none !important; }
+/* Alte Deko-Ebenen früherer Looks (Glas-Orbs, Punktraster, Kreidepapier)
+   stehen noch im Markup mancher Seiten — hier zentral abgeschaltet. */
+.orb, .dot-grid, .vignette, .hero-eyebrow, .paper-grid, .board-vignette, .bulb-strip { display: none !important; }
 .hero h1 em { font-style: normal !important; color: inherit !important; }
 
+/* ── Die Halle ohne WebGL ─────────────────────────────────────────────
+   Standbild für Geräte ohne WebGL und für reduced-motion: Lichtinseln
+   der Automaten links und rechts, Teppichfluchtlinien am Boden.
+   /fx.js legt die bewegte Halle als <canvas id="fx-hall"> darüber. */
 body::before {
-  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  background-image:
-    linear-gradient(rgba(238,242,234,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(238,242,234,0.03) 1px, transparent 1px),
-    radial-gradient(ellipse 100% 70% at 50% 0%, transparent 45%, rgba(4,6,4,0.65) 100%);
-  background-size: 34px 34px, 34px 34px, 100% 100%;
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: -2;
+  background:
+    radial-gradient(ellipse 38% 46% at 0% 62%, color-mix(in srgb, var(--neon-cyan) 20%, transparent), transparent 70%),
+    radial-gradient(ellipse 38% 46% at 100% 58%, color-mix(in srgb, var(--neon-pink) 20%, transparent), transparent 70%),
+    radial-gradient(ellipse 60% 30% at 50% 100%, color-mix(in srgb, var(--uv) 26%, transparent), transparent 75%),
+    repeating-linear-gradient(90deg, transparent 0 68px, rgba(196,178,255,0.035) 68px 69px),
+    linear-gradient(180deg, #0d0626 0%, #120a30 48%, #1a0f44 100%);
 }
+#fx-hall { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; display: block; }
+
+/* Deckenröhre: eine durchgehende Neonlinie ganz oben, summt leise */
 body::after {
-  content: ''; position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 101;
-  background-image: repeating-radial-gradient(circle at 9px 1.5px, var(--marquee) 0 1.3px, transparent 1.6px 18px);
-  background-size: 18px 3px;
-  opacity: 0.5;
-  animation: bulbGlow 5s ease-in-out infinite;
+  content: ''; position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 101; pointer-events: none;
+  background: linear-gradient(90deg, var(--neon-pink), var(--uv) 35%, var(--neon-cyan) 65%, var(--marquee));
+  box-shadow: 0 2px 14px color-mix(in srgb, var(--neon-pink) 55%, transparent);
+  animation: tubeHum 6s ease-in-out infinite;
 }
-@media (prefers-reduced-motion: reduce) { body::after { animation: none; opacity: 0.55; } }
+@keyframes tubeHum { 0%, 100% { opacity: 0.72; } 46% { opacity: 1; } 48% { opacity: 0.55; } 50% { opacity: 1; } }
 
-/* Pages that DO include the new markup explicitly (index, stundenplan)
-   keep using it — these classes stay available too. */
-.paper-grid {
-  position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  background-image:
-    linear-gradient(rgba(238,242,234,0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(238,242,234,0.035) 1px, transparent 1px);
-  background-size: 34px 34px;
-  mask-image: radial-gradient(ellipse 75% 65% at 50% 15%, #000 0%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 15%, #000 0%, transparent 75%);
+/* Dunkle Bildränder wie durch ein Objektiv */
+html::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 102;
+  background: radial-gradient(ellipse 120% 90% at 50% 45%, transparent 62%, rgba(9,4,30,0.62) 100%);
 }
-.board-vignette {
-  position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  background: radial-gradient(ellipse 100% 70% at 50% 0%, transparent 45%, rgba(4,6,4,0.7) 100%);
-}
-.bulb-strip {
-  position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 101;
-  background-image: repeating-radial-gradient(circle at 9px 1.5px, var(--marquee) 0 1.3px, transparent 1.6px 18px);
-  background-size: 18px 3px;
-  opacity: 0.5;
-  animation: bulbGlow 5s ease-in-out infinite;
-}
-@keyframes bulbGlow { 0%, 100% { opacity: 0.38; } 50% { opacity: 0.8; } }
-@media (prefers-reduced-motion: reduce) { .bulb-strip { animation: none; opacity: 0.55; } }
 
-/* ── Navbar ─────────────────────────────────────────────────────────── */
+/* Einschalten wie eine Bildröhre: ein heller Strich zieht sich quer,
+   dann geht das Bild nach oben und unten auf. Läuft bei jedem Laden;
+   beim Verlassen spielt fx.js das Gleiche rückwärts (html.fx-leaving). */
+html::after {
+  content: ''; position: fixed; z-index: 10000; pointer-events: none;
+  top: 50%; left: 0; width: 100%; height: 100vh; transform: translateY(-50%);
+  background: transparent; box-shadow: 0 0 0 100vmax #070318;
+  animation: tubeOn 0.62s var(--ease-out) both;
+}
+@keyframes tubeOn {
+  0%   { left: 50%; width: 0;    height: 2px;   background: #fff; }
+  34%  { left: 0;   width: 100%; height: 2px;   background: #fff; }
+  100% { left: 0;   width: 100%; height: 100vh; background: transparent; }
+}
+html.fx-leaving::after { animation: tubeOff 0.3s cubic-bezier(0.5, 0, 0.9, 0.4) both; }
+@keyframes tubeOff {
+  0%   { left: 0;   width: 100%; height: 100vh; background: transparent; }
+  62%  { left: 0;   width: 100%; height: 2px;   background: #fff; }
+  100% { left: 50%; width: 0;    height: 2px;   background: #fff; }
+}
+
+/* ── Navbar: die Blende über den Automaten ───────────────────────────── */
 .navbar {
   position: fixed; top: 3px !important; left: 0; right: 0; z-index: 100;
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 24px;
-  background: rgba(16,22,15,0.85) !important;
+  background: linear-gradient(180deg, rgba(18,10,48,0.94), rgba(18,10,48,0.78)) !important;
   border-bottom: 1px solid var(--board-line) !important;
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4);
 }
 .nav-left { display: flex; align-items: center; gap: 14px; }
 .nav-back {
   display: inline-flex; align-items: center; gap: 6px;
   text-decoration: none; color: var(--chalk-dim);
-  font-size: 12px; font-weight: 600;
+  font-family: var(--font-cab); font-size: 13px; font-weight: 600; letter-spacing: 0.02em;
   border: 1px solid var(--board-line); border-radius: 8px;
-  padding: 6px 12px; transition: all 0.2s;
+  padding: 6px 12px; min-height: 36px; white-space: nowrap;
+  background: rgba(196,178,255,0.04);
+  transition: color 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.2s var(--ease-out);
 }
-.nav-back:hover { color: var(--chalk); border-color: rgba(238,242,234,0.25); }
+.nav-back:hover {
+  color: var(--chalk); border-color: color-mix(in srgb, var(--tube) 70%, transparent);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--tube) 30%, transparent); transform: translateX(-2px);
+}
 .nav-game-title, .nav-title {
-  font-family: 'Baloo 2', sans-serif;
-  font-size: 14px; font-weight: 700; color: var(--chalk);
+  font-family: var(--font-cab); font-style: italic;
+  font-size: 15px; font-weight: 800; letter-spacing: 0.01em; color: var(--chalk);
   display: flex; align-items: center; gap: 8px;
 }
 .nav-game-title .pill, .nav-title .pill {
-  background: var(--accent, var(--bell)); color: #0e130d; padding: 2px 7px;
-  border-radius: 4px; font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  background: var(--accent, var(--bell)); color: var(--ink); padding: 2px 7px;
+  border-radius: 4px; font-family: var(--font-data); font-style: normal; font-size: 11px; font-weight: 400;
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--accent, var(--bell)) 55%, transparent);
 }
 .nav-right { display: flex; align-items: center; gap: 12px; }
 
 /* ── Container & hero ───────────────────────────────────────────────── */
 .container { position: relative; z-index: 1; }
 
-.hero h1 {
-  font-size: 40px; font-weight: 700; line-height: 1.05;
-  color: var(--chalk);
+/* Seitentitel sind Neonschilder: die Röhre zündet beim Laden und
+   flackert danach gelegentlich. */
+.hero h1, .neon {
+  font-family: var(--font-sign); font-weight: 400; font-style: normal;
+  letter-spacing: 0.01em; line-height: 1.06;
+  color: color-mix(in srgb, var(--tube) 14%, #fff);
+  text-shadow:
+    0 0 2px #fff,
+    0 0 10px var(--tube),
+    0 0 26px var(--tube),
+    0 6px 60px color-mix(in srgb, var(--tube) 70%, transparent);
+  animation: neonStrike 1.5s 0.35s both, neonBuzz 9s 2.4s infinite;
+}
+.hero h1 { font-size: 46px; }
+@keyframes neonStrike {
+  0%, 7%, 11%, 19%, 23% { opacity: 0.12; text-shadow: none; }
+  5%, 9%, 16%, 21%, 30%, 100% { opacity: 1; }
+}
+@keyframes neonBuzz {
+  0%, 91%, 93.5%, 100% { opacity: 1; }
+  92% { opacity: 0.55; }
+  93% { opacity: 0.9; }
 }
 .hero-sub {
-  margin-top: 12px; font-size: 15px; max-width: 65ch; text-wrap: pretty;
-  color: var(--chalk-dim); line-height: 1.6;
+  margin-top: 14px; font-size: 16px; max-width: 65ch; text-wrap: pretty;
+  color: #cfc5ee; line-height: 1.6;
+  text-shadow: 0 1px 2px rgba(9,4,30,0.9), 0 0 18px rgba(9,4,30,0.9);
 }
 
-/* ── Content card (legal pages etc.) ───────────────────────────────── */
-.doc-card {
-  background: var(--board-raised); border: 1px solid var(--board-line);
-  border-radius: 16px 16px 8px 8px; padding: 30px 34px;
+/* ── Gehäuse: Panels mit Kantenleiste (T-Molding) ────────────────────── */
+.doc-card, .panel-box {
+  background: linear-gradient(180deg, rgba(196,178,255,0.05), transparent 120px), var(--board-raised);
+  border: 1px solid var(--board-line);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--tube) 55%, transparent), 0 18px 44px rgba(8,4,26,0.55);
 }
+.doc-card { border-radius: 14px; padding: 30px 34px; }
 .doc-card::before { content: none; }
 .doc-card h2 {
-  font-family: 'Baloo 2', sans-serif;
-  font-size: 16px; font-weight: 600; color: var(--chalk);
-  margin-top: 24px; margin-bottom: 10px;
+  font-family: var(--font-cab); font-style: italic;
+  font-size: 18px; font-weight: 700; color: var(--chalk);
+  margin-top: 28px; margin-bottom: 10px;
 }
 .doc-card h2:first-child { margin-top: 0; }
 .doc-card p {
@@ -136,80 +190,278 @@ body::after {
 }
 .doc-card p:last-child { margin-bottom: 0; }
 .doc-card a {
-  color: var(--accent, var(--marquee)); text-decoration: none;
-  border-bottom: 1px solid color-mix(in srgb, var(--accent, var(--marquee)) 40%, transparent);
-  transition: border-color 0.2s;
+  color: var(--accent, var(--neon-cyan)); text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent, var(--neon-cyan)) 45%, transparent);
+  text-underline-offset: 3px; transition: text-decoration-color 0.2s;
 }
-.doc-card a:hover { border-bottom-color: var(--accent, var(--marquee)); }
+.doc-card a:hover { text-decoration-color: currentColor; }
 .doc-card strong { color: var(--chalk); font-weight: 700; }
 .doc-card ul { margin: 6px 0 12px 22px; }
 .doc-card li { font-size: 15px; max-width: 72ch; line-height: 1.7; color: var(--chalk-dim); margin-bottom: 4px; }
 .doc-card li strong { color: var(--chalk); }
 
-/* ── Cabinet start-button (reused on cards + heroes) ───────────────── */
-.cabinet-start {
-  display: inline-flex; align-items: center; gap: 10px;
-  background: none; border: none; padding: 0; cursor: pointer;
-  font-family: 'IBM Plex Sans', sans-serif; text-decoration: none;
-}
-.cabinet-start .dot {
-  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--accent, var(--bell)); color: #0e130d;
-  font-size: 11px; line-height: 1;
-  box-shadow: 0 0 0 3px rgba(238,242,234,0.06), 0 4px 10px rgba(0,0,0,0.4);
-  transition: transform 0.2s;
-}
-.cabinet-start .dot::before { content: ''; margin-left: 2px; border-left: 9px solid currentColor; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
-.cabinet-start .label { font-size: 13px; font-weight: 700; color: var(--chalk); }
-.cabinet-start:hover .dot { transform: scale(1.08); }
-
-/* ── Panel box (game HUD panels) ────────────────────────────────────── */
-.panel-box {
-  background: var(--board-raised);
-  border: 1px solid var(--board-line);
-  border-radius: 14px; padding: 12px 14px;
-}
+.panel-box { border-radius: 14px; padding: 12px 14px; }
 .panel-box h3 {
-  font-size: 12px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 1.5px;
+  font-family: var(--font-cab); font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.14em;
   color: var(--chalk-faint); margin-bottom: 8px;
 }
 
-/* ── Scrollbar & focus ──────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--board-line); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(238,242,234,0.18); }
+/* ── Münzlampe: der Startknopf jedes Automaten ───────────────────────── */
+.cabinet-start {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: none; border: none; padding: 0; cursor: pointer;
+  font-family: var(--font-cab); text-decoration: none;
+}
+.cabinet-start .dot {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink); font-size: 11px; line-height: 1;
+  background: radial-gradient(circle at 35% 30%, #fff 0 8%, color-mix(in srgb, var(--accent, var(--bell)) 70%, #fff) 22%, var(--accent, var(--bell)) 60%, color-mix(in srgb, var(--accent, var(--bell)) 60%, #000));
+  box-shadow: 0 0 0 3px rgba(10,5,32,0.9), 0 0 0 4px var(--board-line), 0 6px 18px color-mix(in srgb, var(--accent, var(--bell)) 60%, transparent);
+  transition: transform 0.25s var(--ease-out), box-shadow 0.25s;
+}
+.cabinet-start .dot::before { content: ''; margin-left: 2px; border-left: 9px solid currentColor; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
+.cabinet-start .label { font-size: 14px; font-weight: 700; font-style: italic; letter-spacing: 0.02em; color: var(--chalk); }
+.cabinet-start:hover .dot { transform: scale(1.1); }
 
-a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focus-visible {
-  outline: 2px solid var(--marquee); outline-offset: 2px;
+/* ── Bildschirm: alles, was in einer Röhre steht ─────────────────────── */
+.crt { position: relative; overflow: hidden; isolation: isolate; }
+.crt::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 3;
+  background:
+    repeating-linear-gradient(180deg, rgba(0,0,0,0) 0 2px, rgba(0,0,0,0.22) 2px 3px),
+    radial-gradient(ellipse 110% 100% at 50% 50%, transparent 55%, rgba(0,0,0,0.6) 100%),
+    linear-gradient(115deg, rgba(255,255,255,0.1) 0%, transparent 28%);
 }
 
-/* Browser surfaces themed from the palette */
-::selection { background: color-mix(in srgb, var(--marquee) 35%, transparent); color: var(--chalk); }
-input, textarea, select { caret-color: var(--marquee); accent-color: var(--marquee); }
-table, .tnum, [data-num] { font-variant-numeric: tabular-nums; }
-.nav-back { min-height: 36px; white-space: nowrap; }
-.nav-back:focus-visible, .cabinet-start:focus-visible { outline: 2px solid var(--marquee); outline-offset: 3px; }
+/* ── Scrollbar, Fokus, Auswahl ──────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--ink); }
+::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--neon-pink), var(--uv)); border-radius: 4px; border: 2px solid var(--ink); }
+html { scrollbar-color: var(--uv) var(--ink); scrollbar-width: thin; }
 
-/* Site-wide: respect reduced motion on every page (pages keep their own
-   overrides; this catches the ones that never had any). */
+a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--neon-cyan); outline-offset: 2px;
+}
+::selection { background: color-mix(in srgb, var(--neon-pink) 55%, transparent); color: #fff; }
+input, textarea, select { caret-color: var(--neon-cyan); accent-color: var(--neon-pink); }
+table, .tnum, [data-num] { font-variant-numeric: tabular-nums; }
+.nav-back:focus-visible, .cabinet-start:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 3px; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Effekt-Ebene (von /fx.js erzeugt)
+   ═══════════════════════════════════════════════════════════════════════ */
+#fx-layer { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 9500; pointer-events: none; }
+#fx-layer.docked { position: absolute; z-index: 2; }
+.fx-flash { position: fixed; inset: 0; z-index: 9400; pointer-events: none; }
+.fx-streak {
+  position: fixed; left: 0; right: 0; height: 180px; margin-top: -90px; z-index: 9450; pointer-events: none;
+  background:
+    radial-gradient(ellipse 50% 3% at 50% 50%, #fff, transparent 70%),
+    radial-gradient(ellipse 50% 14% at 50% 50%, var(--rc, #fff), transparent 72%),
+    radial-gradient(ellipse 9% 46% at 50% 50%, color-mix(in srgb, var(--rc, #fff) 70%, transparent), transparent 70%);
+  mix-blend-mode: screen;
+}
+
+/* ── Kino-Screen (Belohnungen, Gutschriften) ─────────────────────────── */
+.fxc {
+  --rc: var(--marquee);
+  position: fixed; inset: 0; z-index: 9000; display: none; overflow: hidden;
+  place-items: center; padding: 14vh 20px;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 46%, color-mix(in srgb, var(--rc) 30%, transparent), transparent 70%),
+    rgba(16,8,46,0.94);
+  backdrop-filter: blur(10px) saturate(0.6); -webkit-backdrop-filter: blur(10px) saturate(0.6);
+}
+.fxc.on { display: grid; animation: fxcIn 0.3s ease-out both; }
+.fxc.off { animation: fxcOut 0.24s ease-in both; }
+@keyframes fxcIn { from { opacity: 0; } }
+@keyframes fxcOut { to { opacity: 0; } }
+.fxc-bar { position: absolute; left: 0; right: 0; height: 11vh; background: #070318; z-index: 4; }
+.fxc-bar-t { top: 0; transform-origin: top; animation: fxcBar 0.5s var(--ease-out) both; }
+.fxc-bar-b { bottom: 0; transform-origin: bottom; animation: fxcBar 0.5s var(--ease-out) both; }
+@keyframes fxcBar { from { transform: scaleY(0); } }
+.fxc.off .fxc-bar { animation: fxcBarOut 0.24s ease-in both; }
+@keyframes fxcBarOut { to { transform: scaleY(0); } }
+
+.fxc-rays {
+  position: absolute; left: 50%; top: 44%; width: 220vmax; height: 220vmax; margin: -110vmax 0 0 -110vmax; pointer-events: none;
+  background: repeating-conic-gradient(color-mix(in srgb, var(--rc) 26%, transparent) 0 5deg, transparent 5deg 17deg, color-mix(in srgb, var(--rc) 12%, transparent) 17deg 19deg, transparent 19deg 30deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0, transparent 46%); mask-image: radial-gradient(circle, #000 0, transparent 46%);
+  animation: fxcSpin 46s linear infinite, fxcRaysIn 1.2s 0.2s var(--ease-out) both;
+}
+@keyframes fxcSpin { to { rotate: 360deg; } }
+@keyframes fxcRaysIn { from { opacity: 0; scale: 0.4; } }
+
+.fxc-stage {
+  position: relative; z-index: 3; width: min(880px, 100%); text-align: center;
+  animation: fxcPush 9s linear both;
+}
+@keyframes fxcPush { from { scale: 1; } to { scale: 1.05; } }
+.fxc.off .fxc-stage { animation: fxcCut 0.24s ease-in both; }
+@keyframes fxcCut { to { scale: 1.18; opacity: 0; filter: blur(8px); } }
+
+.fxc-icon {
+  position: relative; display: inline-grid; place-items: center; width: 150px; height: 150px;
+  font-size: 104px; line-height: 1;
+  filter: drop-shadow(0 14px 22px rgba(0,0,0,0.6)) drop-shadow(0 0 34px color-mix(in srgb, var(--rc) 60%, transparent));
+  animation: fxcSlam 0.55s 0.12s cubic-bezier(0.2, 0.9, 0.25, 1) both, fxcFloat 3.2s 0.9s ease-in-out infinite;
+}
+.fxc-icon { color: var(--rc); }
+.fxc-icon svg { width: 130px; height: 130px; display: block; }
+@keyframes fxcSlam {
+  0%   { transform: scale(7) rotate(-18deg); opacity: 0; filter: blur(18px); }
+  60%  { transform: scale(0.86) rotate(2deg); opacity: 1; filter: blur(0) drop-shadow(0 0 60px #fff); }
+  100% { transform: scale(1) rotate(0); }
+}
+@keyframes fxcFloat { 50% { translate: 0 -9px; } }
+.fxc-icon::before, .fxc-icon::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--rc); opacity: 0;
+  animation: fxcRing 1s 0.42s var(--ease-out) both;
+}
+.fxc-icon::after { animation-delay: 0.58s; border-color: #fff; }
+@keyframes fxcRing { from { transform: scale(0.4); opacity: 0.95; } to { transform: scale(4.6); opacity: 0; } }
+
+.fxc-title {
+  margin: 10px 0 0; font-family: var(--font-sign); font-weight: 400; text-transform: none;
+  font-size: var(--fs, clamp(34px, 6.4vw, 78px)); line-height: 1.04; letter-spacing: 0.01em; text-wrap: balance;
+  color: color-mix(in srgb, var(--rc) 12%, #fff);
+  text-shadow: 0 0 2px #fff, 0 0 12px var(--rc), 0 0 34px var(--rc), 0 8px 70px color-mix(in srgb, var(--rc) 70%, transparent);
+}
+.fxc-title .w { display: inline-block; white-space: nowrap; }
+.fxc-title .l { display: inline-block; opacity: 0; animation: fxcStrike 0.7s both; }
+@keyframes fxcStrike {
+  0%   { opacity: 0; }
+  12%  { opacity: 1; }
+  20%  { opacity: 0.1; }
+  36%  { opacity: 1; }
+  44%  { opacity: 0.35; }
+  58%, 100% { opacity: 1; }
+}
+.fxc-count {
+  margin-top: 14px; font-family: var(--font-data); font-variant-numeric: tabular-nums;
+  font-size: clamp(30px, 6vw, 64px); line-height: 1; color: var(--rc);
+  text-shadow: 0 4px 30px color-mix(in srgb, var(--rc) 60%, transparent);
+  animation: fxcUp 0.5s 0.75s var(--ease-out) both;
+}
+.fxc-count:empty { display: none; }
+.fxc-text {
+  margin: 16px auto 0; max-width: 52ch; font-family: var(--font-body); font-size: clamp(15px, 2vw, 18px); line-height: 1.5;
+  color: #e6defa; text-wrap: pretty; animation: fxcUp 0.6s 0.85s var(--ease-out) both;
+}
+@keyframes fxcUp { from { opacity: 0; translate: 0 18px; filter: blur(6px); } }
+.fxc-chips { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; perspective: 600px; }
+.fxc-chips span {
+  font-family: var(--font-data); font-size: 15px; padding: 8px 14px; border-radius: 6px;
+  color: var(--ink); background: var(--rc);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--rc) 45%, transparent), inset 0 1px 0 rgba(255,255,255,0.5);
+  transform-origin: 50% 0; animation: fxcFlip 0.55s var(--ease-out) both;
+}
+@keyframes fxcFlip { from { transform: rotateX(-96deg); opacity: 0; } }
+.fxc-go {
+  margin-top: 26px; font-family: var(--font-cab); font-style: italic; font-weight: 800; font-size: 18px; letter-spacing: 0.04em;
+  padding: 13px 34px; border: 0; border-radius: 999px; cursor: pointer; color: var(--ink);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 55%, #fff), var(--rc) 55%, color-mix(in srgb, var(--rc) 78%, #000));
+  box-shadow: 0 0 0 4px rgba(10,5,32,0.85), 0 0 0 5px color-mix(in srgb, var(--rc) 60%, transparent), 0 14px 34px color-mix(in srgb, var(--rc) 50%, transparent);
+  animation: fxcUp 0.5s 1.25s var(--ease-out) both, fxcLamp 1.4s 1.8s ease-in-out infinite;
+  transition: transform 0.15s var(--ease-out);
+}
+.fxc-go:hover { transform: translateY(-2px) scale(1.03); }
+.fxc-go:active { transform: translateY(2px) scale(0.98); }
+.fxc-go:focus-visible { outline: 3px solid #fff; outline-offset: 5px; }
+@keyframes fxcLamp { 50% { filter: brightness(1.22); } }
+.fxc-hint {
+  margin-top: 14px; font-family: var(--font-body); font-size: 13px; color: #b9aedd;
+  animation: fxcUp 0.5s 1.6s var(--ease-out) both;
+}
+.fxc.lite .fxc-icon { width: 120px; height: 120px; font-size: 84px; }
+.fxc.lite .fxc-title { --fs: clamp(28px, 4.8vw, 56px); }
+@media (max-width: 600px) {
+  .fxc { padding: 9vh 16px; }
+  .fxc-bar { height: 6vh; }
+  .fxc-icon { width: 112px; height: 112px; font-size: 78px; }
+  .fxc-icon svg { width: 100px; height: 100px; }
+  .fxc-chips span { font-size: 13px; padding: 7px 11px; }
+  .fxc-hint { display: none; }
+}
+
+/* ── Abspann ─────────────────────────────────────────────────────────── */
+.fxr {
+  --rc: var(--marquee);
+  position: fixed; inset: 0; z-index: 9100; display: none; overflow: hidden; color: #f3eeff;
+  background: radial-gradient(ellipse 80% 60% at 50% 110%, color-mix(in srgb, var(--rc) 16%, transparent), transparent 70%), rgba(13,6,40,0.975);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+.fxr.on { display: block; animation: fxcIn 1.2s ease-out both; }
+.fxr.off { animation: fxcOut 0.5s ease-in both; }
+.fxr .fxc-bar { height: 9vh; z-index: 5; animation-duration: 0.9s; }
+.fxr-roll {
+  position: absolute; left: 50%; top: 0; width: min(760px, calc(100% - 40px)); translate: -50% 0;
+  text-align: center; will-change: transform; z-index: 3;
+}
+.fxr-roll > * { margin: 0 auto; }
+.fxr-logo {
+  font-family: var(--font-sign); font-size: clamp(44px, 9vw, 110px); line-height: 1; letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--rc) 12%, #fff);
+  text-shadow: 0 0 2px #fff, 0 0 14px var(--rc), 0 0 40px var(--rc), 0 10px 90px var(--rc);
+}
+.fxr-tag { margin-top: 18px; font-family: var(--font-cab); font-style: italic; font-weight: 600; font-size: clamp(16px, 2.6vw, 24px); color: #cfc5ee; }
+.fxr-sec { padding-top: 22vh; }
+.fxr-head {
+  font-family: var(--font-cab); font-style: italic; font-weight: 800; font-size: clamp(15px, 2.2vw, 20px);
+  letter-spacing: 0.22em; text-transform: uppercase; color: var(--rc); margin-bottom: 26px;
+}
+.fxr-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; align-items: baseline; padding: 7px 0; }
+.fxr-row .r { text-align: right; font-size: clamp(14px, 2vw, 18px); color: #b9aedd; }
+.fxr-row .n { text-align: left; font-family: var(--font-cab); font-weight: 700; font-size: clamp(17px, 2.6vw, 24px); color: #fff; }
+.fxr-row .n small { display: block; font-family: var(--font-body); font-weight: 400; font-size: 14px; color: #b9aedd; }
+.fxr-big { font-family: var(--font-cab); font-style: italic; font-weight: 800; font-size: clamp(26px, 5vw, 52px); line-height: 1.1; text-wrap: balance; }
+.fxr-big small { display: block; margin-top: 10px; font-family: var(--font-body); font-style: normal; font-weight: 400; font-size: clamp(15px, 2vw, 18px); color: #b9aedd; }
+.fxr-note { font-size: clamp(14px, 1.9vw, 17px); line-height: 1.6; color: #b9aedd; max-width: 46ch; text-wrap: pretty; }
+.fxr-stat { display: inline-block; margin: 0 18px 22px; min-width: 150px; }
+.fxr-stat b { display: block; font-family: var(--font-data); font-weight: 400; font-size: clamp(26px, 4.4vw, 44px); color: var(--rc); font-variant-numeric: tabular-nums; }
+.fxr-stat span { font-size: 14px; color: #b9aedd; }
+.fxr-end {
+  position: absolute; inset: 0; z-index: 4; display: none; place-items: center; text-align: center; padding: 12vh 20px;
+}
+.fxr.ended .fxr-end { display: grid; }
+.fxr.ended .fxr-roll { visibility: hidden; }
+.fxr-end .fxc-title { --fs: clamp(64px, 16vw, 190px); }
+.fxr-ui {
+  position: absolute; right: 18px; bottom: calc(9vh + 14px); z-index: 6; display: flex; gap: 10px; align-items: center;
+  font-family: var(--font-body); font-size: 13px; color: #b9aedd;
+}
+.fxr-ui button {
+  font: inherit; color: #f3eeff; background: rgba(196,178,255,0.08); border: 1px solid rgba(196,178,255,0.3);
+  border-radius: 999px; padding: 8px 14px; min-height: 40px; cursor: pointer;
+}
+.fxr-ui button:hover { border-color: var(--rc); color: var(--rc); }
+.fxr.still { overflow-y: auto; }
+.fxr.still .fxc-bar, .fxr.still .fxr-ui span { display: none; }
+.fxr.still .fxr-roll { position: relative; padding: 12vh 0 10vh; }
+.fxr.still .fxr-end { position: relative; display: block; padding: 6vh 20px 16vh; }
+.fxr.still .fxr-ui { position: fixed; bottom: 16px; }
+.fxr.ended .fxr-ui { display: none; }
+
+/* ── Reduced motion: Bild steht, Inhalt bleibt ───────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
     transition-duration: 0.01ms !important;
   }
-  body::after, .bulb-strip { animation: none !important; opacity: 0.55; }
+  html::after { display: none; }
+  body::after { animation: none !important; opacity: 0.9; }
 }
 
 @media (max-width: 720px) {
   .navbar { padding: 10px 14px; }
   .nav-back { padding: 7px 12px; font-size: 12px; min-height: 40px; }
-  .nav-game-title, .nav-title { font-size: 13px; }
-  .hero h1 { font-size: 30px; }
-  .hero-sub { font-size: 14px; }
+  .nav-game-title, .nav-title { font-size: 14px; }
+  .hero h1 { font-size: 34px; }
+  .hero-sub { font-size: 15px; }
   .doc-card { padding: 22px 18px; }
 }

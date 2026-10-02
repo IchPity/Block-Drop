@@ -3,7 +3,7 @@
 > Drei Spiele, ein paar nützliche Sachen für dazwischen, und dein Stundenplan
 > — alles auf einer Seite, kein zweiter Tab nötig.
 
-Klassenwebsite der 5DK im Kreidetafel-Arcade-Look: Browser-Spiele,
+Klassenwebsite der 5DK im Look einer Arcade-Halle bei Nacht: Browser-Spiele,
 Alltagshelfer (Stundenplan, Wetter, METAR, F1) und ein Konto-System mit
 Freunden/Achievements — alles statisch gebaut, mit Supabase als Backend.
 Dazu kommt **Block Games**, ein eigenständiges Electron-Partyspiel im
@@ -20,7 +20,8 @@ Seit 2026-09-11 ist wieder die Arcade-Seite aktiv.
 app/                 Die Arcade-Website (statisches Frontend)
 ├─ index.html         Startseite mit dem Automaten-Grid
 ├─ auth.js            Supabase-Auth-Client, site-weit eingebunden
-├─ theme.css           Design-System „Automat der 5DK"
+├─ theme.css           Design-System „Die Halle nach Ladenschluss"
+├─ fx.js               Bewegte Ebene: WebGL-Halle, Partikel, Kino-Screens, Abspann
 ├─ games/              Block Drop, Block Presser, Casino, SchulUhr (Schach liegt noch als Ordner, ist aber nicht mehr verlinkt)
 ├─ stundenplan/        Echter Stundenplan der 5DK
 ├─ weather/, metar/, f1/, f1-wetten/   Alltagshelfer für die Klasse

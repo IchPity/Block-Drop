@@ -7,7 +7,7 @@
 <title>Casino — Arcade</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Kanit:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600;1,700;1,800;1,900&family=Share+Tech+Mono&family=Tilt+Neon&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/theme.css">
 <script src="reset.js"></script>
 <style>
@@ -17,7 +17,7 @@
     --accent: var(--marquee);
     --amber: var(--marquee);
     --win: #4ade80;
-    --ink: #0b100a;
+    --ink: #0a0520;
     --sym: clamp(62px, 17vw, 104px);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,7 +29,7 @@
   .container { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
   .hero { margin: 24px 0 28px; }
   .hero-sub { max-width: 60ch; }
-  .more { display: inline-block; margin: 12px 8px 0 0; padding: 8px 14px; border: 1px solid var(--amber); border-radius: 8px; color: var(--amber); font: 700 14px 'Baloo 2', sans-serif; text-decoration: none; }
+  .more { display: inline-block; margin: 12px 8px 0 0; padding: 8px 14px; border: 1px solid var(--amber); border-radius: 8px; color: var(--amber); font: 700 14px 'Kanit', sans-serif; text-decoration: none; }
   .more:hover { background: rgba(255,183,3,.08); }
   .save-warn {
     margin-top: 12px; max-width: 60ch; font-size: 13px; line-height: 1.5;
@@ -63,38 +63,38 @@
     background: var(--ink); border: 1px solid var(--board-line); border-radius: 10px; color: var(--chalk-dim); cursor: pointer;
     transition: border-color 0.15s, background 0.15s, color 0.15s;
   }
-  .mode-btn b { font-family: 'Baloo 2', sans-serif; font-size: 15px; font-weight: 700; color: var(--chalk); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .mode-btn b { font-family: 'Kanit', sans-serif; font-size: 15px; font-weight: 700; color: var(--chalk); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   .mode-btn span { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
-  .mode-btn:hover:not(:disabled) { border-color: rgba(238,242,234,0.3); }
+  .mode-btn:hover:not(:disabled) { border-color: rgba(196,178,255,0.3); }
   .mode-btn[aria-selected="true"] { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 12%, var(--ink)); }
   .mode-btn[aria-selected="true"] span { color: var(--amber); }
   .mode-btn:disabled { cursor: not-allowed; }
   .mode-btn:disabled:not([aria-selected="true"]) { opacity: 0.45; }
   .reelopt { display: flex; gap: 6px; margin: -6px 0 14px; }
-  .reelopt button { flex: 1; min-height: 44px; padding: 6px 8px; background: transparent; border: 1px solid var(--board-line); border-radius: 8px; color: var(--chalk-dim); font: 600 12px 'IBM Plex Sans', sans-serif; letter-spacing: 0.06em; cursor: pointer; }
-  .reelopt button:hover:not(:disabled) { border-color: rgba(238,242,234,0.3); }
+  .reelopt button { flex: 1; min-height: 44px; padding: 6px 8px; background: transparent; border: 1px solid var(--board-line); border-radius: 8px; color: var(--chalk-dim); font: 600 12px 'Barlow', sans-serif; letter-spacing: 0.06em; cursor: pointer; }
+  .reelopt button:hover:not(:disabled) { border-color: rgba(196,178,255,0.3); }
   .reelopt button[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); background: color-mix(in srgb, var(--amber) 12%, var(--ink)); }
   .reelopt button:disabled { cursor: not-allowed; }
   .reelopt button:disabled:not([aria-pressed="true"]) { opacity: 0.45; }
   .meters { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; margin-bottom: 16px; }
   .meter { background: var(--ink); border: 1px solid var(--board-line); border-radius: 10px; padding: 10px 14px 8px; min-width: 0; }
-  .settings-back { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(5,8,4,0.72); }
+  .settings-back { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(12,6,34,0.72); }
   .settings-back[hidden] { display: none; }
   .settings { width: min(420px, 100%); background: var(--board-raised); border: 1px solid var(--board-line); border-radius: 14px; padding: 20px; box-shadow: 0 24px 60px rgba(0,0,0,0.5); }
-  .settings h2 { font-family: 'Baloo 2', sans-serif; font-size: 20px; color: var(--chalk); margin-bottom: 4px; }
+  .settings h2 { font-family: 'Kanit', sans-serif; font-size: 20px; color: var(--chalk); margin-bottom: 4px; }
   .settings p { font-size: 13px; color: var(--chalk-dim); line-height: 1.5; margin-bottom: 14px; }
   .settings .lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--chalk-dim); margin-bottom: 6px; }
   .speeds { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
-  .speeds button { padding: 10px 2px; background: var(--ink); border: 1px solid var(--board-line); border-radius: 8px; color: var(--chalk-dim); font: 600 13px 'IBM Plex Sans', sans-serif; cursor: pointer; }
-  .speeds button:hover { border-color: rgba(238,242,234,0.3); }
+  .speeds button { padding: 10px 2px; background: var(--ink); border: 1px solid var(--board-line); border-radius: 8px; color: var(--chalk-dim); font: 600 13px 'Barlow', sans-serif; cursor: pointer; }
+  .speeds button:hover { border-color: rgba(196,178,255,0.3); }
   .speeds button[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); background: color-mix(in srgb, var(--amber) 12%, var(--ink)); }
-  .toggle { width: 100%; margin-top: 16px; min-height: 44px; display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--ink); border: 1px solid var(--board-line); border-radius: 8px; color: var(--chalk); font: 600 14px 'IBM Plex Sans', sans-serif; cursor: pointer; }
-  .toggle:hover { border-color: rgba(238,242,234,0.3); }
+  .toggle { width: 100%; margin-top: 16px; min-height: 44px; display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--ink); border: 1px solid var(--board-line); border-radius: 8px; color: var(--chalk); font: 600 14px 'Barlow', sans-serif; cursor: pointer; }
+  .toggle:hover { border-color: rgba(196,178,255,0.3); }
   .toggle[aria-pressed="true"] { border-color: var(--amber); }
   .toggle[aria-pressed="true"] span { color: var(--amber); }
   @media (max-width: 420px) { .speeds { gap: 4px; } .speeds button { font-size: 12px; } }
-  .settings .close { margin-top: 16px; width: 100%; padding: 10px; border: 1px solid var(--board-line); border-radius: 10px; background: transparent; color: var(--chalk); font: 700 15px 'Baloo 2', sans-serif; cursor: pointer; }
-  .settings .close:hover { border-color: rgba(238,242,234,0.3); }
+  .settings .close { margin-top: 16px; width: 100%; padding: 10px; border: 1px solid var(--board-line); border-radius: 10px; background: transparent; color: var(--chalk); font: 700 15px 'Kanit', sans-serif; cursor: pointer; }
+  .settings .close:hover { border-color: rgba(196,178,255,0.3); }
   .meter-lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--chalk-dim); }
   .meter-val {
     margin-top: 2px; font-family: 'Share Tech Mono', monospace; font-size: 30px; line-height: 1.15;
@@ -137,7 +137,7 @@
   .banner {
     margin-top: 14px; min-height: 48px; display: flex; align-items: center; justify-content: center;
     text-align: center; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--board-line);
-    font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 18px; color: var(--chalk-dim);
+    font-family: 'Kanit', sans-serif; font-weight: 700; font-size: 18px; color: var(--chalk-dim);
   }
   .banner.win { color: var(--win); border-color: rgba(74,222,128,0.4); background: rgba(74,222,128,0.07); }
   .banner.jackpot { color: var(--amber); border-color: rgba(255,183,3,0.55); background: rgba(255,183,3,0.09); }
@@ -152,12 +152,12 @@
     width: 44px; align-self: stretch; border: 0; background: transparent; color: var(--chalk);
     font-size: 20px; font-weight: 700; cursor: pointer; transition: background 0.15s;
   }
-  .stepper button:hover:not(:disabled) { background: rgba(238,242,234,0.08); }
+  .stepper button:hover:not(:disabled) { background: rgba(196,178,255,0.08); }
   .stepper button:disabled { color: var(--chalk-faint); opacity: 0.45; cursor: not-allowed; }
   .stepper output { min-width: 62px; text-align: center; font-family: 'Share Tech Mono', monospace; font-size: 18px; color: var(--amber); font-variant-numeric: tabular-nums; }
   .spin {
     flex: 1; min-width: 0; align-self: end; height: 48px; border: 0; border-radius: 12px; cursor: pointer;
-    background: var(--bell); color: #fff; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: 0.14em;
+    background: var(--bell); color: #fff; font-family: 'Kanit', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: 0.14em;
     box-shadow: 0 6px 14px rgba(0,0,0,0.4);
     transition: transform 0.15s cubic-bezier(.2,.8,.2,1), filter 0.15s, box-shadow 0.15s;
   }
@@ -168,10 +168,10 @@
   .spin.auto { background: #3b2a08; color: var(--amber); }
   .spin.long { font-size: 16px; letter-spacing: 0.06em; }
   .auto-stop { display: none; margin-top: 10px; border: 1px solid var(--board-line); background: transparent; color: var(--chalk-dim); border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; }
-  .auto-stop:hover { color: var(--chalk); border-color: rgba(238,242,234,0.3); }
+  .auto-stop:hover { color: var(--chalk); border-color: rgba(196,178,255,0.3); }
   .auto-stop.on { display: inline-block; }
   .auto-tog { display: block; margin-top: 10px; min-height: 40px; border: 1px solid var(--board-line); background: transparent; color: var(--chalk-dim); border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
-  .auto-tog:hover:not(:disabled) { color: var(--chalk); border-color: rgba(238,242,234,0.3); }
+  .auto-tog:hover:not(:disabled) { color: var(--chalk); border-color: rgba(196,178,255,0.3); }
   .auto-tog[aria-pressed="true"] { background: #3b2a08; color: var(--amber); border-color: var(--amber); }
   .auto-tog:disabled { opacity: .45; cursor: not-allowed; }
 
@@ -190,7 +190,7 @@
   @keyframes shake { 10%,90% { transform: translate(-2px,1px); } 20%,80% { transform: translate(4px,-2px) rotate(0.3deg); } 30%,50%,70% { transform: translate(-7px,3px) rotate(-0.4deg); } 40%,60% { transform: translate(7px,-3px) rotate(0.4deg); } }
   .cabinet.flash::before { content: ''; position: absolute; inset: 0; z-index: 5; pointer-events: none; background: radial-gradient(circle, rgba(255,255,255,0.55), transparent 70%); animation: flash 0.5s ease-out forwards; }
   @keyframes flash { to { opacity: 0; } }
-  .bigwin { position: absolute; left: 50%; top: 42%; z-index: 8; pointer-events: none; text-align: center; transform: translate(-50%, -50%); opacity: 0; font-family: 'Baloo 2', sans-serif; font-weight: 800; white-space: nowrap; }
+  .bigwin { position: absolute; left: 50%; top: 42%; z-index: 8; pointer-events: none; text-align: center; transform: translate(-50%, -50%); opacity: 0; font-family: 'Kanit', sans-serif; font-weight: 800; white-space: nowrap; }
   .bigwin b { display: block; font-size: clamp(30px, 8vw, 64px); letter-spacing: 0.06em; color: var(--amber); text-shadow: 0 4px 0 rgba(0,0,0,0.55), 0 10px 20px rgba(0,0,0,0.6); }
   .bigwin span { display: block; font: 400 clamp(22px, 6vw, 40px) 'Share Tech Mono', monospace; color: var(--chalk); text-shadow: 0 3px 8px rgba(0,0,0,0.8); }
   .bigwin.show { animation: bigwin 2.6s cubic-bezier(.2,.9,.3,1.3) forwards; }
@@ -207,12 +207,12 @@
     @keyframes bigwinCalm { 0%,90% { opacity: 1; } 100% { opacity: 0; } }
   }
   .reels.lucky { border-color: var(--win); }
-  .gear { padding: 4px 12px; min-height: 40px; background: transparent; border: 1px solid var(--board-line); border-radius: 999px; color: var(--chalk-dim); font: 600 12px 'IBM Plex Sans', sans-serif; cursor: pointer; }
-  .gear:hover { border-color: rgba(238,242,234,0.3); color: var(--chalk); }
+  .gear { padding: 4px 12px; min-height: 40px; background: transparent; border: 1px solid var(--board-line); border-radius: 999px; color: var(--chalk-dim); font: 600 12px 'Barlow', sans-serif; cursor: pointer; }
+  .gear:hover { border-color: rgba(196,178,255,0.3); color: var(--chalk); }
   .status-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 28px; margin-bottom: 8px; flex-wrap: wrap; }
   .status-note { font-size: 12px; color: var(--chalk-faint); }
   .status-chips { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
-  .chip { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: 0.08em; padding: 2px 10px; border-radius: 999px; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--ink); }
+  .chip { font-family: 'Kanit', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: 0.08em; padding: 2px 10px; border-radius: 999px; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--ink); }
   .chip.free { background: var(--amber); }
   .chip.luck { background: var(--win); }
   .hint { margin-top: 12px; font-size: 12px; color: var(--chalk-faint); line-height: 1.5; }
@@ -221,20 +221,20 @@
   /* ── Seitenleiste ────────────────────────────────────────────────── */
   .side { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
   .panel { background: var(--board-raised); border: 1px solid var(--board-line); border-radius: 12px; padding: 18px 18px 16px; }
-  .panel h2 { font-family: 'Baloo 2', sans-serif; font-size: 16px; font-weight: 600; color: var(--chalk); margin-bottom: 12px; }
+  .panel h2 { font-family: 'Kanit', sans-serif; font-size: 16px; font-weight: 600; color: var(--chalk); margin-bottom: 12px; }
   .topup.needed { border-color: var(--amber); }
-  .co-pay { padding: 14px; border: 0; border-radius: 10px; background: var(--amber); color: var(--ink); font: 700 16px 'Baloo 2', sans-serif; }
+  .co-pay { padding: 14px; border: 0; border-radius: 10px; background: var(--amber); color: var(--ink); font: 700 16px 'Kanit', sans-serif; }
   .payout { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--board-line); }
-  .payout h3 { font-family: 'Baloo 2', sans-serif; font-size: 14px; font-weight: 600; color: var(--chalk); margin-bottom: 8px; }
+  .payout h3 { font-family: 'Kanit', sans-serif; font-size: 14px; font-weight: 600; color: var(--chalk); margin-bottom: 8px; }
   .pay-row { display: flex; gap: 8px; }
   .pay-row input { flex: 1; min-width: 0; background: var(--ink); border: 1px solid var(--board-line); border-radius: 8px; padding: 8px 10px; color: var(--amber); font: 400 16px 'Share Tech Mono', monospace; }
   .pay-row input:focus { border-color: var(--amber); outline: 0; }
-  .pay-row button { border: 1px solid var(--amber); background: transparent; color: var(--amber); border-radius: 8px; padding: 8px 12px; font: 700 14px 'Baloo 2', sans-serif; cursor: pointer; }
+  .pay-row button { border: 1px solid var(--amber); background: transparent; color: var(--amber); border-radius: 8px; padding: 8px 12px; font: 700 14px 'Kanit', sans-serif; cursor: pointer; }
   .pay-row button:disabled { opacity: .45; cursor: not-allowed; }
-  .pay-receipt { margin-top: 8px; width: 100%; border: 1px solid var(--board-line); background: transparent; color: var(--chalk); border-radius: 8px; padding: 8px 12px; font: 700 14px 'Baloo 2', sans-serif; cursor: pointer; }
+  .pay-receipt { margin-top: 8px; width: 100%; border: 1px solid var(--board-line); background: transparent; color: var(--chalk); border-radius: 8px; padding: 8px 12px; font: 700 14px 'Kanit', sans-serif; cursor: pointer; }
   #rcpDlg { position: fixed; margin: auto; z-index: 60; border: 0; background: transparent; color: var(--chalk); width: min(92vw, 400px); padding: 0; }
   #rcpDlg::backdrop { background: rgba(0,0,0,.6); }
-  #rcpDlg .close { width: 100%; margin-top: 10px; min-height: 44px; border: 0; border-radius: 10px; background: var(--amber); color: var(--ink); font: 700 15px 'Baloo 2', sans-serif; cursor: pointer; }
+  #rcpDlg .close { width: 100%; margin-top: 10px; min-height: 44px; border: 0; border-radius: 10px; background: var(--amber); color: var(--ink); font: 700 15px 'Kanit', sans-serif; cursor: pointer; }
   .pool-line { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; color: var(--chalk-dim); }
   .pool-line b { font: 400 15px 'Share Tech Mono', monospace; color: var(--win); }
   .msg { margin-top: 8px; font-size: 12px; color: var(--chalk-dim); min-height: 1em; }
@@ -294,64 +294,64 @@
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
-    <symbol id="s-seven" viewBox="0 0 48 48"><polygon points="8,7 40,7 40,15 23,42 13,42 29,16 8,16" fill="#d7263d" stroke="#eef2ea" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="s-seven" viewBox="0 0 48 48"><polygon points="8,7 40,7 40,15 23,42 13,42 29,16 8,16" fill="#d7263d" stroke="#f3eeff" stroke-width="2" stroke-linejoin="round"/></symbol>
     <symbol id="s-diamond" viewBox="0 0 48 48">
-      <polygon points="24,5 41,17 24,43 7,17" fill="#4db5ff" stroke="#eef2ea" stroke-width="2" stroke-linejoin="round"/>
-      <path d="M7 17h34M17 17l7 26 7-26M17 17l7-12 7 12" fill="none" stroke="#eef2ea" stroke-width="1.6" stroke-linejoin="round" opacity="0.85"/>
+      <polygon points="24,5 41,17 24,43 7,17" fill="#4db5ff" stroke="#f3eeff" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M7 17h34M17 17l7 26 7-26M17 17l7-12 7 12" fill="none" stroke="#f3eeff" stroke-width="1.6" stroke-linejoin="round" opacity="0.85"/>
     </symbol>
     <symbol id="s-bell" viewBox="0 0 48 48">
-      <path d="M24 4c-1.7 0-3 1.3-3 3v1.4C15.6 9.8 12 14.300 12 19.700V29l-4 5v3h32v-3l-4-5v-9.300c0-5.400-3.600-9.900-9-11.300V7c0-1.700-1.300-3-3-3z" fill="#ffb703" stroke="#eef2ea" stroke-width="2" stroke-linejoin="round"/>
-      <circle cx="24" cy="42" r="3.600" fill="#ffb703" stroke="#eef2ea" stroke-width="2"/>
+      <path d="M24 4c-1.7 0-3 1.3-3 3v1.4C15.6 9.8 12 14.300 12 19.700V29l-4 5v3h32v-3l-4-5v-9.300c0-5.400-3.600-9.900-9-11.300V7c0-1.700-1.300-3-3-3z" fill="#ffb703" stroke="#f3eeff" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="24" cy="42" r="3.600" fill="#ffb703" stroke="#f3eeff" stroke-width="2"/>
     </symbol>
-    <symbol id="s-star" viewBox="0 0 48 48"><polygon points="24,4 30,17.500 44.500,19 33.500,29 36.800,43.500 24,36 11.200,43.500 14.500,29 3.500,19 18,17.500" fill="#eef2ea" stroke="#ffb703" stroke-width="2.200" stroke-linejoin="round"/></symbol>
+    <symbol id="s-star" viewBox="0 0 48 48"><polygon points="24,4 30,17.500 44.500,19 33.500,29 36.800,43.500 24,36 11.200,43.500 14.500,29 3.500,19 18,17.500" fill="#f3eeff" stroke="#ffb703" stroke-width="2.200" stroke-linejoin="round"/></symbol>
     <symbol id="s-cherry" viewBox="0 0 48 48">
       <path d="M15 30C17 18 24 10 33 6M32 30C31 20 31 12 33 6" fill="none" stroke="#4ade80" stroke-width="2.600" stroke-linecap="round"/>
       <path d="M33 6c4-3 9-2 10 1-4 3-9 3-10-1z" fill="#4ade80"/>
-      <circle cx="15" cy="35" r="8.500" fill="#d7263d" stroke="#eef2ea" stroke-width="1.800"/>
-      <circle cx="32" cy="36" r="8.500" fill="#d7263d" stroke="#eef2ea" stroke-width="1.800"/>
+      <circle cx="15" cy="35" r="8.500" fill="#d7263d" stroke="#f3eeff" stroke-width="1.800"/>
+      <circle cx="32" cy="36" r="8.500" fill="#d7263d" stroke="#f3eeff" stroke-width="1.800"/>
     </symbol>
     <symbol id="s-lemon" viewBox="0 0 48 48">
-      <ellipse cx="24" cy="25" rx="19" ry="13" transform="rotate(-25 24 25)" fill="#f2e04a" stroke="#eef2ea" stroke-width="2"/>
+      <ellipse cx="24" cy="25" rx="19" ry="13" transform="rotate(-25 24 25)" fill="#f2e04a" stroke="#f3eeff" stroke-width="2"/>
       <path d="M14 27c3-6 9-10 16-11" fill="none" stroke="#fff7a8" stroke-width="2.200" stroke-linecap="round"/>
     </symbol>
     <symbol id="s-grape" viewBox="0 0 48 48">
       <path d="M24 12V5c4 0 8 1 10 4" fill="none" stroke="#4ade80" stroke-width="2.600" stroke-linecap="round"/>
-      <g fill="#a78bfa" stroke="#10160f" stroke-width="1.600">
+      <g fill="#a78bfa" stroke="#120a30" stroke-width="1.600">
         <circle cx="17" cy="18" r="6.500"/><circle cx="31" cy="18" r="6.500"/>
         <circle cx="11" cy="28" r="6.500"/><circle cx="24" cy="28" r="6.500"/><circle cx="37" cy="28" r="6.500"/>
         <circle cx="17" cy="38" r="6.500"/><circle cx="31" cy="38" r="6.500"/>
       </g>
     </symbol>
     <symbol id="s-enya" viewBox="0 0 48 48">
-      <rect x="4" y="9" width="40" height="30" rx="5" fill="#6366f1" stroke="#eef2ea" stroke-width="2"/>
-      <text x="24" y="30" text-anchor="middle" font-family="'Baloo 2', Impact, sans-serif" font-weight="800" font-size="14" fill="#eef2ea" letter-spacing="0.6">ENYA</text>
+      <rect x="4" y="9" width="40" height="30" rx="5" fill="#6366f1" stroke="#f3eeff" stroke-width="2"/>
+      <text x="24" y="30" text-anchor="middle" font-family="'Kanit', Impact, sans-serif" font-weight="800" font-size="14" fill="#f3eeff" letter-spacing="0.6">ENYA</text>
       <path d="M38 12l1.100 2.900 2.900 1.100-2.900 1.100L38 20l-1.100-2.900-2.900-1.100 2.900-1.100z" fill="#ffb703"/>
     </symbol>
     <symbol id="s-crown" viewBox="0 0 48 48">
-      <path d="M6 36L4 14l10 9 10-15 10 15 10-9-2 22z" fill="#ffb703" stroke="#eef2ea" stroke-width="2" stroke-linejoin="round"/>
-      <rect x="6" y="36" width="36" height="6" rx="2" fill="#ffb703" stroke="#eef2ea" stroke-width="2"/>
+      <path d="M6 36L4 14l10 9 10-15 10 15 10-9-2 22z" fill="#ffb703" stroke="#f3eeff" stroke-width="2" stroke-linejoin="round"/>
+      <rect x="6" y="36" width="36" height="6" rx="2" fill="#ffb703" stroke="#f3eeff" stroke-width="2"/>
       <circle cx="24" cy="30" r="3" fill="#b39cff"/><circle cx="14" cy="31" r="2" fill="#4db5ff"/><circle cx="34" cy="31" r="2" fill="#4db5ff"/>
     </symbol>
     <symbol id="s-harp" viewBox="0 0 48 48">
-      <path d="M12 42V12c0-4 4-7 9-7 8 0 15 5 15 13 0 6-4 10-10 12L12 42z" fill="none" stroke="#eef2ea" stroke-width="2.6" stroke-linejoin="round"/>
-      <path d="M12 42h26" stroke="#eef2ea" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M12 42V12c0-4 4-7 9-7 8 0 15 5 15 13 0 6-4 10-10 12L12 42z" fill="none" stroke="#f3eeff" stroke-width="2.6" stroke-linejoin="round"/>
+      <path d="M12 42h26" stroke="#f3eeff" stroke-width="2.6" stroke-linecap="round"/>
       <path d="M17 12v27M22 10v22M27 11v17M32 14v11" stroke="#b39cff" stroke-width="2" stroke-linecap="round"/>
     </symbol>
     <symbol id="s-moon" viewBox="0 0 48 48">
-      <path d="M30 5a19 19 0 1 0 13 32A16 16 0 0 1 30 5z" fill="#f2e04a" stroke="#eef2ea" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M30 5a19 19 0 1 0 13 32A16 16 0 0 1 30 5z" fill="#f2e04a" stroke="#f3eeff" stroke-width="2" stroke-linejoin="round"/>
       <circle cx="17" cy="26" r="2.4" fill="#e0c938"/><circle cx="23" cy="35" r="1.8" fill="#e0c938"/>
     </symbol>
     <symbol id="s-note" viewBox="0 0 48 48">
-      <path d="M18 34V10l20-5v24" fill="none" stroke="#eef2ea" stroke-width="2.8" stroke-linejoin="round"/>
-      <ellipse cx="13" cy="35" rx="7" ry="5.500" fill="#4db5ff" stroke="#eef2ea" stroke-width="2"/>
-      <ellipse cx="33" cy="30" rx="7" ry="5.500" fill="#4db5ff" stroke="#eef2ea" stroke-width="2"/>
+      <path d="M18 34V10l20-5v24" fill="none" stroke="#f3eeff" stroke-width="2.8" stroke-linejoin="round"/>
+      <ellipse cx="13" cy="35" rx="7" ry="5.500" fill="#4db5ff" stroke="#f3eeff" stroke-width="2"/>
+      <ellipse cx="33" cy="30" rx="7" ry="5.500" fill="#4db5ff" stroke="#f3eeff" stroke-width="2"/>
     </symbol>
     <symbol id="s-wave" viewBox="0 0 48 48">
       <path d="M3 18c5-7 10-7 14 0s9 7 14 0 9-7 14 0M3 29c5-7 10-7 14 0s9 7 14 0 9-7 14 0M3 40c5-7 10-7 14 0s9 7 14 0 9-7 14 0" fill="none" stroke="#4db5ff" stroke-width="3.200" stroke-linecap="round"/>
     </symbol>
     <symbol id="s-bar" viewBox="0 0 48 48">
-      <rect x="5" y="12" width="38" height="24" rx="4" fill="#4ade80" stroke="#eef2ea" stroke-width="2"/>
-      <text x="24" y="30" text-anchor="middle" font-family="'Baloo 2', Impact, sans-serif" font-weight="800" font-size="15" fill="#10160f" letter-spacing="1">BAR</text>
+      <rect x="5" y="12" width="38" height="24" rx="4" fill="#4ade80" stroke="#f3eeff" stroke-width="2"/>
+      <text x="24" y="30" text-anchor="middle" font-family="'Kanit', Impact, sans-serif" font-weight="800" font-size="15" fill="#120a30" letter-spacing="1">BAR</text>
     </symbol>
   </defs>
 </svg>
@@ -480,6 +480,7 @@
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/fx.js"></script>
 <script src="/auth.js"></script>
 <dialog id="rcpDlg">
   <div id="rcpBody"></div>
@@ -782,6 +783,29 @@ function fxStep() {
   fxc.globalAlpha = 1;
   fxRun = parts.length ? requestAnimationFrame(fxStep) : 0;
 }
+// Die ganze Halle feiert mit: Münzregen, Blitz, Lichtstreifen (nur im ADHS-Modus)
+function hallFx(res, x, award, luckStart) {
+  if (!fxOn() || !window.FX) return;
+  const r = $('reels').getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const col = getComputedStyle($('cabinet')).getPropertyValue('--amber').trim() || '#ffb000';
+  if (res.jackpot || award || luckStart) {
+    FX.flash(col, 600); FX.streak(cy, col); FX.ring(cx, cy, col, { width: 10 }); FX.pulse(col, 1.4);
+    FX.shake(document.querySelector('main'), 16, 620);
+    FX.burst(cx, cy, { kind: 'coin', n: 90, speed: 22, lift: -9, bounce: true });
+    FX.rain({ kind: 'coin', ms: res.jackpot ? 3600 : 2200, per: 6 });
+    setTimeout(() => { FX.ring(cx, cy, '#ffffff', { width: 5, dur: 1.1 }); FX.streak(cy, '#ffffff'); }, 260);
+  } else if (x >= 30) {
+    FX.flash(col, 460); FX.streak(cy, col); FX.pulse(col, 1.3); FX.shake(document.querySelector('main'), 12, 520);
+    FX.burst(cx, cy, { kind: 'coin', n: 70, speed: 20, lift: -8, bounce: true }); FX.rain({ kind: 'coin', ms: 1800, per: 5 });
+  } else if (x >= 10) {
+    FX.flash(col, 300); FX.pulse(col, 1.1); FX.ring(cx, cy, col, { to: 520, width: 7 });
+    FX.burst(cx, cy, { kind: 'coin', n: 46, speed: 17, lift: -7, bounce: true });
+  } else if (x >= 3) {
+    FX.pulse(col, 0.8); FX.burst(cx, cy, { kind: 'coin', n: 20, speed: 13, lift: -6, bounce: true });
+  } else if (res.win > 0) {
+    FX.pulse(col, 0.45); FX.burst(cx, cy, { kind: 'spark', n: 26, speed: 10, color: col });
+  }
+}
 function shake(hard) {
   if (!fxOn()) return;
   const cab = $('cabinet');
@@ -834,7 +858,12 @@ function spinReel(i, rows, finalRow, slow) {
     strip.style.transition = `transform ${dur}ms cubic-bezier(.16,.84,.3,1.04)`;
     strip.style.transform = `translateY(calc(var(--sym) * -${target}))`;
     setTimeout(() => reels[i].classList.remove('moving'), dur * 0.72);
-    setTimeout(() => { tick(i); resolve(); }, dur + 60);
+    setTimeout(() => {
+      tick(i);
+      // jede Walze schlägt mit Funken ein
+      if (fxOn() && window.FX) { const b = reels[i].getBoundingClientRect(); FX.burst(b.left + b.width / 2, b.bottom - 4, { kind: 'spark', n: 9, speed: 7, spread: 2.6, radius: b.width / 3, radiusY: 1, color: '#ffd23f' }); }
+      resolve();
+    }, dur + 60);
   });
 }
 
@@ -933,6 +962,7 @@ async function spin() {
   else if (res.win > 0) burst(22);
   if (res.jackpot) bigWin('JACKPOT', res.win);
   else if (award) bigWin(award + ' FREISPIELE', res.win);
+  hallFx(res, x, award, luckStart);
   if (res.jackpot) {
     cab.classList.add('jackpot');
     banner(`JACKPOT · +${money(res.win)}${extra}`, 'jackpot');
@@ -1264,6 +1294,28 @@ render();
 if (state.free > 0) { banner(`Freispiele laufen: noch ${state.free}.`, 'win'); scheduleAuto(); }
 else if (state.balance < BET_STEPS[0]) banner('Guthaben aufgebraucht. Drück SPIN oder die Leertaste zum Aufladen.', 'warn');
 save();
+
+// ── Zurück von der Kasse: die Gutschrift bekommt ihren Kino-Screen ──
+(function creditShow() {
+  let c = null;
+  try { c = JSON.parse(sessionStorage.getItem('automat5dk.casino.credit')); sessionStorage.removeItem('automat5dk.casino.credit'); } catch (e) {}
+  if (!c || !window.FX || !(c.cents > 0) || Date.now() - c.ts > 20 * 60000) return;
+  const COIN = '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="#b87400"/><circle cx="32" cy="32" r="25" fill="#ffc93a"/><circle cx="32" cy="32" r="19" fill="none" stroke="#b87400" stroke-width="2.5"/><path d="M37 23.5c-1.6-1.3-3.6-2-5.7-2-5 0-9 4.7-9 10.5s4 10.5 9 10.5c2.1 0 4.1-.7 5.700-2M18.5 29.5h13M18.5 34.5h13" fill="none" stroke="#7a4a00" stroke-width="3.2" stroke-linecap="round"/><ellipse cx="22" cy="18" rx="7" ry="3.5" transform="rotate(-35 22 18)" fill="#fff6c8" opacity=".8"/></svg>';
+  FX.cinema({
+    iconHtml: COIN, color: '#ffd23f', tier: 'epic', particles: 'coin', cta: 'An die Automaten',
+    title: 'Guthaben geladen',
+    count: { from: 0, to: c.cents, fmt: v => '+' + money(v), ms: 1900 },
+    text: 'Neues Guthaben: ' + money(c.balance) + '. Die Automaten warten schon.',
+    chips: [c.method + ' · Spielgeld', 'Beleg ' + c.no],
+  }).then(() => {
+    // Münzen fliegen in die Guthaben-Anzeige, die von alt auf neu hochzählt
+    const m = $('mBalance').getBoundingClientRect();
+    FX.burst(m.left + m.width / 2, m.top + m.height / 2, { kind: 'coin', n: 30, speed: 12, lift: -6, bounce: true });
+    FX.ring(m.left + m.width / 2, m.top + m.height / 2, '#ffd23f', { to: 300, width: 6, dur: 0.6 });
+    if (!spinning) { cancelAnimationFrame(tweenId); shown = Math.max(0, state.balance - c.cents); $('mBalance').textContent = money(shown); tweenBalance(state.balance); }
+    banner('+' + money(c.cents) + ' gutgeschrieben. Einsatz wählen und SPIN drücken.', 'win');
+  });
+})();
 </script>
 </body>
 </html>

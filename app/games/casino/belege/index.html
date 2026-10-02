@@ -7,10 +7,10 @@
 <title>Belege — Casino</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Kanit:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600;1,700;1,800;1,900&family=Share+Tech+Mono&family=Tilt+Neon&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/theme.css">
 <style>
-  :root { --amber: var(--marquee); --ink: #0b100a; }
+  :root { --amber: var(--marquee); --ink: #0a0520; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { min-height: 100vh; overflow-x: clip; padding: 76px 0 72px; }
   :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
@@ -32,7 +32,7 @@
   .note { margin-top: 14px; font-size: 12px; color: var(--chalk-faint); }
   dialog { position: fixed; margin: auto; z-index: 50; border: 0; background: transparent; color: var(--chalk); width: min(92vw, 400px); padding: 0; }
   dialog::backdrop { background: rgba(0,0,0,.6); }
-  .close { width: 100%; margin-top: 10px; min-height: 44px; border: 0; border-radius: 10px; background: var(--amber); color: var(--ink); font: 700 15px 'Baloo 2', sans-serif; cursor: pointer; }
+  .close { width: 100%; margin-top: 10px; min-height: 44px; border: 0; border-radius: 10px; background: var(--amber); color: var(--ink); font: 700 15px 'Kanit', sans-serif; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -64,6 +64,7 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/fx.js"></script>
 <script src="/auth.js"></script>
 <script src="../beleg.js"></script>
 <script>

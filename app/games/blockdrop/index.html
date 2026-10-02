@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,8 +7,7 @@
   <title>Block Drop — Arcade</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Kanit:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600;1,700;1,800;1,900&family=Share+Tech+Mono&family=Tilt+Neon&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/theme.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -16,7 +15,7 @@
 
     body {
       background: var(--bg); min-height: 100vh;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       color: var(--chalk); overflow-x: clip;
       display: flex; flex-direction: column; align-items: center;
       padding: 80px 16px 32px; gap: 20px;
@@ -43,7 +42,7 @@
     .nav-left { display: flex; align-items: center; gap: 14px; }
     .nav-back {
       display: inline-flex; align-items: center; gap: 6px;
-      text-decoration: none; color: #8b9a88;
+      text-decoration: none; color: #aaa0cc;
       font-size: 12px; font-weight: 600;
       border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
       padding: 6px 12px; transition: all 0.2s;
@@ -53,13 +52,13 @@
     .nav-right { display: flex; align-items: center; gap: 12px; }
     .nav-score-display {
       display: flex; align-items: center; gap: 16px;
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+      background: color-mix(in srgb, #fff 4%, var(--board-raised)); border: 1px solid rgba(255,255,255,0.07);
       border-radius: 10px; padding: 6px 14px;
     }
     .nav-stat { display: flex; flex-direction: column; align-items: center; }
     .nav-stat-val { font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -0.5px; line-height: 1; }
-    .nav-stat-lbl { font-size: 12px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: #8b9a88; margin-top: 1px; }
-    .nav-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.07); }
+    .nav-stat-lbl { font-size: 12px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: #aaa0cc; margin-top: 1px; }
+    .nav-divider { width: 1px; height: 24px; background: color-mix(in srgb, #fff 7%, var(--board-raised)); }
 
     /* ── Layout ─────────────────────────────────────────── */
     #wrapper { position: relative; z-index: 1; display: flex; gap: 14px; align-items: center; }
@@ -68,7 +67,7 @@
 
     /* ── Panels ─────────────────────────────────────────── */
     .panel-box {
-      background: rgba(255,255,255,0.028);
+      background: color-mix(in srgb, #fff 2.8%, var(--board-raised));
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 14px; padding: 12px 14px;
       transition: border-color 0.3s;
@@ -76,7 +75,7 @@
     .panel-box h2 {
       font-size: 12px; font-weight: 700;
       text-transform: uppercase; letter-spacing: 3px;
-      color: #8b9a88; margin-bottom: 8px;
+      color: #aaa0cc; margin-bottom: 8px;
     }
     .panel-box .value {
       font-size: 28px; font-weight: 900; color: #fff;
@@ -106,14 +105,14 @@
       letter-spacing: -1.5px;
       text-shadow: 0 2px 12px rgba(0,0,0,0.5);
     }
-    #overlay .overlay-sub { font-size: 12px; color: #8b9a88; margin-top: -8px; }
-    #overlay p { font-size: 12px; color: #8b9a88; text-align: center; line-height: 1.5; }
+    #overlay .overlay-sub { font-size: 12px; color: #aaa0cc; margin-top: -8px; }
+    #overlay p { font-size: 12px; color: #aaa0cc; text-align: center; line-height: 1.5; }
     #overlay p strong { color: rgba(255,255,255,0.75); }
 
     /* ── Mode Buttons ───────────────────────────────────── */
     .mode-btns { display: flex; gap: 8px; width: 100%; }
     .mode-btn {
-      flex: 1; background: rgba(255,255,255,0.04);
+      flex: 1; background: color-mix(in srgb, #fff 4%, var(--board-raised));
       color: rgba(255,255,255,0.4);
       border: 1px solid rgba(255,255,255,0.09);
       padding: 10px 8px; font-size: 12px; font-weight: 700;
@@ -141,7 +140,7 @@
     .btn:active { transform: scale(0.98); }
 
     /* ── Level Bar ──────────────────────────────────────── */
-    #level-bar-wrap { background: rgba(255,255,255,0.06); border-radius: 100px; height: 3px; width: 100%; margin-top: 8px; overflow: hidden; }
+    #level-bar-wrap { background: color-mix(in srgb, #fff 6%, var(--board-raised)); border-radius: 100px; height: 3px; width: 100%; margin-top: 8px; overflow: hidden; }
     #level-bar { height: 100%; width: 100%; background: var(--red); border-radius: 0 100px 100px 0; transform-origin: 0 50%; transform: scaleX(0); transition: transform 0.4s cubic-bezier(0.25,1,0.5,1); }
 
     /* ── Mode Badge ─────────────────────────────────────── */
@@ -150,14 +149,14 @@
       letter-spacing: 2px; padding: 3px 8px; border-radius: 5px;
       margin-top: 8px; display: inline-block;
     }
-    #mode-badge.classic  { background: rgba(233,69,96,0.15); color: #ed667d; }
+    #mode-badge.classic  { background: rgba(233,69,96,0.15); color: #ff9aaa; }
     #mode-badge.standard { background: rgba(56,189,248,0.12); color: #38bdf8; }
 
     /* ── Controls ───────────────────────────────────────── */
-    #controls-hint { font-size: 12px; color: #8b9a88; line-height: 2.1; }
+    #controls-hint { font-size: 12px; color: #aaa0cc; line-height: 2.1; }
 
     /* ── High Scores ────────────────────────────────────── */
-    #hs-mode-label { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: #8b9a88; margin-bottom: 10px; }
+    #hs-mode-label { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: #aaa0cc; margin-bottom: 10px; }
     .highscore-list { font-size: 12px; color: rgba(255,255,255,0.4); line-height: 2; min-height: 100px; }
     .highscore-list span { color: var(--red); font-weight: 700; }
 
@@ -189,8 +188,8 @@
     #ach-overlay.show #ach-icon-big { animation: achIconPop 0.55s 0.2s both cubic-bezier(0.34,1.56,0.64,1); }
     @keyframes achIconPop { from { transform: scale(0) rotate(-15deg); } to { transform: scale(1) rotate(0deg); } }
     #ach-name-big { font-size: 22px; font-weight: 900; color: #fff; margin-bottom: 8px; letter-spacing: -0.5px; }
-    #ach-desc-big { font-size: 12px; color: #8b9a88; line-height: 1.5; }
-    .ach-hint { font-size: 12px; color: #8b9a88; text-transform: uppercase; letter-spacing: 2px; margin-top: 28px; opacity: 0; }
+    #ach-desc-big { font-size: 12px; color: #aaa0cc; line-height: 1.5; }
+    .ach-hint { font-size: 12px; color: #aaa0cc; text-transform: uppercase; letter-spacing: 2px; margin-top: 28px; opacity: 0; }
     #ach-overlay.show .ach-hint { animation: achHintFade 0.6s 1.8s both; }
     @keyframes achHintFade { from { opacity:0; } to { opacity:1; } }
 
@@ -210,7 +209,7 @@
     }
     .tetris-banner {
       position: fixed; top: 40%; left: 50%; z-index: 9999; pointer-events: none;
-      font-family: 'Inter', sans-serif; font-weight: 900;
+      font-family: 'Barlow', sans-serif; font-weight: 900;
       font-size: clamp(48px, 13vw, 130px); letter-spacing: -5px;
       color: #f0c000;
       filter: drop-shadow(0 4px 8px rgba(0,0,0,0.45)) drop-shadow(0 4px 8px rgba(0,0,0,0.45));
@@ -243,7 +242,7 @@
 
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: color-mix(in srgb, #fff 7%, var(--board-raised)); border-radius: 3px; }
 
     /* ── Touch Controls (mobile only) ───────────────────── */
     #touch-controls { display: none; }
@@ -260,7 +259,7 @@
         touch-action: manipulation;
       }
       .tc-btn {
-        background: rgba(255,255,255,0.05);
+        background: color-mix(in srgb, #fff 5%, var(--board-raised));
         border: 1px solid rgba(255,255,255,0.12);
         border-radius: 14px;
         color: #fff; font-size: 20px;
@@ -338,6 +337,59 @@
       .panel-box .value { font-size: 16px; }
       #left-panel, #right-panel { gap: 6px; }
     }
+
+    /* ── Halle nach Ladenschluss: Block Drop als Automat ───────────── */
+    :root { --accent: #ff3d6e; }
+    .nav-game-title { font-size: 15px; font-weight: 800; }
+    .nav-score-display { background: #05030c; border-color: rgba(255,61,110,0.35); }
+    .nav-stat-val { font-family: var(--font-data); font-weight: 400; color: #ffc23a; }
+    .nav-stat-lbl { font-size: 11px; color: var(--chalk-dim); }
+    .panel-box {
+      background: linear-gradient(180deg, rgba(196,178,255,0.06), transparent 90px), var(--board-raised);
+      border: 1px solid var(--board-line);
+      box-shadow: inset 0 1px 0 rgba(255,61,110,0.7), 0 18px 40px rgba(8,4,26,0.6);
+    }
+    .panel-box h2 { font-family: var(--font-cab); font-style: italic; font-weight: 800; letter-spacing: 0.14em; color: var(--chalk-dim); }
+    .panel-box .value { font-family: var(--font-data); font-weight: 400; letter-spacing: 0; color: #fff; }
+    #score-display { color: #ffc23a; text-shadow: 0 4px 22px rgba(255,176,0,0.7); }
+    #game-area {
+      border-radius: 14px;
+      box-shadow: 0 0 0 2px #05030c, 0 0 0 4px rgba(255,61,110,0.75), 0 0 0 5px rgba(255,255,255,0.25), 0 24px 70px rgba(255,61,110,0.35), 0 40px 90px rgba(8,4,26,0.9);
+      animation: boardHum 5s ease-in-out infinite;
+    }
+    @keyframes boardHum { 50% { box-shadow: 0 0 0 2px #05030c, 0 0 0 4px rgba(46,230,255,0.75), 0 0 0 5px rgba(255,255,255,0.25), 0 24px 70px rgba(46,230,255,0.35), 0 40px 90px rgba(8,4,26,0.9); } }
+    canvas#board { background: #05030c; }
+    #overlay { background: rgba(12,6,34,0.93); }
+    #overlay h1 {
+      font-family: var(--font-sign); font-weight: 400; font-size: 44px; letter-spacing: 0.02em; color: #ffe3ec;
+      text-shadow: 0 0 2px #fff, 0 0 12px var(--accent), 0 0 30px var(--accent), 0 8px 60px var(--accent);
+      animation: neonStrike 1.4s 0.5s both, neonBuzz 8s 2.4s infinite;
+    }
+    #overlay .overlay-sub, #overlay p { font-size: 14px; color: var(--chalk-dim); }
+    .mode-btn { font-family: var(--font-cab); color: var(--chalk-dim); font-size: 14px; }
+    .mode-btn small { font-family: var(--font-body); font-size: 12px; opacity: 0.8; }
+    .mode-btn.selected { background: rgba(255,61,110,0.18); border-color: var(--accent); box-shadow: 0 8px 22px rgba(255,61,110,0.35); }
+    .btn {
+      font-family: var(--font-cab); font-style: italic; font-size: 18px; letter-spacing: 0.04em; border-radius: 999px;
+      background: linear-gradient(180deg, #f0356a, #d81b4e 55%, #9c0d36);
+      box-shadow: 0 0 0 3px rgba(10,5,32,0.9), 0 0 0 4px rgba(255,61,110,0.6), 0 12px 30px rgba(255,46,99,0.5);
+      animation: startLamp 1.4s ease-in-out infinite;
+    }
+    .btn:hover { background: linear-gradient(180deg, #ff4a7c, #e32458 55%, #a80f3b); }
+    @keyframes startLamp { 50% { filter: brightness(1.22); } }
+    #level-bar { background: linear-gradient(90deg, var(--neon-pink), var(--marquee)); box-shadow: 0 0 10px var(--marquee); }
+    #controls-hint { font-family: var(--font-data); color: var(--chalk-dim); white-space: nowrap; }
+    @media (min-width: 761px) { #left-panel { width: 178px; } }
+    .highscore-list { font-family: var(--font-data); color: var(--chalk-dim); }
+    .highscore-list span { color: #ffc23a; font-weight: 400; }
+    .tetris-banner {
+      font-family: var(--font-cab); font-style: italic; letter-spacing: 0; color: #fff;
+      text-shadow: 0 0 4px #fff, 0 0 24px var(--marquee), 0 0 70px var(--marquee), 0 10px 0 rgba(0,0,0,0.5);
+      filter: none;
+    }
+    .level-banner { top: 28%; font-size: clamp(36px, 8vw, 84px); text-shadow: 0 0 4px #fff, 0 0 24px var(--neon-cyan), 0 0 70px var(--neon-cyan), 0 8px 0 rgba(0,0,0,0.5); }
+    .tc-btn { background: var(--board-raised); border-color: var(--board-line); font-family: var(--font-cab); }
+    @media (prefers-reduced-motion: reduce) { #game-area, .btn { animation: none; } }
   </style>
 </head>
 <body>
@@ -367,7 +419,7 @@
       <div class="nav-divider"></div>
       <div class="nav-stat">
         <div class="nav-stat-val" id="nav-lines">0</div>
-        <div class="nav-stat-lbl">Lines</div>
+        <div class="nav-stat-lbl">Reihen</div>
       </div>
     </div>
   </div>
@@ -386,23 +438,23 @@
       <div id="mode-badge" class="classic">Classic</div>
     </div>
     <div class="panel-box">
-      <h2>Lines</h2>
+      <h2>Reihen</h2>
       <div class="value" id="lines-display">0</div>
     </div>
     <div class="panel-box">
-      <h2>Hold</h2>
+      <h2>Halten</h2>
       <canvas id="hold-canvas" width="100" height="80"></canvas>
     </div>
     <div class="panel-box controls-hint-box">
-      <h2>Controls</h2>
+      <h2>Steuerung</h2>
       <div id="controls-hint">
-        ← → &nbsp;Move<br>
-        ↑ / Z &nbsp;Rotate CW<br>
-        X &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rotate CCW<br>
-        ↓ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Soft drop<br>
-        Space Hard drop<br>
-        Shift &nbsp;Hold<br>
-        P &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Pause
+        ← → &nbsp;&nbsp;Bewegen<br>
+        ↑ / Z Drehen<br>
+        X &nbsp;&nbsp;&nbsp;&nbsp;Zurückdrehen<br>
+        ↓ &nbsp;&nbsp;&nbsp;&nbsp;Schneller<br>
+        Leer &nbsp;Fallen lassen<br>
+        Shift Halten<br>
+        P &nbsp;&nbsp;&nbsp;&nbsp;Pause
       </div>
     </div>
   </div>
@@ -413,8 +465,8 @@
       <h1>BLOCK DROP</h1>
       <div class="overlay-sub">Wähl deinen Modus</div>
       <div class="mode-btns">
-        <button class="mode-btn" id="mode-classic">Classic<small>Speed increases</small></button>
-        <button class="mode-btn selected" id="mode-standard">Standard<small>Fixed speed</small></button>
+        <button class="mode-btn" id="mode-classic">Classic<small>Wird schneller</small></button>
+        <button class="mode-btn selected" id="mode-standard">Standard<small>Festes Tempo</small></button>
       </div>
       <button class="btn" id="start-btn">Spielen &nbsp;→</button>
       <p id="overlay-info" style="display:none"></p>
@@ -423,11 +475,11 @@
 
   <div id="right-panel">
     <div class="panel-box">
-      <h2>Next</h2>
+      <h2>Nächste</h2>
       <canvas id="next-canvas" width="100" height="260"></canvas>
     </div>
     <div class="panel-box">
-      <h2>High Scores</h2>
+      <h2>Bestenliste</h2>
       <div id="hs-mode-label">Standard</div>
       <div class="highscore-list" id="hs-list"></div>
     </div>
@@ -442,8 +494,8 @@
   <button class="tc-btn" id="tc-right" type="button" aria-label="Rechts">▶</button>
   <button class="tc-btn" id="tc-rotR" type="button" aria-label="Drehen rechts">↻</button>
   <div class="tc-row2">
-    <button class="tc-btn lbl" id="tc-hold" type="button">Hold</button>
-    <button class="tc-btn lbl" id="tc-drop" type="button" style="background:rgba(233,69,96,0.18);border-color:rgba(233,69,96,0.4);">Drop</button>
+    <button class="tc-btn lbl" id="tc-hold" type="button">Halten</button>
+    <button class="tc-btn lbl" id="tc-drop" type="button" aria-label="Fallen lassen" style="background:rgba(233,69,96,0.18);border-color:rgba(233,69,96,0.4);">Drop</button>
     <button class="tc-btn lbl" id="tc-pause" type="button">⏸</button>
   </div>
 </div>
@@ -465,6 +517,7 @@
   linesObs.observe(document.getElementById('lines-display'), { childList: true, subtree: true, characterData: true });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/fx.js"></script>
 <script src="/auth.js"></script>
 <script src="game.js"></script>
 <script>

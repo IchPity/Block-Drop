@@ -7,8 +7,7 @@
   <title>Weather Dashboard — Arcade</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Kanit:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600;1,700;1,800;1,900&family=Share+Tech+Mono&family=Tilt+Neon&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/theme.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <style>
@@ -26,7 +25,7 @@
     }
     body {
       background: var(--bg); min-height: 100vh;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       color: var(--chalk); overflow-x: clip;
       padding: 72px 0 64px;
     }
@@ -85,7 +84,7 @@
     }
     .search-input {
       width: 100%;
-      background: rgba(255,255,255,0.05);
+      background: color-mix(in srgb, #fff 5%, var(--board-raised));
       border: 1px solid rgba(255,255,255,0.12); border-radius: 12px;
       padding: 13px 16px;
       color: #fff;
@@ -93,8 +92,8 @@
       outline: none;
       transition: border-color 0.2s, background 0.2s;
     }
-    .search-input:focus { border-color: rgba(56,189,248,0.5); background: rgba(255,255,255,0.07); }
-    .search-input::placeholder { color: #8b9a88; }
+    .search-input:focus { border-color: rgba(56,189,248,0.5); background: color-mix(in srgb, #fff 7%, var(--board-raised)); }
+    .search-input::placeholder { color: #aaa0cc; }
 
     .suggestions {
       position: absolute; top: calc(100% + 4px); left: 22px; right: 22px;
@@ -136,13 +135,13 @@
     .fav-chip:hover { background: rgba(56,189,248,0.18); color: #fff; }
     .fav-chip .x {
       width: 16px; height: 16px; border-radius: 50%;
-      background: rgba(255,255,255,0.07);
+      background: color-mix(in srgb, #fff 7%, var(--board-raised));
       display: flex; align-items: center; justify-content: center;
       font-size: 11px; color: rgba(255,255,255,0.5);
       transition: background 0.15s;
     }
     .fav-chip .x:hover { background: var(--red); color: #fff; }
-    .fav-empty { font-size: 11px; color: #8b9a88; padding: 6px 0; }
+    .fav-empty { font-size: 11px; color: #aaa0cc; padding: 6px 0; }
 
     /* Hero current */
     .current-card {
@@ -173,7 +172,7 @@
     }
     .current-time strong { display: block; color: #fff; font-size: 13px; margin-bottom: 2px; }
     .fav-btn {
-      background: rgba(255,255,255,0.04);
+      background: color-mix(in srgb, #fff 4%, var(--board-raised));
       border: 1px solid var(--border);
       border-radius: 99px;
       padding: 6px 14px 6px 12px;
@@ -255,7 +254,7 @@
       color: rgba(255,255,255,0.5); margin-bottom: 12px;
       display: flex; align-items: center; gap: 10px;
     }
-    .section-title::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: color-mix(in srgb, #fff 6%, var(--board-raised)); }
 
     /* Hourly chart */
     .hourly-card {
@@ -270,14 +269,14 @@
       min-width: 720px;
     }
     .hourly-chart .grid { stroke: rgba(255,255,255,0.05); stroke-width: 1; }
-    .hourly-chart .axis { fill: rgba(255,255,255,0.35); font-size: 11px; font-family: 'Inter', sans-serif; font-weight: 600; }
+    .hourly-chart .axis { fill: rgba(255,255,255,0.35); font-size: 11px; font-family: 'Barlow', sans-serif; font-weight: 600; }
     .hourly-chart .temp-line { fill: none; stroke: var(--cyan); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
     .hourly-chart .temp-area { fill: url(#tempGrad); }
     .hourly-chart .precip-bar { fill: rgba(56,189,248,0.7); }
     .hourly-chart .now-line { stroke: var(--red); stroke-width: 1.5; stroke-dasharray: 4 4; }
-    .hourly-chart .now-label { fill: var(--red); font-size: 11px; font-family: 'Inter'; font-weight: 800; letter-spacing: 1px; }
+    .hourly-chart .now-label { fill: var(--red); font-size: 11px; font-family: 'Barlow'; font-weight: 800; letter-spacing: 1px; }
     .hourly-chart .pt-circle { fill: var(--cyan); stroke: #07101e; stroke-width: 2; }
-    .hourly-chart .pt-label { fill: #fff; font-size: 11px; font-weight: 700; font-family: 'Inter'; }
+    .hourly-chart .pt-label { fill: #fff; font-size: 11px; font-weight: 700; font-family: 'Barlow'; }
 
     /* Daily forecast */
     .daily-grid {
@@ -296,7 +295,7 @@
       font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
       color: rgba(255,255,255,0.55);
     }
-    .daily-date { font-size: 11px; color: #8b9a88; margin-bottom: 6px; }
+    .daily-date { font-size: 11px; color: #aaa0cc; margin-bottom: 6px; }
     .daily-icon { font-size: 32px; line-height: 1; margin: 6px 0; }
     .daily-temps { display: flex; justify-content: center; gap: 8px; font-size: 13px; font-weight: 700; margin-top: 4px; }
     .daily-hi { color: #fff; }
@@ -305,7 +304,7 @@
       font-size: 11px; color: var(--cyan); font-weight: 700;
       margin-top: 6px; display: inline-flex; align-items: center; gap: 3px;
     }
-    .daily-precip.dry { color: #8b9a88; }
+    .daily-precip.dry { color: #aaa0cc; }
 
     /* Map */
     .map-card {
@@ -326,7 +325,7 @@
     }
     .map-controls { display: flex; gap: 6px; align-items: center; }
     .map-btn {
-      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      background: color-mix(in srgb, #fff 4%, var(--board-raised)); border: 1px solid var(--border);
       border-radius: 8px; padding: 5px 10px;
       color: rgba(255,255,255,0.6);
       font-family: inherit; font-size: 11px; font-weight: 700;
@@ -426,7 +425,7 @@
 
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: color-mix(in srgb, #fff 8%, var(--board-raised)); border-radius: 3px; }
   </style>
 </head>
 <body>
@@ -471,6 +470,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/fx.js"></script>
 <script src="/auth.js"></script>
 <script>
 /* ===================================================================

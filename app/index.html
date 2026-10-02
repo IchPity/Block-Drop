@@ -7,479 +7,345 @@
   <title>Arcade</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Kanit:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600;1,700;1,800;1,900&family=Share+Tech+Mono&family=Tilt+Neon&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/theme.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    :root {
-      /* Shared cabinet-room chrome — every app keeps its own marquee
-         color (see the per-card --accent below), this is just the
-         room they sit in. */
-      --board:        #10160f;
-      --board-raised: #1a2219;
-      --board-line:   rgba(238,242,234,0.09);
-      --chalk:        #eef2ea;
-      --chalk-dim:    #8b9a88;
-      --chalk-faint:  #566056;
-      --marquee:      #ffb703;
-      --bell:         #d7263d;
-      --red:  #e94560;
-      --gold: #f0c000;
-    }
+    body { min-height: 100vh; overflow-x: clip; }
 
-    html { scroll-behavior: smooth; }
-
-    body {
-      background: var(--board);
-      min-height: 100vh;
-      font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color: var(--chalk);
-      overflow-x: clip;
-    }
-
-    h1, h2, .display {
-      font-family: 'Baloo 2', 'IBM Plex Sans', sans-serif;
-    }
-
-    /* ── Exercise-book texture ─────────────────────────────────────
-       Faint graph-paper grid instead of blurred gradient blobs — the
-       "room" is a chalkboard with squared paper taped to it, not a
-       glowing void. */
-    .paper-grid {
-      position: fixed; inset: 0; pointer-events: none; z-index: 0;
-      background-image:
-        linear-gradient(rgba(238,242,234,0.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(238,242,234,0.035) 1px, transparent 1px);
-      background-size: 34px 34px;
-      mask-image: radial-gradient(ellipse 75% 65% at 50% 20%, #000 0%, transparent 75%);
-      -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 20%, #000 0%, transparent 75%);
-    }
-    .board-vignette {
-      position: fixed; inset: 0; pointer-events: none; z-index: 0;
-      background: radial-gradient(ellipse 100% 70% at 50% 0%, transparent 45%, rgba(4,6,4,0.7) 100%);
-    }
-
-    /* ── Marquee bulb strip — the one animated moment on the page ── */
-    .bulb-strip {
-      position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 101;
-      background-image: repeating-radial-gradient(circle at 9px 1.5px, var(--marquee) 0 1.3px, transparent 1.6px 18px);
-      background-size: 18px 3px;
-      opacity: 0.55;
-      animation: bulbGlow 5s ease-in-out infinite;
-    }
-    @keyframes bulbGlow { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.85; } }
-    @media (prefers-reduced-motion: reduce) { .bulb-strip { animation: none; opacity: 0.6; } }
-
-    /* ── Nav Bar ────────────────────────────────────────────────── */
-    .navbar {
-      position: fixed; top: 3px; left: 0; right: 0; z-index: 100;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 32px;
-      background: rgba(16,22,15,0.82);
-      border-bottom: 1px solid var(--board-line);
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    }
+    /* ── Nav ────────────────────────────────────────────────────── */
+    .navbar { padding: 14px 32px; }
     .nav-logo {
-      font-family: 'Baloo 2', sans-serif;
-      display: inline-flex; align-items: center; gap: 8px;
-      font-size: 17px; font-weight: 700; letter-spacing: 0.2px; color: var(--chalk);
+      font-family: var(--font-cab); font-style: italic; font-weight: 900;
+      display: inline-flex; align-items: center; gap: 10px;
+      font-size: 19px; letter-spacing: 0.06em; color: var(--chalk);
     }
     .nav-logo::before {
-      content: ''; width: 9px; height: 9px; border-radius: 50%;
-      background: var(--marquee); box-shadow: 0 2px 4px rgba(0,0,0,0.35);
-      flex-shrink: 0;
+      content: ''; width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0;
+      background: radial-gradient(circle at 35% 30%, #fff, var(--marquee) 45%, #a86a00);
+      box-shadow: 0 3px 12px rgba(255,176,0,0.7);
+      animation: coinLamp 1.6s steps(2) infinite;
     }
-    .nav-right { display: flex; align-items: center; gap: 10px; }
+    @keyframes coinLamp { 50% { filter: brightness(0.45); box-shadow: none; } }
 
-    /* ── Layout ─────────────────────────────────────────────────── */
-    .container {
-      position: relative; z-index: 1;
-      max-width: 1040px; margin: 0 auto; padding: 0 36px;
-    }
+    .container { max-width: 1180px; margin: 0 auto; padding: 0 32px; }
 
-    /* ── Hero Section ───────────────────────────────────────────── */
-    .hero {
-      padding: 128px 0 60px;
-      display: flex; align-items: center; justify-content: space-between; gap: 44px;
+    /* ── Das Schild ─────────────────────────────────────────────────
+       Eine Zeile über die ganze Hallenbreite, an zwei Drähten von der
+       Decke. Zündet beim Eintreten. */
+    .hero { padding: 92px 16px 0; text-align: center; position: relative; }
+    .hero h1.sign {
+      position: relative; display: flex; flex-wrap: wrap; justify-content: center; gap: 0 0.26em;
+      font-family: var(--font-sign); font-weight: 400; line-height: 1; letter-spacing: 0.01em;
+      font-size: clamp(46px, 8.7vw, 150px); color: inherit; text-shadow: none;
+      transform-origin: 50% -90px; animation: signSway 9s ease-in-out infinite;
     }
-    .hero-text {
-      flex: 1;
-      opacity: 0; transform: translateY(20px);
-      animation: fadeUp 0.7s 0.1s both;
+    @keyframes signSway { 0%, 100% { rotate: -0.35deg; } 50% { rotate: 0.35deg; } }
+    .sign::before, .sign::after {
+      content: ''; position: absolute; bottom: 92%; width: 1px; height: 120px;
+      background: linear-gradient(180deg, transparent, rgba(196,178,255,0.55));
     }
-    .hero h1 {
-      font-size: 58px; font-weight: 800;
-      letter-spacing: -0.02em; color: var(--chalk); line-height: 1.02;
-      margin-bottom: 18px;
+    .sign::before { left: 12%; } .sign::after { right: 12%; }
+    .sign-a {
+      --tube: var(--neon-pink);
+      color: #ffe3f1;
+      text-shadow: 0 0 2px #fff, 0 0 12px var(--tube), 0 0 34px var(--tube), 0 10px 90px var(--tube);
+      animation: neonStrike 1.5s 0.5s both, neonBuzz 11s 3s infinite;
+    }
+    .sign-b {
+      --tube: var(--neon-cyan);
+      color: #e2fbff;
+      text-shadow: 0 0 2px #fff, 0 0 12px var(--tube), 0 0 34px var(--tube), 0 10px 90px var(--tube);
+      animation: neonStrike 1.3s 1.05s both;
+    }
+    /* Eine Röhre ist nie ganz dicht: das K hängt und flackert */
+    .sign-b i { font-style: normal; display: inline-block; animation: tubeLoose 5.5s 2.6s infinite; }
+    @keyframes tubeLoose {
+      0%, 62%, 66%, 70%, 100% { opacity: 1; }
+      63%, 68% { opacity: 0.18; text-shadow: none; }
     }
     .hero-sub {
-      font-size: 15px; font-weight: 400;
-      color: var(--chalk-dim); line-height: 1.65;
-      margin-bottom: 30px; max-width: 420px;
+      margin: 18px auto 0; max-width: 78ch; font-size: 17px; line-height: 1.5;
+      animation: riseIn 0.8s 1.5s var(--ease-out) both;
     }
-    .hero-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    @keyframes riseIn { from { opacity: 0; translate: 0 22px; filter: blur(8px); } }
 
-    .btn-primary {
-      display: inline-flex; align-items: center; gap: 10px;
-      background: var(--bell); border: none; border-radius: 12px;
-      padding: 14px 26px; color: var(--chalk);
-      font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 700;
-      cursor: pointer; text-decoration: none;
-      box-shadow: 0 0 0 1px rgba(215,38,61,0.4), 0 10px 26px rgba(0,0,0,0.5);
-      transition: all 0.2s;
+    /* ── Abschnittsschilder ─────────────────────────────────────── */
+    .aisle { padding-top: 60px; }
+    .aisle:first-of-type { padding-top: 34px; }
+    .aisle-head {
+      display: inline-flex; align-items: baseline; gap: 16px; margin-bottom: 22px; flex-wrap: wrap;
+      padding: 10px 18px 12px; border-radius: 6px; background: rgba(18,10,48,0.88); box-shadow: 0 0 0 1px var(--board-line), 0 14px 30px rgba(9,4,30,0.5);
     }
-    .btn-primary:hover { background: #c93647; transform: translateY(-2px); box-shadow: 0 0 0 1px rgba(215,38,61,0.55), 0 14px 30px rgba(0,0,0,0.55); }
-    .btn-primary .arrow { font-size: 17px; transition: transform 0.2s; }
-    .btn-primary:hover .arrow { transform: translateX(3px); }
+    .aisle-head h2 {
+      font-family: var(--font-cab); font-style: italic; font-weight: 900; text-transform: uppercase;
+      font-size: clamp(26px, 3.4vw, 38px); letter-spacing: 0.02em; line-height: 1; color: var(--chalk);
+      text-shadow: 0 2px 0 rgba(9,4,30,0.9), 0 0 24px rgba(9,4,30,0.9);
+    }
+    .aisle-head h2::after {
+      content: ''; display: block; height: 3px; margin-top: 8px; border-radius: 2px;
+      background: var(--tube); box-shadow: 0 4px 16px var(--tube);
+    }
+    .aisle-note { font-size: 15px; color: #cfc5ee; }
 
-    .btn-secondary {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: transparent;
-      border: 1px solid var(--board-line); border-radius: 12px;
-      padding: 13px 22px; color: var(--chalk-dim);
-      font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 600;
-      cursor: pointer; text-decoration: none;
-      transition: all 0.22s;
+    /* ── Automat ────────────────────────────────────────────────────
+       Ein echter Kasten: Front, zwei Seitenwände, überstehende
+       Marquee, schräges Bedienpult, Münztür. Die äußeren Automaten
+       stehen leicht eingedreht, so sieht man ihre Flanken. */
+    .row-cabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 44px; padding: 0 24px; }
+    .cab {
+      --accent: var(--bell); --turn: 0deg; --depth: 84px;
+      position: relative; display: block; text-decoration: none; color: inherit;
+      perspective: 1300px; transition: translate 0.4s var(--ease-out);
     }
-    .btn-secondary:hover { color: var(--chalk); border-color: rgba(238,242,234,0.22); }
+    .cab.is-near, .cab:focus-visible { translate: 0 -8px; }
+    .cab:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 10px; border-radius: 8px; }
+    .cab-box {
+      position: relative; display: flex; flex-direction: column; height: 100%;
+      transform-style: preserve-3d;
+      transform: rotateX(var(--rx, 0deg)) rotateY(calc(var(--turn) + var(--ry, 0deg)));
+    }
+    /* Lichtschein des Schirms auf dem Teppich */
+    .cab::after {
+      content: ''; position: absolute; left: 4%; right: 4%; bottom: -30px; height: 56px; z-index: -1; pointer-events: none;
+      background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--accent) 75%, transparent), transparent 70%);
+      filter: blur(14px); opacity: 0.55; transition: opacity 0.4s;
+    }
+    .cab.is-near::after, .cab:focus-visible::after { opacity: 1; }
 
-    .hero-stats {
-      display: flex; gap: 26px; margin-top: 30px; padding-top: 24px;
-      border-top: 1px solid var(--board-line);
+    /* Seitenwände mit Seitenbemalung und Kantenleiste */
+    .cab-side {
+      position: absolute; top: 12px; bottom: 0; width: var(--depth);
+      background:
+        linear-gradient(115deg, transparent 0 34%, var(--accent) 34% 43%, transparent 43% 50%, color-mix(in srgb, var(--accent) 55%, #fff) 50% 54%, transparent 54%),
+        linear-gradient(180deg, #24175a, #130b36);
+      box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 40px rgba(9,4,30,0.8);
     }
-    .stat { display: flex; flex-direction: column; gap: 3px; }
-    .stat-val { font-family: 'Share Tech Mono', monospace; font-size: 21px; color: var(--chalk); letter-spacing: 0.5px; }
-    .stat-val span { color: var(--marquee); }
-    .stat-lbl { font-size: 12px; font-weight: 500; color: var(--chalk-faint); }
+    .cab-side.l { left: 0; transform-origin: 0 50%; transform: rotateY(90deg); }
+    .cab-side.r { right: 0; transform-origin: 100% 50%; transform: rotateY(-90deg); }
 
-    .hero-visual {
-      flex-shrink: 0; width: 300px;
-      opacity: 0; transform: translateY(16px);
-      animation: fadeUp 0.75s 0.25s both;
+    .cab-marquee {
+      position: relative; height: 54px; display: grid; place-items: center; border-radius: 12px 12px 2px 2px; overflow: hidden;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 92%, #fff), var(--accent) 60%, color-mix(in srgb, var(--accent) 70%, #000));
+      box-shadow: 0 12px 34px color-mix(in srgb, var(--accent) 55%, transparent), inset 0 2px 0 rgba(255,255,255,0.55);
+      transform: translateZ(26px); margin: 0 -6px;
     }
+    .cab-marquee::after { /* Leuchtstoffröhre hinter der Scheibe */
+      content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.45) 48%, transparent 62%);
+      translate: -120% 0; animation: marqueeSweep 5.5s var(--d, 0s) ease-in-out infinite;
+    }
+    @keyframes marqueeSweep { 0%, 55% { translate: -120% 0; } 80%, 100% { translate: 120% 0; } }
+    .cab-name {
+      position: relative; z-index: 1; font-family: var(--font-cab); font-style: italic; font-weight: 900; text-transform: uppercase;
+      font-size: 25px; letter-spacing: 0.03em; color: #0a0520; text-shadow: 0 1px 0 rgba(255,255,255,0.45);
+    }
+    .cab-bezel {
+      position: relative; padding: 14px 14px 12px;
+      background: linear-gradient(180deg, #251861, #150c3c); border-inline: 2px solid var(--accent);
+    }
+    .cab-screen {
+      height: 152px; border-radius: 22px / 16px; display: grid; place-items: center;
+      background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--accent) 26%, #05030c), #05030c 78%);
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,0.9), inset 0 0 44px rgba(0,0,0,0.9), 0 0 0 1px rgba(196,178,255,0.2);
+      filter: saturate(0.8) brightness(0.8); transition: filter 0.45s var(--ease-out);
+    }
+    .cab.is-near .cab-screen, .cab:focus-visible .cab-screen { filter: saturate(1.25) brightness(1.15); }
+    .cab-screen::before, .mon-screen::before { /* Lichtreflex auf dem Glas, folgt der Maus */
+      content: ''; position: absolute; inset: 0; z-index: 4; pointer-events: none; opacity: 0; transition: opacity 0.3s;
+      background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255,255,255,0.26), transparent 46%);
+    }
+    .is-near .cab-screen::before, .is-near .mon-screen::before { opacity: 1; }
+    /* Aufkleber im Schirm: Status steht auf dem Gerät, nicht über der Überschrift */
+    .scr-tag {
+      position: absolute; right: 10px; top: 10px; z-index: 5; font-family: var(--font-cab); font-weight: 700; font-size: 12px;
+      color: #0a0520; background: var(--accent); padding: 1px 8px; border-radius: 3px; rotate: 3deg;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .cab-bezel .scr-tag { right: 22px; top: 22px; }
+    /* „Münze einwerfen" blinkt im Schirm */
+    .cab-coin {
+      position: absolute; left: 0; right: 0; bottom: 18px; z-index: 5; text-align: center;
+      font-family: var(--font-data); font-size: 13px; text-transform: uppercase; color: #fff;
+      text-shadow: 0 2px 8px #000; animation: blink 1.2s steps(2) infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+    /* Bedienpult: kippt dem Spieler entgegen */
+    .cab-deck {
+      position: relative; height: 58px; margin-bottom: -12px; display: flex; align-items: center; justify-content: center; gap: 26px;
+      background: linear-gradient(180deg, #3a2a7c, #21155a); border: 2px solid var(--accent); border-top-color: rgba(255,255,255,0.4);
+      transform-origin: 50% 0; transform: rotateX(38deg); border-radius: 2px 2px 8px 8px;
+      box-shadow: 0 14px 20px rgba(9,4,30,0.7);
+    }
+    .stick { position: relative; width: 12px; height: 24px; border-radius: 3px; background: linear-gradient(90deg, #666, #ddd 40%, #555); transform-origin: 50% 100%; margin-top: -14px; }
+    .stick::after { content: ''; position: absolute; left: 50%; top: -15px; width: 24px; height: 24px; margin-left: -12px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, var(--bell) 45%, #7a0e2a); box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
+    .cab.is-near .stick { animation: stickWiggle 0.9s ease-in-out infinite; }
+    @keyframes stickWiggle { 0%, 100% { rotate: -16deg; } 50% { rotate: 16deg; } }
+    .knobs { display: flex; gap: 10px; }
+    .knobs i {
+      width: 20px; height: 20px; border-radius: 50%; display: block;
+      background: radial-gradient(circle at 35% 30%, #fff, var(--c) 45%, color-mix(in srgb, var(--c) 50%, #000));
+      box-shadow: 0 3px 0 rgba(0,0,0,0.55), 0 4px 12px color-mix(in srgb, var(--c) 55%, transparent);
+      animation: knob 1.8s var(--d, 0s) steps(2) infinite;
+    }
+    @keyframes knob { 50% { filter: brightness(0.5); } }
+    .cab-door {
+      position: relative; flex: 1; padding: 22px 18px 18px; border-radius: 0 0 6px 6px;
+      background: linear-gradient(180deg, #1e1352, #130b36); border: 2px solid var(--accent); border-top: 0;
+      box-shadow: 0 30px 60px rgba(9,4,30,0.75);
+      display: grid; grid-template-columns: auto 1fr; gap: 14px 16px; align-items: center;
+    }
+    .cab-desc { grid-column: 1 / -1; font-size: 15px; line-height: 1.45; color: #cfc5ee; }
+    /* Münztür: Blech, Einwurfschlitz, Rückgabeknopf */
+    .coin-door {
+      position: relative; width: 74px; height: 52px; border-radius: 5px;
+      background: linear-gradient(180deg, #55508a, #2c2858); box-shadow: inset 0 0 0 2px #0a0520, inset 0 2px 0 3px rgba(255,255,255,0.14);
+    }
+    .coin-door::before { /* beleuchteter Einwurf */
+      content: ''; position: absolute; left: 12px; top: 10px; width: 22px; height: 32px; border-radius: 3px;
+      background: linear-gradient(90deg, transparent 0 9px, #0a0520 9px 13px, transparent 13px), var(--marquee);
+      box-shadow: 0 0 0 2px #0a0520, 0 4px 14px rgba(255,176,0,0.7); animation: coinLamp 1.6s var(--d, 0s) steps(2) infinite;
+    }
+    .coin-door::after { /* Rückgabeknopf */
+      content: ''; position: absolute; right: 12px; top: 18px; width: 16px; height: 16px; border-radius: 3px;
+      background: var(--bell); box-shadow: 0 0 0 2px #0a0520, inset 0 -3px 0 rgba(0,0,0,0.3);
+    }
+    .cab-door .cabinet-start { justify-self: end; }
+    .is-near .cabinet-start .dot { transform: scale(1.14); animation: fxLamp 0.7s ease-in-out infinite; }
+    @keyframes fxLamp { 50% { filter: brightness(1.35); } }
 
-    /* ── Featured cabinet (the one bold element) ───────────────── */
-    .hero-card {
-      background: var(--board-raised);
-      border: 1px solid var(--board-line);
-      border-radius: 18px 18px 8px 8px; overflow: hidden;
-      box-shadow: 0 30px 70px rgba(0,0,0,0.55);
-    }
-    .hero-card-marquee {
-      height: 22px; position: relative;
-      background: linear-gradient(180deg, #4a2f00 0%, #2c1c00 100%);
-      background-image:
-        linear-gradient(180deg, #4a2f00 0%, #2c1c00 100%),
-        repeating-radial-gradient(circle at 11px 11px, var(--marquee) 0 1.6px, transparent 2px 22px);
-      background-blend-mode: normal;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .hero-card-marquee span {
-      font-family: 'Baloo 2', sans-serif; font-size: 12px; font-weight: 700;
-      letter-spacing: 1px; color: #1a1200; background: var(--marquee);
-      padding: 1px 8px; border-radius: 4px;
-    }
-    .hero-card-thumb {
-      height: 168px;
-      background: linear-gradient(145deg, #0d0005 0%, #280010 55%, #0d0005 100%);
-      display: flex; align-items: center; justify-content: center; position: relative;
-    }
-    .hero-card-thumb::before {
-      content: ''; position: absolute; inset: 0; pointer-events: none;
-      background-image: repeating-linear-gradient(rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,0.09) 3px);
-    }
-    .hero-card-body { padding: 18px 20px 20px; }
-    .hero-card-title { font-family: 'Baloo 2', sans-serif; font-size: 19px; font-weight: 700; color: var(--chalk); margin-bottom: 6px; }
-    .hero-card-desc { font-size: 12px; color: var(--chalk-dim); line-height: 1.6; margin-bottom: 16px; }
+    /* ── Was in den Röhren läuft: alles aus Zellen ──────────────── */
+    canvas.px { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+    .a-drop { position: relative; translate: 0 -13px; display: grid; grid-template-columns: repeat(7, 13px); grid-template-rows: repeat(8, 13px); gap: 2px; }
+    .a-drop b { background: transparent; }
+    .a-drop .r { background: #ff3d6e; } .a-drop .y { background: #ffc93a; } .a-drop .c { background: #2ee6ff; }
+    .a-drop .p { background: #a35cff; } .a-drop .g { background: #6dff5a; } .a-drop .o { background: #ff8a2e; }
+    .a-drop .row b { animation: rowFlash 3.6s steps(1) infinite; }
+    @keyframes rowFlash { 0%, 76% { filter: none; } 80%, 88% { filter: brightness(4) saturate(0); } 84%, 92% { filter: none; } 96%, 100% { opacity: 0; } }
+    .a-drop .fall { position: absolute; left: 90px; top: 0; width: 13px; display: grid; gap: 2px; animation: pieceFall 3.6s steps(6, end) infinite; }
+    .a-drop .fall i { display: block; background: #2ee6ff; height: 13px; }
+    @keyframes pieceFall { 0% { translate: 0 -15px; opacity: 1; } 72%, 94% { translate: 0 75px; opacity: 1; } 95%, 100% { translate: 0 75px; opacity: 0; } }
+    .a-plan { display: grid; grid-template-columns: repeat(5, 22px); grid-template-rows: repeat(4, 22px); gap: 4px; }
+    .a-plan i { background: #1c1246; }
+    .mon.big .a-plan { grid-template-columns: repeat(5, 52px); grid-template-rows: repeat(4, 52px); gap: 8px; }
+    .a-plan .f { background: #7b6bff; animation: cellLit 3s var(--d, 0s) steps(1) infinite; } .a-plan .f2 { background: #c1b8ff; animation: cellLit 3s var(--d, 0s) steps(1) infinite; }
+    @keyframes cellLit { 0%, 20%, 100% { filter: none; } 10% { filter: brightness(2.4); } }
+    .a-metar { font-family: var(--font-data); font-size: 12px; line-height: 1.45; color: #8fe9ff; text-align: center; padding-top: 22px; }
+    .a-metar b { display: block; font-weight: 400; color: #fff; }
+    .a-metar span::after { content: '▮'; animation: blink 1s steps(2) infinite; }
 
-    .cabinet-start {
-      display: inline-flex; align-items: center; gap: 10px;
-      background: none; border: none; padding: 0; cursor: pointer;
-      font-family: 'IBM Plex Sans', sans-serif; text-decoration: none;
+    /* ── Block Games: Schaufenster ──────────────────────────────── */
+    .showcase {
+      --accent: var(--marquee); margin-top: 60px; position: relative; display: grid; grid-template-columns: 240px 1fr auto; align-items: center; gap: 30px;
+      padding: 22px 30px 22px 22px; border-radius: 14px; text-decoration: none; color: inherit;
+      background: linear-gradient(100deg, rgba(255,176,0,0.2), transparent 55%), var(--board-raised);
+      border: 2px solid var(--marquee);
+      box-shadow: 0 26px 60px rgba(9,4,30,0.7);
+      transition: translate 0.35s var(--ease-out);
     }
-    .cabinet-start .dot {
-      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-      background: var(--accent, var(--bell)); color: #0e130d;
-      font-size: 12px; line-height: 1;
-      box-shadow: 0 0 0 3px rgba(238,242,234,0.06), 0 4px 10px rgba(0,0,0,0.4);
-      transition: transform 0.2s;
+    .showcase:hover { translate: 0 -5px; }
+    .showcase-art { height: 124px; border-radius: 18px / 14px; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 40%, #4a3200, #05030c 80%); box-shadow: inset 0 0 0 2px #000, inset 0 0 30px #000; }
+    .showcase h3 { font-family: var(--font-cab); font-style: italic; font-weight: 900; font-size: 32px; text-transform: uppercase; line-height: 1; }
+    .showcase p { margin-top: 8px; font-size: 15px; line-height: 1.5; color: #cfc5ee; max-width: 58ch; }
+
+    /* ── Monitorwand (Für die Klasse) ───────────────────────────────
+       Ein Gestell, sieben Röhren in verschiedenen Größen. Der
+       Stundenplan hängt groß in der Mitte der Aufmerksamkeit. */
+    .wall {
+      position: relative; padding: 18px; /* Stahlgestell: eckig, keine Karte */
+      display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); grid-auto-rows: minmax(176px, auto); gap: 22px 20px;
+      background: linear-gradient(180deg, #2a1d6a, #170e44);
+      border: 2px solid #4b3aa8; box-shadow: inset 0 2px 0 rgba(255,255,255,0.18), 0 30px 70px rgba(9,4,30,0.8);
     }
-    .cabinet-start .dot::before { content: '▶'; margin-left: 2px; }
-    .cabinet-start .label { font-size: 13px; font-weight: 700; color: var(--chalk); }
-    a.cabinet-start:hover .dot, .game-card.available:hover .cabinet-start .dot { transform: scale(1.08); }
-
-    /* ── Section headers ───────────────────────────────────────── */
-    .section-header {
-      display: flex; align-items: baseline; gap: 14px;
-      margin-bottom: 22px;
+    .mon {
+      --accent: var(--neon-cyan);
+      position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit;
+      grid-column: span 2; transition: translate 0.35s var(--ease-out);
     }
-    .section-header h2 {
-      font-size: 24px; font-weight: 700; color: var(--chalk); letter-spacing: -0.2px;
+    .mon.is-near, .mon:focus-visible { translate: 0 -4px; }
+    .mon.is-near .mon-screen, .mon:focus-visible .mon-screen { box-shadow: inset 0 0 0 3px var(--accent), inset 0 0 30px #000; }
+    .mon.big { grid-column: span 3; grid-row: span 3; }
+    .mon.wide { grid-column: span 3; }
+    .mon-screen {
+      flex: 1; min-height: 96px; border-radius: 16px / 12px; display: grid; place-items: center;
+      background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--accent) 24%, #05030c), #05030c 80%);
+      box-shadow: inset 0 0 0 3px #0a0520, inset 0 0 30px #000;
+      filter: saturate(0.85) brightness(0.85); transition: filter 0.45s var(--ease-out), box-shadow 0.25s;
     }
-    .section-header .section-note {
-      font-size: 12.5px; color: var(--chalk-faint);
+    .mon.is-near .mon-screen, .mon:focus-visible .mon-screen { filter: saturate(1.25) brightness(1.15); }
+    .mon h3 { margin: 10px 4px 0; font-family: var(--font-cab); font-style: italic; font-weight: 800; font-size: 19px; line-height: 1.15; color: var(--accent); }
+    .mon.big h3 { font-size: 28px; }
+    .mon p { margin: 2px 4px 0; font-size: 14px; line-height: 1.4; color: #cfc5ee; }
+    .mon.big p { font-size: 16px; }
+
+    /* ── Hintere Reihe: abgeschaltet, Stecker gezogen ───────────── */
+    .backrow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 26px; padding: 0 30px; }
+    .dead { position: relative; text-align: center; }
+    .dead-box {
+      height: 150px; margin: 0 10px; border-radius: 8px 8px 0 0; padding: 30px 10px 0;
+      background: linear-gradient(180deg, #1a1146, #0f0830); border: 2px solid #32267a; border-bottom: 0;
     }
-
-    /* ── Grid ───────────────────────────────────────────────────── */
-    .games-grid, .coming-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
+    .dead-box::before { /* dunkle Röhre */
+      content: ''; display: block; height: 70px; border-radius: 12px / 9px; background: #05030c; box-shadow: inset 0 0 0 2px #000;
     }
-    .games-grid { padding-bottom: 52px; }
-    .coming-grid { padding-bottom: 88px; }
-
-    /* ── Cabinet cards ──────────────────────────────────────────── */
-    .game-card {
-      --accent: var(--bell);
-      background: var(--board-raised);
-      border: 1px solid var(--board-line);
-      border-radius: 16px 16px 8px 8px;
-      overflow: hidden;
-      text-decoration: none;
-      color: inherit;
-      display: flex; flex-direction: column;
-      opacity: 0; transform: translateY(28px);
-      animation: cardIn 0.6s both cubic-bezier(0.22, 1, 0.36, 1);
-      transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.4s cubic-bezier(0.22,1,0.36,1);
-      will-change: transform;
+    .dead-name {
+      position: absolute; left: 10px; right: 10px; top: 0; height: 26px; display: grid; place-items: center; border-radius: 8px 8px 0 0;
+      font-family: var(--font-cab); font-style: italic; font-weight: 800; font-size: 14px; text-transform: uppercase;
+      background: #2b2068; color: #b3a8de;
     }
-    .game-card::before {
-      content: ''; display: block; height: 4px; flex-shrink: 0;
-      background: var(--accent);
-    }
+    .dead svg { position: absolute; left: 50%; top: 118px; width: 60px; margin-left: -30px; }
+    .dead-state { margin-top: 12px; font-family: var(--font-cab); font-weight: 700; font-size: 13px; text-transform: uppercase; color: var(--marquee); }
+    .dead p { margin-top: 2px; font-size: 14px; line-height: 1.4; color: #b3a8de; text-shadow: 0 1px 2px rgba(9,4,30,0.9), 0 0 16px rgba(9,4,30,0.9); }
 
-    .game-card.available { cursor: pointer; }
-    .game-card.available:hover {
-      border-color: color-mix(in srgb, var(--accent) 55%, var(--board-line));
-      box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent), 0 26px 56px rgba(0,0,0,0.55);
-    }
+    /* ── Typenschild ────────────────────────────────────────────── */
+    .plate-foot { margin: 80px auto 60px; text-align: center; font-family: var(--font-data); font-size: 13px; letter-spacing: 0.04em; color: #b3a8de; }
+    .plate-foot span { display: inline-block; padding: 8px 16px; border: 1px solid var(--board-line); border-radius: 4px; background: rgba(18,10,48,0.85); }
 
-    .game-card.unavailable {
-      cursor: default; --accent: var(--chalk-faint);
-      opacity: 0;
-      animation: cardInDim 0.6s both cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    @keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
-    @keyframes cardInDim { to { opacity: 0.38; transform: translateY(0); } }
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* ── Screen (thumbnail) ─────────────────────────────────────── */
-    .card-thumb {
-      height: 132px;
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden; position: relative;
-    }
-    .card-thumb::before {
-      content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
-      background-image: repeating-linear-gradient(rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,0.08) 3px);
-    }
-
-    .thumb-blockdrop    { background: linear-gradient(145deg, #0d0005 0%, #280010 55%, #0d0005 100%); }
-    .thumb-blockgames   { background: linear-gradient(145deg, #0d0900 0%, #2a1f00 55%, #0d0900 100%); }
-    .thumb-schuluhr     { background: linear-gradient(145deg, #00060d 0%, #001428 55%, #00060d 100%); }
-    .thumb-achievements { background: linear-gradient(145deg, #0d0900 0%, #1c1200 55%, #0d0900 100%); }
-    .thumb-casino       { background: linear-gradient(145deg, #140d00 0%, #2b1d00 55%, #140d00 100%); }
-    .thumb-snake        { background: linear-gradient(145deg, #00090a 0%, #001f10 55%, #00090a 100%); }
-    .thumb-pong         { background: linear-gradient(145deg, #00040d 0%, #000e30 55%, #00040d 100%); }
-    .thumb-space        { background: linear-gradient(145deg, #04000d 0%, #120030 55%, #04000d 100%); }
-    .thumb-memory       { background: linear-gradient(145deg, #0d0700 0%, #2a1800 55%, #0d0700 100%); }
-    .thumb-mines        { background: linear-gradient(145deg, #00070d 0%, #001820 55%, #00070d 100%); }
-    .thumb-f1           { background: linear-gradient(145deg, #15000a 0%, #4a0010 55%, #15000a 100%); }
-    .thumb-f1bet        { background: linear-gradient(145deg, #1a1500 0%, #3a2a00 55%, #1a1500 100%); }
-    .thumb-metar        { background: linear-gradient(145deg, #00080d 0%, #001828 55%, #00080d 100%); }
-    .thumb-weather      { background: linear-gradient(145deg, #050818 0%, #1a2854 55%, #050818 100%); }
-    .thumb-blockpresser { background: linear-gradient(145deg, #2a1f00 0%, #4a3500 55%, #2a1f00 100%); }
-    .thumb-stundenplan  { background: linear-gradient(145deg, #0a081d 0%, #1a1650 55%, #0a081d 100%); }
-
-    .weather-art { position: relative; width: 90px; height: 70px; opacity: 0.95; }
-    .weather-art .sun {
-      position: absolute; top: 8px; left: 14px;
-      width: 36px; height: 36px; border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #fde047, #f0c000 60%, #d97706);
-      box-shadow: 0 5px 12px rgba(0,0,0,0.35);
-    }
-    .weather-art .cloud {
-      position: absolute; bottom: 10px; right: 8px;
-      width: 60px; height: 30px;
-      background: #cbd5e1; border-radius: 30px;
-    }
-    .weather-art .cloud::before, .weather-art .cloud::after {
-      content: ''; position: absolute; background: #cbd5e1; border-radius: 50%;
-    }
-    .weather-art .cloud::before { width: 22px; height: 22px; top: -10px; left: 8px; }
-    .weather-art .cloud::after { width: 28px; height: 28px; top: -16px; left: 24px; }
-
-    .metar-art {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 12px; color: #7dd3fc; opacity: 0.9;
-      line-height: 1.5; letter-spacing: 0.5px; text-align: center;
-    }
-    .metar-art .row-1 { color: #fff; font-size: 13px; letter-spacing: 1.5px; margin-bottom: 4px; }
-    .metar-art .row-2 { color: rgba(125,211,252,0.85); }
-
-    .podium-art { display: flex; align-items: flex-end; gap: 8px; opacity: 0.9; }
-    .podium-bar {
-      width: 22px; border-radius: 4px 4px 0 0;
-      display: flex; align-items: flex-start; justify-content: center;
-      padding-top: 4px;
-      font-family: 'Share Tech Mono', monospace; font-size: 12px; color: #000; letter-spacing: 0.5px;
-    }
-    .podium-bar.p1 { height: 56px; background: linear-gradient(180deg, #ffe27a, #f0c000); }
-    .podium-bar.p2 { height: 42px; background: linear-gradient(180deg, #e8e8e8, #b8b8b8); }
-    .podium-bar.p3 { height: 32px; background: linear-gradient(180deg, #e29a5a, #cd7f32); color: #fff; }
-
-    .f1-art {
-      font-family: 'Baloo 2', sans-serif; font-weight: 700;
-      font-size: 52px; letter-spacing: -2px; line-height: 1;
-      color: #fff; position: relative; opacity: 0.94;
-      display: flex; align-items: center; gap: 4px;
-    }
-    .f1-art .f1-1 { color: #e10600; font-style: italic; }
-    .f1-art::before {
-      content: ''; position: absolute; right: -14px; top: 6px;
-      width: 3px; height: 34px; background: #e10600; transform: skewX(-22deg);
-      box-shadow: 6px 0 0 #e10600, 12px 0 0 #e10600;
-      opacity: 0.85;
-    }
-
-    .trophy-art { font-size: 50px; opacity: 0.75; }
-
-    .clock-art { position: relative; width: 70px; height: 70px; opacity: 0.85; }
-    .clock-face { width: 70px; height: 70px; border-radius: 50%; border: 3px solid #38bdf8; position: absolute; top: 0; left: 0; box-shadow: 0 4px 11px rgba(0,0,0,0.35); }
-    .clock-center { position: absolute; width: 6px; height: 6px; background: #38bdf8; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
-    .clock-hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom center; border-radius: 2px; }
-    .clock-hand-h { width: 3px; height: 22px; background: #38bdf8; margin-left: -1.5px; transform: rotate(-60deg); }
-    .clock-hand-m { width: 2px; height: 28px; background: #7dd3fc; margin-left: -1px;  transform: rotate(80deg); }
-    .clock-hand-s { width: 1px; height: 30px; background: var(--bell); margin-left: -0.5px; transform: rotate(200deg); }
-
-    .blocks-art { display: grid; grid-template-columns: repeat(5,14px); grid-template-rows: repeat(4,14px); gap: 3px; opacity: 0.85; }
-    .b { border-radius: 2px; }
-    .b-r{background:#e94560}.b-y{background:#f0c000}.b-c{background:#00cfcf}
-    .b-p{background:#a000f0}.b-g{background:#00b800}.b-o{background:#e07000}
-    .b-n{background:transparent}
-
-    .snake-art { width:72px;height:72px;position:relative;opacity:.55 }
-    .snake-art::before { content:'';position:absolute;inset:0;background:
-      radial-gradient(circle 6px at 12px 12px,#00c060 100%,transparent 100%),
-      radial-gradient(circle 6px at 28px 12px,#00c060 100%,transparent 100%),
-      radial-gradient(circle 6px at 44px 12px,#00c060 100%,transparent 100%),
-      radial-gradient(circle 6px at 44px 28px,#00c060 100%,transparent 100%),
-      radial-gradient(circle 6px at 44px 44px,#00c060 100%,transparent 100%),
-      radial-gradient(circle 6px at 28px 44px,#00c060 100%,transparent 100%),
-      radial-gradient(circle 6px at 12px 44px,#00c060 100%,transparent 100%),
-      radial-gradient(circle 6px at 12px 60px,#00c060 100%,transparent 100%),
-      radial-gradient(circle 5px at 55px 55px,#e94560 100%,transparent 100%); }
-
-    .pong-art{display:flex;align-items:center;gap:28px;opacity:.5}
-    .pong-paddle{width:6px;height:36px;background:#4080ff;border-radius:3px}
-    .pong-ball{width:10px;height:10px;background:#fff;border-radius:50%}
-    .pong-net{display:flex;flex-direction:column;gap:6px}
-    .pong-net-seg{width:3px;height:8px;background:rgba(255,255,255,.2);border-radius:1px}
-
-    .space-art{position:relative;width:60px;height:60px;opacity:.45}
-    .space-art::before{content:'';position:absolute;inset:0;background:
-      radial-gradient(circle 2px at 10px 8px,#fff 100%,transparent 100%),
-      radial-gradient(circle 1px at 30px 15px,#fff 100%,transparent 100%),
-      radial-gradient(circle 2px at 52px 5px,#fff 100%,transparent 100%),
-      radial-gradient(circle 1px at 45px 35px,#fff 100%,transparent 100%),
-      radial-gradient(circle 2px at 5px 45px,#fff 100%,transparent 100%),
-      radial-gradient(circle 1px at 55px 50px,#fff 100%,transparent 100%)}
-    .space-ship{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:20px solid #a060ff}
-
-    .memory-art{display:grid;grid-template-columns:repeat(3,18px);gap:5px;opacity:.45}
-    .mem-card{width:18px;height:22px;border-radius:2px;border:1px solid rgba(255,255,255,.2)}
-    .mem-card.flipped{background:#c87800;border-color:#c87800}
-
-    .mines-art{display:grid;grid-template-columns:repeat(5,12px);gap:2px;opacity:.45}
-    .mine-cell{width:12px;height:12px;background:#0a3040;border-radius:1px;display:flex;align-items:center;justify-content:center;font-size:6px;color:rgba(255,255,255,.5)}
-    .mine-cell.boom{background:var(--bell)}
-
-    .stundenplan-art { display: grid; grid-template-columns: repeat(5, 12px); grid-template-rows: repeat(4, 12px); gap: 3px; opacity: 0.85; }
-    .sp-cell { border-radius: 2px; background: rgba(255,255,255,0.06); }
-    .sp-cell.fill { background: #6366f1; }
-    .sp-cell.fill2 { background: #a5b4fc; }
-
-    /* ── Deck (card body) ──────────────────────────────────────── */
-    .card-body {
-      padding: 15px 17px 18px;
-      display: flex; flex-direction: column; gap: 3px; flex: 1;
-      background: linear-gradient(160deg, rgba(255,255,255,0.015), transparent 40%);
+    /* Einschalten beim Hereinscrollen: nur wenn JS läuft, sonst steht alles */
+    .js-reveal .cab, .js-reveal .mon, .js-reveal .dead, .js-reveal .showcase { opacity: 0; }
+    .js-reveal .in { opacity: 1; animation: powerUp 0.9s var(--i, 0s) var(--ease-out) both; }
+    @keyframes powerUp {
+      0%   { opacity: 0; filter: brightness(3.2) blur(10px); scale: 1 0.04; }
+      35%  { opacity: 1; filter: brightness(2.2) blur(2px); scale: 1 0.04; }
+      100% { opacity: 1; filter: none; scale: 1 1; }
     }
 
-    .card-tag {
-      display: inline-flex; align-self: flex-start;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 12px; color: var(--accent);
-      border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
-      border-radius: 5px; padding: 2px 7px;
-      margin-bottom: 6px;
+    /* Münzeinwurf: der Schirm füllt das Bild */
+    .zoom-screen { position: fixed; z-index: 9800; margin: 0; pointer-events: none; }
+
+    @media (max-width: 1000px) {
+      .row-cabs { gap: 26px; padding: 0; } .cab { --turn: 0deg !important; }
+      .wall { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; }
+      .mon, .mon.wide { grid-column: span 1; } .mon.big { grid-column: span 2; grid-row: auto; } .mon.big .mon-screen { min-height: 190px; }
+      .mon-screen { min-height: 120px; }
+      .backrow { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 0; }
+      .showcase { grid-template-columns: 180px 1fr; } .showcase .cabinet-start { grid-column: 2; }
     }
-    .unavailable .card-tag { color: var(--chalk-faint); border-color: var(--board-line); }
-
-    .card-title { font-family: 'Baloo 2', sans-serif; font-size: 16.5px; font-weight: 700; color: var(--chalk); }
-    .unavailable .card-title { color: var(--chalk-faint); }
-
-    .card-desc { font-size: 13px; color: var(--chalk-dim); line-height: 1.55; margin-top: 3px; margin-bottom: 14px; }
-    .unavailable .card-desc { color: var(--chalk-faint); }
-
-    .card-footer { margin-top: auto; }
-
-    .soon-badge {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 12px; font-weight: 600; color: var(--chalk-faint);
-      padding: 7px 0;
-    }
-    .soon-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--chalk-faint); }
-
-    /* ── Scrollbar ───────────────────────────────────────────────── */
-    ::-webkit-scrollbar { width: 5px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--board-line); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(238,242,234,0.18); }
-
-    a:focus-visible, button:focus-visible, [tabindex]:focus-visible {
-      outline: 2px solid var(--marquee); outline-offset: 2px;
-    }
-
-    /* ── Mobile ──────────────────────────────────────────────────── */
-    @media (max-width: 900px) {
-      .container { padding: 0 22px; }
-      .games-grid, .coming-grid { grid-template-columns: repeat(2, 1fr); }
-      .hero { padding: 104px 0 40px; flex-direction: column; align-items: stretch; gap: 26px; }
-      .hero-visual { width: 100%; max-width: 380px; margin: 0 auto; }
-      .hero h1 { font-size: 46px; }
-      .hero-sub { max-width: none; }
+    @media (max-width: 860px) {
+      .container { padding: 0 20px; }
+      .row-cabs { grid-template-columns: 1fr; gap: 60px; max-width: 400px; margin: 0 auto; }
+      .wall { padding: 12px; gap: 18px 12px; }
+      .mon.big .mon-screen { min-height: 150px; }
+      .mon.big .a-plan { grid-template-columns: repeat(5, 22px); grid-template-rows: repeat(4, 22px); gap: 4px; }
     }
     @media (max-width: 600px) {
       .navbar { padding: 12px 16px; }
       .container { padding: 0 16px; }
-      .hero { padding: 96px 0 32px; gap: 22px; }
-      .hero h1 { font-size: 36px; }
-      .hero-sub { font-size: 14px; margin-bottom: 22px; }
-      .hero-actions { flex-direction: column; align-items: stretch; gap: 10px; }
-      .btn-primary, .btn-secondary { justify-content: center; padding: 13px 22px; font-size: 13px; }
-      .hero-stats { gap: 20px; }
-      .games-grid { grid-template-columns: 1fr; gap: 14px; }
-      .coming-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding-bottom: 56px; }
-      .card-thumb { height: 116px; }
-      .hero-card-thumb { height: 144px; }
-      .section-header { margin-bottom: 16px; flex-wrap: wrap; }
-      .section-header h2 { font-size: 20px; }
-    }
-    @media (max-width: 380px) {
-      .hero h1 { font-size: 32px; }
-      .coming-grid { grid-template-columns: 1fr; }
+      .hero { padding: 86px 12px 0; }
+      .hero h1.sign { font-size: clamp(46px, 15vw, 80px); }
+      .hero-sub { font-size: 16px; }
+      .aisle { padding-top: 54px; }
+      .showcase { grid-template-columns: 1fr; padding: 16px; gap: 16px; } .showcase .cabinet-start { grid-column: 1; }
+      .backrow { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 14px; }
+      .mon h3 { font-size: 17px; } .mon.big h3 { font-size: 22px; }
+      /* schmale Röhren: Aufkleber kleiner, Motiv rückt darunter */
+      .mon .scr-tag { font-size: 11px; right: 6px; top: 6px; padding: 0 6px; }
+      .mon:not(.big) .mon-screen > canvas, .mon:not(.big) .a-metar { translate: 0 11px; }
+      .mon:not(.big) .a-metar { padding-top: 0; }
     }
   </style>
 </head>
-<body>
-
-<div class="paper-grid"></div>
-<div class="board-vignette"></div>
-<div class="bulb-strip"></div>
+<body data-hall="open">
 
 <nav class="navbar">
   <div class="nav-logo">ARCADE</div>
@@ -488,377 +354,329 @@
   </div>
 </nav>
 
+<section class="hero">
+  <h1 class="sign"><span class="sign-a">Der Automat</span><span class="sign-b">der 5D<i>K</i></span></h1>
+  <p class="hero-sub">Drei Spiele, ein paar nützliche Sachen für dazwischen, und dein Stundenplan — alles auf einer Seite, kein zweiter Tab nötig.</p>
+</section>
+
 <div class="container">
 
-  <!-- Hero Section -->
-  <section class="hero">
-    <div class="hero-text">
-      <h1>Der Automat<br>der 5DK</h1>
-      <p class="hero-sub">Drei Spiele, ein paar nützliche Sachen für dazwischen, und dein Stundenplan — alles auf einer Seite, kein zweiter Tab nötig.</p>
-      <div class="hero-actions">
-        <a href="games/blockdrop/" class="btn-primary">
-          Block Drop spielen <span class="arrow">→</span>
-        </a>
-        <a href="achievements/" class="btn-secondary">
-          Erfolge ansehen
-        </a>
-      </div>
-      <div class="hero-stats">
-        <div class="stat">
-          <div class="stat-val">3</div>
-          <div class="stat-lbl">Spiele</div>
-        </div>
-        <div class="stat">
-          <div class="stat-val">7</div>
-          <div class="stat-lbl">Für die Klasse</div>
-        </div>
-        <div class="stat">
-          <div class="stat-val"><span>5DK</span></div>
-          <div class="stat-lbl">Baujahr 2026</div>
-        </div>
-      </div>
+  <!-- Spiele -->
+  <section class="aisle" style="--tube: var(--neon-pink)">
+    <div class="aisle-head">
+      <h2>Spielen</h2>
+      <span class="aisle-note">3 Titel, jederzeit offen</span>
     </div>
-    <div class="hero-visual">
-      <a class="hero-card" href="blockgames/" style="display:block;text-decoration:none;color:inherit">
-        <div class="hero-card-marquee"><span>Demo · Download</span></div>
-        <div class="hero-card-thumb thumb-blockgames">
-          <div style="font-size:52px;opacity:0.85;line-height:1">🎲</div>
-        </div>
-        <div class="hero-card-body">
-          <div class="hero-card-title">Block Games</div>
-          <div class="hero-card-desc">Mario-Party-Style Minigames für bis zu 4 Spieler. Windows-App zum Herunterladen — Details &amp; Download hier.</div>
-          <span class="cabinet-start" style="--accent:#ffb703">
-            <span class="dot"></span><span class="label">Ansehen</span>
-          </span>
+    <div class="row-cabs">
+
+      <a class="cab" href="games/blockdrop/" style="--accent:#ff3d6e; --turn:13deg">
+        <div class="cab-box">
+          <span class="cab-side l" aria-hidden="true"></span><span class="cab-side r" aria-hidden="true"></span>
+          <div class="cab-marquee"><span class="cab-name">Block Drop</span></div>
+          <div class="cab-bezel">
+            <div class="cab-screen crt">
+              <div class="a-drop" aria-hidden="true">
+                <b></b><b></b><b></b><b></b><b></b><b></b><b></b>
+                <b></b><b></b><b></b><b></b><b></b><b></b><b></b>
+                <b></b><b></b><b></b><b></b><b></b><b></b><b></b>
+                <b></b><b></b><b></b><b></b><b></b><b></b><b></b>
+                <b></b><b class="p"></b><b></b><b></b><b></b><b></b><b></b>
+                <b class="p"></b><b class="p"></b><b class="p"></b><b></b><b class="y"></b><b class="y"></b><b></b>
+                <b class="r"></b><b class="r"></b><b class="g"></b><b class="g"></b><b class="y"></b><b class="y"></b><b></b>
+                <span class="row" style="display:contents"><b class="r"></b><b class="o"></b><b class="o"></b><b class="g"></b><b class="o"></b><b class="c"></b><b></b></span>
+                <span class="fall"><i></i><i></i><i></i></span>
+              </div>
+            </div>
+            <span class="scr-tag">Jederzeit</span>
+            <span class="cab-coin" aria-hidden="true">Münze einwerfen</span>
+          </div>
+          <div class="cab-deck" aria-hidden="true"><span class="stick"></span><span class="knobs"><i style="--c:#2ee6ff"></i><i style="--c:#ffb000;--d:.3s"></i><i style="--c:#b8ff3d;--d:.6s"></i></span></div>
+          <div class="cab-door">
+            <p class="cab-desc">Fallblock-Klassiker. Reihen räumen, Level steigen, High-Score knacken.</p>
+            <span class="coin-door" aria-hidden="true"></span>
+            <span class="cabinet-start"><span class="dot"></span><span class="label">Spielen</span></span>
+          </div>
         </div>
       </a>
+
+      <a class="cab" href="games/blockpresser/" style="--accent:#ffb000">
+        <div class="cab-box">
+          <span class="cab-side l" aria-hidden="true"></span><span class="cab-side r" aria-hidden="true"></span>
+          <div class="cab-marquee" style="--d:1.2s"><span class="cab-name">Block Presser</span></div>
+          <div class="cab-bezel">
+            <div class="cab-screen crt"><canvas class="px" data-art="press" aria-hidden="true"></canvas></div>
+            <span class="scr-tag">Idle</span>
+            <span class="cab-coin" aria-hidden="true">Münze einwerfen</span>
+          </div>
+          <div class="cab-deck" aria-hidden="true"><span class="knobs"><i style="--c:#ff2e63"></i></span><span class="knobs"><i style="--c:#ffb000;--d:.4s"></i><i style="--c:#2ee6ff;--d:.8s"></i></span></div>
+          <div class="cab-door">
+            <p class="cab-desc">Klick den Block, kauf Praktikanten und Pressen, bau dein Block-Imperium der 5DK auf.</p>
+            <span class="coin-door" style="--d:.5s" aria-hidden="true"></span>
+            <span class="cabinet-start"><span class="dot"></span><span class="label">Spielen</span></span>
+          </div>
+        </div>
+      </a>
+
+      <a class="cab" href="games/casino/" style="--accent:#ffd23f; --turn:-13deg">
+        <div class="cab-box">
+          <span class="cab-side l" aria-hidden="true"></span><span class="cab-side r" aria-hidden="true"></span>
+          <div class="cab-marquee" style="--d:2.4s"><span class="cab-name">Casino</span></div>
+          <div class="cab-bezel">
+            <div class="cab-screen crt"><canvas class="px" data-art="slot" aria-hidden="true"></canvas></div>
+            <span class="scr-tag">Spielgeld</span>
+            <span class="cab-coin" aria-hidden="true">Münze einwerfen</span>
+          </div>
+          <div class="cab-deck" aria-hidden="true"><span class="knobs"><i style="--c:#ffd23f"></i><i style="--c:#ffd23f;--d:.2s"></i><i style="--c:#ffd23f;--d:.4s"></i></span><span class="knobs"><i style="--c:#ff2e63;--d:.7s"></i></span></div>
+          <div class="cab-door">
+            <p class="cab-desc">Automat mit drei Spielmodi, Roulette und Blackjack, ein Guthaben, das gespeichert bleibt. Guthaben aufladen und spielen.</p>
+            <span class="coin-door" style="--d:1s" aria-hidden="true"></span>
+            <span class="cabinet-start"><span class="dot"></span><span class="label">Spielen</span></span>
+          </div>
+        </div>
+      </a>
+
+    </div>
+
+    <a class="showcase zoomable" href="blockgames/">
+      <div class="showcase-art crt mon-screen" style="filter:none"><canvas class="px" data-art="dice" aria-hidden="true"></canvas><span class="scr-tag">Demo · Download</span></div>
+      <div>
+        <h3>Block Games</h3>
+        <p>Mario-Party-Style Minigames für bis zu 4 Spieler. Windows-App zum Herunterladen — Details &amp; Download hier.</p>
+      </div>
+      <span class="cabinet-start"><span class="dot"></span><span class="label">Ansehen</span></span>
+    </a>
+  </section>
+
+  <!-- Für die Klasse -->
+  <section class="aisle" style="--tube: var(--neon-cyan)">
+    <div class="aisle-head">
+      <h2>Für die Klasse</h2>
+      <span class="aisle-note">7 Sachen fürs Schulleben</span>
+    </div>
+    <div class="wall">
+
+      <a class="mon big" href="stundenplan/" style="--accent:#a99bff">
+        <div class="mon-screen crt"><div class="a-plan" aria-hidden="true">
+          <i></i><i class="f"></i><i></i><i class="f2" style="--d:.3s"></i><i></i>
+          <i class="f" style="--d:.6s"></i><i class="f" style="--d:.9s"></i><i></i><i></i><i class="f2" style="--d:1.2s"></i>
+          <i></i><i class="f2" style="--d:1.5s"></i><i class="f" style="--d:1.8s"></i><i class="f" style="--d:2.1s"></i><i></i>
+          <i class="f2" style="--d:2.4s"></i><i></i><i></i><i class="f" style="--d:2.7s"></i><i></i>
+        </div><span class="scr-tag">5DK</span></div>
+        <h3>Stundenplan</h3>
+        <p>Fach, Kürzel und Zeit für die ganze Woche auf einen Blick.</p>
+      </a>
+
+      <a class="mon" href="games/schuluhr/" style="--accent:#2ee6ff">
+        <div class="mon-screen crt"><canvas class="px" data-art="clock" aria-hidden="true"></canvas><span class="scr-tag">Live</span></div>
+        <h3>SchulUhr</h3>
+        <p>Countdown bis Pausenende, Stundenende oder endlich frei.</p>
+      </a>
+
+      <a class="mon wide" href="weather/" style="--accent:#7cc4ff">
+        <div class="mon-screen crt"><canvas class="px" data-art="wx" aria-hidden="true"></canvas><span class="scr-tag">Live · Karte</span></div>
+        <h3>Weather Dashboard</h3>
+        <p>Aktuell, 24h und 7 Tage mit Radar-Karte, UV und Luftqualität.</p>
+      </a>
+
+      <a class="mon" href="metar/" style="--accent:#2ee6ff">
+        <div class="mon-screen crt"><div class="a-metar" aria-hidden="true"><b>METAR LOWW</b>27015KT 9999<br><span>FEW040 18/12</span></div><span class="scr-tag">Live</span></div>
+        <h3>METAR Browser</h3>
+        <p>Flughafen-Wetterdaten weltweit. ICAO-Code rein, Klartext raus.</p>
+      </a>
+
+      <a class="mon wide" href="f1-wetten/" style="--accent:#ffc93a">
+        <div class="mon-screen crt"><canvas class="px" data-art="podium" aria-hidden="true"></canvas><span class="scr-tag">Login</span></div>
+        <h3>F1 Podium Wetten</h3>
+        <p>Tipp das Podium, gewinne Punkte. 1.000 Start­punkte pro Saison.</p>
+      </a>
+
+      <a class="mon" href="f1/" style="--accent:#ff6a6a">
+        <div class="mon-screen crt"><canvas class="px" data-art="f1" aria-hidden="true"></canvas><span class="scr-tag">Live</span></div>
+        <h3>Formel 1 Hub</h3>
+        <p>Fahrer-WM, Konstrukteure und Live-Race-Tracker.</p>
+      </a>
+
+      <a class="mon wide" href="achievements/" style="--accent:#ffc93a">
+        <div class="mon-screen crt"><canvas class="px" data-art="cup" aria-hidden="true"></canvas><span class="scr-tag">Deine Sammlung</span></div>
+        <h3>Achievements</h3>
+        <p>Alle freigeschalteten Erfolge und das Leaderboard.</p>
+      </a>
+
     </div>
   </section>
 
-  <!-- Games -->
-  <div class="section-header">
-    <h2>Spielen</h2>
-    <span class="section-note">3 Titel, jederzeit offen</span>
-  </div>
-
-  <div class="games-grid">
-
-    <a class="game-card available" href="games/blockdrop/" style="--accent:#e94560">
-      <div class="card-thumb thumb-blockdrop">
-        <div class="blocks-art">
-          <div class="b b-n"></div><div class="b b-c"></div><div class="b b-c"></div><div class="b b-c"></div><div class="b b-c"></div>
-          <div class="b b-p"></div><div class="b b-p"></div><div class="b b-p"></div><div class="b b-n"></div><div class="b b-y"></div>
-          <div class="b b-r"></div><div class="b b-r"></div><div class="b b-g"></div><div class="b b-g"></div><div class="b b-y"></div>
-          <div class="b b-r"></div><div class="b b-o"></div><div class="b b-o"></div><div class="b b-g"></div><div class="b b-y"></div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="card-tag">Jederzeit</div>
-        <div class="card-title">Block Drop</div>
-        <div class="card-desc">Fallblock-Klassiker. Reihen räumen, Level steigen, High-Score knacken.</div>
-        <div class="card-footer">
-          <span class="cabinet-start"><span class="dot"></span><span class="label">Spielen</span></span>
-        </div>
-      </div>
-    </a>
-
-    <a class="game-card available" href="games/blockpresser/" style="--accent:#ffb703">
-      <div class="card-thumb thumb-blockpresser">
-        <div style="font-family:'Baloo 2',sans-serif;font-weight:800;font-size:40px;color:#ffb703;line-height:1">+1 ▮</div>
-      </div>
-      <div class="card-body">
-        <div class="card-tag">Idle</div>
-        <div class="card-title">Block Presser</div>
-        <div class="card-desc">Klick den Block, kauf Praktikanten und Pressen, bau dein Block-Imperium der 5DK auf.</div>
-        <div class="card-footer">
-          <span class="cabinet-start"><span class="dot"></span><span class="label">Spielen</span></span>
-        </div>
-      </div>
-    </a>
-
-    <a class="game-card available" href="games/casino/" style="--accent:#ffb703">
-      <div class="card-thumb thumb-casino">
-        <div style="font-family:'Share Tech Mono',monospace;font-size:44px;letter-spacing:6px;color:#ffb703;line-height:1">777</div>
-      </div>
-      <div class="card-body">
-        <div class="card-tag">Spielgeld</div>
-        <div class="card-title">Casino</div>
-        <div class="card-desc">Automat mit drei Spielmodi, Roulette und Blackjack, ein Guthaben, das gespeichert bleibt. Guthaben aufladen und spielen.</div>
-        <div class="card-footer">
-          <span class="cabinet-start"><span class="dot"></span><span class="label">Spielen</span></span>
-        </div>
-      </div>
-    </a>
-
-  </div>
-
-  <!-- School-life apps -->
-  <div class="section-header">
-    <h2>Für die Klasse</h2>
-    <span class="section-note">7 Sachen fürs Schulleben</span>
-  </div>
-
-  <div class="games-grid" style="grid-template-columns:repeat(3,1fr)">
-
-    <a class="game-card available" href="stundenplan/" style="--accent:#6366f1">
-      <div class="card-thumb thumb-stundenplan">
-        <div class="stundenplan-art">
-          <div class="sp-cell"></div><div class="sp-cell fill"></div><div class="sp-cell"></div><div class="sp-cell fill2"></div><div class="sp-cell"></div>
-          <div class="sp-cell fill"></div><div class="sp-cell fill"></div><div class="sp-cell"></div><div class="sp-cell"></div><div class="sp-cell fill2"></div>
-          <div class="sp-cell"></div><div class="sp-cell fill2"></div><div class="sp-cell fill"></div><div class="sp-cell fill"></div><div class="sp-cell"></div>
-          <div class="sp-cell fill2"></div><div class="sp-cell"></div><div class="sp-cell"></div><div class="sp-cell fill"></div><div class="sp-cell"></div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="card-tag">5DK</div>
-        <div class="card-title">Stundenplan</div>
-        <div class="card-desc">Fach, Kürzel und Zeit für die ganze Woche auf einen Blick.</div>
-        <div class="card-footer">
-          <span class="cabinet-start"><span class="dot"></span><span class="label">Öffnen</span></span>
-        </div>
-      </div>
-    </a>
-
-    <a class="game-card available" href="games/schuluhr/" style="--accent:#38bdf8">
-      <div class="card-thumb thumb-schuluhr">
-        <div class="clock-art">
-          <div class="clock-face"></div>
-          <div class="clock-hand clock-hand-h"></div>
-          <div class="clock-hand clock-hand-m"></div>
-          <div class="clock-hand clock-hand-s"></div>
-          <div class="clock-center"></div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="card-tag">Live</div>
-        <div class="card-title">SchulUhr</div>
-        <div class="card-desc">Countdown bis Pausenende, Stundenende oder endlich frei.</div>
-        <div class="card-footer">
-          <span class="cabinet-start"><span class="dot"></span><span class="label">Öffnen</span></span>
-        </div>
-      </div>
-    </a>
-
-    <a class="game-card available" href="weather/" style="--accent:#38bdf8">
-      <div class="card-thumb thumb-weather">
-        <div class="weather-art">
-          <div class="sun"></div>
-          <div class="cloud"></div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="card-tag">Live · Karte</div>
-        <div class="card-title">Weather Dashboard</div>
-        <div class="card-desc">Aktuell, 24h und 7 Tage mit Radar-Karte, UV und Luftqualität.</div>
-        <div class="card-footer">
-          <span class="cabinet-start"><span class="dot"></span><span class="label">Öffnen</span></span>
-        </div>
-      </div>
-    </a>
-
-    <a class="game-card available" href="metar/" style="--accent:#38bdf8">
-      <div class="card-thumb thumb-metar">
-        <div class="metar-art">
-          <div class="row-1">METAR LOWW</div>
-          <div class="row-2">27015KT 9999<br>FEW040 18/12</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="card-tag">Live</div>
-        <div class="card-title">METAR Browser</div>
-        <div class="card-desc">Flughafen-Wetterdaten weltweit. ICAO-Code rein, Klartext raus.</div>
-        <div class="card-footer">
-          <span class="cabinet-start"><span class="dot"></span><span class="label">Öffnen</span></span>
-        </div>
-      </div>
-    </a>
-
-    <a class="game-card available" href="f1-wetten/" style="--accent:#f0c000">
-      <div class="card-thumb thumb-f1bet">
-        <div class="podium-art">
-          <div class="podium-bar p2">2</div>
-          <div class="podium-bar p1">1</div>
-          <div class="podium-bar p3">3</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="card-tag">Login</div>
-        <div class="card-title">F1 Podium Wetten</div>
-        <div class="card-desc">Tipp das Podium, gewinne Punkte. 1.000 Start­punkte pro Saison.</div>
-        <div class="card-footer">
-          <span class="cabinet-start"><span class="dot"></span><span class="label">Wetten</span></span>
-        </div>
-      </div>
-    </a>
-
-    <a class="game-card available" href="f1/" style="--accent:#e10600">
-      <div class="card-thumb thumb-f1">
-        <div class="f1-art"><span>F</span><span class="f1-1">1</span></div>
-      </div>
-      <div class="card-body">
-        <div class="card-tag">Live</div>
-        <div class="card-title">Formel 1 Hub</div>
-        <div class="card-desc">Fahrer-WM, Konstrukteure und Live-Race-Tracker.</div>
-        <div class="card-footer">
-          <span class="cabinet-start"><span class="dot"></span><span class="label">Öffnen</span></span>
-        </div>
-      </div>
-    </a>
-
-    <a class="game-card available" href="achievements/" style="--accent:#f0c000">
-      <div class="card-thumb thumb-achievements">
-        <div class="trophy-art">🏆</div>
-      </div>
-      <div class="card-body">
-        <div class="card-tag">Deine Sammlung</div>
-        <div class="card-title">Achievements</div>
-        <div class="card-desc">Alle freigeschalteten Erfolge und das Leaderboard.</div>
-        <div class="card-footer">
-          <span class="cabinet-start"><span class="dot"></span><span class="label">Ansehen</span></span>
-        </div>
-      </div>
-    </a>
-
-  </div>
-
-  <!-- Coming Soon -->
-  <div class="section-header" style="margin-top: 44px;">
-    <h2>Wird noch gebaut</h2>
-    <span class="section-note">5 Stück in Arbeit</span>
-  </div>
-
-  <div class="coming-grid" style="margin-top:0">
-
-    <div class="game-card unavailable">
-      <div class="card-thumb thumb-snake"><div class="snake-art"></div></div>
-      <div class="card-body">
-        <div class="card-tag">In Arbeit</div>
-        <div class="card-title">Snake</div>
-        <div class="card-desc">Schlange füttern, Wand nicht anfassen.</div>
-        <div class="card-footer"><div class="soon-badge">Noch nicht spielbar</div></div>
-      </div>
+  <!-- Wird noch gebaut -->
+  <section class="aisle" style="--tube: var(--marquee)">
+    <div class="aisle-head">
+      <h2>Wird noch gebaut</h2>
+      <span class="aisle-note">5 Stück in Arbeit</span>
     </div>
-
-    <div class="game-card unavailable">
-      <div class="card-thumb thumb-pong">
-        <div class="pong-art">
-          <div class="pong-paddle"></div>
-          <div class="pong-net">
-            <div class="pong-net-seg"></div><div class="pong-net-seg"></div>
-            <div class="pong-net-seg"></div><div class="pong-net-seg"></div>
-            <div class="pong-net-seg"></div>
-          </div>
-          <div class="pong-ball"></div>
-          <div class="pong-paddle"></div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="card-tag">In Arbeit</div>
-        <div class="card-title">Pong</div>
-        <div class="card-desc">Zwei Schläger, ein Ball, der Arcade-Urahn.</div>
-        <div class="card-footer"><div class="soon-badge">Noch nicht spielbar</div></div>
-      </div>
+    <div class="backrow">
+      <div class="dead"><span class="dead-name">Snake</span><div class="dead-box"></div><svg viewBox="0 0 60 40" aria-hidden="true"><path d="M30 0v14c0 8-16 4-16 14v6" fill="none" stroke="#6a5cc0" stroke-width="3" stroke-linecap="round"/><rect x="9" y="32" width="10" height="7" rx="1.500" fill="#6a5cc0"/></svg><div class="dead-state">Außer Betrieb</div><p>Schlange füttern, Wand nicht anfassen.</p></div>
+      <div class="dead"><span class="dead-name">Pong</span><div class="dead-box"></div><svg viewBox="0 0 60 40" aria-hidden="true"><path d="M30 0v10c0 10 18 6 18 16v8" fill="none" stroke="#6a5cc0" stroke-width="3" stroke-linecap="round"/><rect x="43" y="32" width="10" height="7" rx="1.500" fill="#6a5cc0"/></svg><div class="dead-state">Noch nicht spielbar</div><p>Zwei Schläger, ein Ball, der Arcade-Urahn.</p></div>
+      <div class="dead"><span class="dead-name">Space Blaster</span><div class="dead-box"></div><svg viewBox="0 0 60 40" aria-hidden="true"><path d="M30 0v14c0 8-16 4-16 14v6" fill="none" stroke="#6a5cc0" stroke-width="3" stroke-linecap="round"/><rect x="9" y="32" width="10" height="7" rx="1.500" fill="#6a5cc0"/></svg><div class="dead-state">In Arbeit</div><p>Gegnerwellen, Power-ups, geordnetes Chaos.</p></div>
+      <div class="dead"><span class="dead-name">Memory Match</span><div class="dead-box"></div><svg viewBox="0 0 60 40" aria-hidden="true"><path d="M30 0v10c0 10 18 6 18 16v8" fill="none" stroke="#6a5cc0" stroke-width="3" stroke-linecap="round"/><rect x="43" y="32" width="10" height="7" rx="1.500" fill="#6a5cc0"/></svg><div class="dead-state">Außer Betrieb</div><p>Karten umdrehen, Paare finden, Zeit im Blick.</p></div>
+      <div class="dead"><span class="dead-name">Minesweeper</span><div class="dead-box"></div><svg viewBox="0 0 60 40" aria-hidden="true"><path d="M30 0v14c0 8-16 4-16 14v6" fill="none" stroke="#6a5cc0" stroke-width="3" stroke-linecap="round"/><rect x="9" y="32" width="10" height="7" rx="1.500" fill="#6a5cc0"/></svg><div class="dead-state">In Arbeit</div><p>Minenfeld räumen, ohne eine einzige auszulösen.</p></div>
     </div>
+  </section>
 
-    <div class="game-card unavailable">
-      <div class="card-thumb thumb-space">
-        <div class="space-art"><div class="space-ship"></div></div>
-      </div>
-      <div class="card-body">
-        <div class="card-tag">In Arbeit</div>
-        <div class="card-title">Space Blaster</div>
-        <div class="card-desc">Gegnerwellen, Power-ups, geordnetes Chaos.</div>
-        <div class="card-footer"><div class="soon-badge">Noch nicht spielbar</div></div>
-      </div>
-    </div>
-
-    <div class="game-card unavailable">
-      <div class="card-thumb thumb-memory">
-        <div class="memory-art">
-          <div class="mem-card flipped"></div><div class="mem-card"></div><div class="mem-card flipped"></div>
-          <div class="mem-card"></div><div class="mem-card flipped"></div><div class="mem-card"></div>
-          <div class="mem-card"></div><div class="mem-card"></div><div class="mem-card flipped"></div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="card-tag">In Arbeit</div>
-        <div class="card-title">Memory Match</div>
-        <div class="card-desc">Karten umdrehen, Paare finden, Zeit im Blick.</div>
-        <div class="card-footer"><div class="soon-badge">Noch nicht spielbar</div></div>
-      </div>
-    </div>
-
-    <div class="game-card unavailable">
-      <div class="card-thumb thumb-mines">
-        <div class="mines-art">
-          <div class="mine-cell">1</div><div class="mine-cell">2</div><div class="mine-cell boom"></div><div class="mine-cell">1</div><div class="mine-cell"></div>
-          <div class="mine-cell">1</div><div class="mine-cell boom"></div><div class="mine-cell">3</div><div class="mine-cell">1</div><div class="mine-cell"></div>
-          <div class="mine-cell"></div><div class="mine-cell">2</div><div class="mine-cell">2</div><div class="mine-cell boom"></div><div class="mine-cell">1</div>
-          <div class="mine-cell"></div><div class="mine-cell">1</div><div class="mine-cell boom"></div><div class="mine-cell">2</div><div class="mine-cell">1</div>
-          <div class="mine-cell"></div><div class="mine-cell">1</div><div class="mine-cell">1</div><div class="mine-cell">1</div><div class="mine-cell"></div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="card-tag">In Arbeit</div>
-        <div class="card-title">Minesweeper</div>
-        <div class="card-desc">Minenfeld räumen, ohne eine einzige auszulösen.</div>
-        <div class="card-footer"><div class="soon-badge">Noch nicht spielbar</div></div>
-      </div>
-    </div>
-
-  </div>
+  <div class="plate-foot"><span>Klasse 5DK · Baujahr 2026</span></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/fx.js"></script>
 <script src="/auth.js"></script>
 <script>
-  // Staggered card animations
-  const availCards = document.querySelectorAll('.game-card.available');
-  const unavailCards = document.querySelectorAll('.game-card.unavailable');
+(() => {
+  const FX = window.FX, REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  availCards.forEach((card, i) => {
-    card.style.animationDelay = (0.3 + i * 0.06) + 's';
-  });
-  unavailCards.forEach((card, i) => {
-    card.style.animationDelay = (0.5 + i * 0.05) + 's';
-    card.style.animationName = 'cardInDim';
-  });
-
-  // 3D magnetic tilt on available cards (desktop only — touch devices skip it)
-  const supportsHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (supportsHover && !reduceMotion) document.querySelectorAll('.game-card.available').forEach(card => {
-    let raf = null;
-    let targetX = 0, targetY = 0, currentX = 0, currentY = 0;
-    let lifted = false;
-
-    card.addEventListener('mouseenter', () => { lifted = true; });
-
-    card.addEventListener('mousemove', e => {
-      const r = card.getBoundingClientRect();
-      targetX = ((e.clientX - r.left) / r.width  - 0.5) * 8;
-      targetY = ((e.clientY - r.top)  / r.height - 0.5) * -6;
-
-      if (!raf) {
-        const lerp = () => {
-          currentX += (targetX - currentX) * 0.12;
-          currentY += (targetY - currentY) * 0.12;
-          card.style.transition = 'border-color 0.25s, box-shadow 0.25s';
-          card.style.transform  = `perspective(700px) translateY(-6px) rotateY(${currentX}deg) rotateX(${currentY}deg) scale(1.015)`;
-          if (lifted) raf = requestAnimationFrame(lerp);
-          else raf = null;
-        };
-        raf = requestAnimationFrame(lerp);
+  // ── Röhrenbilder: jedes Motiv wird Zelle für Zelle gezeichnet ──
+  const px = (c, x, y, col, w = 1, h = 1) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
+  const bmp = (c, rows, x0, y0, pal) => rows.forEach((r, y) => { for (let x = 0; x < r.length; x++) if (pal[r[x]]) px(c, x0 + x, y0 + y, pal[r[x]]); });
+  const SEVEN = ['#####', '....#', '...#.', '..#..', '.#...', '.#...', '.#...'];
+  const ART = {
+    press: { w: 22, h: 20, every: 1, draw(c, f) {
+      const k = [0, 0, 1, 3, 5, 5, 3, 1][f % 8], hit = k === 5;
+      px(c, 6, 0, '#8f86b3', 2, 2 + k); px(c, 14, 0, '#8f86b3', 2, 2 + k);
+      px(c, 3, 2 + k, '#cfc8ea', 16, 2); px(c, 3, 4 + k, '#5a517c', 16, 1);
+      const top = hit ? 12 : 10, x0 = hit ? 5 : 6, w = hit ? 12 : 10;
+      px(c, x0, top, '#ffb000', w, 19 - top); px(c, x0, top, '#ffe08a', w, 1); px(c, x0, 18, '#c47d00', w, 1);
+      px(c, 10, top + 2, '#7a4a00', 2, 4);
+      if (f % 8 >= 5) { const y = 8 - (f % 8 - 5) * 2; px(c, 18, y + 1, '#fff', 3, 1); px(c, 19, y, '#fff', 1, 3); }
+    } },
+    slot: { w: 23, h: 11, every: 1, draw(c, f) {
+      const t = f % 18;
+      px(c, 0, 0, '#ffd23f', 23, 11); px(c, 1, 1, '#150a05', 21, 9);
+      for (let r = 0; r < 3; r++) {
+        const x = 2 + r * 7; px(c, x, 2, '#fff6dc', 5, 7);
+        if (t < 4 + r * 3) { for (let y = 0; y < 7; y++) if ((y + t + r) % 3) px(c, x, 2 + y, (y + t) % 2 ? '#e0102f' : '#c9b98a', 5, 1); }
+        else bmp(c, SEVEN, x, 2, { '#': '#e0102f' });
       }
+      if (t > 12 && t % 2) px(c, 0, 0, '#fff', 23, 1);
+    } },
+    dice: { w: 25, h: 11, every: 5, draw(c, f) {
+      const P = { 1: [[5, 5]], 2: [[2, 2], [8, 8]], 3: [[2, 2], [5, 5], [8, 8]], 4: [[2, 2], [8, 2], [2, 8], [8, 8]], 5: [[2, 2], [8, 2], [5, 5], [2, 8], [8, 8]], 6: [[2, 2], [8, 2], [2, 5], [8, 5], [2, 8], [8, 8]] };
+      [[0, '#fff6dc', (f * 2) % 6 + 1], [14, '#ffb000', (f * 5 + 2) % 6 + 1]].forEach(([x0, col, n]) => {
+        px(c, x0, 0, col, 11, 11); px(c, x0, 0, '#05030c'); px(c, x0 + 10, 0, '#05030c'); px(c, x0, 10, '#05030c'); px(c, x0 + 10, 10, '#05030c');
+        P[n].forEach(([x, y]) => px(c, x0 + x - 0, y, '#1a1000', 1, 1));
+      });
+    } },
+    clock: { w: 17, h: 17, every: 2, draw(c, f) {
+      for (let y = 0; y < 17; y++) for (let x = 0; x < 17; x++) { const d = Math.hypot(x - 8, y - 8); if (d > 6.7 && d < 8.3) px(c, x, y, '#2ee6ff'); }
+      const hand = (a, len, col) => { for (let i = 1; i <= len; i++) px(c, Math.round(8 + Math.sin(a) * i), Math.round(8 - Math.cos(a) * i), col); };
+      hand(-1.05, 3, '#2ee6ff'); hand(1.4 + Math.floor(f / 16) * 0.39, 5, '#b6f5ff'); hand((f % 16) / 16 * 6.283, 6, '#ff2e63');
+      px(c, 8, 8, '#fff');
+    } },
+    wx: { w: 26, h: 15, every: 3, draw(c, f) {
+      const s = f % 4;
+      for (let y = 0; y < 15; y++) for (let x = 0; x < 26; x++) if (Math.hypot(x - 7, y - 6) < 4.2) px(c, x, y, y < 5 ? '#fff7b0' : '#ffc93a');
+      if (s % 2 === 0) { px(c, 7, 0, '#ffc93a'); px(c, 1, 6, '#ffc93a'); px(c, 13, 6, '#ffc93a'); px(c, 7, 12, '#ffc93a'); }
+      else { px(c, 3, 2, '#ffc93a'); px(c, 11, 2, '#ffc93a'); px(c, 3, 10, '#ffc93a'); px(c, 11, 10, '#ffc93a'); }
+      const cx = [0, 1, 1, 0][s];
+      for (let y = 0; y < 15; y++) for (let x = 0; x < 26; x++) {
+        const X = x - cx;
+        if (Math.hypot(X - 14, y - 10) < 3.2 || Math.hypot(X - 18, y - 8) < 4 || Math.hypot(X - 22, y - 10.500) < 2.800 || (y >= 10 && y <= 12 && X >= 13 && X <= 23)) px(c, x, y, y < 8 ? '#fff' : '#dfe6f5');
+      }
+    } },
+    podium: { w: 17, h: 14, every: 2, draw(c, f) {
+      const k = Math.min(1, 0.35 + (f % 14) / 8);
+      [[1, 8, '#d9d9d9', ['##', '.#', '##', '#.', '##']], [6, 12, '#ffd23f', ['.#', '##', '.#', '.#', '.#']], [11, 6, '#e09a58', ['##', '.#', '##', '.#', '##']]].forEach(([x, h, col, d]) => {
+        const hh = Math.round(h * k); px(c, x, 14 - hh, col, 5, hh);
+        if (hh >= 7) bmp(c, d, x + 1, 14 - hh + 1, { '#': '#1a1000' });
+      });
+    } },
+    f1: { w: 25, h: 13, every: 1, draw(c, f) {
+      bmp(c, ['...######', '..######.', '..##.....', '.#####...', '.#####...', '.##......', '##.......', '##.......'], 3, 1, { '#': '#ffffff' });
+      bmp(c, ['...###', '..####', '.##.##', '...##.', '...##.', '..##..', '..##..', '..##..'], 13, 1, { '#': '#ff2e2e' });
+      for (let x = 0; x < 25; x++) if ((x + f * 2) % 6 < 3) px(c, x, 11, '#ff2e2e');
+      for (let x = 0; x < 25; x++) if ((x + f * 3) % 9 < 2) px(c, x, 12, '#ffffff');
+    } },
+    cup: { w: 15, h: 14, every: 3, draw(c, f) {
+      bmp(c, ['.#.#######.#.', '#..#######..#', '#..#######..#', '.#.#######.#.', '..#########..', '....#####....', '.....###.....', '......#......', '......#......', '.....###.....', '...#######...', '...#######...'], 1, 1, { '#': '#ffc93a' });
+      const s = f % 6; if (s < 4) { px(c, 5 + s, 2 + s % 2, '#fff'); px(c, 5 + s, 3 + s % 2, '#fff7b0'); }
+    } },
+  };
+  const screens = [...document.querySelectorAll('canvas.px')].map(cv => {
+    const art = ART[cv.dataset.art]; cv.width = art.w; cv.height = art.h;
+    return { cv, art, c: cv.getContext('2d') };
+  });
+  function fit() {
+    screens.forEach(({ cv, art }) => {
+      const b = cv.parentElement.getBoundingClientRect();
+      const s = Math.max(2, Math.floor(Math.min(b.width * 0.62 / art.w, b.height * 0.6 / art.h)));
+      cv.style.width = art.w * s + 'px'; cv.style.height = art.h * s + 'px';
     });
+  }
+  let tickN = 0;
+  function paint() {
+    screens.forEach(({ art, c }) => { if (tickN % art.every) return; c.clearRect(0, 0, art.w, art.h); art.draw(c, Math.floor(tickN / art.every)); });
+    tickN++;
+  }
+  fit(); paint(); addEventListener('resize', fit);
+  if (!REDUCED) setInterval(() => { if (!document.hidden) paint(); }, 130);
 
-    card.addEventListener('mouseleave', () => {
-      lifted = false;
-      cancelAnimationFrame(raf); raf = null;
-      card.style.transition = 'border-color 0.25s, box-shadow 0.25s, transform 0.5s cubic-bezier(0.22,1,0.36,1)';
-      card.style.transform  = '';
+  // ── Automaten schalten sich ein, wenn sie ins Bild kommen ──
+  const units = document.querySelectorAll('.cab, .mon, .dead, .showcase');
+  if ('IntersectionObserver' in window && !REDUCED) {
+    document.documentElement.classList.add('js-reveal');
+    const io = new IntersectionObserver(entries => {
+      let n = 0;
+      entries.forEach(en => {
+        if (!en.isIntersecting) return;
+        en.target.style.setProperty('--i', (n++ * 0.11) + 's');
+        en.target.classList.add('in');
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.12 });
+    units.forEach(u => io.observe(u));
+  }
+  if (!FX) return;
+
+  FX.tilt(document.querySelectorAll('.cab'), { max: 9 });
+  FX.tilt(document.querySelectorAll('.mon, .showcase'), { max: 0.01 }); // nur der Lichtreflex auf dem Glas
+
+  // Das Schild zündet: Lichtstreifen und ein Aufleuchten der ganzen Halle
+  if (!FX.reduced) {
+    const a = document.querySelector('.sign-a'), b = document.querySelector('.sign-b');
+    setTimeout(() => {
+      const r = a.getBoundingClientRect();
+      FX.streak(r.top + r.height / 2, '#ff3d9a'); FX.pulse('#ff3d9a', 1.1);
+      FX.burst(r.left + r.width / 2, r.top + r.height / 2, { kind: 'spark', n: 60, speed: 14, radius: r.width / 2.4, radiusY: 10, colors: ['#ff3d9a', '#ffffff'] });
+    }, 900);
+    setTimeout(() => {
+      const r = b.getBoundingClientRect();
+      FX.pulse('#2ee6ff', 0.9);
+      FX.burst(r.left + r.width / 2, r.top + r.height / 2, { kind: 'spark', n: 40, speed: 12, radius: r.width / 2.4, radiusY: 10, colors: ['#2ee6ff', '#ffffff'] });
+    }, 1500);
+  }
+
+  // Münzeinwurf: Münzen springen, der Schirm füllt das Bild, dann erst wird gewechselt
+  document.querySelectorAll('.cab, .mon, .showcase').forEach(el => {
+    el.addEventListener('click', e => {
+      if (FX.reduced || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      const scr = el.querySelector('.cab-screen, .mon-screen'), r = scr.getBoundingClientRect();
+      const col = getComputedStyle(el).getPropertyValue('--accent').trim() || '#ffb000';
+      const z = scr.cloneNode(true);
+      // geklonte Röhren zeigen das aktuelle Zellenbild weiter
+      const src = scr.querySelector('canvas.px'), dst = z.querySelector('canvas.px');
+      if (src && dst) dst.getContext('2d').drawImage(src, 0, 0);
+      z.classList.add('zoom-screen');
+      Object.assign(z.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', filter: 'none' });
+      document.body.appendChild(z);
+      FX.burst(r.left + r.width / 2, r.top + r.height / 2, { kind: 'coin', n: 14, speed: 12, lift: -5 });
+      FX.pulse(col, 1.3);
+      const s = Math.max(innerWidth / r.width, innerHeight / r.height) * 1.08;
+      const dx = innerWidth / 2 - (r.left + r.width / 2), dy = innerHeight / 2 - (r.top + r.height / 2);
+      z.animate([
+        { transform: 'translate(0,0) scale(1)', filter: 'brightness(1.2)' },
+        { transform: `translate(${dx}px, ${dy}px) scale(${s})`, filter: 'brightness(3.2) saturate(1.6)', borderRadius: '0' },
+      ], { duration: 520, easing: 'cubic-bezier(0.7, 0, 0.84, 0)', fill: 'forwards' }).onfinish = () => { location.href = el.href; };
     });
   });
+  // Zurück aus dem Seitencache: gezoomten Schirm wieder wegräumen
+  addEventListener('pageshow', () => document.querySelectorAll('.zoom-screen').forEach(z => z.remove()));
+})();
 </script>
 </body>
 </html>

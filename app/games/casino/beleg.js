@@ -42,6 +42,6 @@ window.Belege = (() => {
   .beleg-row b { font-weight: 400; color: #1b1b1b; text-align: right; }
   .beleg-row.total { border-top: 2px dashed #9a9a90; margin-top: 6px; padding-top: 8px; font-size: 15px; }
   .beleg-row.total b { font-weight: 700; }
-  .beleg-note { margin-top: 10px; font: 400 11px/1.4 'IBM Plex Sans', sans-serif; color: #6a6a62; }`;
+  .beleg-note { margin-top: 10px; font: 400 11px/1.4 'Barlow', sans-serif; color: #6a6a62; }`;
   return { add, list, html, isOut, css, money, esc, when };
 })();

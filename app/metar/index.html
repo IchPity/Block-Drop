@@ -7,8 +7,7 @@
   <title>METAR — Arcade</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Kanit:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600;1,700;1,800;1,900&family=Share+Tech+Mono&family=Tilt+Neon&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/theme.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -23,7 +22,7 @@
     }
     body {
       background: var(--bg); min-height: 100vh;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       color: var(--chalk); overflow-x: clip;
       padding: 72px 0 64px;
     }
@@ -95,19 +94,19 @@
     }
     .search-input {
       flex: 1;
-      background: rgba(255,255,255,0.05);
+      background: color-mix(in srgb, #fff 5%, var(--board-raised));
       border: 1px solid rgba(255,255,255,0.12);
       border-radius: 12px;
       padding: 13px 16px;
       color: #fff;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Share Tech Mono', monospace;
       font-size: 16px; font-weight: 700; letter-spacing: 2px;
       text-transform: uppercase;
       outline: none;
       transition: border-color 0.2s, background 0.2s;
     }
-    .search-input:focus { border-color: rgba(56,189,248,0.5); background: rgba(255,255,255,0.07); }
-    .search-input::placeholder { color: #8b9a88; letter-spacing: 1.5px; font-weight: 600; }
+    .search-input:focus { border-color: rgba(56,189,248,0.5); background: color-mix(in srgb, #fff 7%, var(--board-raised)); }
+    .search-input::placeholder { color: #aaa0cc; letter-spacing: 1.5px; font-weight: 600; }
     .search-btn {
       background: linear-gradient(135deg, var(--blue), #0284c7);
       color: #000; border: none; border-radius: 12px;
@@ -123,7 +122,7 @@
 
     .search-hint {
       margin-top: 10px;
-      font-size: 11px; color: #8b9a88;
+      font-size: 11px; color: #aaa0cc;
     }
 
     .quick-row {
@@ -131,11 +130,11 @@
       margin-top: 14px;
     }
     .quick-tag {
-      background: rgba(255,255,255,0.04);
+      background: color-mix(in srgb, #fff 4%, var(--board-raised));
       border: 1px solid var(--border); border-radius: 8px;
       padding: 6px 12px;
       color: rgba(255,255,255,0.7);
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Share Tech Mono', monospace;
       font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
       cursor: pointer;
       transition: all 0.15s;
@@ -146,7 +145,7 @@
       color: #fff;
     }
     .quick-tag .city {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Barlow', sans-serif;
       letter-spacing: 0;
       color: rgba(255,255,255,0.4);
       font-weight: 600; margin-left: 6px;
@@ -169,7 +168,7 @@
     }
     .station-id-row { display: flex; align-items: baseline; gap: 12px; }
     .station-id {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Share Tech Mono', monospace;
       font-size: 24px; font-weight: 800;
       color: #fff; letter-spacing: 2px;
     }
@@ -182,7 +181,7 @@
     }
     .station-meta strong {
       display: block; color: rgba(255,255,255,0.7); font-size: 11px;
-      margin-bottom: 2px; font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 2px; font-family: 'Share Tech Mono', monospace;
     }
     .station-meta .age {
       display: inline-block; padding: 2px 7px; border-radius: 99px;
@@ -196,7 +195,7 @@
     .raw-metar {
       padding: 16px 22px;
       background: rgba(0,0,0,0.25);
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Share Tech Mono', monospace;
       font-size: 13px;
       line-height: 1.6;
       color: #e0e8f0;
@@ -219,7 +218,7 @@
       gap: 12px;
     }
     .field {
-      background: rgba(255,255,255,0.03);
+      background: color-mix(in srgb, #fff 3%, var(--board-raised));
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 12px 14px;
@@ -270,7 +269,7 @@
     }
     .recents-label {
       font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
-      color: #8b9a88; margin-right: 4px;
+      color: #aaa0cc; margin-right: 4px;
     }
     .recent-tag {
       background: rgba(56,189,248,0.08);
@@ -278,7 +277,7 @@
       border-radius: 99px;
       padding: 4px 10px;
       color: #7dd3fc;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Share Tech Mono', monospace;
       font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
       cursor: pointer;
       transition: all 0.15s;
@@ -321,7 +320,7 @@
 
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: color-mix(in srgb, #fff 8%, var(--board-raised)); border-radius: 3px; }
   </style>
 </head>
 <body>
@@ -379,6 +378,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/fx.js"></script>
 <script src="/auth.js"></script>
 <script>
 /* ===================================================================
