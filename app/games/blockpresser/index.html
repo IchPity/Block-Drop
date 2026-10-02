@@ -106,6 +106,10 @@
     .up-desc { font-size: 12px; color: var(--chalk-dim); line-height: 1.35; }
     .up-side { text-align: right; }
     .up-cost { font-family: 'Share Tech Mono', monospace; font-size: 14px; color: var(--marquee); }
+    .up-mile { font-size: 11px; color: var(--chalk-faint); font-family: 'Share Tech Mono', monospace; }
+    .matura { margin-top: 16px; text-align: center; }
+    .matura button { font: inherit; font-weight: 700; font-size: 13px; padding: 9px 14px; border-radius: 10px; cursor: pointer; color: #0e130d; background: var(--marquee); border: 0; }
+    .matura button:disabled { background: rgba(238,242,234,.08); color: var(--chalk-faint); cursor: not-allowed; }
     .up-own { font-family: 'Baloo 2', sans-serif; font-size: 22px; font-weight: 800; color: var(--chalk-faint); line-height: 1; margin-top: 2px; }
 
     .board { list-style: none; display: flex; flex-direction: column; gap: 4px; }
@@ -150,6 +154,10 @@
     <div class="hint">Klick, Tippen oder Leertaste</div>
     <div class="buff" id="buff"></div>
     <div class="stats" id="stats"></div>
+    <div class="matura">
+      <button id="matura"><span id="matura-txt"></span></button>
+      <div class="hint" id="pts" style="margin-top:6px"></div>
+    </div>
     <div class="tools">
       <button class="tool" id="save">Speichern</button>
       <button class="tool" id="reset">Zurücksetzen</button>
@@ -185,7 +193,7 @@
   ];
   const GROWTH = 1.15;
 
-  const fresh = () => ({ blocks: 0, total: 0, clicks: 0, owned: {}, last: Date.now(), start: Date.now() });
+  const fresh = () => ({ blocks: 0, total: 0, life: 0, pts: 0, clicks: 0, owned: {}, last: Date.now(), start: Date.now() });
   let S = fresh();
 
   const $ = id => document.getElementById(id);
@@ -195,8 +203,18 @@
   let buffUntil = 0, buffMult = 1;
   const buffed = () => Date.now() < buffUntil;
   const mult = () => (buffed() ? buffMult : 1);
-  const clickPower = () => (1 + own('finger')) * mult();
-  const bps = () => UPS.reduce((a, u) => a + (u.bps || 0) * own(u.id), 0) * mult();
+  const earn = n => { S.blocks += n; S.total += n; S.life += n; };
+
+  // Meilensteine: ab 10 / 25 / 50 / 100 / 200 Stück verdoppelt sich die Leistung dieser Maschine
+  const MILES = [10, 25, 50, 100, 200];
+  const milestoneMult = u => Math.pow(2, MILES.filter(m => own(u.id) >= m).length);
+  const nextMile = u => MILES.find(m => own(u.id) < m);
+  // Matura: jeder Zeugnispunkt = +10 % auf alles, dauerhaft
+  const maturaMult = () => 1 + 0.1 * (S.pts || 0);
+  const maturaGain = () => Math.floor(Math.sqrt(S.total / 1e6));
+
+  const clickPower = () => (1 + own('finger') * milestoneMult(UPS[0])) * maturaMult() * mult();
+  const bps = () => UPS.reduce((a, u) => a + (u.bps || 0) * own(u.id) * milestoneMult(u), 0) * maturaMult() * mult();
 
   const SUF = ['', 'Tsd', 'Mio', 'Mrd', 'Bio', 'Brd', 'Trl'];
   function fmt(n) {
@@ -214,9 +232,10 @@
       const raw = JSON.parse(localStorage.getItem(KEY));
       if (raw && typeof raw.blocks === 'number') {
         S = Object.assign(fresh(), raw);
+        if (!(S.life >= S.total)) S.life = S.total;
         const away = Math.max(0, Math.min((Date.now() - S.last) / 1000, 8 * 3600));
         const gain = bps() * away;
-        if (gain >= 1) { S.blocks += gain; S.total += gain; toast('Willkommen zurück! Während du weg warst: +' + fmt(gain) + ' Blöcke'); }
+        if (gain >= 1) { earn(gain); toast('Willkommen zurück! Während du weg warst: +' + fmt(gain) + ' Blöcke'); }
       }
     } catch (e) {}
   }
@@ -230,7 +249,7 @@
     $('shop').innerHTML = UPS.map(u =>
       '<button class="up" data-id="' + u.id + '">' +
         '<span class="up-ico">' + u.ico + '</span>' +
-        '<span><span class="up-name">' + u.name + '</span><br><span class="up-desc">' + u.desc + '</span></span>' +
+        '<span><span class="up-name">' + u.name + '</span><br><span class="up-desc">' + u.desc + '</span><br><span class="up-mile"></span></span>' +
         '<span class="up-side"><div class="up-cost"></div><div class="up-own"></div></span>' +
       '</button>').join('');
     $('shop').addEventListener('click', e => {
@@ -250,16 +269,25 @@
       el.disabled = S.blocks < c;
       el.querySelector('.up-cost').textContent = fmt(c);
       el.querySelector('.up-own').textContent = own(u.id);
+      const m = nextMile(u), x = milestoneMult(u);
+      el.querySelector('.up-mile').textContent = (x > 1 ? '×' + x + ' aktiv · ' : '') + (m ? 'bei ' + m + ' Stück ×2' : 'Maximal ausgebaut');
     });
+    const mg = maturaGain();
+    $('matura').disabled = mg < 1;
+    $('matura-txt').textContent = mg >= 1
+      ? 'Matura ablegen: +' + mg + ' Zeugnispunkt' + (mg > 1 ? 'e' : '') + ' (+' + (mg * 10) + ' % dauerhaft)'
+      : 'Matura ab 1 Mio. Blöcken in diesem Durchlauf';
+    $('pts').textContent = (S.pts || 0) ? 'Zeugnispunkte: ' + S.pts + ' (×' + maturaMult().toFixed(1).replace('.', ',') + ' auf alles)' : '';
+    checkAchievements();
     const mins = Math.floor((Date.now() - S.start) / 60000);
     $('stats').innerHTML = 'Pro Klick: <b>' + fmt(clickPower()) + '</b> · Geklickt: ' + fmt(S.clicks) +
-      '<br>Insgesamt gepresst: ' + fmt(S.total) + ' · Spielzeit: ' + mins + ' Min.';
+      '<br>Insgesamt gepresst: ' + fmt(S.life) + ' · Spielzeit: ' + mins + ' Min.';
     document.title = fmt(S.blocks) + ' Blöcke — Block Presser';
   }
 
   function press(x, y) {
     const p = clickPower();
-    S.blocks += p; S.total += p; S.clicks++;
+    earn(p); S.clicks++;
     $('stage').style.setProperty('--blockcol', COLORS[Math.floor(S.total / 50) % COLORS.length]);
     const el = document.createElement('div');
     el.className = 'pop'; el.textContent = '+' + fmt(p);
@@ -294,11 +322,12 @@
   }
   $('bell').addEventListener('click', () => {
     const b = $('bell'); clearTimeout(b.timeout); b.classList.remove('show');
+    grant('bp_bell');
     if (Math.random() < 0.5) {
       buffMult = 7; buffUntil = Date.now() + 30000;
     } else {
       const g = Math.max(bps() * 600, clickPower() * 100);
-      S.blocks += g; S.total += g; toast('Schulglocke! +' + fmt(g) + ' Blöcke');
+      earn(g); toast('Schulglocke! +' + fmt(g) + ' Blöcke');
     }
     render(); save(); scheduleBell();
   });
@@ -307,7 +336,7 @@
   function tick() {
     const now = performance.now();
     const dt = Math.min((now - last) / 1000, 1); last = now;
-    const g = bps() * dt; S.blocks += g; S.total += g;
+    earn(bps() * dt);
     if (buffed()) {
       const b = $('buff');
       b.textContent = 'Pausenglocke! Alles ×' + buffMult + ' — noch ' + Math.ceil((buffUntil - Date.now()) / 1000) + 's';
@@ -315,6 +344,38 @@
     } else if (buffUntil) { buffUntil = 0; $('buff').classList.remove('show'); }
     if (now - lastSave > 10000) { lastSave = now; save(); }
     render();
+  }
+
+  $('matura').addEventListener('click', () => {
+    const g = maturaGain(); if (g < 1) return;
+    if (!confirm('Matura ablegen? Blöcke und Maschinen werden zurückgesetzt, du bekommst dauerhaft +' + (g * 10) + ' % auf alles.')) return;
+    S.pts = (S.pts || 0) + g; S.blocks = 0; S.total = 0; S.owned = {};
+    grant('bp_matura'); render(); save();
+  });
+
+  // ── Erfolge (gleiches System wie auf der Erfolge-Seite) ──
+  const ACH = {
+    bp_first:   { name: 'Erster Druck',    desc: 'Presse deinen ersten Block',        icon: '🧱' },
+    bp_1k:      { name: 'Kleinbetrieb',    desc: 'Presse insgesamt 1.000 Blöcke',     icon: '🏭' },
+    bp_1m:      { name: 'Block-Millionär', desc: 'Presse insgesamt 1 Million Blöcke', icon: '💎' },
+    bp_bell:    { name: 'Pausenglocke',    desc: 'Erwische eine Schulglocke',         icon: '🔔' },
+    bp_automat: { name: 'Der Automat',     desc: 'Kaufe „Der Automat der 5DK"',       icon: '🕹️' },
+    bp_matura:  { name: 'Bestanden!',      desc: 'Lege die Matura ab',                icon: '🎓' },
+  };
+  function grant(id) {
+    const def = ACH[id]; if (!def) return;
+    let list; try { list = JSON.parse(localStorage.getItem('arcade_achievements')) || []; } catch (e) { list = []; }
+    if (list.some(a => a.id === id)) return;
+    list.push({ id, unlockedAt: new Date().toISOString() });
+    try { localStorage.setItem('arcade_achievements', JSON.stringify(list)); } catch (e) {}
+    if (window.showAchToast) window.showAchToast(def);
+    if (window.Auth && window.Auth.user && window.Auth.saveAchievements) window.Auth.saveAchievements(list).catch(() => {});
+  }
+  function checkAchievements() {
+    if (S.clicks >= 1) grant('bp_first');
+    if (S.life >= 1e3) grant('bp_1k');
+    if (S.life >= 1e6) grant('bp_1m');
+    if (own('automat') >= 1) grant('bp_automat');
   }
 
   $('save').addEventListener('click', () => { save(); toast('Gespeichert ✔'); });
@@ -330,7 +391,7 @@
   let synced = 0;
   const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   async function syncScore() {
-    const A = window.Auth, score = Math.floor(S.total);
+    const A = window.Auth, score = Math.floor(S.life);
     if (!A || !A.user || score <= synced || score < 1) return;
     const { error } = await A.saveBestScore({ game: 'blockpresser', mode: 'total', score });
     if (error) console.warn('[Block Presser] saveBestScore:', error.message); else synced = score;
