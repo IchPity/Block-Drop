@@ -459,15 +459,19 @@
   const COLS = 5;
   const VALID_LETTERS = /^[A-ZÄÖÜ]$/;
 
-  // ─── Word list (filter to exactly 5 letters, uppercase, A-Z + ÄÖÜ) ────────
-  const rawWords = (window.WOERTLE_WORDS || []).map(w => String(w).toUpperCase().trim());
-  const wordSet = new Set();
-  for (const w of rawWords) {
-    if (w.length !== 5) continue;
-    if (!/^[A-ZÄÖÜ]{5}$/.test(w)) continue;
-    wordSet.add(w);
-  }
-  const WORDS = Array.from(wordSet).sort();
+  // ─── Wortlisten: ANSWERS = mögliche Tageswörter, VALID = erlaubte Rateversuche ─
+  const cleanList = list => {
+    const out = new Set();
+    for (const w of (list || [])) {
+      const u = String(w).toUpperCase().trim();
+      if (/^[A-ZÄÖÜ]{5}$/.test(u)) out.add(u);
+    }
+    return out;
+  };
+  const answerSet = cleanList(window.WOERTLE_ANSWERS || window.WOERTLE_WORDS);
+  const wordSet = cleanList(window.WOERTLE_VALID || window.WOERTLE_WORDS);
+  answerSet.forEach(w => wordSet.add(w));   // jedes Tageswort ist auch ein gültiger Versuch
+  const WORDS = Array.from(answerSet).sort();
 
   if (WORDS.length === 0) {
     document.getElementById('board').innerHTML =
