@@ -721,6 +721,10 @@
       shakeRow(currentRow, 'Nur Buchstaben erlaubt');
       return;
     }
+    if (!wordSet.has(guess)) {
+      shakeRow(currentRow, 'Nicht in der Wortliste');
+      return;
+    }
     evaluate(guess, currentRow);
   }
 
