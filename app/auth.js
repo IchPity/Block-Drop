@@ -564,7 +564,7 @@
       return data || [];
     },
 
-    // Holt rohe scores im Zeitfenster für Verteilungen (z. B. Wörtle "Versuche heute").
+    // Holt rohe scores im Zeitfenster für Verteilungen.
     // Caller dedupliziert/aggregiert clientseitig. Liest auch ohne Login (RLS: scores select = public).
     async getScoresInRange(game, mode, startIso, endIso) {
       let q = client.from('scores')

@@ -21,7 +21,7 @@ app/                 Die Arcade-Website (statisches Frontend)
 ├─ index.html         Startseite mit dem Automaten-Grid
 ├─ auth.js            Supabase-Auth-Client, site-weit eingebunden
 ├─ theme.css           Design-System „Automat der 5DK"
-├─ games/              Block Drop, Wörtle, Casino, SchulUhr (Schach liegt noch als Ordner, ist aber nicht mehr verlinkt)
+├─ games/              Block Drop, Block Presser, Casino, SchulUhr (Schach liegt noch als Ordner, ist aber nicht mehr verlinkt)
 ├─ stundenplan/        Echter Stundenplan der 5DK
 ├─ weather/, metar/, f1/, f1-wetten/   Alltagshelfer für die Klasse
 ├─ achievements/, freunde/, profile/, u/   Konto, Freunde, Erfolge
