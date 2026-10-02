@@ -96,7 +96,9 @@
       font-family: inherit; transition: background .15s, border-color .15s, opacity .15s;
     }
     .up:hover:not(:disabled) { background: rgba(255,183,3,.08); border-color: rgba(255,183,3,.4); }
-    .up:disabled { opacity: .42; cursor: not-allowed; }
+    .up:disabled { opacity: .55; cursor: not-allowed; }
+    .up.can { border-color: rgba(255,183,3,.45); background: rgba(255,183,3,.07); }
+    .up:active:not(:disabled) { transform: scale(.985); }
     .up:focus-visible { outline: 2px solid var(--marquee); }
     .up-ico {
       width: 42px; height: 42px; border-radius: 10px; display: grid; place-items: center;
@@ -106,7 +108,7 @@
     .up-desc { font-size: 12px; color: var(--chalk-dim); line-height: 1.35; }
     .up-side { text-align: right; }
     .up-cost { font-family: 'Share Tech Mono', monospace; font-size: 14px; color: var(--marquee); }
-    .up-mile { font-size: 11px; color: var(--chalk-faint); font-family: 'Share Tech Mono', monospace; }
+    .up-mile { display: inline-block; margin-top: 2px; font-size: 11px; color: var(--chalk-faint); font-family: 'Share Tech Mono', monospace; }
     .matura { margin-top: 16px; text-align: center; }
     .matura button { font: inherit; font-weight: 700; font-size: 13px; padding: 9px 14px; border-radius: 10px; cursor: pointer; color: #0e130d; background: var(--marquee); border: 0; }
     .matura button:disabled { background: rgba(238,242,234,.08); color: var(--chalk-faint); cursor: not-allowed; }
@@ -152,7 +154,7 @@
       <button class="block-btn" id="block" aria-label="Block pressen"><div class="block-face">▮</div></button>
     </div>
     <div class="hint">Klick, Tippen oder Leertaste</div>
-    <div class="buff" id="buff"></div>
+    <div class="buff" id="buff" role="status" aria-live="polite"></div>
     <div class="stats" id="stats"></div>
     <div class="matura">
       <button id="matura"><span id="matura-txt"></span></button>
@@ -192,6 +194,8 @@
     { id: 'automat', ico: '🕹️', name: 'Der Automat der 5DK',  desc: '10.000 Blöcke pro Sekunde',     base: 2e7,   bps: 10000 },
   ];
   const GROWTH = 1.15;
+  const OFFLINE_RATE = 0.5;
+  const MATURA_BONUS = 15; // % pro Zeugnispunkt
 
   const fresh = () => ({ blocks: 0, total: 0, life: 0, pts: 0, clicks: 0, owned: {}, last: Date.now(), start: Date.now() });
   let S = fresh();
@@ -209,8 +213,8 @@
   const MILES = [10, 25, 50, 100, 200];
   const milestoneMult = u => Math.pow(2, MILES.filter(m => own(u.id) >= m).length);
   const nextMile = u => MILES.find(m => own(u.id) < m);
-  // Matura: jeder Zeugnispunkt = +10 % auf alles, dauerhaft
-  const maturaMult = () => 1 + 0.1 * (S.pts || 0);
+  // Matura: jeder Zeugnispunkt = +15 % auf alles, dauerhaft
+  const maturaMult = () => 1 + MATURA_BONUS / 100 * (S.pts || 0);
   const maturaGain = () => Math.floor(Math.sqrt(S.total / 1e6));
 
   const clickPower = () => (1 + own('finger') * milestoneMult(UPS[0])) * maturaMult() * mult();
@@ -234,7 +238,7 @@
         S = Object.assign(fresh(), raw);
         if (!(S.life >= S.total)) S.life = S.total;
         const away = Math.max(0, Math.min((Date.now() - S.last) / 1000, 8 * 3600));
-        const gain = bps() * away;
+        const gain = bps() * away * OFFLINE_RATE; // offline nur zur Hälfte, damit aktives Spielen lohnt
         if (gain >= 1) { earn(gain); toast('Willkommen zurück! Während du weg warst: +' + fmt(gain) + ' Blöcke'); }
       }
     } catch (e) {}
@@ -257,6 +261,7 @@
       const u = UPS.find(x => x.id === btn.dataset.id), c = cost(u);
       if (S.blocks < c) return;
       S.blocks -= c; S.owned[u.id] = own(u.id) + 1;
+      btn.blur(); // Leertaste soll danach wieder den Block pressen, nicht nochmal kaufen
       render(); save();
     });
   }
@@ -267,17 +272,19 @@
     document.querySelectorAll('.up').forEach(el => {
       const u = UPS.find(x => x.id === el.dataset.id), c = cost(u);
       el.disabled = S.blocks < c;
+      el.classList.toggle('can', !el.disabled);
       el.querySelector('.up-cost').textContent = fmt(c);
       el.querySelector('.up-own').textContent = own(u.id);
       const m = nextMile(u), x = milestoneMult(u);
-      el.querySelector('.up-mile').textContent = (x > 1 ? '×' + x + ' aktiv · ' : '') + (m ? 'bei ' + m + ' Stück ×2' : 'Maximal ausgebaut');
+      el.querySelector('.up-mile').textContent = (u.bps && own(u.id) ? fmt(u.bps * own(u.id) * x * maturaMult()) + '/s · ' : '') + (x > 1 ? '×' + x + ' aktiv · ' : '') + (m ? 'bei ' + m + ' Stück ×2' : 'Maximal ausgebaut');
     });
     const mg = maturaGain();
     $('matura').disabled = mg < 1;
     $('matura-txt').textContent = mg >= 1
-      ? 'Matura ablegen: +' + mg + ' Zeugnispunkt' + (mg > 1 ? 'e' : '') + ' (+' + (mg * 10) + ' % dauerhaft)'
+      ? 'Matura ablegen: +' + mg + ' Zeugnispunkt' + (mg > 1 ? 'e' : '') + ' (+' + (mg * MATURA_BONUS) + ' % dauerhaft)'
       : 'Matura ab 1 Mio. Blöcken in diesem Durchlauf';
-    $('pts').textContent = (S.pts || 0) ? 'Zeugnispunkte: ' + S.pts + ' (×' + maturaMult().toFixed(1).replace('.', ',') + ' auf alles)' : '';
+    $('pts').textContent = (S.pts || 0) ? 'Zeugnispunkte: ' + S.pts + ' (×' + maturaMult().toFixed(2).replace('.', ',') + ' auf alles)' : '';
+    if (mg >= 1) $('pts').textContent += ((S.pts || 0) ? ' · ' : '') + 'Nächster Punkt bei ' + fmt(Math.pow(mg + 1, 2) * 1e6) + ' Blöcken';
     checkAchievements();
     const mins = Math.floor((Date.now() - S.start) / 60000);
     $('stats').innerHTML = 'Pro Klick: <b>' + fmt(clickPower()) + '</b> · Geklickt: ' + fmt(S.clicks) +
@@ -304,13 +311,14 @@
   document.addEventListener('keydown', e => {
     if (e.code === 'Space' && document.activeElement === document.body) {
       e.preventDefault();
+      if (e.repeat) return;
       const b = $('block'), r = b.getBoundingClientRect();
       b.classList.add('hit'); setTimeout(() => b.classList.remove('hit'), 80);
       press(r.left + r.width / 2, r.top + r.height / 2);
     }
   });
 
-  // Schulglocke: erscheint zufällig, 50 % Pausen-Boost (×7, 30 s), 50 % Sofort-Gewinn
+  // Schulglocke: erscheint zufällig, 50 % Pausen-Boost (×7, 30 s), 50 % Sofort-Gewinn (5 Min. Produktion)
   function scheduleBell() {
     setTimeout(() => {
       const b = $('bell');
@@ -326,7 +334,7 @@
     if (Math.random() < 0.5) {
       buffMult = 7; buffUntil = Date.now() + 30000;
     } else {
-      const g = Math.max(bps() * 600, clickPower() * 100);
+      const g = Math.max(bps() * 300, clickPower() * 100);
       earn(g); toast('Schulglocke! +' + fmt(g) + ' Blöcke');
     }
     render(); save(); scheduleBell();
@@ -335,7 +343,7 @@
   let last = performance.now(), lastSave = performance.now();
   function tick() {
     const now = performance.now();
-    const dt = Math.min((now - last) / 1000, 1); last = now;
+    const dt = Math.min((now - last) / 1000, 3600); last = now; // Hintergrund-Tabs feuern gedrosselt
     earn(bps() * dt);
     if (buffed()) {
       const b = $('buff');
@@ -348,7 +356,7 @@
 
   $('matura').addEventListener('click', () => {
     const g = maturaGain(); if (g < 1) return;
-    if (!confirm('Matura ablegen? Blöcke und Maschinen werden zurückgesetzt, du bekommst dauerhaft +' + (g * 10) + ' % auf alles.')) return;
+    if (!confirm('Matura ablegen? Blöcke und Maschinen werden zurückgesetzt, du bekommst dauerhaft +' + (g * MATURA_BONUS) + ' % auf alles.')) return;
     S.pts = (S.pts || 0) + g; S.blocks = 0; S.total = 0; S.owned = {};
     grant('bp_matura'); render(); save();
   });
