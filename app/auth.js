@@ -253,7 +253,7 @@
   /* ─── Modal ──────────────────────────────────────────────────────────── */
   .auth-modal-backdrop {
     position: fixed; inset: 0; z-index: 1000;
-    background: rgba(12,6,34,0.75); backdrop-filter: blur(8px);
+    background: rgba(12,6,34,0.88);
     display: flex; align-items: center; justify-content: center;
     padding: 16px;
     opacity: 0; pointer-events: none;

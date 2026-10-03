@@ -137,7 +137,7 @@ Licht kommt nur aus Geräten. Röhren-Phosphor ist Cyan, Münzlampen sind Bernst
 Die Token-Namen `--board`, `--chalk`, `--marquee`, `--bell` stammen aus dem abgelösten Kreidetafel-Look und sind absichtlich stehen geblieben, damit keine Seite angefasst werden musste. Sie bezeichnen heute Hallen-Indigo, Textweiß, Bernstein und Signalrot. Verworfen ist das Karten-Raster auf dunklem Grund mit einem einzelnen Neon-Akzent.
 
 **Key Characteristics:**
-- Ein Raum unter jeder Seite: Hallen-Shader hinten, Deckenröhre oben (3px), Objektiv-Vignette vorn.
+- Ein Raum unter jeder Seite: Hallen-Shader hinten (mit den dunklen Bildrändern des Objektivs), Deckenröhre oben (3px).
 - Vier Lichtquellen mit festen Rollen: Magenta (Neonschrift), Cyan (Phosphor, Fokus), Bernstein (Münzlampe, Belohnung), Violett (Schwarzlicht).
 - Vier Schriften mit festen Rollen: Tilt Neon für Röhrenschilder, Kanit kursiv-fett für Gehäuse, Barlow für Text, Share Tech Mono für Zähler.
 - Panels sind Gehäuse mit farbiger Kantenleiste, Knöpfe sind beleuchtete Taster, Bestenlisten sind Highscore-Tafeln.
@@ -215,7 +215,7 @@ Die geteilte Ebene bricht bei 720px um, die Startseite bei 1000, 860 und 600px, 
 
 Tiefe ist räumlich, nicht geschichtet. Hinten läuft die Halle mit eigener Perspektive, Nebel zum Fluchtpunkt und einer Kamera, die Maus und Scrollposition leicht folgt. Davor stehen Gehäuse, die sich mit zwei Mitteln abheben: einer 1px-Lichtkante oben in Akzentfarbe (die Kantenleiste) und einem tiefen, indigo getönten Schlagschatten. Farbiger Schein unter einem Gerät ist dessen Licht auf dem Teppich. Die Automaten der Startseite sind echte 3D-Körper (`perspective: 1300px`, Seitenwände 84px tief, Marquee 26px vorgezogen, Bedienpult um 38° gekippt) und neigen sich bis 9° zur Maus.
 
-Die Ebenen von hinten nach vorn: Standbild (-2), Hallen-Canvas (-1), Inhalt (1), Navbar (100), Deckenröhre (101), Objektiv-Vignette (102), Kino-Screen (9000), Abspann (9100), Blitz und Lichtstreifen (9400 bis 9450), Partikel (9500), gezoomter Bildschirm (9800), Bildröhren-Maske (10000).
+Die Ebenen von hinten nach vorn: Standbild (-2), Hallen-Canvas (-1), Inhalt (1), Navbar (100), Deckenröhre (101), Kino-Screen (9000), Abspann (9100), Blitz und Lichtstreifen (9400 bis 9450), Partikel (9500, nur solange welche fliegen), gezoomter Bildschirm (9800), die zwei Blenden der Bildröhre (10000). Die Objektiv-Vignette ist keine eigene Ebene mehr: sie wird im Hallen-Shader und im Standbild gerechnet und liegt damit unter dem Inhalt.
 
 ### Shadow Vocabulary
 - **Kantenleiste und Stand** (`box-shadow: inset 0 1px 0 color-mix(in srgb, var(--tube) 55%, transparent), 0 18px 44px rgba(8,4,26,0.55)`): jedes Gehäuse-Panel.
@@ -260,7 +260,7 @@ Bauteile sind Dinge aus der Halle. Sie reagieren, als wären sie angeschlossen: 
 Die geteilte Ebene legt für Felder nur Verhalten fest: Textcursor in `neon-cyan`, `accent-color` in `neon-pink`, Fokusring wie oben. Gestalt und Rahmen bestimmt jede Seite selbst.
 
 ### Navigation
-Feste Blende über den Automaten: Hallen-Indigo mit 94 bis 78 % Deckkraft, `blur(16px) saturate(1.4)`, 1px `board-line` unten. Links Zurück-Taste und Seitentitel (Kanit kursiv 800, 15px) mit Plakette, rechts das Konto. Die Startseite zeigt stattdessen den Schriftzug ARCADE (Kanit kursiv 900, 19px) mit blinkender Münzlampe. Jeder interne Seitenwechsel schaltet das Bild wie eine Röhre aus (0.3s) und auf der nächsten Seite wieder ein (0.62s).
+Feste Blende über den Automaten: Hallen-Indigo mit 97 bis 90 % Deckkraft, ohne Weichzeichner, 1px `board-line` unten, weicher Schatten nach unten. Links Zurück-Taste und Seitentitel (Kanit kursiv 800, 15px) mit Plakette, rechts das Konto. Die Startseite zeigt stattdessen den Schriftzug ARCADE (Kanit kursiv 900, 19px) mit blinkender Münzlampe. Jeder interne Seitenwechsel schaltet das Bild wie eine Röhre aus (0.3s) und auf der nächsten Seite wieder ein (0.62s): zwei Blenden mit glühender Kante, die sich in der Bildmitte treffen und nur über `transform` bewegt werden.
 
 ### Bildschirm (Röhre)
 Jede Fläche mit der Klasse `.crt` bekommt Zeilenraster (1px dunkel alle 3px), Randabdunklung und einen schrägen Glasreflex. Der Inhalt ist aus Zellen gebaut: Motive werden auf einer Zeichenfläche von 15 bis 26 Zellen Breite gemalt und ganzzahlig hochskaliert (`image-rendering: pixelated`, mindestens Faktor 2), Raster aus 13px-Zellen mit 2px Fuge, Bildwechsel alle 130ms, Animationen in `steps()`. Text in der Röhre ist Share Tech Mono; »Münze einwerfen« blinkt im 1.2s-Takt.
@@ -287,6 +287,7 @@ Belohnungen und Gutschriften übernehmen das ganze Bild (`FX.cinema`): Kinobalke
 - **Do** Belohnungen über `FX.cinema` feiern und Seitenwechsel über die Röhre laufen lassen, statt eigene Overlays und Übergänge zu bauen.
 - **Do** jede Bewegung mit einem Standbild absichern: `prefers-reduced-motion` stoppt Shader, Partikel, Zünden und Röhrenwechsel; der Inhalt bleibt vollständig.
 - **Do** den Fokusring (2px `neon-cyan`) sichtbar lassen und Tasten mindestens 36px hoch halten.
+- **Do** Dauerschleifen (Blinken, Flackern, Pulsieren, Farbwechsel eines Scheins) nur über `opacity` und `transform` bewegen. Wechselt ein Schein die Farbe, liegen beide Zustände fertig gemalt übereinander und nur die Deckkraft der oberen Ebene läuft.
 
 ### Don't:
 - **Don't** den Raum Richtung Schwarz abdunkeln. Fast-Schwarz (`tube-glass`) gehört hinter Glas, sonst nirgends hin.
@@ -297,4 +298,6 @@ Belohnungen und Gutschriften übernehmen das ganze Bild (`FX.cinema`): Kinobalke
 - **Don't** weiche Verläufe oder Kurven in eine Röhre zeichnen; der Schirm kennt nur Zellen und Mono-Text.
 - **Don't** einer Seite eine zweite Akzentfarbe geben. Die übrigen Lichtfarben kommen aus der Halle, nicht aus dem Inhalt.
 - **Don't** Spektakel über Lesbares legen: Stundenplan, Uhr und Kontostand bleiben in jedem Zustand lesbar.
+- **Don't** `backdrop-filter` verwenden. Über der bewegten Halle wird er in jedem Bild neu gerechnet (gemessen: Wetter-Seite 24 statt 142 Bilder pro Sekunde); `theme.css` schaltet ihn zentral ab. Overlays bekommen stattdessen 93 bis 98 % Deckkraft.
+- **Don't** `text-shadow`, `box-shadow` oder `filter` in einer Dauerschleife animieren: der Schein wird sonst in jedem Bild neu gerastert.
 - **Don't** die alten Deko-Ebenen (`.orb`, `.dot-grid`, `.vignette`, `.paper-grid`, `.bulb-strip`) wiederbeleben; sie sind zentral ausgeblendet.

@@ -18,7 +18,7 @@
       position: relative; z-index: 1; max-width: 1020px; margin: 0 auto;
       display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 22px;
     }
-    @media (max-width: 760px) { .wrap { grid-template-columns: 1fr; } .press { position: static; } }
+    @media (max-width: 760px) { .wrap { grid-template-columns: 1fr; } }
 
     /* Gehäuse */
     .panel {
@@ -34,6 +34,7 @@
 
     /* ── Presse ── */
     .press { text-align: center; position: sticky; top: 84px; align-self: start; }
+    @media (max-width: 760px) { .press { position: relative; top: auto; } }
     /* Zählwerk: Leuchtanzeige hinter dunklem Glas */
     .count {
       padding: 14px 12px 12px; border-radius: 12px; background: #05030c;
@@ -47,9 +48,8 @@
     .stage { position: relative; height: 300px; margin: 8px 0 6px; display: grid; place-items: center; --blockcol: #ffb000; }
     /* Lichtkegel unter dem Block */
     .stage::before {
-      content: ''; position: absolute; left: 10%; right: 10%; bottom: 14px; height: 70px; pointer-events: none;
-      background: radial-gradient(ellipse at 50% 60%, color-mix(in srgb, var(--blockcol) 60%, transparent), transparent 70%);
-      filter: blur(16px); transition: background .3s;
+      content: ''; position: absolute; left: 2%; right: 2%; bottom: -6px; height: 110px; pointer-events: none;
+      background: radial-gradient(ellipse 50% 50% at 50% 55%, color-mix(in srgb, var(--blockcol) 50%, transparent), color-mix(in srgb, var(--blockcol) 16%, transparent) 50%, transparent 74%);
     }
     .block-btn {
       position: relative; width: 180px; height: 180px; border: 0; cursor: pointer;
@@ -91,11 +91,12 @@
     /* Förderband: läuft, sobald Maschinen von allein pressen */
     .belt { position: relative; height: 22px; margin: 0 6px 12px; border-radius: 11px; background: #05030c; border: 1px solid var(--board-line); overflow: hidden; }
     .belt i {
-      position: absolute; inset: 3px 0; width: 200%; display: block; opacity: 0; transition: opacity .4s;
+      position: absolute; inset: 3px 0; width: 200%; display: block; opacity: .16; transition: opacity .4s;
       background: repeating-linear-gradient(90deg, var(--marquee) 0 14px, transparent 14px 46px);
-      animation: belt var(--belt, 3s) linear infinite;
+      animation: belt var(--belt, 3s) linear infinite paused;
     }
-    .belt.on i { opacity: .9; }
+    /* steht das Band, sieht man die Glieder nur schwach; läuft es, leuchten sie */
+    .belt.on i { opacity: .9; animation-play-state: running; }
     @keyframes belt { to { transform: translateX(-46px); } }
 
     .hint { font-size: 13px; color: var(--chalk-faint); }
@@ -103,11 +104,12 @@
     /* Schulglocke (Bonus) */
     .bell {
       position: fixed; z-index: 60; width: 72px; height: 72px; border-radius: 50%; display: none; place-items: center;
-      background: radial-gradient(circle at 35% 30%, #fff, var(--neon-cyan) 40%, #0a6f86); color: #fff; font-size: 34px; cursor: pointer;
+      background: radial-gradient(circle at 35% 30%, #fff, var(--neon-cyan) 40%, #0a6f86); color: var(--ink); font-size: 34px; cursor: pointer;
       border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(46,230,255,.25), 0 14px 40px rgba(46,230,255,.7);
       animation: bellshake .5s ease-in-out infinite alternate;
     }
     .bell.show { display: grid; }
+    .bell svg { width: 40px; height: 40px; display: block; }
     .bell::before { content: ''; position: absolute; inset: -8px; border-radius: 50%; border: 2px solid var(--neon-cyan); animation: bellRing 1.1s var(--ease-out) infinite; }
     @keyframes bellshake { from { transform: rotate(-16deg) scale(1); } to { transform: rotate(16deg) scale(1.08); } }
     @keyframes bellRing { from { transform: scale(.8); opacity: 1; } to { transform: scale(2.2); opacity: 0; } }
@@ -120,8 +122,13 @@
     .buff.show { display: inline-block; }
     /* Pausenglocke aktiv: die ganze Presse läuft heiß */
     body.buffed .count { border-color: var(--neon-cyan); color: #c8f8ff; text-shadow: 0 0 2px #fff, 0 4px 26px var(--neon-cyan); }
-    body.buffed .press { animation: hot .6s ease-in-out infinite alternate; }
-    @keyframes hot { to { box-shadow: inset 0 1px 0 var(--neon-cyan), 0 26px 70px rgba(46,230,255,.45); } }
+    /* der heiße Schein ist fertig gemalt und pulsiert nur über die Deckkraft */
+    .press::after {
+      content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0;
+      box-shadow: inset 0 1px 0 var(--neon-cyan), 0 26px 70px rgba(46,230,255,.45);
+    }
+    body.buffed .press::after { animation: hot .6s ease-in-out infinite alternate; }
+    @keyframes hot { to { opacity: 1; } }
 
     /* ── Werkstatt ── */
     .shop { display: flex; flex-direction: column; gap: 8px; }
@@ -140,7 +147,10 @@
     .up-ico {
       width: 46px; height: 46px; border-radius: 10px; display: grid; place-items: center;
       font-size: 24px; background: rgba(196,178,255,.08); transition: box-shadow .2s, background .2s;
+      color: var(--mc, var(--marquee));
     }
+    .up-ico svg { width: 30px; height: 30px; display: block; }
+    .spu .up-ico svg { width: 24px; height: 24px; }
     .up-name { font-family: var(--font-cab); font-style: italic; font-weight: 700; font-size: 16px; }
     .up-desc { font-size: 13px; color: var(--chalk-dim); line-height: 1.35; }
     .up-side { text-align: right; }
@@ -181,7 +191,7 @@
     .goal-lbl { font-size: 12px; color: var(--chalk-dim); margin-top: 6px; font-family: var(--font-data); }
 
     /* ── Menü (Esc) ── */
-    .menu { position: fixed; inset: 0; z-index: 90; display: none; padding: 76px 16px 16px; background: rgba(12,6,34,.86); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); overflow-y: auto; }
+    .menu { position: fixed; inset: 0; z-index: 90; display: none; padding: 76px 16px 16px; background: rgba(12,6,34,.93); overflow-y: auto; }
     .menu.show { display: flex; animation: fadein .2s ease-out; }
     @keyframes fadein { from { opacity: 0; } }
     .menu-box { width: 100%; max-width: 420px; margin: auto; background: var(--board-raised); border: 1px solid var(--board-line); border-radius: 16px; padding: 16px; box-shadow: inset 0 1px 0 rgba(255,214,10,.7), 0 24px 60px rgba(0,0,0,.6); animation: menuIn .35s var(--ease-out); }
@@ -202,7 +212,7 @@
     .menu-reset button:disabled { background: rgba(196,178,255,.08); color: var(--chalk-faint); cursor: not-allowed; }
     .up.flash { animation: flash .9s ease-out; }
     @keyframes flash { 0% { box-shadow: 0 0 0 0 rgba(255,176,0,.9); background: rgba(255,176,0,.4); } 100% { box-shadow: 0 0 0 20px rgba(255,176,0,0); } }
-    @media (prefers-reduced-motion: reduce) { .bell, .up.flash, .matura button, body.buffed .press, .belt i { animation: none; } .pop { animation-duration: .01s; } }
+    @media (prefers-reduced-motion: reduce) { .bell, .up.flash, .matura button, .belt i { animation: none; } body.buffed .press::after { animation: none; opacity: 1; } .pop { animation-duration: .01s; } }
   </style>
 </head>
 <body>
@@ -265,8 +275,9 @@
   </div>
 </div>
 
-<button class="bell" id="bell" aria-label="Schulglocke — Bonus einsammeln">🔔</button>
+<button class="bell" id="bell" aria-label="Schulglocke — Bonus einsammeln"></button>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/fx.js"></script>
 <script src="/auth.js"></script>
 <script>
@@ -324,6 +335,9 @@
   let S = fresh();
 
   const $ = id => document.getElementById(id);
+  // Die Anzeige läuft zehnmal pro Sekunde durch: ins Dokument geschrieben wird nur, was sich geändert hat
+  const shownText = new Map();
+  const put = (el, text) => { if (shownText.get(el) !== text) { shownText.set(el, text); el.textContent = text; } };
   const own = id => S.owned[id] || 0;
   const lv = id => (S.up && S.up[id]) || 0;
   const cost = u => Math.ceil(u.base * Math.pow(GROWTH, own(u.id)) * Math.max(0.5, 1 - 0.04 * lv('cheap')));
@@ -375,17 +389,22 @@
   }
 
   function toast(msg) {
-    const b = $('buff'); b.textContent = msg; b.classList.add('show');
+    const b = $('buff'); put(b, msg); b.classList.add('show');
     clearTimeout(toast.t); toast.t = setTimeout(() => { if (!buffed()) b.classList.remove('show'); }, 4000);
   }
 
+  let shopRows = [];
   function buildShop() {
-    $('shop').innerHTML = UPS.map(u =>
-      '<button class="up" data-id="' + u.id + '">' +
-        '<span class="up-ico">' + u.ico + '</span>' +
+    $('shop').innerHTML = UPS.map((u, i) =>
+      '<button class="up" data-id="' + u.id + '" style="--mc:' + COLORS[i % COLORS.length] + '">' +
+        '<span class="up-ico">' + ICON[u.id] + '</span>' +
         '<span><span class="up-name">' + u.name + '</span><br><span class="up-desc">' + u.desc + '</span><br><span class="up-mile"></span></span>' +
         '<span class="up-side"><div class="up-cost"></div><div class="up-own"></div></span>' +
       '</button>').join('');
+    shopRows = UPS.map(u => {
+      const el = $('shop').querySelector('[data-id="' + u.id + '"]');
+      return { u, el, cost: el.querySelector('.up-cost'), own: el.querySelector('.up-own'), mile: el.querySelector('.up-mile') };
+    });
     $('shop').addEventListener('click', e => {
       const btn = e.target.closest('.up'); if (!btn) return;
       const u = UPS.find(x => x.id === btn.dataset.id), c = cost(u);
@@ -409,39 +428,46 @@
     });
   }
 
+  let shownBelt = '', shownStats = '', shownTitle = '', shownGoal = -1;
   function render() {
-    $('count').textContent = fmt(S.blocks);
+    put($('count'), fmt(S.blocks));
     const rate = bps();
-    $('rate').textContent = fmt(rate);
+    put($('rate'), fmt(rate));
     // Förderband läuft umso schneller, je mehr die Maschinen pressen
     $('belt').classList.toggle('on', rate > 0);
-    if (rate > 0) $('belt').style.setProperty('--belt', Math.max(0.25, 3 / (1 + Math.log10(1 + rate))).toFixed(2) + 's');
-    document.querySelectorAll('#shop .up').forEach(el => {
-      const u = UPS.find(x => x.id === el.dataset.id), c = cost(u);
-      el.disabled = S.blocks < c;
-      el.classList.toggle('can', !el.disabled);
-      el.querySelector('.up-cost').textContent = fmt(c);
-      el.querySelector('.up-own').textContent = own(u.id);
+    const beltDur = rate > 0 ? Math.max(0.25, 3 / (1 + Math.log10(1 + rate))).toFixed(2) + 's' : shownBelt;
+    if (beltDur !== shownBelt) { shownBelt = beltDur; $('belt').style.setProperty('--belt', beltDur); }
+    const bonus = bonusMult();
+    for (const row of shopRows) {
+      const u = row.u, c = cost(u), n = own(u.id), can = S.blocks >= c;
+      if (row.el.disabled === can) row.el.disabled = !can;
+      row.el.classList.toggle('can', can);
+      put(row.cost, fmt(c));
+      put(row.own, String(n));
       const m = nextMile(u), x = milestoneMult(u);
-      el.querySelector('.up-mile').textContent = (u.bps && own(u.id) ? fmt(u.bps * own(u.id) * x * bonusMult()) + '/s · ' : '') + (x > 1 ? '×' + x + ' aktiv · ' : '') + (m ? 'bei ' + m + ' Stück ×2' : 'Maximal ausgebaut');
-    });
+      put(row.mile, (u.bps && n ? fmt(u.bps * n * x * bonus) + '/s · ' : '') + (x > 1 ? '×' + x + ' aktiv · ' : '') + (m ? 'bei ' + m + ' Stück ×2' : 'Maximal ausgebaut'));
+    }
     const mg = maturaGain();
-    $('matura').disabled = mg < 1;
-    $('matura-txt').textContent = mg >= 1
+    if ($('matura').disabled !== mg < 1) $('matura').disabled = mg < 1;
+    put($('matura-txt'), mg >= 1
       ? 'Matura ablegen: +' + mg + ' Zeugnispunkt' + (mg > 1 ? 'e' : '') + ' (+' + (mg * MATURA_BONUS) + ' % dauerhaft)'
-      : 'Matura ab 10 Mio. Blöcken (Werkstätten bleiben)';
-    $('pts').textContent = (S.pts || 0) ? 'Zeugnispunkte: ' + S.pts + ' (×' + maturaMult().toFixed(2).replace('.', ',') + ' auf alles)' : '';
-    if (mg >= 1) $('pts').textContent += ((S.pts || 0) ? ' · ' : '') + 'Nächster Punkt bei ' + fmt(Math.pow(mg + 1, 2) * 1e6) + ' Blöcken';
+      : 'Matura ab 10 Mio. Blöcken (Werkstätten bleiben)');
+    let pts = (S.pts || 0) ? 'Zeugnispunkte: ' + S.pts + ' (×' + maturaMult().toFixed(2).replace('.', ',') + ' auf alles)' : '';
+    if (mg >= 1) pts += ((S.pts || 0) ? ' · ' : '') + 'Nächster Punkt bei ' + fmt(Math.pow(mg + 1, 2) * 1e6) + ' Blöcken';
+    put($('pts'), pts);
     const goal = S.life >= UNI_GOAL ? END_GOAL : UNI_GOAL;
-    $('goal-bar').style.transform = 'scaleX(' + Math.min(1, S.life / goal) + ')';
-    $('goal-lbl').textContent = S.life >= END_GOAL ? '🏆 Durchgespielt — Schulleben komplett'
-      : (S.life >= UNI_GOAL ? '🔧 Hausmeister Jürgen · Weg zur Pension: ' : 'Weg zum Uni-Abschluss: ') + fmt(S.life) + ' / ' + fmt(goal);
+    const goalK = Math.round(Math.min(1, S.life / goal) * 1000) / 1000;
+    if (goalK !== shownGoal) { shownGoal = goalK; $('goal-bar').style.transform = 'scaleX(' + goalK + ')'; }
+    put($('goal-lbl'), S.life >= END_GOAL ? 'Durchgespielt: Schulleben komplett'
+      : (S.life >= UNI_GOAL ? 'Hausmeister Jürgen · Weg zur Pension: ' : 'Weg zum Uni-Abschluss: ') + fmt(S.life) + ' / ' + fmt(goal));
     checkAchievements();
     if (menuOpen()) updateMenu();
     const mins = Math.floor((Date.now() - S.start) / 60000);
-    $('stats').innerHTML = 'Pro Klick: <b>' + fmt(clickPower()) + '</b> · Geklickt: ' + fmt(S.clicks) +
+    const stats = 'Pro Klick: <b>' + fmt(clickPower()) + '</b> · Geklickt: ' + fmt(S.clicks) +
       '<br>Insgesamt gepresst: ' + fmt(S.life) + ' · Spielzeit: ' + mins + ' Min.';
-    document.title = fmt(S.blocks) + ' Blöcke — Block Presser';
+    if (stats !== shownStats) { shownStats = stats; $('stats').innerHTML = stats; }
+    const title = fmt(S.blocks) + ' Blöcke — Block Presser';
+    if (title !== shownTitle) { shownTitle = title; document.title = title; }
   }
 
   function press(x, y) {
@@ -517,7 +543,7 @@
     document.body.classList.toggle('buffed', buffed());
     if (buffed()) {
       const b = $('buff');
-      b.textContent = 'Pausenglocke! Alles ×' + buffMult + ' — noch ' + Math.ceil((buffUntil - Date.now()) / 1000) + 's';
+      put(b, 'Pausenglocke! Alles ×' + buffMult + ' — noch ' + Math.ceil((buffUntil - Date.now()) / 1000) + 's');
       b.classList.add('show');
       if (FX && ++hotTick % 6 === 0 && !document.hidden) FX.pulse('#2ee6ff', 0.4);
     } else if (buffUntil) { buffUntil = 0; $('buff').classList.remove('show'); }
@@ -655,17 +681,19 @@
     $('sp-shop').innerHTML = SPU.map(u => {
       const l = lv(u.id), maxed = l >= u.max, c = u.cost(l), ok = !maxed && S.sp >= c;
       return '<button class="up spu' + (ok ? ' can' : '') + '" data-id="' + u.id + '"' + (ok ? '' : ' disabled') + '>' +
-        '<span class="up-ico">' + u.ico + '</span>' +
+        '<span class="up-ico" style="--mc:#ffd60a">' + ICON[u.id] + '</span>' +
         '<span><span class="up-name">' + u.name + '</span><br><span class="up-desc">' + u.desc + '</span></span>' +
         '<span class="up-side"><div class="up-cost">' + (maxed ? 'MAX' : c) + '</div><div class="up-own">' + l + '/' + u.max + '</div></span></button>';
     }).join('');
   }
+  let shownReset = '';
   function updateMenu() {
-    $('sp').textContent = S.sp || 0;
+    put($('sp'), String(S.sp || 0));
     const g = spGain();
-    $('prestige').disabled = g < 1;
-    $('prestige').textContent = g >= 1 ? 'Alles auf 0 setzen · +' + g + ' ★' : 'Ab 100.000 Blöcken im Durchlauf';
-    $('reset-info').innerHTML = 'Setzt <b>Blöcke, Werkstätten und Meilensteine</b> auf 0. Spezialpunkte gibt es für diesen Durchlauf (' + fmt(S.life) + '). Zeugnispunkte und Upgrades bleiben.';
+    if ($('prestige').disabled !== g < 1) $('prestige').disabled = g < 1;
+    put($('prestige'), g >= 1 ? 'Alles auf 0 setzen · +' + g + ' ★' : 'Ab 100.000 Blöcken im Durchlauf');
+    const info = 'Setzt <b>Blöcke, Werkstätten und Meilensteine</b> auf 0. Spezialpunkte gibt es für diesen Durchlauf (' + fmt(S.life) + '). Zeugnispunkte und Upgrades bleiben.';
+    if (info !== shownReset) { shownReset = info; $('reset-info').innerHTML = info; }
     $('credits').hidden = !((S.firsts && S.firsts.pension) || S.allTime >= END_GOAL);
   }
   function openMenu() { if (rewardOpen()) return; if (document.activeElement) document.activeElement.blur(); buildSpShop(); updateMenu(); $('menu').classList.add('show'); }
@@ -734,6 +762,7 @@
   setTimeout(() => { loadBoard(); syncScore(); }, 1500);
   document.addEventListener('visibilitychange', () => { if (document.hidden) syncScore(); });
 
+  $('bell').innerHTML = ICON.bell;
   buildShop(); load(); render(); scheduleBell(); setInterval(tick, 100);
 })();
 </script>

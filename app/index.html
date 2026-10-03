@@ -27,7 +27,7 @@
       box-shadow: 0 3px 12px rgba(255,176,0,0.7);
       animation: coinLamp 1.6s steps(2) infinite;
     }
-    @keyframes coinLamp { 50% { filter: brightness(0.45); box-shadow: none; } }
+    @keyframes coinLamp { 50% { opacity: 0.38; } }
 
     .container { max-width: 1180px; margin: 0 auto; padding: 0 32px; }
 
@@ -59,11 +59,11 @@
       text-shadow: 0 0 2px #fff, 0 0 12px var(--tube), 0 0 34px var(--tube), 0 10px 90px var(--tube);
       animation: neonStrike 1.3s 1.05s both;
     }
-    /* Eine Röhre ist nie ganz dicht: das A hängt und flackert */
+    /* Eine Röhre ist nie ganz dicht: das A hängt und flackert (nur opacity, der Schein wird nie neu gemalt) */
     .sign-b i { font-style: normal; display: inline-block; animation: tubeLoose 5.5s 2.6s infinite; }
     @keyframes tubeLoose {
       0%, 62%, 66%, 70%, 100% { opacity: 1; }
-      63%, 68% { opacity: 0.18; text-shadow: none; }
+      63%, 68% { opacity: 0.14; }
     }
     .hero-sub {
       margin: 18px auto 0; max-width: 78ch; font-size: 17px; line-height: 1.5;
@@ -108,9 +108,9 @@
     }
     /* Lichtschein des Schirms auf dem Teppich */
     .cab::after {
-      content: ''; position: absolute; left: 4%; right: 4%; bottom: -30px; height: 56px; z-index: -1; pointer-events: none;
-      background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--accent) 75%, transparent), transparent 70%);
-      filter: blur(14px); opacity: 0.55; transition: opacity 0.4s;
+      content: ''; position: absolute; left: -6%; right: -6%; bottom: -52px; height: 96px; z-index: -1; pointer-events: none;
+      background: radial-gradient(ellipse 50% 50% at 50% 50%, color-mix(in srgb, var(--accent) 62%, transparent), color-mix(in srgb, var(--accent) 22%, transparent) 45%, transparent 72%);
+      opacity: 0.55; transition: opacity 0.4s;
     }
     .cab.is-near::after, .cab:focus-visible::after { opacity: 1; }
 
@@ -148,9 +148,16 @@
       height: 152px; border-radius: 22px / 16px; display: grid; place-items: center;
       background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--accent) 26%, #05030c), #05030c 78%);
       box-shadow: inset 0 0 0 2px rgba(0,0,0,0.9), inset 0 0 44px rgba(0,0,0,0.9), 0 0 0 1px rgba(196,178,255,0.2);
-      filter: saturate(0.8) brightness(0.8); transition: filter 0.45s var(--ease-out);
+      transition: box-shadow 0.45s var(--ease-out);
     }
-    .cab.is-near .cab-screen, .cab:focus-visible .cab-screen { filter: saturate(1.25) brightness(1.15); }
+    /* Ruhezustand: das Glas ist abgedunkelt (ein Schleier auf der Scheibe, kein filter über dem ganzen Schirm).
+       Kommt man näher, geht der Schleier weg und der Schirm strahlt auf die Blende. */
+    .cab-screen.crt::after, .mon-screen.crt::after { background-color: rgba(5,3,12,0.34); transition: background-color 0.45s var(--ease-out); }
+    .is-near .cab-screen.crt::after, .is-near .mon-screen.crt::after,
+    .cab:focus-visible .cab-screen.crt::after, .mon:focus-visible .mon-screen.crt::after, .showcase-art.crt::after { background-color: transparent; }
+    .cab.is-near .cab-screen, .cab:focus-visible .cab-screen {
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,0.9), inset 0 0 30px rgba(0,0,0,0.55), 0 0 0 1px color-mix(in srgb, var(--accent) 70%, transparent), 0 0 34px color-mix(in srgb, var(--accent) 50%, transparent);
+    }
     .cab-screen::before, .mon-screen::before { /* Lichtreflex auf dem Glas, folgt der Maus */
       content: ''; position: absolute; inset: 0; z-index: 4; pointer-events: none; opacity: 0; transition: opacity 0.3s;
       background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255,255,255,0.26), transparent 46%);
@@ -188,7 +195,7 @@
       box-shadow: 0 3px 0 rgba(0,0,0,0.55), 0 4px 12px color-mix(in srgb, var(--c) 55%, transparent);
       animation: knob 1.8s var(--d, 0s) steps(2) infinite;
     }
-    @keyframes knob { 50% { filter: brightness(0.5); } }
+    @keyframes knob { 50% { opacity: 0.42; } }
     .cab-door {
       position: relative; flex: 1; padding: 22px 18px 18px; border-radius: 0 0 6px 6px;
       background: linear-gradient(180deg, #1e1352, #130b36); border: 2px solid var(--accent); border-top: 0;
@@ -221,7 +228,7 @@
     .a-drop .r { background: #ff3d6e; } .a-drop .y { background: #ffc93a; } .a-drop .c { background: #2ee6ff; }
     .a-drop .p { background: #a35cff; } .a-drop .g { background: #6dff5a; } .a-drop .o { background: #ff8a2e; }
     .a-drop .row b { animation: rowFlash 3.6s steps(1) infinite; }
-    @keyframes rowFlash { 0%, 76% { filter: none; } 80%, 88% { filter: brightness(4) saturate(0); } 84%, 92% { filter: none; } 96%, 100% { opacity: 0; } }
+    @keyframes rowFlash { 0%, 76%, 84%, 92% { opacity: 1; } 80%, 88% { opacity: 0.2; } 96%, 100% { opacity: 0; } }
     .a-drop .fall { position: absolute; left: 90px; top: 0; width: 13px; display: grid; gap: 2px; animation: pieceFall 3.6s steps(6, end) infinite; }
     .a-drop .fall i { display: block; background: #2ee6ff; height: 13px; }
     @keyframes pieceFall { 0% { translate: 0 -15px; opacity: 1; } 72%, 94% { translate: 0 75px; opacity: 1; } 95%, 100% { translate: 0 75px; opacity: 0; } }
@@ -229,7 +236,7 @@
     .a-plan i { background: #1c1246; }
     .mon.big .a-plan { grid-template-columns: repeat(5, 52px); grid-template-rows: repeat(4, 52px); gap: 8px; }
     .a-plan .f { background: #7b6bff; animation: cellLit 3s var(--d, 0s) steps(1) infinite; } .a-plan .f2 { background: #c1b8ff; animation: cellLit 3s var(--d, 0s) steps(1) infinite; }
-    @keyframes cellLit { 0%, 20%, 100% { filter: none; } 10% { filter: brightness(2.4); } }
+    @keyframes cellLit { 0%, 20%, 100% { opacity: 0.7; } 10% { opacity: 1; } }
     .a-metar { font-family: var(--font-data); font-size: 12px; line-height: 1.45; color: #8fe9ff; text-align: center; padding-top: 22px; }
     .a-metar b { display: block; font-weight: 400; color: #fff; }
     .a-metar span::after { content: '▮'; animation: blink 1s steps(2) infinite; }
@@ -263,16 +270,15 @@
       grid-column: span 2; transition: translate 0.35s var(--ease-out);
     }
     .mon.is-near, .mon:focus-visible { translate: 0 -4px; }
-    .mon.is-near .mon-screen, .mon:focus-visible .mon-screen { box-shadow: inset 0 0 0 3px var(--accent), inset 0 0 30px #000; }
+    .mon.is-near .mon-screen, .mon:focus-visible .mon-screen { box-shadow: inset 0 0 0 3px var(--accent), inset 0 0 24px rgba(0,0,0,0.7), 0 10px 30px color-mix(in srgb, var(--accent) 40%, transparent); }
     .mon.big { grid-column: span 3; grid-row: span 3; }
     .mon.wide { grid-column: span 3; }
     .mon-screen {
       flex: 1; min-height: 96px; border-radius: 16px / 12px; display: grid; place-items: center;
       background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--accent) 24%, #05030c), #05030c 80%);
       box-shadow: inset 0 0 0 3px #0a0520, inset 0 0 30px #000;
-      filter: saturate(0.85) brightness(0.85); transition: filter 0.45s var(--ease-out), box-shadow 0.25s;
+      transition: box-shadow 0.25s;
     }
-    .mon.is-near .mon-screen, .mon:focus-visible .mon-screen { filter: saturate(1.25) brightness(1.15); }
     .mon h3 { margin: 10px 4px 0; font-family: var(--font-cab); font-style: italic; font-weight: 800; font-size: 19px; line-height: 1.15; color: var(--accent); }
     .mon.big h3 { font-size: 28px; }
     .mon p { margin: 2px 4px 0; font-size: 14px; line-height: 1.4; color: #cfc5ee; }
@@ -305,9 +311,9 @@
     .js-reveal .cab, .js-reveal .mon, .js-reveal .dead, .js-reveal .showcase { opacity: 0; }
     .js-reveal .in { opacity: 1; animation: powerUp 0.9s var(--i, 0s) var(--ease-out) both; }
     @keyframes powerUp {
-      0%   { opacity: 0; filter: brightness(3.2) blur(10px); scale: 1 0.04; }
-      35%  { opacity: 1; filter: brightness(2.2) blur(2px); scale: 1 0.04; }
-      100% { opacity: 1; filter: none; scale: 1 1; }
+      0%   { opacity: 0; scale: 1 0.04; }
+      35%  { opacity: 1; scale: 1 0.04; }
+      100% { opacity: 1; scale: 1 1; }
     }
 
     /* Münzeinwurf: der Schirm füllt das Bild */
@@ -438,7 +444,7 @@
     </div>
 
     <a class="showcase zoomable" href="blockgames/">
-      <div class="showcase-art crt mon-screen" style="filter:none"><canvas class="px" data-art="dice" aria-hidden="true"></canvas><span class="scr-tag">Demo · Download</span></div>
+      <div class="showcase-art crt mon-screen"><canvas class="px" data-art="dice" aria-hidden="true"></canvas><span class="scr-tag">Demo · Download</span></div>
       <div>
         <h3>Block Games</h3>
         <p>Mario-Party-Style Minigames für bis zu 4 Spieler. Windows-App zum Herunterladen — Details &amp; Download hier.</p>
@@ -598,7 +604,7 @@
   };
   const screens = [...document.querySelectorAll('canvas.px')].map(cv => {
     const art = ART[cv.dataset.art]; cv.width = art.w; cv.height = art.h;
-    return { cv, art, c: cv.getContext('2d') };
+    return { cv, art, c: cv.getContext('2d'), vis: true };
   });
   function fit() {
     screens.forEach(({ cv, art }) => {
@@ -609,11 +615,18 @@
   }
   let tickN = 0;
   function paint() {
-    screens.forEach(({ art, c }) => { if (tickN % art.every) return; c.clearRect(0, 0, art.w, art.h); art.draw(c, Math.floor(tickN / art.every)); });
+    screens.forEach(({ art, c, vis }) => { if (!vis || tickN % art.every) return; c.clearRect(0, 0, art.w, art.h); art.draw(c, Math.floor(tickN / art.every)); });
     tickN++;
   }
   fit(); paint(); addEventListener('resize', fit);
-  if (!REDUCED) setInterval(() => { if (!document.hidden) paint(); }, 130);
+  if (!REDUCED) {
+    setInterval(() => { if (!document.hidden) paint(); }, 130);
+    // Röhren außerhalb des Bilds malen nicht weiter
+    if ('IntersectionObserver' in window) {
+      const seen = new IntersectionObserver(es => es.forEach(en => { const s = screens.find(x => x.cv === en.target); if (s) s.vis = en.isIntersecting; }), { rootMargin: '80px' });
+      screens.forEach(s => seen.observe(s.cv));
+    }
+  }
 
   // ── Automaten schalten sich ein, wenn sie ins Bild kommen ──
   const units = document.querySelectorAll('.cab, .mon, .dead, .showcase');
@@ -632,8 +645,8 @@
   }
   if (!FX) return;
 
-  FX.tilt(document.querySelectorAll('.cab'), { max: 9 });
-  FX.tilt(document.querySelectorAll('.mon, .showcase'), { max: 0.01 }); // nur der Lichtreflex auf dem Glas
+  FX.tilt(document.querySelectorAll('.cab'), { max: 9, body: '.cab-box', glass: '.cab-screen' });
+  FX.tilt(document.querySelectorAll('.mon, .showcase'), { glass: '.mon-screen' }); // nur der Lichtreflex auf dem Glas
 
   // Das Schild zündet: Lichtstreifen und ein Aufleuchten der ganzen Halle
   if (!FX.reduced) {
@@ -670,7 +683,7 @@
       const dx = innerWidth / 2 - (r.left + r.width / 2), dy = innerHeight / 2 - (r.top + r.height / 2);
       z.animate([
         { transform: 'translate(0,0) scale(1)', filter: 'brightness(1.2)' },
-        { transform: `translate(${dx}px, ${dy}px) scale(${s})`, filter: 'brightness(3.2) saturate(1.6)', borderRadius: '0' },
+        { transform: `translate(${dx}px, ${dy}px) scale(${s})`, filter: 'brightness(3.2) saturate(1.6)' },
       ], { duration: 520, easing: 'cubic-bezier(0.7, 0, 0.84, 0)', fill: 'forwards' }).onfinish = () => { location.href = el.href; };
     });
   });

@@ -36,6 +36,11 @@
 
 html { scroll-behavior: smooth; }
 
+/* Kein Weichzeichner hinter Flächen: über der bewegten Halle müsste der
+   Browser ihn in jedem Bild neu rechnen (gemessen: Wetter 24 statt 142 fps),
+   und hinter den deckenden Gehäusen sieht man ihn ohnehin nicht. */
+*, *::before, *::after { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+
 /* Der body-Hintergrund wandert auf die Wurzel und liegt damit unter der
    Halle (z-index -1/-2). <html> darf deshalb keinen eigenen bekommen. */
 body {
@@ -58,13 +63,19 @@ h1, .display { font-family: var(--font-cab); }
 body::before {
   content: ''; position: fixed; inset: 0; pointer-events: none; z-index: -2;
   background:
+    radial-gradient(ellipse 120% 90% at 50% 45%, transparent 62%, rgba(9,4,30,0.62) 100%),
     radial-gradient(ellipse 38% 46% at 0% 62%, color-mix(in srgb, var(--neon-cyan) 20%, transparent), transparent 70%),
     radial-gradient(ellipse 38% 46% at 100% 58%, color-mix(in srgb, var(--neon-pink) 20%, transparent), transparent 70%),
     radial-gradient(ellipse 60% 30% at 50% 100%, color-mix(in srgb, var(--uv) 26%, transparent), transparent 75%),
     repeating-linear-gradient(90deg, transparent 0 68px, rgba(196,178,255,0.035) 68px 69px),
     linear-gradient(180deg, #0d0626 0%, #120a30 48%, #1a0f44 100%);
 }
-#fx-hall { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; display: block; }
+/* Die Halle blendet über dem Standbild ein, sobald der Shader steht */
+#fx-hall {
+  position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; display: block;
+  opacity: 0; transition: opacity 0.9s ease-out;
+}
+#fx-hall.on { opacity: 1; }
 
 /* Deckenröhre: eine durchgehende Neonlinie ganz oben, summt leise */
 body::after {
@@ -75,41 +86,41 @@ body::after {
 }
 @keyframes tubeHum { 0%, 100% { opacity: 0.72; } 46% { opacity: 1; } 48% { opacity: 0.55; } 50% { opacity: 1; } }
 
-/* Dunkle Bildränder wie durch ein Objektiv */
+/* Einschalten wie eine Bildröhre: das Bild ist zu, in der Mitte glüht
+   ein heller Strich, dann geht es nach oben und unten auf. Läuft bei jedem
+   Laden; beim Verlassen spielt fx.js das Gleiche rückwärts (html.fx-leaving).
+   Zwei Blenden, bewegt nur über transform: das rechnet der Compositor,
+   auch während die Seite noch Skripte lädt. (Die dunklen Bildränder des
+   Objektivs liegen deshalb in der Halle selbst, nicht mehr über dem Inhalt.) */
+html::before, html::after {
+  content: ''; position: fixed; left: 0; right: 0; z-index: 10000; pointer-events: none;
+  background-color: #070318;
+}
 html::before {
-  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 102;
-  background: radial-gradient(ellipse 120% 90% at 50% 45%, transparent 62%, rgba(9,4,30,0.62) 100%);
+  top: 0; height: 50vh;
+  background-image: linear-gradient(0deg, #fff 0 1px, rgba(255,255,255,0.5) 1px, rgba(190,170,255,0.16) 5px, transparent 22px);
+  animation: tubeOnTop 0.62s var(--ease-out) both;
 }
-
-/* Einschalten wie eine Bildröhre: ein heller Strich zieht sich quer,
-   dann geht das Bild nach oben und unten auf. Läuft bei jedem Laden;
-   beim Verlassen spielt fx.js das Gleiche rückwärts (html.fx-leaving). */
 html::after {
-  content: ''; position: fixed; z-index: 10000; pointer-events: none;
-  top: 50%; left: 0; width: 100%; height: 100vh; transform: translateY(-50%);
-  background: transparent; box-shadow: 0 0 0 100vmax #070318;
-  animation: tubeOn 0.62s var(--ease-out) both;
+  top: 50vh; height: 60vh;
+  background-image: linear-gradient(180deg, #fff 0 1px, rgba(255,255,255,0.5) 1px, rgba(190,170,255,0.16) 5px, transparent 22px);
+  animation: tubeOnBottom 0.62s var(--ease-out) both;
 }
-@keyframes tubeOn {
-  0%   { left: 50%; width: 0;    height: 2px;   background: #fff; }
-  34%  { left: 0;   width: 100%; height: 2px;   background: #fff; }
-  100% { left: 0;   width: 100%; height: 100vh; background: transparent; }
-}
-html.fx-leaving::after { animation: tubeOff 0.3s cubic-bezier(0.5, 0, 0.9, 0.4) both; }
-@keyframes tubeOff {
-  0%   { left: 0;   width: 100%; height: 100vh; background: transparent; }
-  62%  { left: 0;   width: 100%; height: 2px;   background: #fff; }
-  100% { left: 50%; width: 0;    height: 2px;   background: #fff; }
-}
+@keyframes tubeOnTop    { 0%, 26% { transform: translateY(0); } 100% { transform: translateY(-130%); } }
+@keyframes tubeOnBottom { 0%, 26% { transform: translateY(0); } 100% { transform: translateY(130%); } }
+html.fx-leaving::before { animation: tubeOffTop 0.3s cubic-bezier(0.5, 0, 0.9, 0.4) both; }
+html.fx-leaving::after  { animation: tubeOffBottom 0.3s cubic-bezier(0.5, 0, 0.9, 0.4) both; }
+@keyframes tubeOffTop    { 0% { transform: translateY(-130%); } 78%, 100% { transform: translateY(0); } }
+@keyframes tubeOffBottom { 0% { transform: translateY(130%); } 78%, 100% { transform: translateY(0); } }
 
 /* ── Navbar: die Blende über den Automaten ───────────────────────────── */
 .navbar {
   position: fixed; top: 3px !important; left: 0; right: 0; z-index: 100;
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 24px;
-  background: linear-gradient(180deg, rgba(18,10,48,0.94), rgba(18,10,48,0.78)) !important;
+  background: linear-gradient(180deg, rgba(18,10,48,0.97), rgba(18,10,48,0.9)) !important;
   border-bottom: 1px solid var(--board-line) !important;
-  backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow: 0 10px 28px rgba(9,4,30,0.45);
 }
 .nav-left { display: flex; align-items: center; gap: 14px; }
 .nav-back {
@@ -141,7 +152,8 @@ html.fx-leaving::after { animation: tubeOff 0.3s cubic-bezier(0.5, 0, 0.9, 0.4) 
 .container { position: relative; z-index: 1; }
 
 /* Seitentitel sind Neonschilder: die Röhre zündet beim Laden und
-   flackert danach gelegentlich. */
+   flackert danach gelegentlich. Beides läuft nur über opacity: der Schein
+   (text-shadow) wird einmal gerastert und danach nie neu gemalt. */
 .hero h1, .neon {
   font-family: var(--font-sign); font-weight: 400; font-style: normal;
   letter-spacing: 0.01em; line-height: 1.06;
@@ -155,7 +167,7 @@ html.fx-leaving::after { animation: tubeOff 0.3s cubic-bezier(0.5, 0, 0.9, 0.4) 
 }
 .hero h1 { font-size: 46px; }
 @keyframes neonStrike {
-  0%, 7%, 11%, 19%, 23% { opacity: 0.12; text-shadow: none; }
+  0%, 7%, 11%, 19%, 23% { opacity: 0.1; }
   5%, 9%, 16%, 21%, 30%, 100% { opacity: 1; }
 }
 @keyframes neonBuzz {
@@ -252,7 +264,8 @@ table, .tnum, [data-num] { font-variant-numeric: tabular-nums; }
 /* ═══════════════════════════════════════════════════════════════════════
    Effekt-Ebene (von /fx.js erzeugt)
    ═══════════════════════════════════════════════════════════════════════ */
-#fx-layer { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 9500; pointer-events: none; }
+#fx-layer { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 9500; pointer-events: none; display: none; }
+#fx-layer.live { display: block; }
 #fx-layer.docked { position: absolute; z-index: 2; }
 .fx-flash { position: fixed; inset: 0; z-index: 9400; pointer-events: none; }
 .fx-streak {
@@ -261,7 +274,6 @@ table, .tnum, [data-num] { font-variant-numeric: tabular-nums; }
     radial-gradient(ellipse 50% 3% at 50% 50%, #fff, transparent 70%),
     radial-gradient(ellipse 50% 14% at 50% 50%, var(--rc, #fff), transparent 72%),
     radial-gradient(ellipse 9% 46% at 50% 50%, color-mix(in srgb, var(--rc, #fff) 70%, transparent), transparent 70%);
-  mix-blend-mode: screen;
 }
 
 /* ── Kino-Screen (Belohnungen, Gutschriften) ─────────────────────────── */
@@ -271,8 +283,7 @@ table, .tnum, [data-num] { font-variant-numeric: tabular-nums; }
   place-items: center; padding: 14vh 20px;
   background:
     radial-gradient(ellipse 70% 60% at 50% 46%, color-mix(in srgb, var(--rc) 30%, transparent), transparent 70%),
-    rgba(16,8,46,0.94);
-  backdrop-filter: blur(10px) saturate(0.6); -webkit-backdrop-filter: blur(10px) saturate(0.6);
+    rgba(14,7,42,0.965);
 }
 .fxc.on { display: grid; animation: fxcIn 0.3s ease-out both; }
 .fxc.off { animation: fxcOut 0.24s ease-in both; }
@@ -285,11 +296,16 @@ table, .tnum, [data-num] { font-variant-numeric: tabular-nums; }
 .fxc.off .fxc-bar { animation: fxcBarOut 0.24s ease-in both; }
 @keyframes fxcBarOut { to { transform: scaleY(0); } }
 
+/* Strahlenkranz: der Träger dreht sich (nur transform), das Bild mit Maske
+   liegt eine Ebene tiefer und wird so nur einmal gerastert */
 .fxc-rays {
-  position: absolute; left: 50%; top: 44%; width: 220vmax; height: 220vmax; margin: -110vmax 0 0 -110vmax; pointer-events: none;
-  background: repeating-conic-gradient(color-mix(in srgb, var(--rc) 26%, transparent) 0 5deg, transparent 5deg 17deg, color-mix(in srgb, var(--rc) 12%, transparent) 17deg 19deg, transparent 19deg 30deg);
-  -webkit-mask-image: radial-gradient(circle, #000 0, transparent 46%); mask-image: radial-gradient(circle, #000 0, transparent 46%);
+  position: absolute; left: 50%; top: 44%; width: 150vmax; height: 150vmax; margin: -75vmax 0 0 -75vmax; pointer-events: none;
   animation: fxcSpin 46s linear infinite, fxcRaysIn 1.2s 0.2s var(--ease-out) both;
+}
+.fxc-rays::before {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-conic-gradient(color-mix(in srgb, var(--rc) 26%, transparent) 0 5deg, transparent 5deg 17deg, color-mix(in srgb, var(--rc) 12%, transparent) 17deg 19deg, transparent 19deg 30deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0, transparent 67%); mask-image: radial-gradient(circle, #000 0, transparent 67%);
 }
 @keyframes fxcSpin { to { rotate: 360deg; } }
 @keyframes fxcRaysIn { from { opacity: 0; scale: 0.4; } }
@@ -305,14 +321,15 @@ table, .tnum, [data-num] { font-variant-numeric: tabular-nums; }
 .fxc-icon {
   position: relative; display: inline-grid; place-items: center; width: 150px; height: 150px;
   font-size: 104px; line-height: 1;
-  filter: drop-shadow(0 14px 22px rgba(0,0,0,0.6)) drop-shadow(0 0 34px color-mix(in srgb, var(--rc) 60%, transparent));
   animation: fxcSlam 0.55s 0.12s cubic-bezier(0.2, 0.9, 0.25, 1) both, fxcFloat 3.2s 0.9s ease-in-out infinite;
 }
 .fxc-icon { color: var(--rc); }
+/* Schatten und Schein sitzen am Bild, nicht am schwebenden Träger: so werden sie einmal gerastert */
+.fxc-ico { display: grid; place-items: center; filter: drop-shadow(0 14px 22px rgba(0,0,0,0.6)) drop-shadow(0 0 34px color-mix(in srgb, var(--rc) 60%, transparent)); }
 .fxc-icon svg { width: 130px; height: 130px; display: block; }
 @keyframes fxcSlam {
   0%   { transform: scale(7) rotate(-18deg); opacity: 0; filter: blur(18px); }
-  60%  { transform: scale(0.86) rotate(2deg); opacity: 1; filter: blur(0) drop-shadow(0 0 60px #fff); }
+  60%  { transform: scale(0.86) rotate(2deg); opacity: 1; filter: blur(0); }
   100% { transform: scale(1) rotate(0); }
 }
 @keyframes fxcFloat { 50% { translate: 0 -9px; } }
@@ -364,13 +381,16 @@ table, .tnum, [data-num] { font-variant-numeric: tabular-nums; }
   padding: 13px 34px; border: 0; border-radius: 999px; cursor: pointer; color: var(--ink);
   background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 55%, #fff), var(--rc) 55%, color-mix(in srgb, var(--rc) 78%, #000));
   box-shadow: 0 0 0 4px rgba(10,5,32,0.85), 0 0 0 5px color-mix(in srgb, var(--rc) 60%, transparent), 0 14px 34px color-mix(in srgb, var(--rc) 50%, transparent);
-  animation: fxcUp 0.5s 1.25s var(--ease-out) both, fxcLamp 1.4s 1.8s ease-in-out infinite;
+  position: relative; overflow: hidden;
+  animation: fxcUp 0.5s 1.25s var(--ease-out) both;
   transition: transform 0.15s var(--ease-out);
 }
+/* Die Lampe pulsiert über eine helle Ebene, deren Deckkraft läuft */
+.fxc-go::after { content: ''; position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; animation: fxcLamp 1.4s 1.8s ease-in-out infinite; }
 .fxc-go:hover { transform: translateY(-2px) scale(1.03); }
 .fxc-go:active { transform: translateY(2px) scale(0.98); }
 .fxc-go:focus-visible { outline: 3px solid #fff; outline-offset: 5px; }
-@keyframes fxcLamp { 50% { filter: brightness(1.22); } }
+@keyframes fxcLamp { 50% { opacity: 0.22; } }
 .fxc-hint {
   margin-top: 14px; font-family: var(--font-body); font-size: 13px; color: #b9aedd;
   animation: fxcUp 0.5s 1.6s var(--ease-out) both;
@@ -390,8 +410,7 @@ table, .tnum, [data-num] { font-variant-numeric: tabular-nums; }
 .fxr {
   --rc: var(--marquee);
   position: fixed; inset: 0; z-index: 9100; display: none; overflow: hidden; color: #f3eeff;
-  background: radial-gradient(ellipse 80% 60% at 50% 110%, color-mix(in srgb, var(--rc) 16%, transparent), transparent 70%), rgba(13,6,40,0.975);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  background: radial-gradient(ellipse 80% 60% at 50% 110%, color-mix(in srgb, var(--rc) 16%, transparent), transparent 70%), rgba(13,6,40,0.98);
 }
 .fxr.on { display: block; animation: fxcIn 1.2s ease-out both; }
 .fxr.off { animation: fxcOut 0.5s ease-in both; }
@@ -453,7 +472,7 @@ table, .tnum, [data-num] { font-variant-numeric: tabular-nums; }
     animation-delay: 0s !important;
     transition-duration: 0.01ms !important;
   }
-  html::after { display: none; }
+  html::before, html::after { display: none; }
   body::after { animation: none !important; opacity: 0.9; }
 }
 

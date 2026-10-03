@@ -78,7 +78,7 @@
   .reelopt button:disabled:not([aria-pressed="true"]) { opacity: 0.45; }
   .meters { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; margin-bottom: 16px; }
   .meter { background: var(--ink); border: 1px solid var(--board-line); border-radius: 10px; padding: 10px 14px 8px; min-width: 0; }
-  .settings-back { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(12,6,34,0.72); }
+  .settings-back { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(12,6,34,0.84); }
   .settings-back[hidden] { display: none; }
   .settings { width: min(420px, 100%); background: var(--board-raised); border: 1px solid var(--board-line); border-radius: 14px; padding: 20px; box-shadow: 0 24px 60px rgba(0,0,0,0.5); }
   .settings h2 { font-family: 'Kanit', sans-serif; font-size: 20px; color: var(--chalk); margin-bottom: 4px; }
@@ -117,7 +117,6 @@
     background: linear-gradient(180deg, rgba(0,0,0,0.55), transparent 28%, transparent 72%, rgba(0,0,0,0.55));
   }
   .strip { display: flex; flex-direction: column; will-change: transform; }
-  .reel.moving .strip { filter: blur(1.6px); }
   .cell { height: var(--sym); display: grid; place-items: center; flex-shrink: 0; }
   .cell svg { width: 62%; height: 68%; max-width: 76px; transition: transform 0.25s; }
   .cell { transition: background 0.25s; }
@@ -178,12 +177,14 @@
   /* ── Reizüberflutung ─────────────────────────────────────────────── */
   .cabinet.spinning .bulbs { animation: bulbChase 0.22s steps(2) infinite; opacity: 1; }
   .cabinet.spinning .reels { border-color: var(--amber); }
-  .reels.tease { animation: tease 0.25s ease-in-out infinite alternate; }
-  @keyframes tease { from { box-shadow: 0 0 0 0 transparent; border-color: var(--amber); } to { box-shadow: 0 6px 20px rgba(0,0,0,0.55); border-color: #fff; } }
+  .reels.tease { animation: tease 0.25s steps(2, jump-none) infinite alternate; }
+  @keyframes tease { from { border-color: var(--amber); } to { border-color: #fff; } }
   .cell.hit svg { animation: hitPulse 0.34s ease-in-out infinite alternate; }
-  @keyframes hitPulse { from { transform: scale(1.06) rotate(-4deg); filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); } to { transform: scale(1.26) rotate(4deg); filter: drop-shadow(0 6px 8px rgba(0,0,0,0.55)); } }
-  .spin:not(:disabled):not(.refill) { animation: spinPulse 1.1s ease-in-out infinite; }
-  @keyframes spinPulse { 50% { filter: brightness(1.15); } }
+  @keyframes hitPulse { from { transform: scale(1.06) rotate(-4deg); } to { transform: scale(1.26) rotate(4deg); } }
+  /* Der Taster pulsiert über eine helle Ebene, deren Deckkraft läuft (kein filter pro Bild) */
+  .spin { position: relative; overflow: hidden; }
+  .spin:not(:disabled):not(.refill)::after { content: ''; position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; animation: spinPulse 1.1s ease-in-out infinite; }
+  @keyframes spinPulse { 50% { opacity: 0.16; } }
   .cabinet { position: relative; }
   .cabinet.shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
   .cabinet.shake.hard { animation-duration: 0.9s; }
@@ -199,9 +200,9 @@
   @keyframes rainbow { to { filter: hue-rotate(360deg); } }
   #fx { position: absolute; inset: 0; z-index: 7; width: 100%; height: 100%; pointer-events: none; }
   @media (prefers-reduced-motion: reduce) {
-    .cabinet.spinning .bulbs, .reels.tease, .cell.hit svg, .spin:not(:disabled):not(.refill), .cabinet.shake, .cabinet.flash::before, .bigwin.show b { animation: none; }
+    .cabinet.spinning .bulbs, .reels.tease, .cell.hit svg, .spin:not(:disabled):not(.refill)::after, .cabinet.shake, .cabinet.flash::before, .bigwin.show b { animation: none; }
   }
-  body.calm .cabinet.spinning .bulbs, body.calm .reels.tease, body.calm .cell.hit svg, body.calm .spin:not(:disabled):not(.refill), body.calm .cabinet.shake, body.calm .cabinet.flash::before, body.calm .bigwin.show b { animation: none; }
+  body.calm .cabinet.spinning .bulbs, body.calm .reels.tease, body.calm .cell.hit svg, body.calm .spin:not(:disabled):not(.refill)::after, body.calm .cabinet.shake, body.calm .cabinet.flash::before, body.calm .bigwin.show b { animation: none; }
   @media (prefers-reduced-motion: reduce) {
     .bigwin.show { animation: bigwinCalm 2.6s forwards; }
     @keyframes bigwinCalm { 0%,90% { opacity: 1; } 100% { opacity: 0; } }
@@ -285,7 +286,6 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .bulbs, .cabinet.win .bulbs, .cabinet.jackpot .bulbs { animation: none; }
-    .reel.moving .strip { filter: none; }
     .meter-val.pop { animation: none; }
   }
 </style>
@@ -854,10 +854,8 @@ function spinReel(i, rows, finalRow, slow) {
     place(strip, all);
     void strip.offsetWidth;
     const dur = REDUCED ? (260 + i * 120) * SPEEDS[state.speed].f : (1100 + i * (M.reels > 3 ? 300 : 450) + (slow && i === M.reels - 1 ? 1500 : 0)) * SPEEDS[state.speed].f;
-    reels[i].classList.add('moving');
     strip.style.transition = `transform ${dur}ms cubic-bezier(.16,.84,.3,1.04)`;
     strip.style.transform = `translateY(calc(var(--sym) * -${target}))`;
-    setTimeout(() => reels[i].classList.remove('moving'), dur * 0.72);
     setTimeout(() => {
       tick(i);
       // jede Walze schlägt mit Funken ein

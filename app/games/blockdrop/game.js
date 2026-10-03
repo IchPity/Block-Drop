@@ -59,31 +59,7 @@ function celebrateTetris() {
   const reduceMotion = window.matchMedia &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // ── Konfetti ──
-  const COLORS_CONFETTI = [
-    '#00cfcf', '#f0c000', '#a000f0', '#00b800',
-    '#e00000', '#0000e0', '#e07000', '#ffffff', '#e94560',
-  ];
-  const container = document.createElement('div');
-  container.className = 'tetris-confetti';
-  const N = reduceMotion ? 40 : 120;
-  for (let i = 0; i < N; i++) {
-    const piece = document.createElement('i');
-    const color = COLORS_CONFETTI[Math.floor(Math.random() * COLORS_CONFETTI.length)];
-    const w = 6 + Math.random() * 8;
-    piece.style.left            = (Math.random() * 100) + 'vw';
-    piece.style.width           = w + 'px';
-    piece.style.height          = (w * (0.5 + Math.random())) + 'px';
-    piece.style.background       = color;
-    piece.style.borderRadius    = Math.random() < 0.3 ? '50%' : '2px';
-    piece.style.setProperty('--xd',  ((Math.random() * 2 - 1) * 160) + 'px');
-    piece.style.setProperty('--rot', ((Math.random() * 2 - 1) * 900) + 'deg');
-    piece.style.animationDuration = (1.6 + Math.random() * 1.6) + 's';
-    piece.style.animationDelay     = (Math.random() * 0.35) + 's';
-    container.appendChild(piece);
-  }
-  document.body.appendChild(container);
-  setTimeout(() => container.remove(), 4000);
+  const COLORS_CONFETTI = ['#2ee6ff', '#ffc93a', '#a35cff', '#6dff5a', '#ff3d6e', '#4d7dff', '#ff8a2e', '#ffffff'];
 
   // ── "TETRIS!"-Banner ──
   const banner = document.createElement('div');
@@ -96,6 +72,7 @@ function celebrateTetris() {
   if (!reduceMotion && window.FX) {
     FX.flash('#ffb000', 520); FX.pulse('#ffb000', 1.4); FX.streak(innerHeight * 0.4, '#ffb000');
     FX.rain({ kind: 'block', ms: 2000, per: 5, colors: COLORS_CONFETTI, bounce: true });
+    FX.rain({ kind: 'confetti', ms: 1700, per: 6, colors: COLORS_CONFETTI, bounce: false });
     FX.shake(document.getElementById('wrapper'), 12, 600);
   }
   if (!reduceMotion) {
@@ -115,16 +92,17 @@ const ROWS = 20;
 const BLOCK = 30;
 const PREVIEW_COUNT = 5;
 
+// Phosphorfarben: dieselben sieben, die auch im Automaten auf der Startseite laufen
 const COLORS = {
-  I: '#00cfcf',
-  O: '#f0c000',
-  T: '#a000f0',
-  S: '#00b800',
-  Z: '#e00000',
-  J: '#0000e0',
-  L: '#e07000',
-  ghost: 'rgba(255,255,255,0.12)',
+  I: '#2ee6ff',
+  O: '#ffc93a',
+  T: '#a35cff',
+  S: '#6dff5a',
+  Z: '#ff3d6e',
+  J: '#4d7dff',
+  L: '#ff8a2e',
 };
+const HELD_USED = '#6a6190'; // gehaltener Stein, der in dieser Runde schon getauscht wurde
 
 const PIECES = {
   I: { shape: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], color: COLORS.I },
@@ -185,6 +163,58 @@ function deepCopy(m) { return m.map(r => [...r]); }
 
 function easeOut(t) { return 1 - (1 - t) * (1 - t); }
 
+// ── Steine als Sprites ─────────────────────────────────────────────────────
+// Jeder Stein wird pro Farbe und Größe einmal gezeichnet (Verlauf, Glanzkante,
+// Schattenkante) und danach nur noch kopiert. Das ist schärfer als die alten
+// Rechtecke und kostet pro Bild fast nichts.
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+const SPRITES = new Map();
+function shade(hex, k) { // k < 0 dunkler, k > 0 heller
+  const n = parseInt(hex.slice(1), 16), t = k < 0 ? 0 : 255, a = Math.abs(k);
+  const ch = v => Math.round(v + (t - v) * a);
+  return 'rgb(' + ch(n >> 16 & 255) + ',' + ch(n >> 8 & 255) + ',' + ch(n & 255) + ')';
+}
+function sprite(color, bs, ghost) {
+  const key = color + bs + (ghost ? 'g' : '');
+  let cv = SPRITES.get(key);
+  if (cv) return cv;
+  cv = document.createElement('canvas');
+  cv.width = cv.height = Math.round(bs * DPR);
+  const c = cv.getContext('2d');
+  c.scale(DPR, DPR);
+  const r = Math.max(2, bs * 0.16), a = 1, b = bs - 1;
+  const box = (x0, y0, x1, y1, rad) => { c.beginPath(); c.roundRect(x0, y0, x1 - x0, y1 - y0, rad); };
+  if (ghost) {
+    // Landeplatz: nur der Umriss in der Farbe des Steins
+    box(a + 0.5, a + 0.5, b - 0.5, b - 0.5, r);
+    c.fillStyle = color; c.globalAlpha = 0.1; c.fill();
+    c.globalAlpha = 0.7; c.lineWidth = 1.5; c.strokeStyle = color; c.stroke();
+    SPRITES.set(key, cv); return cv;
+  }
+  const g = c.createLinearGradient(0, a, 0, b);
+  g.addColorStop(0, shade(color, 0.22)); g.addColorStop(0.5, color); g.addColorStop(1, shade(color, -0.3));
+  box(a, a, b, b, r); c.fillStyle = g; c.fill();
+  // Glanz oben, Schatten unten, heller Rand
+  c.save(); c.clip();
+  c.fillStyle = 'rgba(255,255,255,0.34)'; c.fillRect(a, a, bs, bs * 0.16);
+  c.fillStyle = 'rgba(255,255,255,0.16)'; c.fillRect(a, a, bs * 0.14, bs);
+  c.fillStyle = 'rgba(5,3,12,0.3)'; c.fillRect(a, b - bs * 0.14, bs, bs * 0.14);
+  c.restore();
+  box(a + 0.5, a + 0.5, b - 0.5, b - 0.5, r - 0.5); c.strokeStyle = 'rgba(255,255,255,0.3)'; c.lineWidth = 1; c.stroke();
+  const m = bs * 0.3;
+  box(m, m, bs - m, bs - m, r * 0.5); c.fillStyle = 'rgba(5,3,12,0.16)'; c.fill();
+  SPRITES.set(key, cv);
+  return cv;
+}
+// Zeichenfläche in Gerätepixeln anlegen, gezeichnet wird weiter in den alten Maßen
+function hidpi(canvas) {
+  const w = canvas.width, h = canvas.height;
+  canvas.width = Math.round(w * DPR); canvas.height = Math.round(h * DPR);
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+  return { ctx, w, h };
+}
+
 // ── Bag randomizer ─────────────────────────────────────────────────────────
 class Bag {
   constructor() { this.bag = []; }
@@ -235,11 +265,15 @@ function dbLoadScores(mode) {
 class BlockDrop {
   constructor() {
     this.boardCanvas = document.getElementById('board');
-    this.ctx         = this.boardCanvas.getContext('2d');
     this.nextCanvas  = document.getElementById('next-canvas');
-    this.nctx        = this.nextCanvas.getContext('2d');
     this.holdCanvas  = document.getElementById('hold-canvas');
-    this.hctx        = this.holdCanvas.getContext('2d');
+    const b = hidpi(this.boardCanvas), n = hidpi(this.nextCanvas), h = hidpi(this.holdCanvas);
+    this.ctx = b.ctx; this.W = b.w; this.H = b.h;
+    this.nctx = n.ctx; this.nW = n.w; this.nH = n.h;
+    this.hctx = h.ctx; this.hW = h.w; this.hH = h.h;
+    // Gezeichnet wird nur, wenn sich etwas geändert hat (siehe draw)
+    this.boardVer = 0; this.drawnKey = ''; this.nextKey = null; this.holdDrawn = null;
+    this.grid = this.makeGrid();
 
     this.scoreEl   = document.getElementById('score-display');
     this.levelEl   = document.getElementById('level-display');
@@ -286,6 +320,7 @@ class BlockDrop {
     this.mode = mode;
     this.selectedMode = mode;
     this.board     = Array.from({length: ROWS}, () => Array(COLS).fill(null));
+    this.boardVer++;
     this.score     = 0;
     this.lines     = 0;
     this.level     = 1;
@@ -338,7 +373,7 @@ class BlockDrop {
   loop(ts = 0) {
     if (this.state === 'clearing') {
       this.updateClearAnim(ts);
-      this.draw();
+      this.draw(true);
       this.animFrame = requestAnimationFrame(t => this.loop(t));
       return;
     }
@@ -348,6 +383,7 @@ class BlockDrop {
       this.softDrop(false);
       this.lastDrop = ts;
     }
+    if (this.state !== 'playing' && this.state !== 'clearing') return; // softDrop kann das Spiel beenden
     this.draw();
     this.animFrame = requestAnimationFrame(t => this.loop(t));
   }
@@ -445,6 +481,7 @@ class BlockDrop {
           if (by < 0) { this.gameOver(); return; }
           this.board[by][p.x + c] = p.color;
         }
+    this.boardVer++;
 
     const clearedRows = this.findClearedRows();
     if (clearedRows.length > 0) {
@@ -465,6 +502,7 @@ class BlockDrop {
 
   removeLines(rows) {
     const rowSet = new Set(rows);
+    this.boardVer++;
     this.board = this.board.filter((_, i) => !rowSet.has(i));
     while (this.board.length < ROWS) {
       this.board.unshift(Array(COLS).fill(null));
@@ -632,10 +670,34 @@ class BlockDrop {
   }
 
   // ── Drawing ───────────────────────────────────────────────────────────────
-  draw() {
+  // Das Raster ändert sich nie: einmal malen, danach nur kopieren
+  makeGrid() {
+    const cv = document.createElement('canvas');
+    cv.width = this.boardCanvas.width; cv.height = this.boardCanvas.height;
+    const c = cv.getContext('2d');
+    c.scale(DPR, DPR);
+    c.fillStyle = 'rgba(196,178,255,0.022)';
+    for (let col = 1; col < COLS; col += 2) c.fillRect(col * BLOCK, 0, BLOCK, this.H);
+    c.fillStyle = 'rgba(196,178,255,0.1)';
+    for (let col = 1; col < COLS; col++) for (let r = 1; r < ROWS; r++) c.fillRect(col * BLOCK - 1, r * BLOCK - 1, 2, 2);
+    return cv;
+  }
+
+  // force: Animation läuft (Räumen); sonst wird nur neu gemalt, wenn sich das Bild geändert hat
+  draw(force) {
+    const cur = this.current;
+    const key = cur ? cur.x + ',' + cur.y + ',' + cur.rot + cur.type + this.boardVer : 'x' + this.boardVer;
+    if (force || this.shake || key !== this.drawnKey) { this.drawnKey = key; this.drawBoard(); }
+    const nk = this.queue.join('');
+    if (nk !== this.nextKey) { this.nextKey = nk; this.drawNextQueue(); }
+    const hk = this.holdKey + (this.holdUsed ? '!' : '');
+    if (hk !== this.holdDrawn) { this.holdDrawn = hk; this.drawHold(); }
+  }
+
+  drawBoard() {
     const ctx = this.ctx;
-    const W = this.boardCanvas.width;
-    const H = this.boardCanvas.height;
+    const W = this.W;
+    const H = this.H;
 
     ctx.save();
 
@@ -654,37 +716,39 @@ class BlockDrop {
     }
 
     ctx.clearRect(-20, -20, W + 40, H + 40);
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-    ctx.lineWidth = 0.5;
-    for (let c = 0; c <= COLS; c++) {
-      ctx.beginPath(); ctx.moveTo(c * BLOCK, 0); ctx.lineTo(c * BLOCK, H); ctx.stroke();
-    }
-    for (let r = 0; r <= ROWS; r++) {
-      ctx.beginPath(); ctx.moveTo(0, r * BLOCK); ctx.lineTo(W, r * BLOCK); ctx.stroke();
-    }
+    ctx.drawImage(this.grid, 0, 0, W, H);
 
     const isClearing = this.state === 'clearing' && this.clearAnim;
     const clearedSet = isClearing ? new Set(this.clearAnim.rows) : null;
 
     for (let r = 0; r < ROWS; r++) {
       if (clearedSet && clearedSet.has(r)) continue;
+      const row = this.board[r];
       for (let c = 0; c < COLS; c++)
-        if (this.board[r][c]) this.drawCell(ctx, c, r, this.board[r][c], BLOCK);
+        if (row[c]) this.drawCell(ctx, c, r, row[c], BLOCK);
     }
 
     if (this.current && !isClearing) {
-      const gy = this.ghostY();
-      this.drawPiece(ctx, this.current.shape, this.current.x, gy, COLORS.ghost, BLOCK);
-      this.drawPiece(ctx, this.current.shape, this.current.x, this.current.y, this.current.color, BLOCK);
+      const p = this.current, gy = this.ghostY();
+      // Fallspur: ein schwacher Lichtschacht vom Stein bis zum Landeplatz
+      if (gy > p.y) {
+        ctx.globalAlpha = 0.07; ctx.fillStyle = p.color;
+        for (let c = 0; c < p.shape[0].length; c++) {
+          let bottom = -1;
+          for (let r = 0; r < p.shape.length; r++) if (p.shape[r][c]) bottom = r;
+          if (bottom < 0) continue;
+          const y0 = Math.max(0, (p.y + bottom + 1) * BLOCK), y1 = (gy + bottom) * BLOCK;
+          if (y1 > y0) ctx.fillRect((p.x + c) * BLOCK + 1, y0, BLOCK - 2, y1 - y0);
+        }
+        ctx.globalAlpha = 1;
+        this.drawPiece(ctx, p.shape, p.x, gy, p.color, BLOCK, true);
+      }
+      this.drawPiece(ctx, p.shape, p.x, p.y, p.color, BLOCK);
     }
 
     if (isClearing) this.drawClearAnim(ctx);
 
     ctx.restore();
-
-    this.drawNextQueue();
-    this.drawHold();
   }
 
   drawClearAnim(ctx) {
@@ -753,54 +817,51 @@ class BlockDrop {
     }
   }
 
-  drawPiece(ctx, shape, ox, oy, color, bs) {
+  drawPiece(ctx, shape, ox, oy, color, bs, ghost) {
     for (let r = 0; r < shape.length; r++)
       for (let c = 0; c < shape[r].length; c++)
-        if (shape[r][c]) this.drawCell(ctx, ox + c, oy + r, color, bs);
+        if (shape[r][c]) this.drawCell(ctx, ox + c, oy + r, color, bs, ghost);
   }
 
-  drawCell(ctx, cx, cy, color, bs) {
+  drawCell(ctx, cx, cy, color, bs, ghost) {
     if (cy < 0) return;
-    const x = cx * bs, y = cy * bs;
-    ctx.fillStyle = color;
-    ctx.fillRect(x + 1, y + 1, bs - 2, bs - 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.25)';
-    ctx.fillRect(x + 1, y + 1, bs - 2, 3);
-    ctx.fillRect(x + 1, y + 1, 3, bs - 2);
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fillRect(x + 1, y + bs - 4, bs - 2, 3);
-    ctx.fillRect(x + bs - 4, y + 1, 3, bs - 2);
+    ctx.drawImage(sprite(color, bs, ghost), cx * bs, cy * bs, bs, bs);
+  }
+
+  // Stein mittig in ein Feld setzen (Vorschau und Halten): leere Zeilen und Spalten zählen nicht mit
+  drawCentered(ctx, type, color, x0, y0, w, h, bs) {
+    const shape = PIECES[type].shape;
+    let r0 = 9, r1 = -1, c0 = 9, c1 = -1;
+    shape.forEach((row, r) => row.forEach((v, c) => { if (v) { r0 = Math.min(r0, r); r1 = Math.max(r1, r); c0 = Math.min(c0, c); c1 = Math.max(c1, c); } }));
+    const ox = Math.round(x0 + (w - (c1 - c0 + 1) * bs) / 2), oy = Math.round(y0 + (h - (r1 - r0 + 1) * bs) / 2);
+    for (let r = r0; r <= r1; r++)
+      for (let c = c0; c <= c1; c++)
+        if (shape[r][c]) ctx.drawImage(sprite(color, bs), ox + (c - c0) * bs, oy + (r - r0) * bs, bs, bs);
   }
 
   drawNextQueue() {
     const ctx = this.nctx;
-    ctx.clearRect(0, 0, this.nextCanvas.width, this.nextCanvas.height);
-    const bs = 18, slotH = 52;
-    for (let i = 0; i < Math.min(PREVIEW_COUNT, this.queue.length); i++) {
-      const type = this.queue[i];
-      const def  = PIECES[type];
-      const shape = def.shape;
-      const ox = Math.floor((this.nextCanvas.width / bs - shape[0].length) / 2);
-      const oy = Math.round((slotH / bs - shape.length) / 2) + i * Math.floor(slotH / bs);
-      this.drawPiece(ctx, shape, ox, oy, def.color, bs);
+    ctx.clearRect(0, 0, this.nW, this.nH);
+    const n = Math.min(PREVIEW_COUNT, this.queue.length), slotH = this.nH / PREVIEW_COUNT;
+    for (let i = 0; i < n; i++) {
+      // der nächste Stein steht groß und hell, die weiteren kleiner und zurückgenommen
+      ctx.globalAlpha = i === 0 ? 1 : 0.78 - i * 0.09;
+      this.drawCentered(ctx, this.queue[i], PIECES[this.queue[i]].color, 0, i * slotH, this.nW, slotH, i === 0 ? 20 : 16);
     }
+    ctx.globalAlpha = 1;
   }
 
   drawHold() {
     const ctx = this.hctx;
-    ctx.clearRect(0, 0, this.holdCanvas.width, this.holdCanvas.height);
+    ctx.clearRect(0, 0, this.hW, this.hH);
     if (!this.holdKey) return;
-    const bs = 18;
-    const def = PIECES[this.holdKey];
-    const shape = def.shape;
-    const ox = Math.floor((this.holdCanvas.width  / bs - shape[0].length) / 2);
-    const oy = Math.floor((this.holdCanvas.height / bs - shape.length)    / 2);
-    this.drawPiece(ctx, shape, ox, oy, this.holdUsed ? 'rgba(150,150,150,0.5)' : def.color, bs);
+    this.drawCentered(ctx, this.holdKey, this.holdUsed ? HELD_USED : PIECES[this.holdKey].color, 0, 0, this.hW, this.hH, 20);
   }
 
   drawIdleBoard() {
     const ctx = this.ctx;
-    ctx.clearRect(0, 0, this.boardCanvas.width, this.boardCanvas.height);
+    ctx.clearRect(0, 0, this.W, this.H);
+    ctx.drawImage(this.grid, 0, 0, this.W, this.H);
     const types = Object.keys(PIECES);
     for (let r = 14; r < ROWS; r++)
       for (let c = 0; c < COLS; c++)
@@ -828,9 +889,9 @@ class BlockDrop {
     this.hsListEl.innerHTML = hs.length
       ? hs.slice(0, 5).map((s, i) =>
           `${i + 1}. <span>${s.score.toLocaleString()}</span>` +
-          `<small style="color:#555;font-size:10px"> &nbsp;L${s.level} · ${s.lines}ln</small>`
+          `<small> &nbsp;L${s.level} · ${s.lines} R.</small>`
         ).join('<br>')
-      : '<em style="color:#9d92c4">Noch keine</em>';
+      : '<em>Noch keine</em>';
   }
 
   async gameOver() {
@@ -838,11 +899,12 @@ class BlockDrop {
     cancelAnimationFrame(this.animFrame);
     this.clearLockDelay();
     this.clearAnim = null;
+    this.draw(true);
     // Game Over: roter Blitz, das Feld zerbröselt
     if (window.FX && !FX.reduced) {
       const br = this.boardCanvas.getBoundingClientRect();
       FX.flash('#ff2e63', 520); FX.pulse('#ff2e63', 1.4); FX.shake(document.getElementById('wrapper'), 14, 620);
-      FX.burst(br.left + br.width / 2, br.top + br.height * 0.3, { kind: 'block', n: 90, speed: 12, lift: -3, radius: br.width / 2, radiusY: br.height * 0.3, size: 7, life: 2.2, colors: Object.values(COLORS).filter(c => /^#/.test(c)), bounce: true });
+      FX.burst(br.left + br.width / 2, br.top + br.height * 0.3, { kind: 'block', n: 90, speed: 12, lift: -3, radius: br.width / 2, radiusY: br.height * 0.3, size: 7, life: 2.2, colors: Object.values(COLORS), bounce: true });
       FX.ring(br.left + br.width / 2, br.top + br.height / 2, '#ff2e63', { width: 9 });
     }
     if (!this.holdEverUsed && this.score > 0) tryUnlock('bd_no_hold');
@@ -850,7 +912,7 @@ class BlockDrop {
     await this.renderHighScores(this.mode);
     const modeLabel = this.mode === 'standard' ? 'Standard' : 'Classic';
     this.overlay.innerHTML = `
-      <h1 style="color:#e94560">GAME OVER</h1>
+      <h1>Game Over</h1>
       <p>Modus: <strong>${modeLabel}</strong></p>
       <p>Score: <strong>${this.score.toLocaleString()}</strong></p>
       <p>Level: <strong>${this.level}</strong> &nbsp; Reihen: <strong>${this.lines}</strong></p>
@@ -872,7 +934,7 @@ class BlockDrop {
       this.clearLockDelay();
       const modeLabel = this.mode === 'standard' ? 'Standard' : 'Classic';
       this.overlay.innerHTML = `
-        <h1>PAUSE</h1>
+        <h1>Pause</h1>
         <p>Modus: ${modeLabel}</p>
         <button class="btn" id="start-btn">Weiter</button>
       `;

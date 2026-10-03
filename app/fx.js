@@ -40,8 +40,9 @@
   // Die Halle: ein Gang zwischen zwei Automatenreihen, Teppich unter
   // Schwarzlicht, Röhren an der Decke. Ein Fragment-Shader, bewusst in
   // halber Auflösung gerendert (weiche Tiefenunschärfe, wenig GPU-Last).
+  // Auch die dunklen Bildränder des Objektivs entstehen hier.
   // ═══════════════════════════════════════════════════════════════════
-  const hall = { gl: null, pulse: 0, pulseCol: [1, 1, 1], mx: 0, my: 0, tx: 0, ty: 0, scale: 0.6, acc: [1, 0.24, 0.6] };
+  const hall = { gl: null, pulse: 0, pulseCol: [1, 1, 1], mx: 0, my: 0, tx: 0, ty: 0, scale: 0.6, acc: [1, 0.24, 0.6], covered: false, wake: null };
 
   const FRAG = `
 #ifdef GL_FRAGMENT_PRECISION_HIGH
@@ -154,7 +155,7 @@ void main(){
   // gedimmt wird Richtung Schwarzlicht-Indigo, nie Richtung Schwarz
   vec3 ground = vec3(0.05, 0.026, 0.145);
   col = mix(ground, col, mix(uAisle.x, 1.0, smoothstep(uAisle.y, uAisle.z, abs(uv.x)/max(asp*0.5, 0.3))));
-  col = mix(ground*0.8, col, 1.0 - 0.35*dot(uv, uv));
+  col = mix(ground*0.8, col, 1.0 - min(0.6, 0.46*dot(uv, uv)));
   col += (h2(gl_FragCoord.xy + fract(uT)*91.0) - 0.5)*0.022;
   col = pow(max(col, 0.0), vec3(0.86));
   gl_FragColor = vec4(col, 1.0);
@@ -164,15 +165,23 @@ void main(){
     const cv = doc.createElement('canvas');
     cv.id = 'fx-hall'; cv.setAttribute('aria-hidden', 'true');
     let gl;
-    try { gl = cv.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'low-power', preserveDrawingBuffer: false }); } catch (e) {}
+    try { gl = cv.getContext('webgl', { antialias: false, alpha: false, depth: false, stencil: false, powerPreference: 'low-power', preserveDrawingBuffer: false }); } catch (e) {}
     if (!gl) return;
-    const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null; };
-    const vs = sh(gl.VERTEX_SHADER, 'attribute vec2 a; void main(){ gl_Position = vec4(a, 0.0, 1.0); }');
-    const fs = sh(gl.FRAGMENT_SHADER, FRAG);
-    if (!vs || !fs) return;
+    // Shader im Hintergrund übersetzen lassen, wo der Browser das kann: sonst steht die Seite beim Laden kurz still
+    const par = gl.getExtension('KHR_parallel_shader_compile');
+    const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
     const pr = gl.createProgram();
-    gl.attachShader(pr, vs); gl.attachShader(pr, fs); gl.linkProgram(pr);
-    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
+    gl.attachShader(pr, sh(gl.VERTEX_SHADER, 'attribute vec2 a; void main(){ gl_Position = vec4(a, 0.0, 1.0); }'));
+    gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FRAG));
+    gl.linkProgram(pr);
+    let tries = 0;
+    (function ready() {
+      if (par && !gl.getProgramParameter(pr, par.COMPLETION_STATUS_KHR) && ++tries < 600) { setTimeout(ready, 16); return; }
+      if (gl.getProgramParameter(pr, gl.LINK_STATUS)) run(cv, gl, pr);
+    })();
+  }
+
+  function run(cv, gl, pr) {
     gl.useProgram(pr);
     gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
@@ -189,112 +198,152 @@ void main(){
 
     const acc = getComputedStyle(root).getPropertyValue('--accent') || getComputedStyle(doc.body).getPropertyValue('--accent');
     if (acc.trim()) hall.acc = hex(acc);
+    gl.uniform3fv(uAcc, hall.acc);
 
+    // Was dieses Gerät schafft, merkt sich die Sitzung: die nächste Seite muss es nicht neu herausfinden
+    let half = false;
+    try { const m = JSON.parse(sessionStorage.getItem('fx.hall')); if (m && m.s >= 0.3 && m.s <= 0.6) { hall.scale = m.s; half = !!m.h; } } catch (e) {}
+    const remember = () => { try { sessionStorage.setItem('fx.hall', JSON.stringify({ s: hall.scale, h: half })); } catch (e) {} };
+
+    let W = 0, H = 0, running = false;
     function size() {
       const w = Math.max(2, Math.round(innerWidth * hall.scale)), h = Math.max(2, Math.round(innerHeight * hall.scale));
-      if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; gl.viewport(0, 0, w, h); }
+      if (w === W && h === H) return;
+      W = cv.width = w; H = cv.height = h; gl.viewport(0, 0, w, h); gl.uniform2f(uRes, w, h);
     }
     size();
-    addEventListener('resize', size);
+    addEventListener('resize', () => { size(); if (!running) draw(performance.now()); });
     addEventListener('pointermove', e => { hall.tx = e.clientX / innerWidth * 2 - 1; hall.ty = -(e.clientY / innerHeight * 2 - 1); }, { passive: true });
+    let scrollY = window.scrollY || 0;
+    addEventListener('scroll', () => { scrollY = window.scrollY || 0; }, { passive: true });
 
     const t0 = performance.now();
-    let last = 0, slow = 0, running = true;
-    function frame(now) {
-      if (!running) return;
-      requestAnimationFrame(frame);
-      const dt = now - last;
-      if (dt < 30) return; // ~33 fps reichen für die langsame Kamerafahrt
-      // Schwache Geräte: Auflösung schrittweise senken statt ruckeln
-      if (last && dt > 70) { if (++slow > 12 && hall.scale > 0.3) { hall.scale = Math.max(0.3, hall.scale - 0.1); slow = 0; size(); } } else slow = Math.max(0, slow - 1);
-      last = now;
-      hall.mx += (hall.tx - hall.mx) * 0.05; hall.my += (hall.ty - hall.my) * 0.05;
-      hall.pulse *= 0.93;
-      gl.uniform2f(uRes, cv.width, cv.height);
+    function draw(now) {
       gl.uniform1f(uT, (now - t0) / 1000);
       gl.uniform2f(uM, hall.mx, hall.my);
-      gl.uniform1f(uScroll, (window.scrollY || 0) / 1000);
-      gl.uniform3fv(uAcc, hall.acc);
+      gl.uniform1f(uScroll, scrollY / 1000);
       gl.uniform4f(uPulse, hall.pulseCol[0], hall.pulseCol[1], hall.pulseCol[2], hall.pulse);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
-    if (REDUCED) { last = -100; running = true; frame(t0 + 40000); running = false; return; }
-    requestAnimationFrame(frame);
-    doc.addEventListener('visibilitychange', () => {
-      if (doc.hidden) running = false;
-      else if (!running) { running = true; last = 0; requestAnimationFrame(frame); }
-    });
+    const shown = () => requestAnimationFrame(() => cv.classList.add('on'));
+    if (REDUCED) { draw(t0 + 40000); shown(); return; }
+
+    // Taktung: höchstens ~60 Bilder pro Sekunde, immer ein ganzer Teiler der Bildwiederholrate
+    // (144 Hz → 48, 120 Hz → 60, 60 Hz → 60), damit die Kamerafahrt gleichmäßig läuft.
+    let last = 0, vs = 16.7, n = 0, slow = 0;
+    function frame(now) {
+      if (!running) return;
+      requestAnimationFrame(frame);
+      const dt = last ? now - last : vs; last = now;
+      // Bildwiederholrate des Geräts: der kürzeste Abstand zählt, Ausreißer nach oben kaum
+      if (dt > 3) vs = dt < vs ? dt : vs + (Math.min(dt, 34) - vs) * 0.004;
+      // Schwache Geräte (unter ~40 Bildern): erst die Auflösung senken, dann die Bildrate halbieren, statt zu ruckeln
+      if (dt > 25 && dt < 250) {
+        if (++slow > 20) {
+          slow = 0;
+          if (hall.scale > 0.34) { hall.scale = Math.max(0.3, hall.scale - 0.1); size(); remember(); }
+          else if (!half) { half = true; remember(); }
+        }
+      } else if (slow > 0) slow -= 0.5;
+      const every = Math.max(1, Math.ceil((half ? 32 : 15.5) / Math.max(vs, 4) - 0.2));
+      if (++n % every) return;
+      const step = Math.min(3, every * vs / 33.3); // Dämpfung unabhängig von der Bildrate
+      hall.mx += (hall.tx - hall.mx) * 0.05 * step; hall.my += (hall.ty - hall.my) * 0.05 * step;
+      hall.pulse *= Math.pow(0.93, step);
+      draw(now);
+    }
+    const wake = () => {
+      const want = !doc.hidden && !hall.covered;
+      if (want && !running) { running = true; last = 0; slow = 0; requestAnimationFrame(frame); }
+      else if (!want) running = false;
+    };
+    hall.wake = wake;
+    doc.addEventListener('visibilitychange', wake);
+    draw(t0); shown(); wake();
   }
 
   // ═══════════════════════════════════════════════════════════════════
   // Partikel-Ebene (Canvas 2D über allem)
   // ═══════════════════════════════════════════════════════════════════
-  let layer, lx, parts = [], rings = [], raf = 0, dpr = 1;
+  let layer, lx, parts = [], rings = [], raf = 0, dpr = 1, vw = 0, vh = 0;
   function getLayer() {
     if (layer) return lx;
     layer = doc.createElement('canvas');
     layer.id = 'fx-layer'; layer.setAttribute('aria-hidden', 'true');
     doc.body.appendChild(layer);
     lx = layer.getContext('2d');
-    const size = () => { dpr = Math.min(devicePixelRatio || 1, 1.5); layer.width = innerWidth * dpr; layer.height = innerHeight * dpr; };
+    const size = () => { vw = innerWidth; vh = innerHeight; dpr = Math.min(devicePixelRatio || 1, 1.5); layer.width = vw * dpr; layer.height = vh * dpr; };
     size(); addEventListener('resize', size);
     return lx;
   }
   let stepAt = 0;
   function step(now) {
     // Zeitbasiert, damit Partikel auf langsamen Geräten nicht in Zeitlupe fliegen
-    const f = stepAt ? clamp((now - stepAt) / 16.67, 0.5, 3) : 1; stepAt = now;
-    const c = lx, w = innerWidth, h = innerHeight;
+    const f = stepAt ? clamp((now - stepAt) / 16.67, 0.25, 3) : 1; stepAt = now;
+    const c = lx, w = vw, h = vh;
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.clearRect(0, 0, w, h);
-    c.globalCompositeOperation = 'lighter';
-    for (const r of rings) {
+    c.globalCompositeOperation = 'lighter'; c.lineCap = 'round';
+    let m = 0;
+    for (let i = 0; i < rings.length; i++) {
+      const r = rings[i];
       r.t += f / (60 * r.dur);
-      const k = 1 - Math.pow(1 - r.t, 3), a = Math.max(0, 1 - r.t);
+      if (r.t >= 1) continue;
+      rings[m++] = r;
+      const k = 1 - Math.pow(1 - r.t, 3), a = 1 - r.t;
       c.globalAlpha = a * 0.7; c.strokeStyle = r.col; c.lineWidth = r.w * a + 1;
       c.beginPath(); c.arc(r.x, r.y, r.r0 + (r.r1 - r.r0) * k, 0, 6.2832); c.stroke();
     }
-    rings = rings.filter(r => r.t < 1);
-    for (const p of parts) {
+    rings.length = m;
+    // Erst alle Funken (additiv), dann alle Körper (deckend): der Canvas wechselt den Modus nur einmal
+    m = 0;
+    let solid = 0;
+    for (let i = 0; i < parts.length; i++) {
+      const p = parts[i];
       p.life -= p.decay * f;
-      const dg = Math.pow(p.drag, f);
+      const dg = f === 1 ? p.drag : Math.pow(p.drag, f);
       p.vy += p.g * f; p.vx *= dg; p.vy *= dg;
       p.px = p.x; p.py = p.y;
       p.x += p.vx * f; p.y += p.vy * f; p.rot += p.vr * f;
       if (p.bounce && p.y > h - 6 && p.vy > 0) { p.y = h - 6; p.vy *= -0.42; p.vx *= 0.7; if (Math.abs(p.vy) < 1.2) p.bounce = false; }
-      const a = clamp(p.life * 2.2, 0, 1);
-      if (a <= 0) continue;
-      c.globalAlpha = a;
-      if (p.kind === 'spark' || p.kind === 'ember') {
-        c.globalCompositeOperation = 'lighter';
-        c.strokeStyle = p.col; c.lineWidth = p.s * (0.5 + p.life * 0.5); c.lineCap = 'round';
-        c.beginPath(); c.moveTo(p.px - p.vx * 2.2, p.py - p.vy * 2.2); c.lineTo(p.x, p.y); c.stroke();
-      } else {
-        c.globalCompositeOperation = 'source-over';
-        c.save(); c.translate(p.x, p.y); c.rotate(p.rot);
+      if (p.life <= 0 || p.y > h + 60 || p.x < -60 || p.x > w + 60) continue;
+      parts[m++] = p;
+      if (p.heavy) { solid++; continue; }
+      c.globalAlpha = p.life > 0.4545 ? 1 : p.life * 2.2;
+      c.strokeStyle = p.col; c.lineWidth = p.s * (0.5 + p.life * 0.5);
+      c.beginPath(); c.moveTo(p.px - p.vx * 2.2, p.py - p.vy * 2.2); c.lineTo(p.x, p.y); c.stroke();
+    }
+    parts.length = m;
+    if (solid) {
+      c.globalCompositeOperation = 'source-over';
+      for (let i = 0; i < m; i++) {
+        const p = parts[i];
+        if (!p.heavy) continue;
+        c.globalAlpha = p.life > 0.4545 ? 1 : p.life * 2.2;
+        const cs = Math.cos(p.rot) * dpr, sn = Math.sin(p.rot) * dpr, s = p.s;
         if (p.kind === 'coin') {
           const sx = Math.abs(Math.cos(p.rot * 3.1)) * 0.92 + 0.08;
-          c.scale(sx, 1);
-          c.fillStyle = '#b87400'; c.beginPath(); c.arc(0, 0, p.s, 0, 6.2832); c.fill();
-          c.fillStyle = '#ffc93a'; c.beginPath(); c.arc(0, 0, p.s * 0.82, 0, 6.2832); c.fill();
-          c.fillStyle = '#fff3b0'; c.beginPath(); c.arc(-p.s * 0.25, -p.s * 0.28, p.s * 0.3, 0, 6.2832); c.fill();
+          c.setTransform(cs * sx, sn * sx, -sn, cs, p.x * dpr, p.y * dpr);
+          c.fillStyle = '#b87400'; c.beginPath(); c.arc(0, 0, s, 0, 6.2832); c.fill();
+          c.fillStyle = '#ffc93a'; c.beginPath(); c.arc(0, 0, s * 0.82, 0, 6.2832); c.fill();
+          c.fillStyle = '#fff3b0'; c.beginPath(); c.arc(-s * 0.25, -s * 0.28, s * 0.3, 0, 6.2832); c.fill();
         } else if (p.kind === 'block') {
-          c.fillStyle = p.col; const s = p.s;
-          c.beginPath(); c.roundRect(-s, -s, s * 2, s * 2, s * 0.3); c.fill();
+          c.setTransform(cs, sn, -sn, cs, p.x * dpr, p.y * dpr);
+          c.fillStyle = p.col; c.fillRect(-s, -s, s * 2, s * 2);
           c.fillStyle = 'rgba(255,255,255,0.35)'; c.fillRect(-s, -s, s * 2, s * 0.55);
         } else { // confetti
-          c.fillStyle = p.col; c.scale(1, Math.cos(p.rot * 2.3));
-          c.fillRect(-p.s, -p.s * 0.45, p.s * 2, p.s * 0.9);
+          const sy = Math.cos(p.rot * 2.3);
+          c.setTransform(cs, sn, -sn * sy, cs * sy, p.x * dpr, p.y * dpr);
+          c.fillStyle = p.col; c.fillRect(-s, -s * 0.45, s * 2, s * 0.9);
         }
-        c.restore();
       }
     }
-    c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
-    parts = parts.filter(p => p.life > 0 && p.y < h + 60 && p.x > -60 && p.x < w + 60);
-    raf = parts.length || rings.length ? requestAnimationFrame(step) : 0;
-    if (!raf) { c.clearRect(0, 0, w, h); stepAt = 0; }
+    c.globalAlpha = 1;
+    raf = m || rings.length ? requestAnimationFrame(step) : 0;
+    // Nichts mehr unterwegs: die Ebene verschwindet ganz, statt leer über der Seite zu liegen
+    if (!raf) { c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, layer.width, layer.height); stepAt = 0; layer.classList.remove('live'); }
   }
-  const kick = () => { if (!raf) raf = requestAnimationFrame(step); };
+  const kick = () => { if (!raf) { layer.classList.add('live'); raf = requestAnimationFrame(step); } };
   // Im Kino-Screen und im Abspann fliegen Partikel hinter Text und Knopf durch
   function dock(host) { getLayer(); host.insertBefore(layer, host.querySelector('.fxc-stage, .fxr-roll')); layer.classList.add('docked'); }
   function undock() { if (layer && layer.parentNode !== doc.body) { doc.body.appendChild(layer); layer.classList.remove('docked'); } }
@@ -303,15 +352,16 @@ void main(){
   function burst(x, y, o = {}) {
     if (REDUCED) return;
     getLayer();
+    if (doc.hidden) return;
     const small = innerWidth < 640 && (o.n || 40) > 8;
     const kind = o.kind || 'spark', n = Math.min(Math.ceil((o.n || 40) * (small ? 0.5 : 1)), MAXP - parts.length);
     const cols = o.colors || (o.color ? [o.color, '#ffffff'] : NEON);
     const sp = o.speed || 9, spread = o.spread == null ? 6.2832 : o.spread, ang = o.angle == null ? -1.5708 : o.angle;
+    const heavy = kind !== 'spark' && kind !== 'ember';
     for (let i = 0; i < n; i++) {
       const a = ang + (Math.random() - 0.5) * spread, v = sp * (0.25 + Math.random() * 0.9);
-      const heavy = kind !== 'spark' && kind !== 'ember';
       parts.push({
-        kind, x: x + rand(-1, 1) * (o.radius || 0), y: y + rand(-1, 1) * (o.radiusY == null ? (o.radius || 0) : o.radiusY),
+        kind, heavy, x: x + rand(-1, 1) * (o.radius || 0), y: y + rand(-1, 1) * (o.radiusY == null ? (o.radius || 0) : o.radiusY),
         vx: Math.cos(a) * v, vy: Math.sin(a) * v + (o.lift || 0),
         g: o.gravity == null ? (kind === 'ember' ? -0.04 : heavy ? 0.42 : 0.16) : o.gravity,
         drag: heavy ? 0.992 : 0.955, life: 1, decay: 1 / (60 * (o.life || (heavy ? 2.4 : 0.9)) * rand(0.7, 1.2)),
@@ -389,6 +439,8 @@ void main(){
   // Kino-Screen
   // ═══════════════════════════════════════════════════════════════════
   let cine, cineQueue = [], cineOpen = false, cineDone = null, cineAt = 0;
+  // Solange ein Kino-Screen oder der Abspann das Bild füllt, steht die Halle dahinter still
+  function cover(on) { hall.covered = on; if (hall.wake) hall.wake(); }
   const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   function split(text) {
     let i = 0;
@@ -401,7 +453,7 @@ void main(){
     cine.className = 'fxc'; cine.setAttribute('role', 'dialog'); cine.setAttribute('aria-modal', 'true'); cine.setAttribute('aria-labelledby', 'fxc-title');
     cine.innerHTML =
       '<div class="fxc-bar fxc-bar-t"></div><div class="fxc-bar fxc-bar-b"></div><div class="fxc-rays"></div>' +
-      '<div class="fxc-stage"><div class="fxc-icon"></div><h2 class="fxc-title" id="fxc-title"></h2><div class="fxc-count"></div>' +
+      '<div class="fxc-stage"><div class="fxc-icon"><div class="fxc-ico"></div></div><h2 class="fxc-title" id="fxc-title"></h2><div class="fxc-count"></div>' +
       '<p class="fxc-text"></p><div class="fxc-chips"></div><button type="button" class="fxc-go"></button><div class="fxc-hint">Enter oder Klick</div></div>';
     doc.body.appendChild(cine);
     cine.querySelector('.fxc-go').addEventListener('click', closeCinema);
@@ -420,11 +472,12 @@ void main(){
   function showCinema(o) {
     if (!cine) buildCinema();
     cineOpen = true; cineAt = performance.now();
+    cover(true);
     dock(cine);
     const q = s => cine.querySelector(s), col = o.color || '#ffb000', epic = o.tier === 'epic';
     cine.style.setProperty('--rc', col);
     cine.classList.toggle('lite', !epic);
-    q('.fxc-icon').innerHTML = o.iconHtml || esc(o.icon || '');
+    q('.fxc-ico').innerHTML = o.iconHtml || esc(o.icon || '');
     const title = String(o.title || '');
     q('.fxc-title').style.setProperty('--fs', title.length > 34 ? 'clamp(26px, 4.4vw, 52px)' : title.length > 20 ? 'clamp(30px, 5.4vw, 64px)' : '');
     q('.fxc-title').innerHTML = split(title);
@@ -443,7 +496,7 @@ void main(){
     at(380, () => {
       // Einschlag des Icons
       flash(col, epic ? 520 : 300); ring(cx, cy, col, { width: epic ? 9 : 6 }); pulse(col, 1.2);
-      shake(doc.querySelector('main, .wrap, .container, #wrapper'), epic ? 14 : 7, 420);
+      shake(q('.fxc-stage'), epic ? 14 : 7, 420);
       burst(cx, cy, { kind: 'spark', n: epic ? 150 : 70, speed: epic ? 22 : 15, colors: [col, '#ffffff', col] });
       burst(cx, cy, { kind: o.particles || 'confetti', n: epic ? 120 : 40, speed: epic ? 20 : 14, lift: -6, colors: [col, '#ffffff'].concat(NEON) });
     });
@@ -487,7 +540,7 @@ void main(){
       cine.classList.remove('on', 'off');
       undock();
       if (done) done();
-      if (cineQueue.length) { const n = cineQueue.shift(); showCinema(n.o).then(n.res); }
+      if (cineQueue.length) { const n = cineQueue.shift(); showCinema(n.o).then(n.res); } else cover(false);
     }, REDUCED ? 0 : 230);
   }
   function cinema(o) {
@@ -523,6 +576,7 @@ void main(){
       '<div class="fxr-ui"><span>Halten = schneller</span><button type="button" class="fxr-skip">Überspringen</button></div>';
     doc.body.appendChild(el);
     void el.offsetWidth; el.classList.add('on');
+    cover(true);
     dock(el);
     const roll = el.querySelector('.fxr-roll');
     let anim = null, embT = 0, finished = false, resolve;
@@ -543,7 +597,7 @@ void main(){
       credOpen = false; clearInterval(embT);
       doc.removeEventListener('keydown', onKey, true); doc.removeEventListener('keyup', onUp, true);
       el.classList.add('off');
-      setTimeout(() => { undock(); el.remove(); resolve(); if (cineQueue.length) { const n = cineQueue.shift(); showCinema(n.o).then(n.res); } }, REDUCED ? 0 : 480);
+      setTimeout(() => { undock(); el.remove(); resolve(); if (cineQueue.length) { const n = cineQueue.shift(); showCinema(n.o).then(n.res); } else cover(false); }, REDUCED ? 0 : 480);
     }
     const fast = on => { if (anim) anim.playbackRate = on ? 6 : 1; };
     function onKey(e) {
@@ -582,20 +636,28 @@ void main(){
   // ═══════════════════════════════════════════════════════════════════
   function tilt(nodes, o = {}) {
     if (REDUCED || !matchMedia('(hover: hover) and (pointer: fine)').matches) return;
-    const max = o.max || 9;
+    const max = o.max || 0;
     nodes.forEach(el => {
-      let raf2 = 0, tx = 0, ty = 0, cx = 0, cy = 0, over = false;
+      // Die Werte landen direkt am gedrehten Körper und am Glas, nicht am ganzen Automaten:
+      // so rechnet der Browser pro Bild nur diese zwei Elemente neu.
+      const body = max ? (o.body && el.querySelector(o.body)) || el : null;
+      const glass = (o.glass && el.querySelector(o.glass)) || el;
+      let raf2 = 0, tx = 0, ty = 0, cx = 0, cy = 0, over = false, r = null;
       const loop = () => {
         cx += (tx - cx) * 0.14; cy += (ty - cy) * 0.14;
-        el.style.setProperty('--ry', (cx * max).toFixed(2) + 'deg');
-        el.style.setProperty('--rx', (-cy * max * 0.8).toFixed(2) + 'deg');
-        el.style.setProperty('--gx', ((cx + 0.5) * 100).toFixed(1) + '%');
-        el.style.setProperty('--gy', ((cy + 0.5) * 100).toFixed(1) + '%');
-        raf2 = over || Math.abs(cx) > 0.002 || Math.abs(cy) > 0.002 ? requestAnimationFrame(loop) : 0;
+        if (body) {
+          body.style.setProperty('--ry', (cx * max).toFixed(2) + 'deg');
+          body.style.setProperty('--rx', (-cy * max * 0.8).toFixed(2) + 'deg');
+        }
+        glass.style.setProperty('--gx', ((cx + 0.5) * 100).toFixed(1) + '%');
+        glass.style.setProperty('--gy', ((cy + 0.5) * 100).toFixed(1) + '%');
+        raf2 = Math.abs(tx - cx) > 0.002 || Math.abs(ty - cy) > 0.002 ? requestAnimationFrame(loop) : 0;
       };
-      el.addEventListener('pointerenter', () => { over = true; el.classList.add('is-near'); if (!raf2) raf2 = requestAnimationFrame(loop); });
-      el.addEventListener('pointermove', e => { const r = el.getBoundingClientRect(); tx = (e.clientX - r.left) / r.width - 0.5; ty = (e.clientY - r.top) / r.height - 0.5; });
-      el.addEventListener('pointerleave', () => { over = false; tx = ty = 0; el.classList.remove('is-near'); });
+      const go2 = () => { if (!raf2) raf2 = requestAnimationFrame(loop); };
+      el.addEventListener('pointerenter', () => { over = true; r = el.getBoundingClientRect(); el.classList.add('is-near'); go2(); });
+      el.addEventListener('pointermove', e => { if (!over || !r) return; tx = (e.clientX - r.left) / r.width - 0.5; ty = (e.clientY - r.top) / r.height - 0.5; go2(); });
+      el.addEventListener('pointerleave', () => { over = false; tx = ty = 0; el.classList.remove('is-near'); go2(); });
+      addEventListener('scroll', () => { if (over) r = el.getBoundingClientRect(); }, { passive: true });
     });
   }
 
@@ -627,5 +689,7 @@ void main(){
   window.FX = { burst, rain, ring, streak, flash, shake, pulse, count, cinema, credits, tilt, go, reduced: REDUCED, NEON,
     cinemaOpen: () => cineOpen || credOpen, closeCinema };
 
-  if (doc.body) startHall(); else doc.addEventListener('DOMContentLoaded', startHall);
+  // Die Halle startet erst nach dem ersten Bild: so bremst sie das Einschalten der Röhre nicht
+  const boot = () => requestAnimationFrame(() => setTimeout(startHall, 60));
+  if (doc.body) boot(); else doc.addEventListener('DOMContentLoaded', boot);
 })();

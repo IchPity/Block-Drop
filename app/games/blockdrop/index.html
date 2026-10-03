@@ -21,23 +21,11 @@
       padding: 80px 16px 32px; gap: 20px;
     }
 
-    /* ── Background ─────────────────────────────────────── */
-    .orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; }
-    .orb-1 { width: 640px; height: 640px; background: #e94560; opacity: 0.05; top: -240px; left: -200px; animation: orbFloat1 24s ease-in-out infinite alternate; }
-    .orb-2 { width: 520px; height: 520px; background: #3050e0; opacity: 0.04; bottom: -200px; right: -200px; animation: orbFloat2 30s ease-in-out infinite alternate; }
-    @keyframes orbFloat1 { from { transform: translate(0,0) scale(1); } to { transform: translate(80px,70px) scale(1.15); } }
-    @keyframes orbFloat2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-70px,-90px) scale(1.2); } }
-    .dot-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: radial-gradient(rgba(255,255,255,0.01) 1px, transparent 1px); background-size: 30px 30px; }
-    .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(ellipse 90% 75% at 50% 50%, transparent 30%, rgba(5,5,14,0.8) 100%); }
-
     /* ── Navbar ─────────────────────────────────────────── */
     .navbar {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
       padding: 12px 24px;
-      background: rgba(5,5,14,0.8);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     }
     .nav-left { display: flex; align-items: center; gap: 14px; }
     .nav-back {
@@ -85,17 +73,17 @@
 
     /* ── Board ──────────────────────────────────────────── */
     #game-area {
-      position: relative; border-radius: 12px; overflow: hidden;
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 12px 30px rgba(0,0,0,0.4), 0 32px 80px rgba(0,0,0,0.85);
+      position: relative; border-radius: 12px;
     }
-    canvas#board { display: block; background: rgba(0,0,0,0.7); }
+    canvas#board { display: block; width: 300px; height: 600px; border-radius: inherit; }
     canvas#next-canvas, canvas#hold-canvas { display: block; }
+    #next-canvas { width: 100px; height: 260px; }
+    #hold-canvas { width: 100px; height: 80px; }
 
     /* ── Overlay ────────────────────────────────────────── */
     #overlay {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(5,5,14,0.94);
-      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-radius: inherit; z-index: 4;
       display: flex; flex-direction: column;
       justify-content: center; align-items: center; gap: 16px;
       padding: 24px;
@@ -194,19 +182,6 @@
     @keyframes achHintFade { from { opacity:0; } to { opacity:1; } }
 
     /* ── Tetris-Effekt (4 Zeilen) ───────────────────────── */
-    .tetris-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 9998; overflow: hidden; }
-    .tetris-confetti i {
-      position: absolute; top: -24px; display: block; opacity: 0;
-      animation-name: tetrisConfettiFall;
-      animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
-      animation-fill-mode: forwards;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.35);
-    }
-    @keyframes tetrisConfettiFall {
-      0%   { opacity: 0; transform: translate(0, -10vh) rotate(0deg); }
-      8%   { opacity: 1; }
-      100% { opacity: 0; transform: translate(var(--xd), 110vh) rotate(var(--rot)); }
-    }
     .tetris-banner {
       position: fixed; top: 40%; left: 50%; z-index: 9999; pointer-events: none;
       font-family: 'Barlow', sans-serif; font-weight: 900;
@@ -282,7 +257,7 @@
 
     /* ── Responsive Layout ──────────────────────────────── */
     @media (max-width: 760px) {
-      body { padding: 64px 8px 16px; gap: 10px; }
+      body { padding: 76px 8px 16px; gap: 14px; }
       .navbar { padding: 10px 14px; }
       .nav-back { padding: 5px 10px; font-size: 12px; }
       .nav-game-title { font-size: 12px; }
@@ -352,14 +327,31 @@
     .panel-box h2 { font-family: var(--font-cab); font-style: italic; font-weight: 800; letter-spacing: 0.14em; color: var(--chalk-dim); }
     .panel-box .value { font-family: var(--font-data); font-weight: 400; letter-spacing: 0; color: #fff; }
     #score-display { color: #ffc23a; text-shadow: 0 4px 22px rgba(255,176,0,0.7); }
+    /* Der Rahmen des Schirms wechselt zwischen Magenta und Cyan. Beide Zustände sind fertig gemalt,
+       bewegt wird nur die Deckkraft der Cyan-Ebene: kein Neumalen des großen Scheins während des Spiels. */
     #game-area {
       border-radius: 14px;
       box-shadow: 0 0 0 2px #05030c, 0 0 0 4px rgba(255,61,110,0.75), 0 0 0 5px rgba(255,255,255,0.25), 0 24px 70px rgba(255,61,110,0.35), 0 40px 90px rgba(8,4,26,0.9);
+    }
+    #game-area::after {
+      content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0;
+      box-shadow: 0 0 0 2px #05030c, 0 0 0 4px rgba(46,230,255,0.8), 0 0 0 5px rgba(255,255,255,0.25), 0 24px 70px rgba(46,230,255,0.4);
       animation: boardHum 5s ease-in-out infinite;
     }
-    @keyframes boardHum { 50% { box-shadow: 0 0 0 2px #05030c, 0 0 0 4px rgba(46,230,255,0.75), 0 0 0 5px rgba(255,255,255,0.25), 0 24px 70px rgba(46,230,255,0.35), 0 40px 90px rgba(8,4,26,0.9); } }
-    canvas#board { background: #05030c; }
-    #overlay { background: rgba(12,6,34,0.93); }
+    @keyframes boardHum { 50% { opacity: 1; } }
+    /* Röhrenglas: Zeilenraster und abgedunkelte Ecken über dem Spielfeld */
+    #game-area::before {
+      content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 3;
+      background:
+        repeating-linear-gradient(180deg, rgba(0,0,0,0) 0 2px, rgba(0,0,0,0.16) 2px 3px),
+        radial-gradient(ellipse 120% 100% at 50% 45%, transparent 58%, rgba(0,0,0,0.5) 100%),
+        linear-gradient(115deg, rgba(255,255,255,0.06) 0%, transparent 24%);
+    }
+    canvas#board { background: radial-gradient(ellipse 90% 60% at 50% 100%, #150a36, #05030c 72%); }
+    #overlay { background: rgba(10,5,30,0.95); }
+    @media (min-width: 761px) { .nav-score-display { display: none; } } /* am Desktop stehen die Zähler schon links neben dem Feld */
+    .highscore-list small { font-size: 12px; color: var(--chalk-faint); }
+    .highscore-list em { font-style: normal; color: var(--chalk-faint); }
     #overlay h1 {
       font-family: var(--font-sign); font-weight: 400; font-size: 44px; letter-spacing: 0.02em; color: #ffe3ec;
       text-shadow: 0 0 2px #fff, 0 0 12px var(--accent), 0 0 30px var(--accent), 0 8px 60px var(--accent);
@@ -389,15 +381,10 @@
     }
     .level-banner { top: 28%; font-size: clamp(36px, 8vw, 84px); text-shadow: 0 0 4px #fff, 0 0 24px var(--neon-cyan), 0 0 70px var(--neon-cyan), 0 8px 0 rgba(0,0,0,0.5); }
     .tc-btn { background: var(--board-raised); border-color: var(--board-line); font-family: var(--font-cab); }
-    @media (prefers-reduced-motion: reduce) { #game-area, .btn { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { #game-area::after, .btn { animation: none; } }
   </style>
 </head>
 <body>
-
-<div class="orb orb-1"></div>
-<div class="orb orb-2"></div>
-<div class="dot-grid"></div>
-<div class="vignette"></div>
 
 <nav class="navbar">
   <div class="nav-left">
@@ -435,7 +422,7 @@
       <h2>Level</h2>
       <div class="value" id="level-display">1</div>
       <div id="level-bar-wrap"><div id="level-bar"></div></div>
-      <div id="mode-badge" class="classic">Classic</div>
+      <div id="mode-badge" class="standard">Standard</div>
     </div>
     <div class="panel-box">
       <h2>Reihen</h2>
