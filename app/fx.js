@@ -233,7 +233,8 @@ void main(){
 
     // Taktung: höchstens ~60 Bilder pro Sekunde, immer ein ganzer Teiler der Bildwiederholrate
     // (144 Hz → 48, 120 Hz → 60, 60 Hz → 60), damit die Kamerafahrt gleichmäßig läuft.
-    let last = 0, vs = 16.7, n = 0, slow = 0, sum = 0, cnt = 0;
+    let last = 0, vs = 16.7, n = 0, slow = 0, gaps = 0;
+    const win = [];
     function frame(now) {
       if (!running) return;
       requestAnimationFrame(frame);
@@ -242,17 +243,22 @@ void main(){
       if (dt > 3) vs = dt < vs ? dt : vs + (Math.min(dt, 34) - vs) * 0.004;
       // Schwache Geräte (unter ~40 Bildern): erst die Auflösung senken, dann die Bildrate halbieren, statt zu ruckeln
       if (!capped && dt > 25 && dt < 250) {
-        sum += dt; cnt++;
+        win.push(dt);
         if (++slow > 20) {
-          const avg = sum / cnt;
-          slow = sum = cnt = 0;
-          if (hall.scale >= FULL && !base) base = avg;
+          // Median statt Mittelwert: einzelne Hänger (Seitenaufbau, Partikel) verfälschen die Messung nicht
+          const med = win.sort((a, b) => a - b)[win.length >> 1], steady = gaps <= 2;
+          slow = gaps = 0; win.length = 0;
+          if (hall.scale >= FULL && !base) base = med;
           if (hall.scale > 0.34) { hall.scale = Math.max(0.3, hall.scale - 0.1); size(); remember(); }
+          // Einmalige Entscheidung im ersten gleichmäßigen Fenster ganz unten (base < 0 = erledigt).
           // Ein Viertel der Pixel und kein bisschen schneller: das Gerät ist nicht schwach, der Browser drosselt. Zurück auf volle Auflösung.
-          else if (base && avg > base * 0.9) { capped = true; half = false; hall.scale = FULL; size(); remember(); }
+          else if (base > 0 && steady) {
+            if (med > base * 0.9) { capped = true; half = false; hall.scale = FULL; size(); }
+            base = -1; remember();
+          }
           else if (!half) { half = true; remember(); }
         }
-      } else if (slow > 0) slow -= 0.5;
+      } else if (slow > 0) { slow -= 0.5; gaps++; if (slow <= 0) { gaps = 0; win.length = 0; } }
       const every = Math.max(1, Math.ceil((half ? 32 : 15.5) / Math.max(vs, 4) - 0.2));
       if (++n % every) return;
       const step = Math.min(3, every * vs / 33.3); // Dämpfung unabhängig von der Bildrate
@@ -262,7 +268,7 @@ void main(){
     }
     const wake = () => {
       const want = !doc.hidden && !hall.covered;
-      if (want && !running) { running = true; last = 0; slow = sum = cnt = 0; requestAnimationFrame(frame); }
+      if (want && !running) { running = true; last = 0; slow = gaps = 0; win.length = 0; requestAnimationFrame(frame); }
       else if (!want) running = false;
     };
     hall.wake = wake;
