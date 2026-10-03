@@ -201,24 +201,27 @@ void main(){
     gl.uniform3fv(uAcc, hall.acc);
 
     // Was dieses Gerät schafft, merkt sich die Sitzung: die nächste Seite muss es nicht neu herausfinden
-    let half = false;
-    try { const m = JSON.parse(sessionStorage.getItem('fx.hall')); if (m && m.s >= 0.3 && m.s <= 0.6) { hall.scale = m.s; half = !!m.h; } } catch (e) {}
-    const remember = () => { try { sessionStorage.setItem('fx.hall', JSON.stringify({ s: hall.scale, h: half })); } catch (e) {} };
+    // base: Bildabstand bei voller Auflösung, capped: der Browser drosselt selbst (Stromsparmodus), weniger Pixel helfen nicht
+    const FULL = hall.scale;
+    let half = false, base = 0, capped = false;
+    try { const m = JSON.parse(sessionStorage.getItem('fx.hall')); if (m && m.s >= 0.3 && m.s <= 0.6) { hall.scale = m.s; half = !!m.h; base = +m.b || 0; capped = !!m.c; } } catch (e) {}
+    const remember = () => { try { sessionStorage.setItem('fx.hall', JSON.stringify({ s: hall.scale, h: half, b: base, c: capped })); } catch (e) {} };
 
-    let W = 0, H = 0, running = false;
+    let W = 0, H = 0, running = false, drawn = 0;
     function size() {
       const w = Math.max(2, Math.round(innerWidth * hall.scale)), h = Math.max(2, Math.round(innerHeight * hall.scale));
       if (w === W && h === H) return;
       W = cv.width = w; H = cv.height = h; gl.viewport(0, 0, w, h); gl.uniform2f(uRes, w, h);
     }
     size();
-    addEventListener('resize', () => { size(); if (!running) draw(performance.now()); });
+    addEventListener('resize', () => { size(); if (!running) draw(drawn); }); // dasselbe Bild noch einmal, kein Kamerasprung
     addEventListener('pointermove', e => { hall.tx = e.clientX / innerWidth * 2 - 1; hall.ty = -(e.clientY / innerHeight * 2 - 1); }, { passive: true });
     let scrollY = window.scrollY || 0;
     addEventListener('scroll', () => { scrollY = window.scrollY || 0; }, { passive: true });
 
     const t0 = performance.now();
     function draw(now) {
+      drawn = now;
       gl.uniform1f(uT, (now - t0) / 1000);
       gl.uniform2f(uM, hall.mx, hall.my);
       gl.uniform1f(uScroll, scrollY / 1000);
@@ -230,7 +233,7 @@ void main(){
 
     // Taktung: höchstens ~60 Bilder pro Sekunde, immer ein ganzer Teiler der Bildwiederholrate
     // (144 Hz → 48, 120 Hz → 60, 60 Hz → 60), damit die Kamerafahrt gleichmäßig läuft.
-    let last = 0, vs = 16.7, n = 0, slow = 0;
+    let last = 0, vs = 16.7, n = 0, slow = 0, sum = 0, cnt = 0;
     function frame(now) {
       if (!running) return;
       requestAnimationFrame(frame);
@@ -238,10 +241,15 @@ void main(){
       // Bildwiederholrate des Geräts: der kürzeste Abstand zählt, Ausreißer nach oben kaum
       if (dt > 3) vs = dt < vs ? dt : vs + (Math.min(dt, 34) - vs) * 0.004;
       // Schwache Geräte (unter ~40 Bildern): erst die Auflösung senken, dann die Bildrate halbieren, statt zu ruckeln
-      if (dt > 25 && dt < 250) {
+      if (!capped && dt > 25 && dt < 250) {
+        sum += dt; cnt++;
         if (++slow > 20) {
-          slow = 0;
+          const avg = sum / cnt;
+          slow = sum = cnt = 0;
+          if (hall.scale >= FULL && !base) base = avg;
           if (hall.scale > 0.34) { hall.scale = Math.max(0.3, hall.scale - 0.1); size(); remember(); }
+          // Ein Viertel der Pixel und kein bisschen schneller: das Gerät ist nicht schwach, der Browser drosselt. Zurück auf volle Auflösung.
+          else if (base && avg > base * 0.9) { capped = true; half = false; hall.scale = FULL; size(); remember(); }
           else if (!half) { half = true; remember(); }
         }
       } else if (slow > 0) slow -= 0.5;
@@ -254,7 +262,7 @@ void main(){
     }
     const wake = () => {
       const want = !doc.hidden && !hall.covered;
-      if (want && !running) { running = true; last = 0; slow = 0; requestAnimationFrame(frame); }
+      if (want && !running) { running = true; last = 0; slow = sum = cnt = 0; requestAnimationFrame(frame); }
       else if (!want) running = false;
     };
     hall.wake = wake;
@@ -416,6 +424,7 @@ void main(){
     el.animate(kf, { duration: ms || 420, easing: 'linear' });
   }
   function pulse(color, amt) {
+    if (hall.covered) return; // verdeckt klingt nichts ab, das Leuchten käme erst beim Aufdecken
     hall.pulseCol = hex(color || '#ffffff');
     hall.pulse = Math.min(1.4, hall.pulse + (amt == null ? 1 : amt));
   }
@@ -440,7 +449,7 @@ void main(){
   // ═══════════════════════════════════════════════════════════════════
   let cine, cineQueue = [], cineOpen = false, cineDone = null, cineAt = 0;
   // Solange ein Kino-Screen oder der Abspann das Bild füllt, steht die Halle dahinter still
-  function cover(on) { hall.covered = on; if (hall.wake) hall.wake(); }
+  function cover(on) { hall.covered = on; hall.pulse = 0; if (hall.wake) hall.wake(); }
   const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   function split(text) {
     let i = 0;

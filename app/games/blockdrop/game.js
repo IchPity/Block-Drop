@@ -183,7 +183,15 @@ function sprite(color, bs, ghost) {
   const c = cv.getContext('2d');
   c.scale(DPR, DPR);
   const r = Math.max(2, bs * 0.16), a = 1, b = bs - 1;
-  const box = (x0, y0, x1, y1, rad) => { c.beginPath(); c.roundRect(x0, y0, x1 - x0, y1 - y0, rad); };
+  const box = (x0, y0, x1, y1, rad) => {
+    c.beginPath();
+    if (c.roundRect) { c.roundRect(x0, y0, x1 - x0, y1 - y0, rad); return; }
+    // ältere Browser (Safari < 16, Firefox < 112) kennen roundRect nicht
+    c.moveTo(x0 + rad, y0);
+    c.arcTo(x1, y0, x1, y1, rad); c.arcTo(x1, y1, x0, y1, rad);
+    c.arcTo(x0, y1, x0, y0, rad); c.arcTo(x0, y0, x1, y0, rad);
+    c.closePath();
+  };
   if (ghost) {
     // Landeplatz: nur der Umriss in der Farbe des Steins
     box(a + 0.5, a + 0.5, b - 0.5, b - 0.5, r);
