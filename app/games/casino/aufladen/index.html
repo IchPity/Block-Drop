@@ -239,7 +239,7 @@ function writeState(s) {
   try { localStorage.setItem(KEY, JSON.stringify(s)); ok = true; } catch (e) {}
   try {
     const { view, ...small } = s;
-    document.cookie = CK + '=' + encodeURIComponent(JSON.stringify(small)) + '; max-age=31536000; path=/; SameSite=Lax';
+    if (document.cookie.includes('arcade_consent=1')) document.cookie = CK + '=' + encodeURIComponent(JSON.stringify(small)) + '; max-age=31536000; path=/; SameSite=Lax';
     if (document.cookie.includes(CK + '=')) ok = true;
   } catch (e) {}
   return ok;

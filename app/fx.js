@@ -15,7 +15,7 @@
      FX.tilt(nodes)            3D-Neigung mit Lichtreflex
      FX.go(url)                Seitenwechsel mit Röhre-aus
      FX.adhs / FX.setAdhs(on)  ADHS-Modus (volle Reizüberflutung) an oder aus
-     FX.mode / FX.setMode(m)   Darstellung: 'standard' | 'adhs' | 'design'
+     FX.mode / FX.setMode(m)   Version: 'standard' (OG) | 'adhs' | 'design' (Cinema)
 
    Alles respektiert prefers-reduced-motion; ohne WebGL bleibt das
    Standbild aus theme.css stehen. Styles dazu: theme.css.
@@ -31,6 +31,12 @@
    <html> setzt /mode.js schon im <head>; Styles dazu am Ende von
    theme.css. Ein Wechsel in den oder aus dem Design-Modus lädt die Seite
    neu, weil die Halle und die Startseite dann anders aufgebaut sind.
+
+   Beim ersten Besuch fragt ein Dialog nach der Version (OG, ADHS, Cinema)
+   und nach der Zustimmung zu Cookies. Mit Zustimmung steht die Wahl ein
+   Jahr im Cookie „arcade_mode" (dazu „arcade_consent"), ohne Zustimmung
+   gilt sie nur für diesen Besuch (sessionStorage) und der Dialog kommt
+   beim nächsten Besuch wieder.
    ───────────────────────────────────────────────────────────────────────── */
 (() => {
   'use strict';
@@ -54,13 +60,22 @@
   // ADHS-Modus: gilt für die ganze Seite, gemerkt pro Browser
   // ═══════════════════════════════════════════════════════════════════
   const ADHS_KEY = 'arcade.adhs', DESIGN_KEY = 'arcade.design';
-  let adhs = true, design = false;
+  const MODE_CK = 'arcade_mode', OK_CK = 'arcade_consent', VISIT_KEY = 'arcade.mode', ASKED_KEY = 'arcade.asked';
+  const cookie = n => { const m = doc.cookie.match(new RegExp('(?:^|; )' + n + '=([^;]*)')); return m ? m[1] : null; };
+  const bake = (n, v) => { doc.cookie = n + '=' + v + '; max-age=31536000; path=/; SameSite=Lax'; };
+  let adhs = true, design = false, consent = false;
   try {
-    design = localStorage.getItem(DESIGN_KEY) === '1';
-    const v = localStorage.getItem(ADHS_KEY);
-    if (v != null) adhs = v !== '0';
-    // Früher gab es den Schalter nur im Casino: wer ihn dort aus hatte, behält das
-    else if ((JSON.parse(localStorage.getItem('automat5dk.casino.v2')) || {}).fx === false) adhs = false;
+    consent = cookie(OK_CK) === '1';
+    const saved = cookie(MODE_CK) || sessionStorage.getItem(VISIT_KEY);
+    if (saved) { design = saved === 'design'; adhs = saved === 'adhs'; }
+    else {
+      // Wahl aus der Zeit vor dem Cookie
+      design = localStorage.getItem(DESIGN_KEY) === '1';
+      const v = localStorage.getItem(ADHS_KEY);
+      if (v != null) adhs = v !== '0';
+      // Früher gab es den Schalter nur im Casino: wer ihn dort aus hatte, behält das
+      else if ((JSON.parse(localStorage.getItem('automat5dk.casino.v2')) || {}).fx === false) adhs = false;
+    }
   } catch (e) {}
   if (design) adhs = false; // die gemerkte ADHS-Wahl bleibt im Speicher stehen
   root.classList.toggle('fx-design', design);
@@ -88,8 +103,12 @@
     if (m !== 'design' && m !== 'adhs') m = 'standard';
     const was = mode();
     try {
-      localStorage.setItem(DESIGN_KEY, m === 'design' ? '1' : '0');
-      if (m !== 'design') localStorage.setItem(ADHS_KEY, m === 'adhs' ? '1' : '0');
+      if (consent) {
+        bake(MODE_CK, m);
+        // zusätzlich im localStorage: darüber ziehen andere offene Tabs mit
+        localStorage.setItem(DESIGN_KEY, m === 'design' ? '1' : '0');
+        if (m !== 'design') localStorage.setItem(ADHS_KEY, m === 'adhs' ? '1' : '0');
+      } else sessionStorage.setItem(VISIT_KEY, m);
     } catch (e) {}
     if (m === was) return;
     if (m === 'design' || was === 'design') {
@@ -108,6 +127,68 @@
     if (e.key === DESIGN_KEY) { if ((e.newValue === '1') !== design) location.reload(); }
     else if (e.key === ADHS_KEY && e.newValue != null && !design) applyAdhs(e.newValue !== '0');
   });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Erster Besuch: Version wählen und Cookies zustimmen
+  // Sieht in jeder Version gleich aus (eigene Farben, keine Hallen-Token).
+  // ═══════════════════════════════════════════════════════════════════
+  function welcome() {
+    let asked = false;
+    try { asked = sessionStorage.getItem(ASKED_KEY) === '1'; } catch (e) {}
+    // Impressum und Datenschutz bleiben ohne Dialog lesbar
+    if (consent || asked || /^\/(impressum|datenschutz)\//.test(location.pathname)) return;
+    if (!doc.querySelector('link[href*="Bricolage"]')) {
+      const l = doc.createElement('link'); l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&display=swap';
+      doc.head.appendChild(l);
+    }
+    const OPTS = [
+      ['standard', 'og', 'OG', 'Die Spielhalle in Neon, ruhig gehalten.'],
+      ['adhs', 'adhs', 'ADHS', 'Die Spielhalle mit Blitzen, Wackeln und Konfetti.'],
+      ['design', 'cine', 'Cinema', 'Dunkel, still, große Schrift.'],
+    ];
+    const confetti = [['12%', '#ff3d9a', '0s'], ['27%', '#b8ff3d', '.5s'], ['44%', '#ffb000', '.2s'], ['61%', '#2ee6ff', '.9s'], ['76%', '#ff3d9a', '.4s'], ['90%', '#ffb000', '1.1s']]
+      .map(c => '<i style="--x:' + c[0] + ';--c:' + c[1] + ';--d:' + c[2] + '"></i>').join('');
+    const el = doc.createElement('div');
+    el.className = 'fxw'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'fxw-t');
+    el.innerHTML =
+      '<form class="fxw-in"><h2 id="fxw-t">Welche Version willst du?</h2>' +
+      '<div class="fxw-opts" role="radiogroup" aria-labelledby="fxw-t">' + OPTS.map(o =>
+        '<label class="fxw-opt fxw-' + o[1] + '"><input type="radio" name="fxw" value="' + o[0] + '"' + (o[0] === mode() ? ' checked' : '') + '>' +
+        '<span class="fxw-view" aria-hidden="true"><b>Alkomat</b>' + (o[0] === 'adhs' ? confetti : '') + '</span>' +
+        '<span class="fxw-name">' + o[2] + '</span><span class="fxw-desc">' + o[3] + '</span></label>').join('') + '</div>' +
+      '<p class="fxw-note">Deine Wahl und deine Spielstände merkt sich die Seite mit Cookies und im Speicher deines Browsers. Kein Tracking, keine Werbung. Mehr dazu im <a href="/datenschutz/">Datenschutz</a>. Die Version kannst du jederzeit im Menü rechts oben ändern.</p>' +
+      '<div class="fxw-act"><button type="submit" class="fxw-go">Cookies erlauben und starten</button>' +
+      '<button type="button" class="fxw-no">Ohne Cookies, nur für diesen Besuch</button></div></form>';
+    // Die Seite dahinter ist solange nicht bedienbar
+    const rest = [...doc.body.children];
+    rest.forEach(n => { n.inert = true; });
+    doc.body.appendChild(el);
+    root.classList.add('fxw-open');
+    const mark = () => el.querySelectorAll('.fxw-opt').forEach(o => o.classList.toggle('on', o.querySelector('input').checked));
+    mark(); el.addEventListener('change', mark);
+    // Tasten erreichen das Spiel dahinter nicht
+    const keys = e => e.stopPropagation();
+    doc.addEventListener('keydown', keys, true); doc.addEventListener('keyup', keys, true);
+    (el.querySelector('input:checked') || el.querySelector('input')).focus({ preventScroll: true });
+    function done(save) {
+      const pick = (el.querySelector('input:checked') || {}).value || mode();
+      try {
+        if (save) { consent = true; bake(OK_CK, '1'); sessionStorage.removeItem(VISIT_KEY); }
+        else sessionStorage.setItem(ASKED_KEY, '1');
+      } catch (e) {}
+      const stays = pick === mode() || (pick !== 'design' && mode() !== 'design');
+      setMode(pick);
+      if (!stays) return; // die Seite lädt neu, der Dialog deckt das zu
+      doc.removeEventListener('keydown', keys, true); doc.removeEventListener('keyup', keys, true);
+      rest.forEach(n => { n.inert = false; });
+      root.classList.remove('fxw-open');
+      el.classList.add('off');
+      setTimeout(() => el.remove(), REDUCED ? 0 : 320);
+    }
+    el.querySelector('form').addEventListener('submit', e => { e.preventDefault(); done(true); });
+    el.querySelector('.fxw-no').addEventListener('click', () => done(false));
+  }
 
   // ═══════════════════════════════════════════════════════════════════
   // Die Halle: ein Gang zwischen zwei Automatenreihen, Teppich unter
@@ -796,7 +877,6 @@ void main(){
 
   // Die Halle startet erst nach dem ersten Bild: so bremst sie das Einschalten der Röhre nicht
   // (im Design-Modus bleibt sie aus)
-  const boot = () => requestAnimationFrame(() => setTimeout(startHall, 60));
-  if (design) return;
+  const boot = () => { welcome(); if (!design) requestAnimationFrame(() => setTimeout(startHall, 60)); };
   if (doc.body) boot(); else doc.addEventListener('DOMContentLoaded', boot);
 })();

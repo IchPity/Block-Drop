@@ -246,7 +246,7 @@
 
   .auth-slot { position: relative; }
 
-  /* Einstellungen im Menü: Darstellung (gilt für die ganze Seite, siehe /fx.js) */
+  /* Einstellungen im Menü: Version (gilt für die ganze Seite, siehe /fx.js) */
   .auth-menu-label { padding: 6px 12px 8px; font-size: 12px; font-weight: 600; color: var(--chalk-dim, rgba(255,255,255,0.7)); }
   .auth-modes {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin: 0 8px 8px; padding: 2px;
@@ -1067,22 +1067,19 @@
   }
 
   // ─── Einstellungen im Menü ────────────────────────────────────────────────
-  // Die Darstellung gehört /fx.js; ohne fx.js werden nur die gemerkten Werte umgestellt.
+  // Die Version gehört /fx.js (dort auch der Dialog beim ersten Besuch und das Cookie).
   const MODES = [
-    ['standard', 'Standard', 'Ruhiger: keine Blitze, kein Wackeln, weniger Konfetti.'],
-    ['adhs', 'ADHS', 'Blitze, Wackeln und Konfetti-Regen.'],
-    ['design', 'Design', 'Dunkel, still, große Schrift. Die Halle bleibt aus.'],
+    ['standard', 'OG', 'Die Spielhalle in Neon, ruhig: keine Blitze, kein Wackeln.'],
+    ['adhs', 'ADHS', 'Die Spielhalle mit Blitzen, Wackeln und Konfetti-Regen.'],
+    ['design', 'Cinema', 'Dunkel, still, große Schrift. Die Halle bleibt aus.'],
   ];
-  const modeNow = () => {
-    if (window.FX && 'mode' in window.FX) return window.FX.mode;
-    try { return localStorage.getItem('arcade.design') === '1' ? 'design' : localStorage.getItem('arcade.adhs') !== '0' ? 'adhs' : 'standard'; } catch (e) { return 'adhs'; }
-  };
+  const modeNow = () => window.FX && 'mode' in window.FX ? window.FX.mode : 'adhs';
   const modeHint = m => (MODES.find(x => x[0] === m) || MODES[0])[2];
   const settingsHtml = () => {
     const now = modeNow();
     return `
-            <div class="auth-menu-label">Darstellung</div>
-            <div class="auth-modes" role="radiogroup" aria-label="Darstellung">${MODES.map(([id, name]) =>
+            <div class="auth-menu-label">Version</div>
+            <div class="auth-modes" role="radiogroup" aria-label="Version">${MODES.map(([id, name]) =>
               `<button class="auth-mode" data-mode="${id}" type="button" role="radio" aria-checked="${id === now}">${name}</button>`).join('')}</div>
             <div class="auth-menu-hint" data-mode-hint>${modeHint(now)}</div>`;
   };
@@ -1095,14 +1092,8 @@
     slot.querySelectorAll('[data-mode]').forEach(btn => btn.addEventListener('click', e => {
       e.stopPropagation(); // Menü bleibt offen
       const m = btn.dataset.mode;
-      if (window.FX && window.FX.setMode) window.FX.setMode(m);
-      else {
-        try {
-          localStorage.setItem('arcade.design', m === 'design' ? '1' : '0');
-          if (m !== 'design') localStorage.setItem('arcade.adhs', m === 'adhs' ? '1' : '0');
-        } catch (err) {}
-        location.reload();
-      }
+      if (!window.FX || !window.FX.setMode) return;
+      window.FX.setMode(m);
       // Der Wechsel in den oder aus dem Design-Modus lädt neu: bis dahin zeigt der Schalter schon die Wahl
       document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-checked', b.dataset.mode === m));
       document.querySelectorAll('[data-mode-hint]').forEach(h => { h.textContent = modeHint(m); });

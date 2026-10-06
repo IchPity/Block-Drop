@@ -222,9 +222,9 @@
 
     <h2>5. Lokale Speicherung (localStorage)</h2>
     <p>
-      Diese Seite verwendet keine Tracking-Cookies. Das Casino legt als Sicherung deines Spielgeld-Guthabens ein einziges technisch notwendiges Cookie (<code>automat5dk_casino2</code>, ein Jahr gültig) auf deinem Gerät ab. Dein Browser schickt es wie jedes Cookie bei Seitenaufrufen an den Webserver mit; dort wird es nicht ausgewertet und nicht gespeichert. Im <strong>localStorage</strong> deines
+      Diese Seite verwendet keine Tracking-Cookies. Beim ersten Besuch fragt sie, welche Version du sehen willst (OG, ADHS oder Cinema) und ob sie Cookies setzen darf. Stimmst du zu, merkt sie sich das in zwei Cookies: <code>arcade_consent</code> (deine Zustimmung) und <code>arcade_mode</code> (die gewählte Version), beide ein Jahr gültig. Ohne Zustimmung gilt die Wahl nur für diesen Besuch und wird beim Schließen des Tabs vergessen. Das Casino legt als Sicherung deines Spielgeld-Guthabens ein technisch notwendiges Cookie (<code>automat5dk_casino2</code>, ein Jahr gültig) auf deinem Gerät ab. Dein Browser schickt Cookies bei Seitenaufrufen an den Webserver mit; dort werden sie nicht ausgewertet und nicht gespeichert. Im <strong>localStorage</strong> deines
       Browsers werden ausschließlich technisch notwendige Daten abgelegt, z.&nbsp;B. lokale
-      High-Scores, freigeschaltete Achievements, deine Einstellungen (etwa der ADHS-Modus) und
+      High-Scores, freigeschaltete Achievements, deine Einstellungen (etwa die gewählte Version) und
       gespeicherte Favoriten-Orte für die Wetter-Seite. Diese Daten verlassen deinen Browser nicht (außer du bist eingeloggt &mdash;
       dann werden Scores, Achievements und Wetter-Favoriten zusätzlich mit Supabase synchronisiert).
     </p>

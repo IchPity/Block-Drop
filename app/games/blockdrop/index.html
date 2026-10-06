@@ -431,6 +431,29 @@
     .custom-foot { display: flex; gap: 8px; margin-top: auto; padding-top: 4px; }
     .custom-foot .btn { padding: 9px 0; font-size: 16px; animation: none; }
     #custom-panel :focus-visible, .btn-alt:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 2px; }
+
+    /* ── Cinema (html.fx-design): das Feld ohne Röhre, Schein und Lampe ── */
+    html.fx-design .panel-box { background: var(--board-raised); box-shadow: none; }
+    html.fx-design #score-display { color: var(--brass); text-shadow: none; }
+    html.fx-design .nav-stat-val, html.fx-design .highscore-list span { color: var(--brass); }
+    html.fx-design #game-area { border-radius: 6px; box-shadow: 0 0 0 1px var(--board-line), 0 40px 90px rgba(0,0,0,0.6); }
+    html.fx-design #game-area::before, html.fx-design #game-area::after { content: none; }
+    html.fx-design canvas#board { background: #060608; }
+    html.fx-design #overlay { background: rgba(9,9,13,0.95); }
+    html.fx-design #custom-panel { background: rgba(9,9,13,0.98); }
+    html.fx-design #overlay h1, html.fx-design #custom-panel h1 {
+      font-weight: 700; letter-spacing: -0.04em; line-height: 0.92; color: var(--chalk); text-shadow: none; animation: none;
+    }
+    html.fx-design .mode-btn.selected { background: transparent; border-color: var(--chalk); color: var(--chalk); box-shadow: none; }
+    html.fx-design .btn, html.fx-design .btn:hover {
+      background: var(--chalk); color: var(--ink); box-shadow: none; animation: none; font-weight: 600; letter-spacing: 0;
+    }
+    html.fx-design .btn:hover { background: var(--brass); }
+    html.fx-design .btn-alt:hover { border-color: var(--chalk-dim); background: transparent; }
+    html.fx-design .chip:hover { border-color: var(--chalk-dim); }
+    html.fx-design .chip.selected { color: var(--ink); background: var(--chalk); border-color: var(--chalk); box-shadow: none; }
+    html.fx-design #level-bar { background: var(--brass); box-shadow: none; }
+    html.fx-design .tetris-banner, html.fx-design .level-banner { font-weight: 700; letter-spacing: -0.03em; text-shadow: 0 6px 30px rgba(0,0,0,0.8); }
   </style>
 </head>
 <body>

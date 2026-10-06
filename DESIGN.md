@@ -146,11 +146,11 @@ Die Token-Namen `--board`, `--chalk`, `--marquee`, `--bell` stammen aus dem abge
 - Läuft ohne WebGL weiter und steht still bei `prefers-reduced-motion`.
 - ADHS-Modus (Schalter im Menü rechts oben, `FX.adhs`, gemerkt in `localStorage` unter `arcade.adhs`): aus heißt nicht still. Halle, Röhre und Kino-Screens bleiben; `fx.js` dämpft Blitze, Wackeln und Partikelmengen je nach Ort (Spiele am stärksten, Casino am wenigsten).
 
-- Design-Modus (dritte Stufe im selben Schalter: Standard, ADHS, Design; `FX.mode`, gemerkt unter `arcade.design`): ein eigener Look, siehe Abschnitt »Design-Modus«.
+- Drei Versionen im selben Schalter: OG (ruhige Halle, intern `standard`), ADHS und Cinema (intern `design`, Klasse `fx-design`); `FX.mode`. Beim ersten Besuch fragt ein Dialog (`.fxw`, erzeugt von `fx.js`) nach der Version und nach der Zustimmung zu Cookies. Mit Zustimmung steht die Wahl im Cookie `arcade_mode`, ohne nur für den Besuch im `sessionStorage`. Der Dialog hat feste eigene Farben und sieht in jeder Version gleich aus. Cinema ist ein eigener Look, siehe Abschnitt »Design-Modus«.
 
 ## Design-Modus
 
-Derselbe Raum bei ausgeschaltetem Licht. `/mode.js` setzt im `<head>` die Klasse `fx-design` an `<html>`; die Regeln dazu stehen am Ende von `app/theme.css`, die Startseite hat eine eigene Bühne (`app/design-home.css`, `app/design-home.js`). Für diesen Modus gelten die Hallen-Regeln (Gerätelicht, Röhren, Kantenleiste) nicht.
+Im Menü heißt er »Cinema«. Derselbe Raum bei ausgeschaltetem Licht. `/mode.js` setzt im `<head>` die Klasse `fx-design` an `<html>`; die Regeln dazu stehen am Ende von `app/theme.css`, die Startseite hat eine eigene Bühne (`app/design-home.css`, `app/design-home.js`). Für diesen Modus gelten die Hallen-Regeln (Gerätelicht, Röhren, Kantenleiste) nicht.
 
 - **Farben:** Leere `#09090d`, Fläche `#121319`, Knochenweiß `#ecebe6`, Asche `#a3a4ab`, Haarlinie `rgba(236,235,230,0.11)` und genau ein Akzent, Messing `#e9b454` (die Münze). Die Hallen-Token werden darauf umgebogen, damit keine Seite angefasst werden muss.
 - **Schrift:** Bricolage Grotesque für alles, was vorher Tilt Neon oder Kanit war (600 bis 700, eng gesetzt, nie kursiv); Barlow bleibt Lesetext, Share Tech Mono bleibt Zählwerk.

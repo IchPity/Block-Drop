@@ -590,3 +590,82 @@ html.fx-design .fxr-head { letter-spacing: 0.02em; text-transform: none; font-we
 @media (max-width: 720px) {
   html.fx-design .hero h1 { font-size: clamp(34px, 10vw, 48px); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Erster Besuch: Version wählen und Cookies zustimmen (von /fx.js erzeugt)
+   Eigene, feste Farben: der Dialog sieht in jeder Version gleich aus.
+   Jede Kachel zeigt ihre Version im Kleinen.
+   ═══════════════════════════════════════════════════════════════════════ */
+html.fxw-open { overflow: hidden; }
+.fxw {
+  position: fixed; inset: 0; z-index: 9900; overflow-y: auto; display: grid; place-items: center; padding: 28px 20px;
+  background: #0a0a0f; color: #ecebe6; font-family: 'Barlow', -apple-system, 'Segoe UI', sans-serif;
+  animation: fxcIn 0.4s ease-out both;
+}
+.fxw.off { animation: fxcOut 0.3s ease-in both; }
+.fxw-in { width: min(1000px, 100%); }
+.fxw h2 {
+  margin: 0 0 clamp(20px, 4vh, 36px); font-family: 'Barlow', sans-serif; font-style: normal; font-weight: 600;
+  font-size: clamp(30px, 4.8vw, 58px); line-height: 1; letter-spacing: -0.03em; color: #ecebe6; text-wrap: balance;
+}
+.fxw-opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.fxw-opt {
+  position: relative; display: block; cursor: pointer; padding: 10px 10px 18px; border-radius: 10px;
+  border: 1px solid rgba(236,235,230,0.14); transition: border-color 0.2s, background-color 0.2s, transform 0.3s var(--ease-out);
+}
+.fxw-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.fxw-opt:hover { border-color: rgba(236,235,230,0.4); transform: translateY(-3px); }
+.fxw-opt.on { border-color: #ecebe6; background: rgba(236,235,230,0.07); }
+.fxw-opt:focus-within { outline: 2px solid #ecebe6; outline-offset: 3px; }
+.fxw-view {
+  position: relative; display: grid; place-items: center; aspect-ratio: 16 / 10; border-radius: 6px; overflow: hidden;
+  background:
+    radial-gradient(ellipse 60% 70% at 0% 70%, rgba(46,230,255,0.3), transparent 70%),
+    radial-gradient(ellipse 60% 70% at 100% 60%, rgba(255,61,154,0.3), transparent 70%),
+    #120a30;
+}
+.fxw-view b {
+  font-family: 'Tilt Neon', 'Kanit', sans-serif; font-weight: 400; font-size: clamp(26px, 3.6vw, 46px); line-height: 1; color: #ffe3f1;
+  text-shadow: 0 0 2px #fff, 0 0 10px #ff3d9a, 0 0 26px #ff3d9a;
+}
+.fxw-adhs .fxw-view b { animation: fxwShake 0.9s steps(6) infinite; }
+.fxw-adhs .fxw-view i {
+  position: absolute; left: var(--x); top: -12%; width: 6px; height: 10px; background: var(--c);
+  animation: fxwFall 1.7s var(--d) linear infinite;
+}
+@keyframes fxwShake { 0%, 100% { transform: none; } 20% { transform: translate(-3px, 2px) rotate(-1.5deg); } 40% { transform: translate(3px, -2px) rotate(1.5deg); } 60% { transform: translate(-2px, -1px); } 80% { transform: translate(2px, 2px) rotate(-1deg); } }
+@keyframes fxwFall { to { transform: translateY(1300%) rotate(540deg); } }
+.fxw-cine .fxw-view { background: radial-gradient(ellipse 70% 70% at 76% 0%, rgba(236,235,230,0.14), transparent 70%), #09090d; }
+.fxw-cine .fxw-view b {
+  font-family: 'Bricolage Grotesque', 'Barlow', sans-serif; font-weight: 700; font-size: clamp(30px, 4.3vw, 56px); letter-spacing: -0.055em;
+  color: #ecebe6; text-shadow: none;
+}
+.fxw-cine .fxw-view::after { content: ''; position: absolute; right: 13%; top: 16%; width: 8%; aspect-ratio: 1; background: #e9b454; }
+.fxw-name { display: block; margin: 14px 6px 2px; font-size: 21px; font-weight: 600; color: #ecebe6; }
+.fxw-desc { display: block; margin: 0 6px; font-size: 14px; line-height: 1.45; color: #a3a4ab; }
+.fxw-note { margin: 22px 0 0; max-width: 70ch; font-size: 14px; line-height: 1.55; color: #a3a4ab; text-wrap: pretty; }
+.fxw-note a { color: #ecebe6; text-underline-offset: 3px; }
+.fxw-act { margin-top: 22px; display: flex; align-items: center; gap: 8px 24px; flex-wrap: wrap; }
+.fxw-go {
+  min-height: 52px; padding: 0 28px; border: 0; border-radius: 999px; cursor: pointer;
+  font: 600 16px 'Barlow', sans-serif; color: #09090d; background: #ecebe6; transition: background-color 0.2s, transform 0.2s var(--ease-out);
+}
+.fxw-go:hover { background: #fff; transform: translateY(-1px); }
+.fxw-no {
+  min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer;
+  font: 500 15px 'Barlow', sans-serif; color: #a3a4ab; text-decoration: underline; text-underline-offset: 4px;
+}
+.fxw-no:hover { color: #ecebe6; }
+.fxw-go:focus-visible, .fxw-no:focus-visible, .fxw-note a:focus-visible { outline: 2px solid #ecebe6; outline-offset: 3px; }
+@media (max-width: 720px) {
+  .fxw { place-items: start center; padding: 22px 16px; }
+  .fxw-opts { grid-template-columns: 1fr; gap: 10px; }
+  .fxw-opt { display: grid; grid-template-columns: 128px 1fr; column-gap: 12px; align-content: center; padding: 8px; }
+  .fxw-opt:hover { transform: none; }
+  .fxw-view { grid-row: span 2; }
+  .fxw-view b { font-size: 24px; }
+  .fxw-cine .fxw-view b { font-size: 28px; }
+  .fxw-name { margin: 0; align-self: end; font-size: 19px; }
+  .fxw-desc { margin: 0; font-size: 13px; }
+  .fxw-go { width: 100%; }
+}
