@@ -1,6 +1,6 @@
 {
   "name": "block-games",
-  "version": "0.25.0",
+  "version": "0.26.0",
   "description": "Block Games (Demo) — Party-Spiel im Mario-Party-Stil für die Block-Drop Arcade",
   "main": "main.js",
   "scripts": {

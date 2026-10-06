@@ -171,7 +171,9 @@ class BlockBombGame {
   _initPlayers() {
     const reduced = this.config.reducedFx();
     this.players = this.config.players.map((p, i) => {
-      const char = new BlockCharacter(p.colorHex, reduced);
+      // Eigene Figur(en) tragen den Look aus „Anpassen", alle anderen den
+      // dort gewählten Bot-/Mitspieler-Look (s. game/characters.js).
+      const char = new BlockCharacter(p.colorHex, reduced, p.isLocal ? { mine: true } : { seed: p.id });
       char.setGroundY(this.map.groundY);
       this.scene.add(char.group);
       const spawn = this.map.spawns[i % this.map.spawns.length];

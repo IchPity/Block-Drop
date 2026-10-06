@@ -56,53 +56,10 @@ function flashInvalid(el) {
   setTimeout(() => el.classList.remove('flash-invalid'), 450);
 }
 
-// ── Animierter Bühnen-Hintergrund ────────────────────────────────────
-// Schwebende Blöcke + 3D-Würfel (floatUp) und funkelnde Sterne (twinkle).
-// Rein dekorativ; bei "Animationen reduzieren" blendet die CSS alle Layer
-// aus (body.reduced-fx), die Elemente bleiben dann einfach unsichtbar.
-const ARCADE_COLORS = ['#ff5d5d', '#ffc93c', '#3ddc84', '#4db5ff', '#b06dff'];
-
-function spawnBackgroundBlocks() {
-  const blocks = document.getElementById('bgBlocks');
-  if (blocks) {
-    for (let i = 0; i < 16; i++) {
-      const b = document.createElement('div');
-      const isCube = i % 3 === 0;          // jeder dritte ist ein 3D-Würfel
-      const size = 30 + Math.random() * 64;
-      const color = ARCADE_COLORS[i % ARCADE_COLORS.length];
-      b.className = isCube ? 'bg-cube' : 'bg-block';
-      b.style.width = `${size}px`;
-      b.style.height = isCube ? `${size * 1.1}px` : `${size}px`;
-      b.style.left = `${Math.random() * 100}vw`;
-      if (isCube) b.style.setProperty('--c', color);
-      else b.style.background = color;
-      b.style.animationDuration = `${16 + Math.random() * 20}s`;
-      b.style.animationDelay = `${-Math.random() * 24}s`;
-      blocks.appendChild(b);
-    }
-  }
-
-  const stars = document.getElementById('bgStars');
-  if (stars) {
-    for (let i = 0; i < 24; i++) {
-      const s = document.createElement('div');
-      const sz = 5 + Math.random() * 12;
-      s.className = 'bg-star';
-      s.style.width = s.style.height = `${sz}px`;
-      s.style.left = `${Math.random() * 100}vw`;
-      s.style.top = `${Math.random() * 100}vh`;
-      s.style.setProperty('--c', ARCADE_COLORS[i % ARCADE_COLORS.length]);
-      s.style.animationDuration = `${2.2 + Math.random() * 3.6}s`;
-      s.style.animationDelay = `${-Math.random() * 6}s`;
-      stars.appendChild(s);
-    }
-  }
-}
-
 // ── Sound-Verdrahtung ────────────────────────────────────────────────
 // UI-Sounds laufen zentral über Event-Delegation — neue Buttons/Karten
 // klingen damit automatisch, ohne dass jeder Listener Sfx.play() rufen muss.
-const SFX_SELECTOR = '.auth-tab, .settings-tab, .party-btn, .minigame-card, .badge-id, .btn, .lobby-mini-btn, .lobby-opt, .color-cell';
+const SFX_SELECTOR = '.auth-tab, .settings-tab, .party-btn, .minigame-card, .badge-id, .btn, .lobby-mini-btn, .lobby-opt, .color-cell, .cz-chip';
 
 function setupSfx() {
   document.addEventListener('click', (e) => {
@@ -765,11 +722,12 @@ const WASD = new Set(['w', 'a', 's', 'd', 'W', 'A', 'S', 'D']);
 // zur Laufzeit über buildLobbyNav(); die Einstellungen nutzen weiterhin den
 // eigenen, deterministischen Reiter-/Options-Handler (handleSettingsKey).
 const NAV_MENU = {
-  // Topbar oben rechts: Profil → Zahnrad → Anmelden → Power. ↓ führt immer
+  // Topbar oben rechts: Profil → Anpassen → Zahnrad → Anmelden → Power. ↓ führt immer
   // auf „Spielen". An den Rändern (links von Profil, rechts von Power) bleibt
   // der Fokus stehen (kein Eintrag).
-  main_profile:  { right: 'main_settings', down: 'main_play' },
-  main_settings: { left: 'main_profile',  right: 'main_account', down: 'main_play' },
+  main_profile:  { right: 'main_custom', down: 'main_play' },
+  main_custom:   { left: 'main_profile',  right: 'main_settings', down: 'main_play' },
+  main_settings: { left: 'main_custom',   right: 'main_account', down: 'main_play' },
   main_account:  { left: 'main_settings', right: 'main_power',   down: 'main_play' },
   main_power:    { left: 'main_account',   down: 'main_play' },
   // Hauptaktion „Spielen" — einziger Einstieg, führt in die Lobby.
@@ -860,6 +818,7 @@ function setupKeyboard() {
     if (e.key === 'Escape') {
       // Minigame-Flow / Einladung haben Vorrang vor dem übrigen Esc-Verhalten.
       if (inviteOpen()) { declineInvite(); return; }                 // Einladung ablehnen
+      if (Custom.isOpen()) { Custom.close(); return; }               // Anpassen → zurück (Menü bzw. Pause)
       if (mgGameVoteOpen()) { cancelMgFlow(); return; }              // Spiel-Voting → zurück in die Lobby
       if (mgVoteOpen()) { cancelMgFlow(); return; }                  // Voting → zurück (Lobby/Menü)
       if (mgCountdownOpen()) { if (NetSession.state !== 'guest') cancelMgFlow(); return; } // Countdown: nur der Host bricht ab
@@ -883,6 +842,8 @@ function setupKeyboard() {
         if (NetSession.state === 'guest') leaveOnlineSession();
         goToMenu();
       }
+      // Im Hauptmenü gibt es nichts zu schließen → Esc öffnet „Anpassen".
+      else if (isActive('screen-menu') && !e.repeat) openCustom();
       return;
     }
 
@@ -903,12 +864,13 @@ function setupKeyboard() {
     const dir = DIR_KEYS[e.key];
     if (!dir) return;
     // In einem Textfeld dürfen W/A/S/D nur tippen, nicht navigieren.
-    const inText = e.target.matches('input:not([type=range]):not([type=checkbox]), textarea');
+    const inText = e.target.matches('input:not([type=range]):not([type=checkbox]):not([type=color]), textarea');
     if (inText && WASD.has(e.key)) return;
 
     // Container der aktuellen Ansicht (offene Overlays haben Vorrang).
     let container = null;
     if (inviteOpen()) container = document.getElementById('inviteOverlay');
+    else if (Custom.isOpen()) container = document.getElementById('customOverlay');
     else if (mgGameVoteOpen()) container = document.getElementById('mgGameVote');
     else if (mgVoteOpen()) container = document.getElementById('mgMapVote');
     else if (mgPauseOpen()) container = document.getElementById('mgPause');
@@ -956,7 +918,7 @@ function setupKeyboard() {
     // Auf Bedienelementen (Textfeld, Regler, Auswahl, Schalter) bleibt die
     // WAAGERECHTE Pfeilbewegung ihre native Aufgabe: Cursor im Text, Regler
     // verstellen, Auswahl wechseln. Hoch/Runter springt immer zwischen Zeilen.
-    if ((dir === 'left' || dir === 'right') && e.target.matches('input, select, textarea')) return;
+    if ((dir === 'left' || dir === 'right') && e.target.matches('input:not([type=color]), select, textarea')) return;
 
     e.preventDefault();
     if (!navThrottled(e)) moveFocus(container, dir);
@@ -2110,6 +2072,7 @@ function onHostAbort() {
   if (NetSession.state !== 'guest') return;
   clearMgTimers();
   stopGuestNetLoop();
+  Custom.close(true);
   ['mgGameVote', 'mgMapVote', 'mgCountdown', 'mgPause', 'mgRanking'].forEach(id => { document.getElementById(id).hidden = true; });
   if (currentGame && window[currentGame.windowKey]) window[currentGame.windowKey].stop();
   inSeries = false;
@@ -2864,6 +2827,8 @@ function startRound() {
 // ── Ergebnis eines Spiels (generischer Vertrag { winner, placements }) ─────
 function onGameResult(result) {
   lastGameResult = result;
+  Custom.close(true); // falls gerade aus der Pause heraus angepasst wird
+  document.getElementById('mgPause').hidden = true;
   // Voting-/Countdown-Overlays sind im normalen Ablauf längst zu; defensiv
   // schließen, damit nie ein Overlay über Ranking/Ergebnis hängen bleibt.
   document.getElementById('mgMapVote').hidden = true;
@@ -2945,12 +2910,19 @@ function pauseGame() {
     ? 'Online-Match läuft im Hintergrund weiter.' : '';
   document.getElementById('btnMgResume').focus();
 }
+// „Anpassen" (renderer/custom.js): im Menü per Esc/🎨, im Spiel aus dem
+// Pause-Fenster. Die Figur-Vorschau zeigt die Lobby-Farbe von Spieler 1.
+function openCustom(fromPause = false) {
+  Custom.open({ fromPause, color: colorHex(lobbyState.slots[0].color) });
+}
 function resumeGame() {
+  Custom.close(true);
   document.getElementById('mgPause').hidden = true;
   const g = currentGame && window[currentGame.windowKey];
   if (g && g.isPaused()) g.resume();
 }
 function quitGameToMenu() {
+  Custom.close(true);
   document.getElementById('mgPause').hidden = true;
   document.getElementById('mgRanking').hidden = true;
   if (currentGame && window[currentGame.windowKey]) window[currentGame.windowKey].stop();
@@ -3160,6 +3132,8 @@ function declineInvite() { nextInvite(); }
 function setupGameFlow() {
   // Pause-Overlay
   document.getElementById('btnMgResume').addEventListener('click', resumeGame);
+  document.getElementById('btnMgCustom').addEventListener('click', () => openCustom(true));
+  document.getElementById('btnCustom').addEventListener('click', () => openCustom());
   document.getElementById('btnMgAbort').addEventListener('click', startAbortVote);
   document.getElementById('btnMgQuit').addEventListener('click', quitGameToMenu);
 
@@ -3199,7 +3173,7 @@ function setupGameFlow() {
 
 // ── Start ────────────────────────────────────────────────────────────
 async function boot() {
-  spawnBackgroundBlocks();
+  Custom.init(); // Look anwenden (Farben/Hintergrund) + Anpassen-Fenster aufbauen
   setupSfx();
   setupAuthTabs();
   setupAuthForms();

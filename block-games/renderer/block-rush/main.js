@@ -35,6 +35,7 @@ import * as THREE from '../vendor/three.module.js';
 import { LocalPieceController, BotController, RemoteController } from '../game/controllers.js';
 import { COLS, ROWS, CELL, Playfield, makeBag, hashSeed, shapeCells, PIECE_TYPES, PIECE_COLORS } from './pieces.js';
 import { TowerSim } from './tower.js';
+import { applyMood } from '../game/theme.js';
 import { buildMap, BLOCK_RUSH_MAP_META } from './maps.js';
 import { SpellSystem, SPELL_META } from './spells.js';
 import { makeBlockRushBotBrain } from './bots.js';
@@ -232,8 +233,9 @@ class BlockRushGame {
   _initThree() {
     const reduced = this.config.reducedFx();
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0c1220);
-    this.scene.fog = new THREE.Fog(0x0c1220, 26, 54);
+    // Über applyMood statt direkt gesetzt, damit der in „Anpassen" gewählte
+    // Himmel/Nebel auch hier greift (das Licht-Rig bleibt Sache der Map).
+    applyMood(this.scene, { bg: 0x0c1220, fogNear: 26, fogFar: 54 });
 
     const w = this.host.clientWidth || window.innerWidth;
     const h = this.host.clientHeight || window.innerHeight;

@@ -26,9 +26,20 @@
   --radius: 18px;
   --font-display: Impact, 'Arial Black', 'Segoe UI', sans-serif;
 
+  /* Vom Spieler anpassbar (Esc → „Anpassen", renderer/custom.js setzt diese
+     Werte per style.setProperty auf :root). --hl/--hl-2 sind die Akzentfarben
+     der Oberfläche — bewusst NICHT --yellow/--red selbst, denn die sind
+     zugleich Spielerfarben aus der Lobby (colorHex() in app.js). --spot-*
+     sind die Spotlight-Farben der Bühne als „r, g, b". */
+  --hl: var(--yellow);
+  --hl-2: var(--red);
+  --spot-1: 77, 181, 255;
+  --spot-2: 176, 109, 255;
+  --spot-3: 255, 93, 93;
+
   /* Glanz-/Glow-Bausteine für den hochwertigeren Arcade-Look */
   --gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0) 52%);
-  --glow-yellow: 0 0 28px rgba(255, 201, 60, 0.5);
+  --glow-yellow: 0 0 28px color-mix(in srgb, var(--hl) 50%, transparent);
   --play-grad: linear-gradient(135deg, #ff8a5d, var(--red) 38%, var(--purple));
 }
 
@@ -54,9 +65,9 @@ html, body {
   user-select: none;
   /* Bühne: Spotlight oben, Farbschimmer in den Ecken, dunkler Rand */
   background:
-    radial-gradient(ellipse 80% 55% at 50% -10%, rgba(77, 181, 255, 0.14), transparent 60%),
-    radial-gradient(ellipse 45% 40% at 8% 100%, rgba(176, 109, 255, 0.10), transparent 70%),
-    radial-gradient(ellipse 45% 40% at 95% 95%, rgba(255, 93, 93, 0.08), transparent 70%),
+    radial-gradient(ellipse 80% 55% at 50% -10%, rgba(var(--spot-1), 0.14), transparent 60%),
+    radial-gradient(ellipse 45% 40% at 8% 100%, rgba(var(--spot-2), 0.10), transparent 70%),
+    radial-gradient(ellipse 45% 40% at 95% 95%, rgba(var(--spot-3), 0.08), transparent 70%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
 }
 
@@ -71,6 +82,23 @@ body::before {
   background-size: 26px 26px;
 }
 
+/* Wählbare Muster statt des Punktrasters (Anpassen → Hintergrund). */
+body.pat-grid::before {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 34px 34px;
+}
+body.pat-stripes::before {
+  background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0 2px, transparent 2px 18px);
+  background-size: auto;
+}
+body.pat-checker::before {
+  background-image: repeating-conic-gradient(rgba(255, 255, 255, 0.03) 0% 25%, transparent 0% 50%);
+  background-size: 44px 44px;
+}
+body.pat-none::before { display: none; }
+
 /* ── Animierter Bühnen-Hintergrund ──────────────────────────────────── */
 /* Bewegte Spotlights: zwei langsam wandernde Farbkegel über der Bühne. */
 #stageLights {
@@ -79,8 +107,8 @@ body::before {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(38% 50% at 22% 16%, rgba(77, 181, 255, 0.20), transparent 70%),
-    radial-gradient(34% 48% at 80% 20%, rgba(176, 109, 255, 0.18), transparent 70%);
+    radial-gradient(38% 50% at 22% 16%, rgba(var(--spot-1), 0.20), transparent 70%),
+    radial-gradient(34% 48% at 80% 20%, rgba(var(--spot-2), 0.18), transparent 70%);
   filter: blur(8px);
   animation: spotlightSweep 16s ease-in-out infinite alternate;
 }
@@ -117,6 +145,21 @@ body::before {
           mask: url('assets/cube.svg') center / contain no-repeat;
   animation: floatUp linear infinite;
 }
+
+/* Andere Schwebe-Formen (Anpassen → Hintergrund): gleiche Animation wie
+   .bg-block, die Form kommt aus clip-path bzw. border-radius. */
+.bg-shape {
+  position: absolute;
+  opacity: 0.13;
+  animation: floatUp linear infinite;
+}
+.bg-shape.sh-circle   { border-radius: 50%; }
+.bg-shape.sh-triangle { clip-path: polygon(50% 4%, 100% 96%, 0 96%); }
+.bg-shape.sh-diamond  { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.bg-shape.sh-hex      { clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); }
+.bg-shape.sh-star     { clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.bg-shape.sh-heart    { clip-path: polygon(50% 100%, 4% 48%, 2% 26%, 14% 8%, 32% 5%, 50% 22%, 68% 5%, 86% 8%, 98% 26%, 96% 48%); }
+.bg-shape.sh-plus     { clip-path: polygon(35% 0, 65% 0, 65% 35%, 100% 35%, 100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0 65%, 0 35%, 35% 35%); }
 
 @keyframes floatUp {
   from { transform: translateY(112vh) rotate(0deg); }
@@ -191,12 +234,12 @@ body::before {
   font-size: 4.2em;
   letter-spacing: 3px;
   line-height: 1;
-  color: var(--yellow);
+  color: var(--hl);
   -webkit-text-stroke: 2px var(--bg-deep);
   text-shadow:
-    4px 4px 0 var(--red),
+    4px 4px 0 var(--hl-2),
     8px 8px 0 rgba(0, 0, 0, 0.4),
-    0 0 26px rgba(255, 201, 60, 0.35);
+    0 0 26px color-mix(in srgb, var(--hl) 35%, transparent);
   transform: rotate(-2deg);
 }
 
@@ -205,7 +248,7 @@ body::before {
 .game-logo.small {
   font-size: 1.9em;
   -webkit-text-stroke: 1px var(--bg-deep);
-  text-shadow: 2px 2px 0 var(--red), 4px 4px 0 rgba(0, 0, 0, 0.35);
+  text-shadow: 2px 2px 0 var(--hl-2), 4px 4px 0 rgba(0, 0, 0, 0.35);
   transform: rotate(-1.5deg);
 }
 
@@ -221,9 +264,9 @@ body::before {
   font-size: 2.9em;
   -webkit-text-stroke: 1.5px var(--bg-deep);
   text-shadow:
-    3px 3px 0 var(--red),
+    3px 3px 0 var(--hl-2),
     6px 6px 0 rgba(0, 0, 0, 0.35),
-    0 0 30px rgba(255, 201, 60, 0.4);
+    0 0 30px color-mix(in srgb, var(--hl) 40%, transparent);
   transform: rotate(-2deg);
   animation: logoPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
@@ -238,7 +281,7 @@ body::before {
   padding: 4px 10px;
   margin-left: 10px;
   color: var(--bg-deep);
-  background: var(--yellow);
+  background: var(--hl);
   border: 2px solid var(--bg-deep);
   border-radius: 6px;
   vertical-align: middle;
@@ -258,9 +301,9 @@ body::before {
   margin-left: 4px;
   padding: 3px 12px;
   border-radius: 999px;
-  background: rgba(255, 201, 60, 0.12);
-  border: 1px solid rgba(255, 201, 60, 0.4);
-  color: var(--yellow);
+  background: color-mix(in srgb, var(--hl) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--hl) 40%, transparent);
+  color: var(--hl);
   font-weight: 800;
   font-size: 0.72em;
   letter-spacing: 3px;
@@ -406,7 +449,7 @@ body::before {
   transition: color 0.15s;
 }
 
-.recent-chip-name:hover { color: var(--yellow); }
+.recent-chip-name:hover { color: var(--hl); }
 
 .recent-chip-del {
   border: none;
@@ -488,8 +531,8 @@ body::before {
 .btn-guest small { color: var(--text-dim); font-weight: 500; font-size: 0.78em; }
 
 .btn-guest:hover {
-  border-color: var(--yellow);
-  background: rgba(255, 201, 60, 0.06);
+  border-color: var(--hl);
+  background: color-mix(in srgb, var(--hl) 6%, transparent);
 }
 
 .btn-ghost {
@@ -503,7 +546,7 @@ body::before {
 .btn-ghost:hover { color: var(--red); }
 
 .btn-gear { font-size: 1.15em; padding: 8px 10px; }
-.btn-gear:hover { color: var(--yellow); transform: translateY(-2px) rotate(20deg); }
+.btn-gear:hover { color: var(--hl); transform: translateY(-2px) rotate(20deg); }
 
 /* Beenden-Knopf hebt sich rot ab (statt der Zahnrad-Drehung) */
 .btn-quit:hover { color: var(--red); transform: translateY(-2px) rotate(0); }
@@ -565,14 +608,14 @@ body::before {
   gap: 14px;
   width: min(900px, 94vw);
   background:
-    linear-gradient(90deg, rgba(255, 201, 60, 0.16), rgba(255, 201, 60, 0.05) 60%);
-  border: 1px solid rgba(255, 201, 60, 0.45);
-  border-left: 6px solid var(--yellow);
+    linear-gradient(90deg, color-mix(in srgb, var(--hl) 16%, transparent), color-mix(in srgb, var(--hl) 5%, transparent) 60%);
+  border: 1px solid color-mix(in srgb, var(--hl) 45%, transparent);
+  border-left: 6px solid var(--hl);
   border-radius: 14px;
   padding: 11px 18px;
   font-size: 0.88em;
   color: var(--text);
-  box-shadow: 0 8px 26px rgba(255, 201, 60, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 26px color-mix(in srgb, var(--hl) 8%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   animation: riseIn 0.4s ease-out 0.05s both;
 }
 
@@ -585,8 +628,8 @@ body::before {
   justify-content: center;
   font-size: 1.25em;
   border-radius: 11px;
-  background: rgba(255, 201, 60, 0.18);
-  border: 1px solid rgba(255, 201, 60, 0.5);
+  background: color-mix(in srgb, var(--hl) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--hl) 50%, transparent);
   animation: guestBob 3s ease-in-out infinite;
 }
 
@@ -596,7 +639,7 @@ body::before {
 }
 
 .guest-banner-text { line-height: 1.35; }
-.guest-banner strong { color: var(--yellow); }
+.guest-banner strong { color: var(--hl); }
 
 .menu-main {
   flex: 1;
@@ -739,12 +782,12 @@ body::before {
 }
 
 .btn-pill:hover {
-  border-color: var(--yellow);
-  color: var(--yellow);
+  border-color: var(--hl);
+  color: var(--hl);
   box-shadow: var(--glow-yellow);
 }
 
-.btn-pill span { color: var(--yellow); }
+.btn-pill span { color: var(--hl); }
 
 /* ── Credits ────────────────────────────────────────────────────────── */
 #screen-credits { justify-content: flex-start; }
@@ -904,8 +947,8 @@ body::before {
    jederzeit sieht, welche Kategorie gerade ausgewählt ist. */
 .settings-tab.active {
   background: var(--bg-card-2);
-  color: var(--yellow);
-  box-shadow: inset 0 -3px 0 var(--yellow);
+  color: var(--hl);
+  box-shadow: inset 0 -3px 0 var(--hl);
 }
 
 /* Panel-Bereich: nur das aktive Panel ist sichtbar (app.js setzt [hidden]). */
@@ -1046,18 +1089,18 @@ body::before {
    (z.B. welcher der drei Lautstärke-Regler). `:focus-within` greift auch beim
    versteckten Schalter-Checkbox und bei den Reglern. */
 .setting-row:focus-within {
-  background: rgba(255, 201, 60, 0.1);
-  box-shadow: inset 4px 0 0 var(--yellow);
+  background: color-mix(in srgb, var(--hl) 10%, transparent);
+  box-shadow: inset 4px 0 0 var(--hl);
   border-radius: 10px;
 }
-.setting-row:focus-within .setting-label strong { color: var(--yellow); }
-.setting-row:focus-within .range-value { color: var(--yellow); }
+.setting-row:focus-within .setting-label strong { color: var(--hl); }
+.setting-row:focus-within .range-value { color: var(--hl); }
 
 /* Fokussierter Lautstärke-Regler: Griff wird gelb und größer + Glow, damit
    eindeutig ist, welcher Slider gerade aktiv ist. */
 .range-wrap input[type="range"]:focus-visible::-webkit-slider-thumb {
-  background: var(--yellow);
-  box-shadow: 0 0 0 2px var(--yellow), 0 0 12px rgba(255, 201, 60, 0.8);
+  background: var(--hl);
+  box-shadow: 0 0 0 2px var(--hl), 0 0 12px color-mix(in srgb, var(--hl) 80%, transparent);
   transform: scale(1.25);
 }
 
@@ -1075,8 +1118,8 @@ body::before {
 }
 
 .controls-player-btn.active {
-  color: var(--yellow);
-  border-color: var(--yellow);
+  color: var(--hl);
+  border-color: var(--hl);
   background: var(--bg-card-2);
 }
 
@@ -1364,7 +1407,7 @@ body.reduced-fx .party-btn-go { transition: none; }
   font-size: 2em;
   font-weight: 800;
   letter-spacing: 0.12em;
-  color: var(--yellow);
+  color: var(--hl);
   margin: 6px 0 14px;
 }
 .online-divider {
@@ -1458,8 +1501,8 @@ body.reduced-fx .party-btn-go { transition: none; }
   font-family: var(--font-display);
   font-weight: 400;
   letter-spacing: 1px;
-  color: var(--yellow);
-  text-shadow: 2px 2px 0 var(--red);
+  color: var(--hl);
+  text-shadow: 2px 2px 0 var(--hl-2);
   font-size: 1.2em;
   margin-bottom: 12px;
   text-align: center;
@@ -1637,9 +1680,9 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 .switch:has(input:focus-visible) {
-  outline: 3px solid var(--yellow);
+  outline: 3px solid var(--hl);
   outline-offset: 3px;
-  box-shadow: 0 0 0 4px rgba(255, 201, 60, 0.22), 0 0 24px -2px var(--yellow);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--hl) 22%, transparent), 0 0 24px -2px var(--hl);
 }
 
 button:focus-visible:not(.party-btn) {
@@ -1674,8 +1717,8 @@ button:focus-visible:not(.party-btn) {
   font-family: var(--font-display);
   font-weight: 400;
   font-size: 1.7em;
-  color: var(--yellow);
-  text-shadow: 2px 2px 0 var(--red);
+  color: var(--hl);
+  text-shadow: 2px 2px 0 var(--hl-2);
   margin-bottom: 10px;
 }
 
@@ -1687,11 +1730,11 @@ button:focus-visible:not(.party-btn) {
    der lange Text zusammen mit den anderen zwei Buttons sonst über den
    Kartenrand hinausragt. */
 .btn-quit-logout {
-  color: var(--yellow);
+  color: var(--hl);
   order: -1;
   flex: 1 1 100%;
 }
-.btn-quit-logout:hover { border-color: var(--yellow); }
+.btn-quit-logout:hover { border-color: var(--hl); }
 
 .overlay-actions {
   display: flex;
@@ -1736,7 +1779,7 @@ button:focus-visible:not(.party-btn) {
   transition: transform 0.12s;
 }
 .badge-id:hover { transform: translateY(-1px); }
-.badge-id:hover #menuUsername { color: var(--yellow); }
+.badge-id:hover #menuUsername { color: var(--hl); }
 
 .avatar-lg {
   width: 56px;
@@ -2046,7 +2089,7 @@ button:focus-visible:not(.party-btn) {
 .mg-count-num {
   font-family: var(--font-display, sans-serif);
   font-size: 14vw; font-weight: 900; color: #fff;
-  text-shadow: 6px 6px 0 var(--red, #ff5d5d), 0 0 50px rgba(255, 201, 60, 0.6);
+  text-shadow: 6px 6px 0 var(--red, #ff5d5d), 0 0 50px color-mix(in srgb, var(--hl) 60%, transparent);
 }
 .mg-count-num.pop { animation: mgCount 0.6s ease-out; }
 @keyframes mgCount {
@@ -2070,7 +2113,7 @@ button:focus-visible:not(.party-btn) {
 }
 .mg-rank-row.winner {
   border-color: var(--yellow, #ffc93c);
-  box-shadow: 0 0 18px rgba(255, 201, 60, 0.45);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--hl) 45%, transparent);
 }
 .mg-rank-place { width: 1.8em; color: var(--text-dim, #9a9abd); }
 .mg-rank-dot {
@@ -2105,7 +2148,7 @@ button:focus-visible:not(.party-btn) {
   font-family: var(--font-display);
   font-weight: 400;
   font-size: 1.15em;
-  color: var(--yellow);
+  color: var(--hl);
   margin-bottom: 6px;
 }
 .mg-abort-sub { font-size: 0.85em; color: var(--text-dim); margin-bottom: 10px; }
@@ -2138,4 +2181,138 @@ button:focus-visible:not(.party-btn) {
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
   animation: mgCount 0.6s ease-out;
   pointer-events: none;
+}
+
+/* ── Anpassen (Esc im Menü · Esc → Pause → „Anpassen" im Spiel) ─────────
+   Breites Overlay mit Reitern; links die Figur-Vorschau (nur im Figur-
+   Reiter), rechts Zeilen aus Auswahl-Chips. Inhalt baut renderer/custom.js. */
+.menu-esc-hint { margin-left: auto; }
+.menu-esc-hint kbd,
+.cz-card kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  margin-right: 4px;
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  font-family: inherit;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.cz-card {
+  width: min(900px, 95vw);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 26px 22px;
+  text-align: left;
+}
+
+.cz-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.cz-head h2 { margin-bottom: 0; }
+.cz-close { padding: 8px 14px; }
+
+.cz-tabs { margin-bottom: 12px; }
+
+.cz-body {
+  /* feste Höhe: die Karte springt beim Reiterwechsel nicht */
+  flex: 0 1 470px;
+  min-height: 0;
+  display: flex;
+  gap: 18px;
+}
+
+.cz-preview {
+  flex: 0 0 220px;
+  align-self: center;
+  border-radius: var(--radius);
+  background: radial-gradient(circle at 50% 70%, var(--bg-card-2), var(--bg-deep) 75%);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.cz-preview canvas { display: block; width: 220px; height: 280px; }
+
+.cz-panels {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  /* Platz für Fokus-Ring + Skalierung der Chips am Rand */
+  padding: 6px 8px;
+}
+
+.cz-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 9px 0;
+}
+.cz-row + .cz-row { border-top: 1px solid rgba(255, 255, 255, 0.05); }
+
+.cz-label { flex: 0 0 132px; padding-top: 7px; }
+.cz-label strong { display: block; font-size: 0.92em; }
+.cz-label small { display: block; color: var(--text-dim); font-size: 0.74em; line-height: 1.3; }
+.cz-row:focus-within .cz-label strong { color: var(--hl); }
+
+.cz-chips { flex: 1; display: flex; flex-wrap: wrap; gap: 8px; }
+
+.cz-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  background: var(--bg-deep);
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.86em;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.14s, background 0.14s;
+}
+.cz-chip:hover { border-color: var(--text-dim); }
+.cz-chip.is-on {
+  border-color: var(--hl);
+  background: color-mix(in srgb, var(--hl) 16%, var(--bg-deep));
+  color: var(--hl);
+}
+
+.cz-dot {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.cz-swatch { padding: 6px; }
+.cz-swatch .cz-dot { width: 24px; height: 24px; }
+
+/* „Eigene Farbe": das native Farbfeld liegt unsichtbar über dem ganzen Chip
+   (Klick/Enter öffnet den Farbwähler), der Fokus-Ring sitzt auf dem Chip. */
+.cz-color input[type="color"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.cz-color:has(input:focus-visible) {
+  outline: 3px solid var(--hl);
+  outline-offset: 3px;
+}
+
+.cz-actions { margin-top: 14px; }
+
+@media (max-width: 720px), (max-height: 620px) {
+  .cz-preview { display: none; }
+  .cz-row { flex-direction: column; gap: 4px; }
+  .cz-label { flex-basis: auto; padding-top: 0; }
 }

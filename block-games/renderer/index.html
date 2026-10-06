@@ -127,6 +127,7 @@
           <span class="avatar" id="menuAvatar">?</span>
           <span id="menuUsername">…</span>
         </button>
+        <button class="btn btn-ghost btn-gear" id="btnCustom" title="Anpassen (Esc)" aria-label="Anpassen" data-nav="main_custom">🎨</button>
         <button class="btn btn-ghost btn-gear" id="btnSettings" title="Einstellungen" aria-label="Einstellungen" data-nav="main_settings">⚙️</button>
         <button class="btn btn-ghost" id="btnAccount" data-nav="main_account">Abmelden</button>
         <button class="btn btn-ghost btn-gear btn-quit" id="btnQuit" title="Spiel beenden" aria-label="Spiel beenden" data-nav="main_power">⏻</button>
@@ -159,6 +160,7 @@
       <button class="btn btn-pill" id="btnCredits" data-nav="main_credits">
         <span aria-hidden="true">★</span> Credits
       </button>
+      <span class="menu-esc-hint"><kbd>Esc</kbd> Anpassen</span>
       <span id="appVersion"></span>
     </footer>
   </div>
@@ -538,8 +540,35 @@
       <p class="mg-pause-hint" id="mgPauseHint"></p>
       <div class="overlay-actions">
         <button class="btn btn-primary" id="btnMgResume" data-nav="mg_resume">Weiter</button>
+        <button class="btn btn-pill" id="btnMgCustom" data-nav="mg_custom">🎨 Anpassen</button>
         <button class="btn btn-pill" id="btnMgAbort" data-nav="mg_abort">Match abbrechen</button>
         <button class="btn btn-back" id="btnMgQuit" data-nav="mg_quit">Zum Menü</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Anpassen (Esc im Hauptmenü bzw. Esc → Pause → „Anpassen" im Spiel):
+       Figur-Formen, Farben & Stil, Hintergrund, Spielwelt. Reiter, Zeilen und
+       Auswahl-Chips baut renderer/custom.js aus seiner TABS-Liste; die
+       Figur-Vorschau rendert renderer/custom-preview.js. Tastatur wie überall:
+       Pfeile/WASD bewegen den Fokus, Enter wählt, Esc schließt. -->
+  <div id="customOverlay" class="overlay" hidden>
+    <div class="overlay-card cz-card">
+      <header class="cz-head">
+        <h2>Anpassen</h2>
+        <button class="btn btn-back cz-close" id="btnCzClose" title="Schließen" aria-label="Schließen">✕</button>
+      </header>
+      <div class="settings-tabs cz-tabs" id="czTabs" role="tablist" aria-label="Anpassen-Kategorien"></div>
+      <div class="cz-body">
+        <div class="cz-preview" id="czPreview">
+          <canvas id="czPreviewCanvas" width="220" height="280" aria-label="Vorschau deiner Figur"></canvas>
+        </div>
+        <div class="cz-panels" id="czPanels"></div>
+      </div>
+      <div class="overlay-actions cz-actions">
+        <button class="btn btn-pill" id="btnCzRandom">🎲 Zufall</button>
+        <button class="btn btn-pill" id="btnCzReset">↺ Standard</button>
+        <button class="btn btn-primary" id="btnCzDone">Fertig</button>
       </div>
     </div>
   </div>
@@ -607,6 +636,7 @@
 
   <script src="../node_modules/@supabase/supabase-js/dist/umd/supabase.js"></script>
   <script src="settings.js"></script>
+  <script src="custom.js"></script>
   <script src="keybinds.js"></script>
   <script src="audio.js"></script>
   <script src="auth.js"></script>
@@ -616,6 +646,7 @@
        window.LaserLines, window.BlockRush bzw. window.ColorHunt; laufen
        deferred nach app.js. Die ersten drei laden Three.js aus vendor/ —
        Farbjagd ist reines DOM, ohne 3D. -->
+  <script type="module" src="custom-preview.js"></script>
   <script type="module" src="block-bomb/main.js"></script>
   <script type="module" src="laser-lines/main.js"></script>
   <script type="module" src="block-rush/main.js"></script>

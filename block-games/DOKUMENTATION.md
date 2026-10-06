@@ -46,6 +46,8 @@ Hinweis: Node.js liegt portabel auf `D:\` (`D:\node.exe`).
 | `renderer/app.js` | UI-Logik: Screen-Wechsel, Gast-Modus, Menü-Rendering, **Lobby (Slots inkl. Bot/2.-Spieler/Splitscreen-Auswahl pro Platz + Farben + 300 Bot-Namen, Couch-Koop-Slot, Online-Peer-Slots)**, **Match-Abbruch-Abstimmung** (F5/F6, Schein-Abstimmung gegen Bots), **Online-Sessions** (Host/Beitreten, Lobby-Sync, Netzwerk-Match-Loop), **Credits-Rendering**, Einstellungs-UI, **Konto/Freunde-Overlay + Konto-Bearbeitung**, **Login-Vorschläge zuletzt angemeldeter Nutzer (`RecentUsers`)**, Toast, Sound-Verdrahtung, Beenden-Dialog (**mit optionalem Abmelden**), **feste navId-Tastatur-Navigation (`NAV_MENU`/`buildLobbyNav`) + Fokus-Gedächtnis**, animierter Hintergrund (Blöcke/Würfel/Sterne) |
 | `renderer/net/session.js` | **`NetSession`** (neu, v0.20.0): Online-Sessions über Supabase Realtime Broadcast + Presence — Hosten/Beitreten per Code, Einladungs-Channel pro Nutzer, generisches `on(type, handler)`/`send(type, payload)`. Kennt weder Lobby noch Spielkerne — reine Transport-Schicht, von app.js angesprochen |
 | `renderer/settings.js` | Zentraler Einstellungs-Store (localStorage, onChange-Events, `effectiveVolume()`) |
+| `renderer/custom.js` | **„Anpassen"** (`Custom`, neu v0.26.0): eigener kosmetischer Store (`blockgames.custom` in localStorage, getrennt von `settings.js`) + das Anpassen-Fenster (`#customOverlay`). Wendet Akzentfarben/Schrift/Ecken/Bühnen-Theme/Muster direkt auf `:root`/`body` an, erzeugt den animierten Hintergrund (Schwebe-Formen/Sterne — vorher `spawnBackgroundBlocks()` in app.js) und liefert `look()`/`botLook()`/`sky()`/`fogScale()` für die 3D-Module |
+| `renderer/custom-preview.js` | Drehende **Figur-Vorschau** im Anpassen-Fenster (ES-Modul, `window.CustomPreview`): dieselbe `BlockCharacter` wie im Spiel, eigener kleiner WebGL-Renderer nur solange das Fenster offen ist |
 | `renderer/keybinds.js` | **Tastenbelegung** (`Keybinds`, neu v0.23.0): Preset (WASD/Pfeiltasten) pro Spieler 1, Spieler 2 bekommt automatisch das andere, plus optionale Übersteuerungen je Aktion (`Settings.keysP1/keysP2`); `resolve(player)` liefert die fertigen `{walk,piece,color}`-Bindings (**`color`-Gruppe neu v0.25.0, Farbjagd**), `set()` löst Konflikte per Tausch (gleicher Spieler) oder Ablehnung (anderer Spieler) |
 | `renderer/audio.js` | Sound-System `Sfx`: UI- + **Block-Bomb-Effekte** (`bombTick/bombPass/bombExplode/count/go`) + **Laser-Lines-Effekte** (`laserWarn/laserFire/laserHit/laserEliminate/laserWin/laserSpeedUp`) + **Block-Rush-Effekte** (`rushLock/rushCollapse/rushSpell/rushWin`) + **Farbjagd-Effekte** (`colorShow/colorTick/colorLock/colorReveal/colorPerfect/colorWin`) per WebAudio synthetisiert (keine Audio-Dateien), Lautstärke aus dem Settings-Store |
 | `renderer/auth.js` | Supabase-Auth + **Freundes- und Konto-API** (gleiches Backend wie die Website) + **`Auth.client`-Getter** (neu, für `net/session.js`) |
@@ -439,6 +441,42 @@ Punktesumme über beide Züge entscheidet die Platzierung.
   `labelKey()`/`KEY_LABELS` in `main.js` (die App-Ebene `renderer/keybinds.js`
   ist ein klassisches Script und für dieses ES-Modul nicht erreichbar — wie
   schon bei Block Rush).
+
+### Anpassen (Esc)
+- **Einstieg über Esc:** Im Hauptmenü öffnet Esc (oder der 🎨-Knopf im
+  Kopfband) das Anpassen-Fenster direkt — dort gab es vorher nichts zu
+  schließen. Im Spiel bleibt Esc die Pause; das Pause-Fenster hat den Knopf
+  „🎨 Anpassen". Esc im Fenster führt genau dorthin zurück, wo man herkam
+  (Menü bzw. Pause, Fokus auf dem auslösenden Knopf).
+- **Vier Reiter** (Liste `TABS` in `renderer/custom.js` — eine Quelle für
+  UI, Zufall und Speicherung):
+  - **Figur:** Kopf (Würfel/Kugel/Tonne/Pyramide/Diamant/Bildschirm), Körper
+    (Block/Rund/Sportlich/Schmal), Augen, Kopfschmuck (Krone, Zylinder,
+    Partyhut, Antenne, Hörner, Heiligenschein), Oberfläche
+    (Matt/Glänzend/Metall/Neon) und der Look von Bots & Mitspielern
+    (Standard / zufällig, pro Spieler-ID fest / wie ich). Die **Spielerfarbe
+    bleibt Sache der Lobby** (dort ist sie pro Platz eindeutig).
+  - **Farben & Stil:** Akzent- und Zweitfarbe (`--hl`/`--hl-2`, 9 Vorgaben
+    oder frei per Farbwähler), Überschriften-Schrift, Ecken (`--radius`).
+  - **Hintergrund:** 8 Bühnen-Themes oder eigene Farbe (wird auf ein dunkles
+    Theme gedeckelt, weil die Oberfläche helle Schrift voraussetzt),
+    Schwebe-Formen, Menge, Formfarbe, Muster.
+  - **Spielwelt:** Himmel (Vorgaben, eigene Farbe oder „Wie die Map") und
+    Nebel für die 3D-Kulissen von Laser Lines, Block Bomb und Block Rush.
+- **Alles wirkt sofort**, auch mitten im (pausierten) Match: Die Spielkerne
+  rendern in der Pause weiter; `game/characters.js` und `game/theme.js`
+  hängen per `Custom.onChange()` am Store und tauschen nur Geometrien bzw.
+  Farben aus — der Spielzustand bleibt unberührt.
+- **Rein kosmetisch und lokal:** Trefferbox, Tempo und Sprung sind für alle
+  Formen gleich. Der Look wird **nicht** über Online-Sessions übertragen —
+  andere Rechner sehen die eigene Figur mit ihrem dort eingestellten
+  Mitspieler-Look.
+- **`--hl` statt `--yellow`:** Die Akzentfarbe der Oberfläche ist eine eigene
+  Variable, weil `--yellow`/`--red` zugleich Lobby-Spielerfarben sind
+  (`colorHex()` liest sie von `:root`). Neue UI-Hervorhebungen deshalb immer
+  mit `var(--hl)` bauen.
+- „🎲 Zufall" würfelt nur den offenen Reiter, „↺ Standard" setzt alles
+  zurück. „Einstellungen zurücksetzen" lässt den Look bewusst in Ruhe.
 
 ### Vollbild
 Die App startet **immer im Vollbild** — wie andere Videospiele, ohne sichtbare
@@ -919,6 +957,26 @@ Zentraler Handler `setupKeyboard()` in `app.js`.
   Klartext — gleicher Key wie die Website, RLS schützt die Daten.
 
 ## Änderungsprotokoll
+
+### v0.26.0 — 2026-10-06
+
+**Anpassen per Esc**
+- Neues Anpassen-Fenster (`renderer/custom.js`, s. Abschnitt „Anpassen
+  (Esc)"): Figur-Formen mit Live-Vorschau, Akzentfarben/Schrift/Ecken,
+  Bühnen-Hintergrund samt Schwebe-Formen und Muster, Himmel/Nebel der
+  3D-Kulissen. Esc im Hauptmenü öffnet es, im Spiel der neue Knopf im
+  Pause-Fenster.
+- `BlockCharacter` bekommt einen dritten Parameter `opts` (`{ mine }` /
+  `{ seed }` / `{ look }`) und `setLook()`; Augen und Kopfschmuck hängen
+  jetzt am Kopf und fliegen bei der Explosion mit.
+- `game/theme.js`: `applyMood()` berücksichtigt den gewählten Himmel/Nebel
+  und zieht Änderungen in der laufenden Szene nach; Block Rush setzt seinen
+  Hintergrund jetzt ebenfalls darüber.
+- `style.css`: Akzentfarbe als `--hl`/`--hl-2`, Spotlight-Farben als
+  `--spot-1..3`; der Hintergrund-Spawner ist von app.js nach custom.js
+  umgezogen.
+- Endet ein Match, während das Pause-Fenster offen ist, schließt es sich
+  jetzt mit (lag vorher über dem Ranking).
 
 ### v0.25.0 — 2026-09-23
 

@@ -49,8 +49,36 @@ const MOOD_DEFAULTS = {
   castShadow: true,
 };
 
+// Der Spieler kann Himmel und Nebel übersteuern (Esc → „Anpassen" →
+// Spielwelt, renderer/custom.js): der gewählte Himmel ersetzt Hintergrund-/
+// Nebelfarbe und tönt das Umgebungslicht, die Nebel-Stufe skaliert die
+// Sichtweite. Ohne Auswahl („Wie die Map") bleibt das mood-Objekt unverändert.
+const store = () => (typeof Custom !== 'undefined' ? Custom : null);
+
 function resolveMood(mood) {
-  return { ...MOOD_DEFAULTS, ...(mood || {}) };
+  const m = { ...MOOD_DEFAULTS, ...(mood || {}) };
+  const c = store();
+  if (!c) return m;
+  const sky = c.sky();
+  if (sky) { m.bg = sky.bg; m.ambientColor = sky.ambient; }
+  const k = c.fogScale();
+  m.fogNear *= k; m.fogFar *= k;
+  return m;
+}
+
+// Zuletzt eingerichtete Szene (es läuft immer nur EIN Minigame) — damit eine
+// Änderung im Anpassen-Fenster sofort in der laufenden Kulisse ankommt.
+let live = null;
+let subscribed = false;
+
+function refreshLive() {
+  if (!live) return;
+  const m = resolveMood(live.mood);
+  live.scene.background.set(m.bg);
+  live.scene.fog.color.set(m.bg);
+  live.scene.fog.near = m.fogNear;
+  live.scene.fog.far = m.fogFar;
+  if (live.ambient) live.ambient.color.set(m.ambientColor);
 }
 
 // Hintergrundfarbe + Nebel auf eine Szene anwenden.
@@ -58,6 +86,11 @@ export function applyMood(scene, mood) {
   const m = resolveMood(mood);
   scene.background = new THREE.Color(m.bg);
   scene.fog = new THREE.Fog(m.bg, m.fogNear, m.fogFar);
+  live = { scene, mood, ambient: null };
+  if (!subscribed && store()) {
+    subscribed = true;
+    store().onChange(refreshLive);
+  }
   return m;
 }
 
@@ -70,6 +103,7 @@ export function addLightRig(target, mood) {
 
   const ambient = new THREE.AmbientLight(m.ambientColor, m.ambientIntensity);
   target.add(ambient);
+  if (live && target === live.scene) live.ambient = ambient; // für refreshLive()
 
   const key = new THREE.DirectionalLight(m.keyColor, m.keyIntensity);
   key.position.set(11, 23, 11);
