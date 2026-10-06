@@ -968,6 +968,12 @@
         ],
         "createdAt": "2026-10-02T07:25:30.419Z",
         "reason": "Agent - Gehäuse-Elevation der Automaten: 1px Kante plus Schatten mit echtem Y-Versatz, einheitlich über alle Automaten, kein Zero-Offset-Glow"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "bricolage grotesque",
+        "createdAt": "2026-10-06T10:08:57.772Z",
+        "reason": "Design-Modus: vom Nutzer bestellter dritter Look mit eigener Schrift, wird in DESIGN.md dokumentiert"
       }
     ]
   }

@@ -8,7 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Kanit:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600;1,700;1,800;1,900&family=Share+Tech+Mono&family=Tilt+Neon&display=swap" rel="stylesheet">
+  <script src="/mode.js"></script>
   <link rel="stylesheet" href="/theme.css">
+  <link rel="stylesheet" href="/design-home.css">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -354,7 +356,7 @@
 <body data-hall="open">
 
 <nav class="navbar">
-  <div class="nav-logo">ARCADE</div>
+  <div class="nav-logo"><span class="nl-arcade">ARCADE</span><span class="nl-design">5DK</span></div>
   <div class="nav-right">
     <div data-auth-slot></div>
   </div>
@@ -529,11 +531,66 @@
   <div class="plate-foot"><span>Klasse 5DK · Baujahr 2026</span></div>
 </div>
 
+<!-- Design-Modus: eigene Bühne statt der Halle (/design-home.css, /design-home.js) -->
+<main class="dz front" id="dz">
+  <div class="dz-dawn" aria-hidden="true"></div>
+  <div class="dz-light" aria-hidden="true"></div>
+  <canvas class="dz-canvas" aria-hidden="true"></canvas>
+
+  <section class="dz-track">
+    <div class="dz-stage">
+      <div class="dz-hero">
+        <h1 class="dz-h1" aria-label="Alkomat"><span class="dz-line" aria-hidden="true"><span class="dz-ch" style="--i:0">A</span><span class="dz-ch" style="--i:1">l</span><span class="dz-ch" style="--i:2">k</span><span class="dz-ch" style="--i:3">o</span><span class="dz-ch" style="--i:4">m</span><span class="dz-ch" style="--i:5">a</span><span class="dz-ch" style="--i:6">t</span></span></h1>
+        <div class="dz-strip">
+          <p class="dz-sub">Spiele und Werkzeuge der 5DK. Alles auf einer Seite.</p>
+          <div class="dz-actions">
+            <a class="dz-cta" href="games/blockdrop/">Block Drop spielen</a>
+            <a class="dz-alt" href="stundenplan/">Stundenplan</a>
+          </div>
+        </div>
+      </div>
+      <p class="dz-say" aria-label="Drei Spiele. Sieben Werkzeuge. Eine Seite."><span aria-hidden="true"><span class="dz-w">Drei</span> <span class="dz-w">Spiele.</span></span><span aria-hidden="true"><span class="dz-w">Sieben</span> <span class="dz-w">Werkzeuge.</span></span><span aria-hidden="true"><span class="dz-w">Eine</span> <span class="dz-w">Seite.</span></span></p>
+      <div class="dz-cue" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <section class="dz-sec">
+    <h2>Spielen</h2>
+    <ul class="dz-list">
+      <li><a href="games/blockdrop/" style="--i:0"><span class="dz-name">Block Drop</span><span class="dz-tag">Fallblock-Klassiker</span></a></li>
+      <li><a href="games/blockpresser/" style="--i:1"><span class="dz-name">Block Presser</span><span class="dz-tag">Idle</span></a></li>
+      <li><a href="games/casino/" style="--i:2"><span class="dz-name">Casino</span><span class="dz-tag">Spielgeld</span></a></li>
+      <li><a href="blockgames/" style="--i:3"><span class="dz-name">Block Games</span><span class="dz-tag">Download für Windows</span></a></li>
+    </ul>
+  </section>
+
+  <section class="dz-sec">
+    <h2>Für die Klasse</h2>
+    <ul class="dz-list small">
+      <li><a href="stundenplan/" style="--i:0"><span class="dz-name">Stundenplan</span><span class="dz-tag">5DK</span></a></li>
+      <li><a href="games/schuluhr/" style="--i:1"><span class="dz-name">SchulUhr</span><span class="dz-tag">Live</span></a></li>
+      <li><a href="weather/" style="--i:2"><span class="dz-name">Wetter</span><span class="dz-tag">Radar, 7 Tage</span></a></li>
+      <li><a href="metar/" style="--i:3"><span class="dz-name">METAR</span><span class="dz-tag">Flugwetter</span></a></li>
+      <li><a href="f1-wetten/" style="--i:4"><span class="dz-name">F1 Wetten</span><span class="dz-tag">Podium tippen</span></a></li>
+      <li><a href="f1/" style="--i:5"><span class="dz-name">Formel 1</span><span class="dz-tag">WM, Live-Tracker</span></a></li>
+      <li><a href="achievements/" style="--i:6"><span class="dz-name">Achievements</span><span class="dz-tag">Deine Sammlung</span></a></li>
+    </ul>
+  </section>
+
+  <footer class="dz-foot">
+    <p>In Arbeit: Snake, Pong, Space Blaster, Memory Match, Minesweeper.</p>
+    <p>Klasse 5DK, Baujahr 2026</p>
+  </footer>
+</main>
+<script src="/design-home.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/fx.js"></script>
 <script src="/auth.js"></script>
 <script>
 (() => {
+  // Im Design-Modus ist die Halle ausgeblendet: /design-home.js übernimmt
+  if (document.documentElement.classList.contains('fx-design')) return;
   const FX = window.FX, REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ── Röhrenbilder: jedes Motiv wird Zelle für Zelle gezeichnet ──

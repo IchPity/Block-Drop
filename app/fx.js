@@ -15,6 +15,7 @@
      FX.tilt(nodes)            3D-Neigung mit Lichtreflex
      FX.go(url)                Seitenwechsel mit Röhre-aus
      FX.adhs / FX.setAdhs(on)  ADHS-Modus (volle Reizüberflutung) an oder aus
+     FX.mode / FX.setMode(m)   Darstellung: 'standard' | 'adhs' | 'design'
 
    Alles respektiert prefers-reduced-motion; ohne WebGL bleibt das
    Standbild aus theme.css stehen. Styles dazu: theme.css.
@@ -24,6 +25,12 @@
    Partikelmengen. Wie stark, hängt vom Ort ab: in den Spielen am
    stärksten, im Casino am wenigsten. Wechsel melden sich als
    window-Event „fx:adhs".
+
+   Der Design-Modus ist ein eigener Look (dunkel, still, große Schrift):
+   keine Halle, keine Blitze, kaum Partikel. Die Klasse „fx-design" an
+   <html> setzt /mode.js schon im <head>; Styles dazu am Ende von
+   theme.css. Ein Wechsel in den oder aus dem Design-Modus lädt die Seite
+   neu, weil die Halle und die Startseite dann anders aufgebaut sind.
    ───────────────────────────────────────────────────────────────────────── */
 (() => {
   'use strict';
@@ -46,14 +53,17 @@
   // ═══════════════════════════════════════════════════════════════════
   // ADHS-Modus: gilt für die ganze Seite, gemerkt pro Browser
   // ═══════════════════════════════════════════════════════════════════
-  const ADHS_KEY = 'arcade.adhs';
-  let adhs = true;
+  const ADHS_KEY = 'arcade.adhs', DESIGN_KEY = 'arcade.design';
+  let adhs = true, design = false;
   try {
+    design = localStorage.getItem(DESIGN_KEY) === '1';
     const v = localStorage.getItem(ADHS_KEY);
     if (v != null) adhs = v !== '0';
     // Früher gab es den Schalter nur im Casino: wer ihn dort aus hatte, behält das
     else if ((JSON.parse(localStorage.getItem('automat5dk.casino.v2')) || {}).fx === false) adhs = false;
   } catch (e) {}
+  if (design) adhs = false; // die gemerkte ADHS-Wahl bleibt im Speicher stehen
+  root.classList.toggle('fx-design', design);
   // Dämpfung ohne ADHS-Modus: n Partikelmenge, rain Regen, flash Deckkraft, shake Ausschlag, pulse Hallenlicht
   const where = /\/games\/casino\//.test(location.pathname) ? 'casino' : /\/games\//.test(location.pathname) ? 'game' : 'site';
   const CALM = {
@@ -63,18 +73,41 @@
   };
   const FULL_FX = { n: 1, rain: 1, flash: 1, shake: 1, pulse: 1, lines: true };
   // Kino-Screen und Abspann unterbrechen das Spiel ohnehin: dort gilt auch in den Spielen die Stufe der übrigen Seite
-  const lvl = () => adhs ? FULL_FX : where === 'game' && (cineOpen || credOpen) ? CALM.site : CALM[where];
+  // Design-Modus: überall still, auch im Casino
+  const QUIET = { n: 0.3, rain: 0.3, flash: 0, shake: 0, pulse: 0, lines: false };
+  const lvl = () => adhs ? FULL_FX : where === 'game' && !(cineOpen || credOpen) ? CALM.game : design ? QUIET : where === 'game' ? CALM.site : CALM[where];
   root.classList.toggle('fx-calm', !adhs);
-  function setAdhs(on) {
-    on = !!on;
-    try { localStorage.setItem(ADHS_KEY, on ? '1' : '0'); } catch (e) {}
+  const mode = () => design ? 'design' : adhs ? 'adhs' : 'standard';
+  function applyAdhs(on) {
     if (on === adhs) return;
     adhs = on;
     root.classList.toggle('fx-calm', !adhs);
     dispatchEvent(new CustomEvent('fx:adhs', { detail: adhs }));
   }
+  function setMode(m) {
+    if (m !== 'design' && m !== 'adhs') m = 'standard';
+    const was = mode();
+    try {
+      localStorage.setItem(DESIGN_KEY, m === 'design' ? '1' : '0');
+      if (m !== 'design') localStorage.setItem(ADHS_KEY, m === 'adhs' ? '1' : '0');
+    } catch (e) {}
+    if (m === was) return;
+    if (m === 'design' || was === 'design') {
+      // anderer Raum, andere Startseite: Bild aus, neu laden
+      if (REDUCED) { location.reload(); return; }
+      root.classList.add('fx-leaving');
+      setTimeout(() => location.reload(), 280);
+      return;
+    }
+    applyAdhs(m === 'adhs');
+  }
+  // Einschalten verlässt den Design-Modus, Ausschalten lässt ihn stehen
+  const setAdhs = on => setMode(on ? 'adhs' : design ? 'design' : 'standard');
   // In einem anderen Tab umgestellt: hier mitziehen
-  addEventListener('storage', e => { if (e.key === ADHS_KEY && e.newValue != null) setAdhs(e.newValue !== '0'); });
+  addEventListener('storage', e => {
+    if (e.key === DESIGN_KEY) { if ((e.newValue === '1') !== design) location.reload(); }
+    else if (e.key === ADHS_KEY && e.newValue != null && !design) applyAdhs(e.newValue !== '0');
+  });
 
   // ═══════════════════════════════════════════════════════════════════
   // Die Halle: ein Gang zwischen zwei Automatenreihen, Teppich unter
@@ -758,9 +791,12 @@ void main(){
 
   window.FX = { burst, rain, ring, streak, flash, shake, pulse, count, cinema, credits, tilt, go, reduced: REDUCED, NEON,
     cinemaOpen: () => cineOpen || credOpen || closing, closeCinema,
-    get adhs() { return adhs; }, setAdhs };
+    get adhs() { return adhs; }, setAdhs,
+    get mode() { return mode(); }, setMode };
 
   // Die Halle startet erst nach dem ersten Bild: so bremst sie das Einschalten der Röhre nicht
+  // (im Design-Modus bleibt sie aus)
   const boot = () => requestAnimationFrame(() => setTimeout(startHall, 60));
+  if (design) return;
   if (doc.body) boot(); else doc.addEventListener('DOMContentLoaded', boot);
 })();

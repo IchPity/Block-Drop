@@ -1,0 +1,205 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   /design-home.css — die Startseite im Design-Modus
+   Eine Bühne statt der Halle: der Stapel aus Block Drop steht als Skulptur
+   im Dunkeln. Beim Scrollen löst er sich auf und bleibt als Feld hinter
+   der Liste stehen. Bewegung: /design-home.js (eine Zeitleiste, vom
+   Scrollfortschritt gesteuert; bewegt werden nur transform und opacity).
+   ───────────────────────────────────────────────────────────────────────── */
+html:not(.fx-design) .dz, html:not(.fx-design) .nav-logo .nl-design { display: none; }
+html.fx-design .hero, html.fx-design body > .container, html.fx-design .nav-logo .nl-arcade { display: none; }
+
+.dz {
+  --gut: clamp(20px, 4.4vw, 72px);
+  --display: 'Bricolage Grotesque', 'Barlow', sans-serif;
+  position: relative; color: var(--chalk);
+}
+
+/* Navigation: nur Marke und Konto, ohne Blende */
+html.fx-design body[data-hall] .navbar {
+  padding: 22px var(--gut, clamp(20px, 4.4vw, 72px));
+  background: linear-gradient(180deg, rgba(9,9,13,0.86), rgba(9,9,13,0)) !important;
+  border-bottom: 0 !important;
+  opacity: 0; transition: opacity 1.4s 2s ease;
+}
+html.fx-design body.dz-go .navbar { opacity: 1; }
+html.fx-design .nav-logo { font-family: var(--font-body); font-weight: 600; font-size: 15px; letter-spacing: 0; }
+html.fx-design .nav-logo::before { content: none; }
+
+/* ── Ebenen hinter dem Inhalt ───────────────────────────────────────── */
+.dz-dawn, .dz-light, .dz-canvas { position: fixed; pointer-events: none; }
+/* Hintergrund hellt Richtung Liste leicht auf */
+.dz-dawn { inset: 0; z-index: 0; background: linear-gradient(180deg, #101117, #0c0c11); opacity: 0; }
+/* Ein Licht, das hinter dem Stapel steht und mit ihm wandert */
+.dz-light {
+  left: 0; top: 0; width: 110vmax; height: 110vmax; z-index: 0; opacity: 0;
+  background: radial-gradient(circle, rgba(236,235,230,0.14), rgba(236,235,230,0.085) 14%, rgba(236,235,230,0.04) 30%, rgba(236,235,230,0.012) 46%, transparent 62%);
+  will-change: transform, opacity;
+}
+.dz-canvas { inset: 0; width: 100%; height: 100%; z-index: 0; display: block; }
+/* Solange das Wort steht, liegt der Stapel davor und verdeckt es */
+.dz.front .dz-canvas { z-index: 2; }
+
+/* ── Bühne: bleibt stehen, während die Sequenz läuft ────────────────── */
+.dz-track { position: relative; height: 330vh; z-index: 1; }
+.dz-stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: clip; }
+
+.dz-hero {
+  position: absolute; inset: 0; padding: 0 var(--gut) clamp(22px, 4.4vh, 48px);
+  display: flex; flex-direction: column; justify-content: flex-end;
+}
+.dz-h1 {
+  margin: 0 0 0 -0.02em; font-family: var(--display); font-weight: 700; font-stretch: 100%;
+  font-size: min(24.5vw, 52vh); line-height: 0.9; letter-spacing: -0.055em;
+  color: var(--chalk); transform-origin: 0 100%; will-change: transform, opacity;
+}
+.dz-line { display: block; overflow: hidden; padding: 0.04em 0.06em 0.02em 0; }
+.dz-ch { display: inline-block; transform: translateY(108%); }
+.dz-go .dz-ch { animation: dzRise 1.3s calc(0.7s + var(--i) * 60ms) cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes dzRise { from { transform: translateY(108%); } to { transform: none; } }
+
+.dz-strip {
+  margin-top: clamp(14px, 2.6vh, 30px); display: flex; align-items: center; justify-content: space-between; gap: 20px 40px; flex-wrap: wrap;
+}
+.dz-sub {
+  margin: 0; max-width: 34ch; font-size: clamp(16px, 1.25vw, 20px); line-height: 1.4; color: var(--chalk-dim);
+  text-wrap: balance; opacity: 0; will-change: transform, opacity;
+}
+.dz-actions { display: flex; align-items: center; gap: 28px; opacity: 0; will-change: transform, opacity; }
+.dz-go .dz-sub     { opacity: 1; animation: dzSettle 1.2s 1.75s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+.dz-go .dz-actions { opacity: 1; animation: dzSettle 1.2s 1.95s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+@keyframes dzSettle { from { opacity: 0; transform: translateY(18px); } }
+
+.dz-cta {
+  position: relative; display: inline-flex; align-items: center; min-height: 54px; padding: 0 30px; border-radius: 999px;
+  font-family: var(--font-body); font-size: 16px; font-weight: 600; text-decoration: none;
+  color: var(--ink); background: var(--chalk); overflow: hidden; isolation: isolate;
+  transition: transform 0.5s var(--ease-out);
+}
+/* Messing füllt den Knopf von unten */
+.dz-cta::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; background: var(--brass);
+  transform: translateY(101%); transition: transform 0.55s var(--ease-out);
+}
+.dz-cta:hover { transform: translateY(-2px); }
+.dz-cta:hover::before, .dz-cta:focus-visible::before { transform: none; }
+.dz-cta:active { transform: translateY(1px) scale(0.985); }
+.dz-alt {
+  font-size: 15px; font-weight: 500; color: var(--chalk-dim); text-decoration: none; padding: 14px 0;
+  background: linear-gradient(currentColor, currentColor) 0 calc(100% - 10px) / 100% 1px no-repeat;
+  transition: color 0.3s, background-size 0.5s var(--ease-out);
+}
+.dz-alt:hover { color: var(--chalk); background-size: 0 1px; background-position: 100% calc(100% - 10px); }
+.dz-cta:focus-visible, .dz-alt:focus-visible, .dz-list a:focus-visible { outline: 2px solid var(--chalk); outline-offset: 4px; }
+
+/* Zweites Bild der Sequenz: drei Zeilen, getreppt wie fallende Steine */
+.dz-say {
+  position: absolute; inset: 0; margin: 0; padding: 0 var(--gut); pointer-events: none;
+  display: flex; flex-direction: column; justify-content: center;
+  font-family: var(--display); font-weight: 600; font-size: clamp(38px, 8.2vw, 148px); line-height: 0.98; letter-spacing: -0.045em;
+  will-change: transform;
+}
+.dz-say > span { display: block; white-space: nowrap; }
+.dz-say > span:nth-child(2) { margin-left: 1.05em; }
+.dz-say > span:nth-child(3) { margin-left: 2.1em; }
+.dz-w { display: inline-block; opacity: 0; will-change: transform, opacity; }
+
+/* Scrollhinweis: eine Linie, auf der ein Stein fällt */
+.dz-cue {
+  position: absolute; right: var(--gut); top: 50%; width: 1px; height: 72px; margin-top: -36px;
+  background: var(--board-line); overflow: hidden; opacity: 0; transition: opacity 1.2s 2.6s;
+}
+.dz-go .dz-cue { opacity: 1; }
+.dz-cue::after {
+  content: ''; position: absolute; left: 0; top: 0; width: 1px; height: 22px; background: var(--chalk);
+  animation: dzCue 2.6s 3s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  transform: translateY(-24px);
+}
+@keyframes dzCue { 0% { transform: translateY(-24px); } 70%, 100% { transform: translateY(74px); } }
+
+/* ── Verzeichnis ────────────────────────────────────────────────────── */
+.dz-sec {
+  position: relative; z-index: 1; padding: 20vh var(--gut) 0;
+  display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 9fr); gap: 0 32px; align-items: start;
+}
+.dz-sec h2 {
+  position: sticky; top: 96px; margin: 0; padding-top: 0.9em;
+  font-family: var(--font-body); font-size: 16px; font-weight: 500; letter-spacing: 0; color: var(--chalk-dim);
+}
+.dz-list { list-style: none; margin: 0; padding: 0; }
+.dz-list li { overflow: hidden; border-top: 1px solid var(--board-line); }
+.dz-list li:last-child { border-bottom: 1px solid var(--board-line); }
+.dz-list a {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 6px 28px; flex-wrap: wrap;
+  padding: 0.5em 0 0.62em; font-size: clamp(15px, 1.15vw, 18px);
+  color: var(--chalk); text-decoration: none;
+  transform: translateY(104%);
+  transition: transform 1.2s calc(var(--i, 0) * 80ms) cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s;
+}
+.dz-list.in a { transform: none; }
+.dz-name {
+  position: relative; display: inline-block; font-family: var(--display); font-weight: 600;
+  font-size: clamp(40px, 8.6vw, 150px); line-height: 0.96; letter-spacing: -0.05em;
+  transition: transform 0.7s var(--ease-out);
+}
+/* Ein Stein rückt vor den Namen */
+.dz-name::before {
+  content: ''; position: absolute; left: -0.36em; top: 0.44em; width: 0.2em; height: 0.2em; background: var(--brass);
+  transform: scale(0); transition: transform 0.5s var(--ease-out);
+}
+.dz-tag { color: var(--chalk-dim); white-space: nowrap; }
+@media (hover: hover) {
+  .dz-list:hover a:not(:hover) { opacity: 0.3; }
+  .dz-list a:hover .dz-name { transform: translateX(0.36em); }
+  .dz-list a:hover .dz-name::before { transform: none; }
+}
+.dz-list a:focus-visible .dz-name { transform: translateX(0.36em); }
+.dz-list a:focus-visible .dz-name::before { transform: none; }
+.dz-list a:focus-visible { outline-offset: -2px; }
+
+.dz-list.small { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; }
+.dz-list.small li:nth-last-child(2):nth-child(odd) { border-bottom: 1px solid var(--board-line); }
+.dz-list.small .dz-name { font-size: clamp(28px, 3.5vw, 60px); letter-spacing: -0.04em; }
+.dz-list.small a { padding: 0.9em 0 1em; }
+
+.dz-foot {
+  position: relative; z-index: 1; padding: 16vh var(--gut) 9vh;
+  display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 9fr); gap: 0 32px;
+  font-size: 15px; line-height: 1.6; color: var(--chalk-faint);
+}
+.dz-foot p { grid-column: 2; margin: 0; max-width: 60ch; }
+.dz-foot p + p { margin-top: 10vh; color: var(--chalk-dim); }
+
+@media (max-width: 860px) {
+  .dz-sec, .dz-foot { grid-template-columns: 1fr; }
+  .dz-sec { padding-top: 16vh; }
+  .dz-sec h2 { position: static; padding: 0 0 22px; }
+  .dz-foot p { grid-column: 1; }
+  .dz-list.small { grid-template-columns: 1fr; }
+  .dz-list.small li:nth-last-child(2):nth-child(odd) { border-bottom: 0; }
+}
+@media (max-width: 600px) {
+  html.fx-design body[data-hall] .navbar { padding: 14px var(--gut, 20px); }
+  .dz-h1 { font-size: min(25vw, 30vh); }
+  .dz-strip { flex-direction: column; align-items: flex-start; }
+  .dz-say { font-size: clamp(28px, 9.6vw, 60px); }
+  .dz-say > span:nth-child(2) { margin-left: 0.4em; }
+  .dz-say > span:nth-child(3) { margin-left: 0.8em; }
+  .dz-list a { display: block; }
+  .dz-tag { display: block; margin-top: 4px; }
+  .dz-cue { display: none; }
+  .dz-name { font-size: clamp(40px, 13.5vw, 72px); }
+  .dz-list.small .dz-name { font-size: clamp(28px, 8.6vw, 40px); }
+}
+
+/* Ohne Bewegung: die Bühne ist ein Standbild, das Verzeichnis folgt direkt */
+@media (prefers-reduced-motion: reduce) {
+  html.fx-design body[data-hall] .navbar { opacity: 1; }
+  .dz { overflow-x: clip; }
+  .dz-track { height: auto; }
+  .dz-stage { position: relative; }
+  .dz-canvas { position: absolute; height: 100vh; height: 100svh; }
+  .dz-say, .dz-cue, .dz-dawn { display: none; }
+  .dz-light { position: absolute; }
+  .dz-ch, .dz-list a { transform: none; }
+  .dz-sub, .dz-actions { opacity: 1; }
+}

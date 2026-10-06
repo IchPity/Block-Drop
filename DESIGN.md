@@ -146,6 +146,19 @@ Die Token-Namen `--board`, `--chalk`, `--marquee`, `--bell` stammen aus dem abge
 - Läuft ohne WebGL weiter und steht still bei `prefers-reduced-motion`.
 - ADHS-Modus (Schalter im Menü rechts oben, `FX.adhs`, gemerkt in `localStorage` unter `arcade.adhs`): aus heißt nicht still. Halle, Röhre und Kino-Screens bleiben; `fx.js` dämpft Blitze, Wackeln und Partikelmengen je nach Ort (Spiele am stärksten, Casino am wenigsten).
 
+- Design-Modus (dritte Stufe im selben Schalter: Standard, ADHS, Design; `FX.mode`, gemerkt unter `arcade.design`): ein eigener Look, siehe Abschnitt »Design-Modus«.
+
+## Design-Modus
+
+Derselbe Raum bei ausgeschaltetem Licht. `/mode.js` setzt im `<head>` die Klasse `fx-design` an `<html>`; die Regeln dazu stehen am Ende von `app/theme.css`, die Startseite hat eine eigene Bühne (`app/design-home.css`, `app/design-home.js`). Für diesen Modus gelten die Hallen-Regeln (Gerätelicht, Röhren, Kantenleiste) nicht.
+
+- **Farben:** Leere `#09090d`, Fläche `#121319`, Knochenweiß `#ecebe6`, Asche `#a3a4ab`, Haarlinie `rgba(236,235,230,0.11)` und genau ein Akzent, Messing `#e9b454` (die Münze). Die Hallen-Token werden darauf umgebogen, damit keine Seite angefasst werden muss.
+- **Schrift:** Bricolage Grotesque für alles, was vorher Tilt Neon oder Kanit war (600 bis 700, eng gesetzt, nie kursiv); Barlow bleibt Lesetext, Share Tech Mono bleibt Zählwerk.
+- **Raum:** keine Halle, keine Deckenröhre, kein Schein. Ein weiches Licht von oben, Flächen mit Haarlinie statt Schatten. Seitenwechsel blenden auf und ab statt über die Röhre.
+- **Startseite:** der Stapel aus Block Drop als Skulptur (Canvas 2D), der nächste Stein in Messing darüber. Einstieg als eine Zeitleiste (Steine fallen, das Wort steigt auf, dann Unterzeile, Knopf, Navigation). Beim Scrollen löst sich der Stapel auf und bleibt gedimmt hinter dem Verzeichnis stehen. Sehr wenig Text: ein Wort, eine Unterzeile, ein Knopf.
+- **Effekte:** Blitze, Wackeln und Hallenlicht sind aus, Partikel stark reduziert (`QUIET` in `fx.js`). Kino-Screen und Abspann bleiben, ohne Strahlenkranz und Schein.
+- Jede Unterseite behält ihr eigenes UI und ihre Farben; umgestellt ist nur die geteilte Ebene.
+
 ## Colors
 
 Schwarzlicht-Indigo als Raum, darin vier gesättigte Lichtfarben, die immer als Lichtquelle auftreten und nie als Flächenfarbe einer Seite.

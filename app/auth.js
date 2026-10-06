@@ -246,19 +246,21 @@
 
   .auth-slot { position: relative; }
 
-  /* Einstellungen im Menü: ADHS-Modus (gilt für die ganze Seite, siehe /fx.js) */
-  .auth-menu-switch { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
-  .auth-switch {
-    flex: none; width: 34px; height: 20px; border-radius: 999px; position: relative;
-    background: rgba(196,178,255,0.16); transition: background 0.18s;
+  /* Einstellungen im Menü: Darstellung (gilt für die ganze Seite, siehe /fx.js) */
+  .auth-menu-label { padding: 6px 12px 8px; font-size: 12px; font-weight: 600; color: var(--chalk-dim, rgba(255,255,255,0.7)); }
+  .auth-modes {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin: 0 8px 8px; padding: 2px;
+    border-radius: 9px; background: rgba(196,178,255,0.08);
   }
-  .auth-switch::after {
-    content: ''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%;
-    background: var(--chalk-dim, rgba(255,255,255,0.7)); transition: transform 0.18s cubic-bezier(.2,.8,.2,1), background 0.18s;
+  .auth-mode {
+    border: 0; border-radius: 7px; padding: 0 8px; min-height: 32px; cursor: pointer;
+    background: transparent; color: var(--chalk-dim, rgba(255,255,255,0.7));
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    transition: background 0.18s, color 0.18s;
   }
-  .auth-menu-switch[aria-checked="true"] .auth-switch { background: var(--neon-pink, #ff3d9a); }
-  .auth-menu-switch[aria-checked="true"] .auth-switch::after { transform: translateX(14px); background: #fff; }
-  .auth-menu-hint { padding: 0 12px 8px; font-size: 10px; line-height: 1.4; color: var(--chalk-faint, rgba(255,255,255,0.4)); }
+  .auth-mode:hover { color: var(--chalk, #fff); }
+  .auth-mode[aria-checked="true"] { background: var(--neon-pink, #ff3d9a); color: var(--ink, #0a0520); }
+  .auth-menu-hint { padding: 0 12px 8px; max-width: 236px; font-size: 10px; line-height: 1.4; color: var(--chalk-faint, rgba(255,255,255,0.4)); }
   .auth-menu-sep { height: 1px; margin: 6px 0; background: var(--board-line, rgba(196,178,255,0.06)); }
   .auth-slot.has-gear { display: inline-flex; align-items: center; gap: 8px; }
   .auth-gear {
@@ -1065,24 +1067,45 @@
   }
 
   // ─── Einstellungen im Menü ────────────────────────────────────────────────
-  // Der ADHS-Modus gehört /fx.js; ohne fx.js wird nur der gemerkte Wert umgestellt.
-  const adhsOn = () => {
-    if (window.FX && 'adhs' in window.FX) return window.FX.adhs;
-    try { return localStorage.getItem('arcade.adhs') !== '0'; } catch (e) { return true; }
+  // Die Darstellung gehört /fx.js; ohne fx.js werden nur die gemerkten Werte umgestellt.
+  const MODES = [
+    ['standard', 'Standard', 'Ruhiger: keine Blitze, kein Wackeln, weniger Konfetti.'],
+    ['adhs', 'ADHS', 'Blitze, Wackeln und Konfetti-Regen.'],
+    ['design', 'Design', 'Dunkel, still, große Schrift. Die Halle bleibt aus.'],
+  ];
+  const modeNow = () => {
+    if (window.FX && 'mode' in window.FX) return window.FX.mode;
+    try { return localStorage.getItem('arcade.design') === '1' ? 'design' : localStorage.getItem('arcade.adhs') !== '0' ? 'adhs' : 'standard'; } catch (e) { return 'adhs'; }
   };
-  const settingsHtml = () => `
-            <button class="auth-menu-item auth-menu-switch" data-act="adhs" type="button" role="switch" aria-checked="${adhsOn()}">
-              <span>ADHS-Modus</span><span class="auth-switch" aria-hidden="true"></span>
-            </button>
-            <div class="auth-menu-hint">Blitze, Wackeln und Konfetti-Regen. Aus: ruhiger, vor allem in den Spielen.</div>`;
-  const syncSettings = () => document.querySelectorAll('[data-act="adhs"]').forEach(b => b.setAttribute('aria-checked', adhsOn()));
+  const modeHint = m => (MODES.find(x => x[0] === m) || MODES[0])[2];
+  const settingsHtml = () => {
+    const now = modeNow();
+    return `
+            <div class="auth-menu-label">Darstellung</div>
+            <div class="auth-modes" role="radiogroup" aria-label="Darstellung">${MODES.map(([id, name]) =>
+              `<button class="auth-mode" data-mode="${id}" type="button" role="radio" aria-checked="${id === now}">${name}</button>`).join('')}</div>
+            <div class="auth-menu-hint" data-mode-hint>${modeHint(now)}</div>`;
+  };
+  const syncSettings = () => {
+    const now = modeNow();
+    document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-checked', b.dataset.mode === now));
+    document.querySelectorAll('[data-mode-hint]').forEach(h => { h.textContent = modeHint(now); });
+  };
   function bindSettings(slot) {
-    slot.querySelectorAll('[data-act="adhs"]').forEach(btn => btn.addEventListener('click', e => {
+    slot.querySelectorAll('[data-mode]').forEach(btn => btn.addEventListener('click', e => {
       e.stopPropagation(); // Menü bleibt offen
-      const on = !adhsOn();
-      if (window.FX && window.FX.setAdhs) window.FX.setAdhs(on);
-      else { try { localStorage.setItem('arcade.adhs', on ? '1' : '0'); } catch (err) {} }
-      syncSettings();
+      const m = btn.dataset.mode;
+      if (window.FX && window.FX.setMode) window.FX.setMode(m);
+      else {
+        try {
+          localStorage.setItem('arcade.design', m === 'design' ? '1' : '0');
+          if (m !== 'design') localStorage.setItem('arcade.adhs', m === 'adhs' ? '1' : '0');
+        } catch (err) {}
+        location.reload();
+      }
+      // Der Wechsel in den oder aus dem Design-Modus lädt neu: bis dahin zeigt der Schalter schon die Wahl
+      document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-checked', b.dataset.mode === m));
+      document.querySelectorAll('[data-mode-hint]').forEach(h => { h.textContent = modeHint(m); });
     }));
   }
   window.addEventListener('fx:adhs', syncSettings);
