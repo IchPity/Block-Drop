@@ -19,39 +19,19 @@ function showAchOverlay(id) {
   window.showAchToast(def);
 }
 
+// Speichern und Abgleich mit dem Konto übernimmt window.Achievements (auth.js)
+const unlockedNow = new Set(); // in dieser Sitzung schon gemeldet: spart den Blick in den Speicher
+if (window.Auth) window.Auth.onChange(() => unlockedNow.clear()); // anderes Konto, andere Erfolge
 function tryUnlock(id) {
-  let list;
-  try { list = JSON.parse(localStorage.getItem('arcade_achievements')) || []; }
-  catch(e) { list = []; }
-  if (list.some(a => a.id === id)) return;
-  list.push({ id, unlockedAt: new Date().toISOString() });
-  localStorage.setItem('arcade_achievements', JSON.stringify(list));
+  if (unlockedNow.has(id)) return;
+  unlockedNow.add(id);
+  if (window.Achievements) { window.Achievements.unlock(id, ACH_DEFS[id]); return; }
   showAchOverlay(id);
-  // Cloud-Sync (fire-and-forget)
-  if (window.Auth && window.Auth.user) {
-    window.Auth.saveAchievements(list).catch(() => {});
-  }
 }
 
-// Beim Login: Cloud-Achievements mit lokalen mergen
-function syncAchievementsFromCloud() {
-  if (!window.Auth || !window.Auth.user) return;
-  window.Auth.loadAchievements().then(cloud => {
-    if (!cloud) return;
-    let local = [];
-    try { local = JSON.parse(localStorage.getItem('arcade_achievements')) || []; } catch(e) {}
-    const byId = new Map();
-    [...local, ...cloud].forEach(a => {
-      if (!byId.has(a.id)) byId.set(a.id, a);
-    });
-    const merged = [...byId.values()];
-    localStorage.setItem('arcade_achievements', JSON.stringify(merged));
-    if (merged.length !== cloud.length) {
-      window.Auth.saveAchievements(merged).catch(() => {});
-    }
-  }).catch(() => {});
-}
-if (window.Auth) window.Auth.onChange(u => { if (u) syncAchievementsFromCloud(); });
+// Ohne ADHS-Modus (Menü rechts oben, /fx.js) bleibt das Spielfeld ruhig: kein Wackeln, weniger Splitter.
+// Blitze, Regen und Partikelmengen der Halle dämpft fx.js selbst.
+const calmFx = () => !!(window.FX && FX.adhs === false);
 
 // ── Tetris-Spezialeffekt (4 Zeilen auf einmal) ──────────────────────────────
 // Vollflächiges Konfetti + "TETRIS!"-Banner + Screen-Shake aufs Spielfeld.
@@ -75,7 +55,7 @@ function celebrateTetris() {
     FX.rain({ kind: 'confetti', ms: 1700, per: 6, colors: COLORS_CONFETTI, bounce: false });
     FX.shake(document.getElementById('wrapper'), 12, 600);
   }
-  if (!reduceMotion) {
+  if (!reduceMotion && !calmFx()) {
     const area = document.getElementById('game-area');
     if (area) {
       area.classList.remove('tetris-shake');
@@ -252,7 +232,7 @@ function dbSaveScore(score, mode, level, lines) {
   all[mode].push({ score, level, lines, date: new Date().toISOString() });
   all[mode].sort((a, b) => b.score - a.score);
   all[mode] = all[mode].slice(0, 10);
-  localStorage.setItem('arcade_scores', JSON.stringify(all));
+  try { localStorage.setItem('arcade_scores', JSON.stringify(all)); } catch (e) {}
 
   // Cloud-Save wenn eingeloggt (fire-and-forget)
   if (window.Auth && window.Auth.user && score > 0) {
@@ -339,7 +319,8 @@ class BlockDrop {
     this.holdEverUsed  = false;
     this.hardDropCount = 0;
     this.lockDelay = 500;
-    this.lockTimer = null;
+    this.clearLockDelay();
+    cancelAnimationFrame(this.animFrame);
     this.animFrame = null;
     this.lastDrop  = 0;
     this.clearAnim = null;
@@ -397,8 +378,11 @@ class BlockDrop {
   }
 
   // ── Movement ──────────────────────────────────────────────────────────────
-  moveLeft()  { this.tryMove(-1, 0); }
-  moveRight() { this.tryMove(1, 0); }
+  // Alle Züge wirken nur im laufenden Spiel: Touch-Knöpfe, Auto-Repeat und der
+  // Lock-Timer rufen sie direkt auf, auch in der Pause oder während des Räumens.
+  get live() { return this.state === 'playing'; }
+  moveLeft()  { if (this.live) this.tryMove(-1, 0); }
+  moveRight() { if (this.live) this.tryMove(1, 0); }
 
   tryMove(dx, dy) {
     const nx = this.current.x + dx;
@@ -413,15 +397,17 @@ class BlockDrop {
   }
 
   softDrop(byUser = true) {
+    if (!this.live) return;
     if (!this.tryMove(0, 1)) {
       this.scheduleLock();
     } else {
-      if (byUser) this.score += 1;
+      if (byUser) { this.score += 1; this.scoreEl.textContent = this.score; }
       this.clearLockDelay();
     }
   }
 
   hardDrop() {
+    if (!this.live) return;
     let dropped = 0;
     while (this.tryMove(0, 1)) dropped++;
     this.score += dropped * 2;
@@ -439,6 +425,7 @@ class BlockDrop {
   }
 
   rotate(dir = 1) {
+    if (!this.live) return;
     const prev = this.current.rot;
     const newShape = rotate(this.current.shape, dir);
     const newRot = ((prev + dir) + 4) % 4;
@@ -481,6 +468,7 @@ class BlockDrop {
 
   lock() {
     this.clearLockDelay();
+    if (!this.live) return;
     const p = this.current;
     for (let r = 0; r < p.shape.length; r++)
       for (let c = 0; c < p.shape[r].length; c++)
@@ -529,7 +517,7 @@ class BlockDrop {
         if (!color) continue;
         const cx = (c + 0.5) * BLOCK;
         const cy = (r + 0.5) * BLOCK;
-        const count = 5 + Math.floor(Math.random() * 4);
+        const count = calmFx() ? 2 + Math.floor(Math.random() * 2) : 5 + Math.floor(Math.random() * 4);
         for (let i = 0; i < count; i++) {
           const angle = Math.random() * Math.PI * 2;
           const speed = 0.04 + Math.random() * 0.18;
@@ -561,7 +549,7 @@ class BlockDrop {
       if (lineCount >= 2) FX.ring(cx, mid, '#2ee6ff', { to: 380 + lineCount * 90, width: 4 + lineCount, dur: 0.6 });
       if (lineCount >= 3) { FX.streak(mid, '#2ee6ff'); FX.flash('#2ee6ff', 260); }
     }
-    const shakeIntensity = [0, 0, 4, 7, 13][lineCount] || 13;
+    const shakeIntensity = calmFx() ? 0 : [0, 0, 4, 7, 13][lineCount] || 13;
     if (shakeIntensity > 0) {
       this.shake = { intensity: shakeIntensity, start: performance.now(), duration: 350 };
     }
@@ -639,7 +627,7 @@ class BlockDrop {
   }
 
   holdPiece() {
-    if (this.holdUsed) return;
+    if (!this.live || this.holdUsed) return;
     this.clearLockDelay();
     const type = this.current.type;
     this.holdEverUsed = true;
@@ -652,6 +640,9 @@ class BlockDrop {
         x: Math.floor(COLS / 2) - Math.floor(def.shape[0].length / 2),
         y: -1, rot: 0,
       };
+      this.holdUsed = true;
+      // Kein Platz mehr für den getauschten Stein: Spiel vorbei (wie beim normalen Spawn)
+      if (!this.isValid(this.current.shape, this.current.x, this.current.y)) { this.gameOver(); return; }
     } else {
       this.holdKey = type;
       this.spawnPiece();
@@ -936,6 +927,7 @@ class BlockDrop {
   }
 
   togglePause() {
+    if (this.state === 'paused') { this.resume(); return; }
     if (this.state === 'playing') {
       this.state = 'paused';
       cancelAnimationFrame(this.animFrame);
@@ -961,6 +953,7 @@ class BlockDrop {
 
   // ── Input ─────────────────────────────────────────────────────────────────
   onKey(e) {
+    if (typing(e)) return;
     // Pfeiltasten/Space scrollen sonst die Seite — auch während Pause/Räum-Animation,
     // nicht nur während 'playing' (wo der switch weiter unten preventDefault ruft)
     if (SCROLL_KEYS.has(e.key) && this.state !== 'idle' && this.state !== 'gameover') {
@@ -989,6 +982,12 @@ class BlockDrop {
   }
 }
 
+// Tippt jemand gerade in ein Eingabefeld (z. B. Login über dem laufenden Spiel)?
+function typing(e) {
+  const t = e.target;
+  return !!(t && t.closest && t.closest('input, textarea, select, [contenteditable="true"], .auth-modal-backdrop.open'));
+}
+
 // ── DAS (Delayed Auto Shift) ───────────────────────────────────────────────
 (function addDAS() {
   const DAS_DELAY = 150, DAS_REPEAT = 50;
@@ -996,8 +995,17 @@ class BlockDrop {
   let dasTimer = null, dasDir = 0;
   let downTimer = null;
 
+  // Verliert das Fenster den Fokus, kommt kein keyup mehr: Wiederholung beenden
+  const stopAll = () => {
+    clearTimeout(dasTimer); clearInterval(dasTimer); dasTimer = null; dasDir = 0;
+    clearInterval(downTimer); downTimer = null;
+  };
+  window.addEventListener('blur', stopAll);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stopAll(); });
+
   document.addEventListener('keydown', e => {
     if (e.repeat) return; // Native Browser-Repeat ignorieren — DAS macht das
+    if (typing(e)) return;
     if (!window._game || window._game.state !== 'playing') return;
     if (e.key === 'ArrowLeft' && dasDir !== -1) {
       clearTimeout(dasTimer); clearInterval(dasTimer); dasDir = -1;

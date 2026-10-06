@@ -49,7 +49,7 @@
     .nav-left { display: flex; align-items: center; gap: 14px; }
     .nav-back {
       display: inline-flex; align-items: center; gap: 6px;
-      text-decoration: none; color: rgba(255,255,255,0.4);
+      text-decoration: none; color: rgba(255,255,255,0.52);
       font-size: 12px; font-weight: 600;
       border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
       padding: 6px 12px; transition: all 0.2s;
@@ -73,7 +73,7 @@
     }
     .hero-sub {
       margin-top: 14px; font-size: 13px; max-width: 560px;
-      color: rgba(255,255,255,0.45); line-height: 1.6;
+      color: rgba(255,255,255,0.54); line-height: 1.6;
     }
 
     /* Balance bar */
@@ -94,7 +94,7 @@
     .balance-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
     .balance-meta {
       font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
-      color: rgba(255,255,255,0.4);
+      color: rgba(255,255,255,0.52);
     }
     .balance-meta strong { color: #fff; margin-left: 4px; }
     .balance-locked {
@@ -186,7 +186,7 @@
     .stake-field { flex: 1; min-width: 160px; }
     .stake-field label {
       display: block; font-size: 12px; font-weight: 800; letter-spacing: 2px;
-      text-transform: uppercase; color: rgba(255,255,255,0.45); margin-bottom: 6px;
+      text-transform: uppercase; color: rgba(255,255,255,0.54); margin-bottom: 6px;
     }
     .stake-input-wrap { position: relative; }
     .stake-input {
@@ -202,7 +202,7 @@
     .stake-suffix {
       position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
       font-size: 12px; font-weight: 800; letter-spacing: 2px;
-      color: rgba(255,255,255,0.4);
+      color: rgba(255,255,255,0.52);
     }
     .stake-quick {
       display: flex; gap: 6px;
@@ -279,7 +279,7 @@
       font-size: 14px; font-weight: 800; color: #fff;
       font-variant-numeric: tabular-nums;
     }
-    .bet-stake span { font-size: 12px; color: rgba(255,255,255,0.4); margin-left: 3px; letter-spacing: 1px; }
+    .bet-stake span { font-size: 12px; color: rgba(255,255,255,0.52); margin-left: 3px; letter-spacing: 1px; }
     .bet-status {
       font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
       padding: 3px 8px; border-radius: 99px;
@@ -312,7 +312,7 @@
     a.lb-name:hover { color: var(--gold); }
     .lb-name.me::after { content: ' · DU'; font-size: 12px; color: var(--gold); letter-spacing: 2px; font-weight: 800; }
     .lb-pts { text-align: right; font-size: 14px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
-    .lb-pts span { font-size: 12px; color: rgba(255,255,255,0.4); margin-left: 4px; letter-spacing: 1px; }
+    .lb-pts span { font-size: 12px; color: rgba(255,255,255,0.52); margin-left: 4px; letter-spacing: 1px; }
 
     /* Login gate */
     .login-gate {
@@ -322,7 +322,7 @@
     }
     .login-gate-icon { color: #ff4a3d; margin-bottom: 12px; line-height: 0; }
     .login-gate h2 { font-size: 24px; font-weight: 900; color: #fff; letter-spacing: -0.8px; margin-bottom: 8px; }
-    .login-gate p { font-size: 13px; color: rgba(255,255,255,0.45); max-width: 380px; margin: 0 auto 22px; line-height: 1.6; }
+    .login-gate p { font-size: 13px; color: rgba(255,255,255,0.54); max-width: 380px; margin: 0 auto 22px; line-height: 1.6; }
     .login-gate-btn {
       display: inline-flex; align-items: center; gap: 8px;
       background: var(--red); color: #fff; border: none; border-radius: 12px;
@@ -353,17 +353,17 @@
       border: 1px solid var(--border);
       border-radius: 12px; padding: 12px 14px;
     }
-    .rule-tag { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
+    .rule-tag { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.52); margin-bottom: 4px; }
     .rule-val { font-size: 16px; font-weight: 900; color: #fff; letter-spacing: -0.3px; margin-bottom: 4px; }
     .rule-val.gold { color: var(--gold); }
     .rule-val.green { color: var(--green); }
     .rule-val.red { color: #ff7a7a; }
-    .rule-desc { font-size: 12px; color: rgba(255,255,255,0.45); line-height: 1.45; }
+    .rule-desc { font-size: 12px; color: rgba(255,255,255,0.54); line-height: 1.45; }
 
     /* Loading */
     .loading, .empty {
       padding: 36px 24px; text-align: center;
-      color: rgba(255,255,255,0.4); font-size: 13px;
+      color: rgba(255,255,255,0.52); font-size: 13px;
     }
     .loading .spinner {
       display: inline-block; width: 26px; height: 26px;
@@ -531,32 +531,10 @@ let state = {
 const ACH_DEFS = {
   f1_first_win: { name: 'Lucky Punt', desc: 'Gewinne deine erste F1 Podium-Wette', icon: '🎰' },
 };
+// Speichern und Abgleich mit dem Konto übernimmt window.Achievements (auth.js)
 function tryUnlock(id) {
   const def = ACH_DEFS[id];
-  if (!def) return;
-  let list;
-  try { list = JSON.parse(localStorage.getItem('arcade_achievements')) || []; }
-  catch (e) { list = []; }
-  if (list.some(a => a.id === id)) return;
-  list.push({ id, unlockedAt: new Date().toISOString() });
-  localStorage.setItem('arcade_achievements', JSON.stringify(list));
-  if (window.showAchToast) window.showAchToast(def);
-  if (window.Auth && window.Auth.user) {
-    window.Auth.saveAchievements(list).catch(() => {});
-  }
-}
-function syncAchievementsFromCloud() {
-  if (!window.Auth || !window.Auth.user) return;
-  window.Auth.loadAchievements().then(cloud => {
-    if (!cloud) return;
-    let local = [];
-    try { local = JSON.parse(localStorage.getItem('arcade_achievements')) || []; } catch (e) {}
-    const byId = new Map();
-    [...local, ...cloud].forEach(a => { if (!byId.has(a.id)) byId.set(a.id, a); });
-    const merged = [...byId.values()];
-    localStorage.setItem('arcade_achievements', JSON.stringify(merged));
-    if (merged.length !== cloud.length) window.Auth.saveAchievements(merged).catch(() => {});
-  }).catch(() => {});
+  if (def && window.Achievements) window.Achievements.unlock(id, def);
 }
 
 /* ── Toasts ──────────────────────────────────────────────── */
@@ -596,15 +574,21 @@ async function init() {
     appBody.innerHTML = `<div class="empty"><div class="empty-icon">⚠</div>Auth nicht geladen.</div>`;
     return;
   }
+  let uid; // undefined = noch keine Meldung
   window.Auth.onChange(async (user) => {
+    const id = user ? user.id : null;
+    if (id === uid) return; // gleicher User nochmal gemeldet: Seite und Eingaben stehen lassen
+    uid = id;
     state.user = user;
     if (!user) { showLoginGate(); return; }
-    syncAchievementsFromCloud();
     await runApp();
   });
 }
 
+// Laufnummer: startet ein neuer Lauf (anderer User), verwirft der alte sein Ergebnis
+let runSeq = 0;
 async function runApp() {
+  const seq = ++runSeq;
   appBody.innerHTML = `<div class="loading"><div class="spinner"></div><div>Lade Daten…</div></div>`;
   try {
     // 1. Saison + nächstes Rennen
@@ -637,8 +621,10 @@ async function runApp() {
     // 7. Leaderboard
     await loadLeaderboard();
 
+    if (seq !== runSeq) return;
     render();
   } catch (e) {
+    if (seq !== runSeq) return;
     console.error(e);
     appBody.innerHTML = `<div class="empty"><div class="empty-icon">⚠</div>Fehler beim Laden: ${esc(e.message)}</div>`;
   }
@@ -661,8 +647,13 @@ async function loadOrCreatePoints() {
       .from('f1_points')
       .insert({ user_id: uid, season: state.season, points: STARTING_POINTS })
       .select().single();
-    if (insErr) throw new Error('Points init: ' + insErr.message);
-    state.points = ins;
+    if (insErr && insErr.code === '23505') {
+      // Zeile gibt es inzwischen (zweiter Tab, zweites Gerät): einfach lesen
+      const again = await sb.from('f1_points').select('*').eq('user_id', uid).eq('season', state.season).single();
+      if (again.error) throw new Error('Points laden: ' + again.error.message);
+      state.points = again.data;
+    } else if (insErr) throw new Error('Points init: ' + insErr.message);
+    else state.points = ins;
   } else {
     state.points = data;
   }
@@ -730,18 +721,24 @@ async function loadLeaderboard() {
 async function settleOpenBets() {
   const sb = window.Auth.client;
   const now = new Date();
-  const open = state.myBets.filter(b => b.status === 'open');
+  // Offene Wetten ALLER Saisons: springt die API nach dem letzten Rennen auf die neue Saison,
+  // blieben die Wetten der alten sonst für immer offen und der Einsatz wäre weg.
+  let open = state.myBets.filter(b => b.status === 'open');
+  const { data: older } = await sb.from('f1_bets').select('*')
+    .eq('user_id', state.user.id).eq('status', 'open');
+  if (older) open = open.concat(older.filter(b => b.season !== state.season));
   if (!open.length) return;
 
-  // Group by round to minimise result fetches
-  const rounds = [...new Set(open.map(b => b.round))];
-  for (const rnd of rounds) {
-    const bets = open.filter(b => b.round === rnd);
+  // Nach Saison und Runde gruppieren, damit jedes Ergebnis nur einmal geladen wird
+  const groups = [...new Set(open.map(b => b.season + '/' + b.round))];
+  for (const key of groups) {
+    const [season, rnd] = key.split('/').map(Number);
+    const bets = open.filter(b => b.season === season && b.round === rnd);
     // race start - take from first bet's stored race name; we need race date though
     // We re-fetch race meta to know if race is done
     let race;
     try {
-      const r = await fetch(`${JOLPI}/${state.season}/${rnd}/results.json`).then(r => r.json());
+      const r = await fetch(`${JOLPI}/${season}/${rnd}/results.json`).then(r => r.json());
       race = r.MRData.RaceTable.Races[0];
     } catch (e) { continue; }
     if (!race || !race.Results || race.Results.length < 3) continue;
@@ -762,28 +759,37 @@ async function settleOpenBets() {
       else if (allThree) { payout = Math.floor(bet.stake * 1.5);  kind = 'drivers'; }
       else               { payout = 0;                            kind = 'miss'; }
 
-      // 1. Bet aktualisieren
-      const { error: bErr } = await sb.from('f1_bets').update({
-        status: 'settled',
-        payout, result_kind: kind,
-        settled_at: new Date().toISOString(),
-      }).eq('id', bet.id);
-      if (bErr) { console.warn('Bet settle:', bErr.message); continue; }
-
-      // 2. Punkte gutschreiben (Stake war schon beim Platzieren abgezogen)
-      if (payout > 0) {
-        const { data: cur } = await sb.from('f1_points').select('points').eq('user_id', state.user.id).eq('season', state.season).single();
-        if (cur) {
-          await sb.from('f1_points').update({
-            points: cur.points + payout,
-            updated_at: new Date().toISOString(),
-          }).eq('user_id', state.user.id).eq('season', state.season);
+      // Abrechnen darf nur einmal wirken, auch wenn zwei Tabs oder Geräte gleichzeitig laden.
+      // Weg 1: Datenbank-Funktion f1_settle_bet (security_fixes.sql), Wette und Punkte in einer Transaktion.
+      let mine;
+      const viaRpc = await sb.rpc('f1_settle_bet', { p_bet_id: bet.id, p_kind: kind });
+      if (!viaRpc.error) {
+        mine = viaRpc.data === true;
+      } else if (rpcMissing(viaRpc.error)) {
+        // Weg 2 (Funktion noch nicht eingespielt): nur eine noch offene Wette schließen …
+        const { data: hit, error: bErr } = await sb.from('f1_bets').update({
+          status: 'settled',
+          payout, result_kind: kind,
+          settled_at: new Date().toISOString(),
+        }).eq('id', bet.id).eq('status', 'open').select('id');
+        if (bErr) { console.warn('Bet settle:', bErr.message); continue; }
+        mine = !!(hit && hit.length);
+        // … und nur wer sie geschlossen hat, schreibt die Punkte gut
+        if (mine && payout > 0) {
+          const { data: cur } = await sb.from('f1_points').select('points').eq('user_id', state.user.id).eq('season', season).single();
+          if (cur) {
+            await sb.from('f1_points').update({
+              points: cur.points + payout,
+              updated_at: new Date().toISOString(),
+            }).eq('user_id', state.user.id).eq('season', season);
+          }
         }
-      }
+      } else { console.warn('Bet settle:', viaRpc.error.message); continue; }
+      if (!mine) { bet.status = 'settled'; continue; } // hat schon jemand anderes abgerechnet
 
       // Update local state
       bet.status = 'settled'; bet.payout = payout; bet.result_kind = kind;
-      if (payout > 0) state.points.points += payout;
+      if (payout > 0 && season === state.season) state.points.points += payout;
 
       const racePretty = bet.race_name || race.raceName;
       if (kind === 'exact') toast(`🏆 ${racePretty}: Exakt! +${payout} Punkte`, 'ok');
@@ -794,8 +800,15 @@ async function settleOpenBets() {
     }
   }
 
-  // Reload bets to get fresh settled records
+  // Stand frisch aus der Datenbank (Wetten und Punkte), statt lokal mitzurechnen
   await loadMyBets();
+  const { data: fresh } = await sb.from('f1_points').select('*').eq('user_id', state.user.id).eq('season', state.season).maybeSingle();
+  if (fresh) state.points = fresh;
+}
+
+// Gibt es die Datenbank-Funktion (noch) nicht? Dann fällt der Client auf den alten Weg zurück.
+function rpcMissing(error) {
+  return !!error && (error.code === 'PGRST202' || error.code === '42883' || /could not find the function|does not exist/i.test(error.message || ''));
 }
 
 /* ── Bet placen ──────────────────────────────────────────── */
@@ -816,7 +829,23 @@ async function placeBet({ p1, p2, p3, stake }) {
     return;
   }
 
-  // 1. Bet einfügen
+  // Weg 1: Datenbank-Funktion f1_place_bet (Wette und Einsatz in einer Transaktion)
+  const args = { p_season: state.season, p_round: parseInt(race.round, 10), p_race_name: race.raceName, p_p1: p1, p_p2: p2, p_p3: p3, p_stake: stake };
+  const viaRpc = await sb.rpc('f1_place_bet', args);
+  if (!viaRpc.error && viaRpc.data) {
+    state.points.points -= stake;
+    state.myBets.unshift(viaRpc.data);
+    toast(`Wette platziert: ${stake} Punkte auf ${race.raceName}`, 'ok');
+    render();
+    return;
+  }
+  if (viaRpc.error && !rpcMissing(viaRpc.error)) {
+    if (viaRpc.error.code === '23505') toast('Du hast für dieses Rennen schon getippt', 'err');
+    else toast('Wette fehlgeschlagen: ' + viaRpc.error.message, 'err');
+    return;
+  }
+
+  // Weg 2 (Funktion noch nicht eingespielt): 1. Bet einfügen
   const { data: ins, error } = await sb.from('f1_bets').insert({
     user_id: state.user.id,
     season: state.season,
@@ -832,8 +861,9 @@ async function placeBet({ p1, p2, p3, stake }) {
     return;
   }
 
-  // 2. Stake vom Konto abziehen
-  const newPts = state.points.points - stake;
+  // 2. Stake vom Konto abziehen (vom frischen Stand, nicht vom lokal gemerkten)
+  const { data: cur } = await sb.from('f1_points').select('points').eq('user_id', state.user.id).eq('season', state.season).maybeSingle();
+  const newPts = (cur ? cur.points : state.points.points) - stake;
   const { error: pErr } = await sb.from('f1_points').update({
     points: newPts,
     updated_at: new Date().toISOString(),
@@ -907,7 +937,7 @@ function render() {
     const closedTimeWise = start <= new Date();
 
     const driverOptions = state.drivers.map(d =>
-      `<option value="${esc(d.id)}">${esc(d.full)}${d.code ? ' ('+d.code+')' : ''}</option>`
+      `<option value="${esc(d.id)}">${esc(d.full)}${d.code ? ' ('+esc(d.code)+')' : ''}</option>`
     ).join('');
 
     if (alreadyBet) {
@@ -1081,9 +1111,13 @@ function render() {
       const p3 = document.getElementById('pick-p3').value;
       const stake = parseInt(stakeInput.value, 10);
       if (!p1 || !p2 || !p3) { toast('Bitte alle drei Plätze auswählen', 'err'); return; }
+      const label = placeBtn.textContent;
       placeBtn.disabled = true;
       placeBtn.textContent = '...';
-      await placeBet({ p1, p2, p3, stake });
+      try { await placeBet({ p1, p2, p3, stake }); }
+      catch (e) { toast('Wette fehlgeschlagen: ' + (e.message || e), 'err'); }
+      // Bei Erfolg hat render() den Knopf ersetzt; hängt er noch im Dokument, war es ein Fehler
+      if (placeBtn.isConnected) { placeBtn.disabled = false; placeBtn.textContent = label; }
     });
   }
 }

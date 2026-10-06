@@ -45,7 +45,7 @@
     .nav-left { display: flex; align-items: center; gap: 14px; }
     .nav-back {
       display: inline-flex; align-items: center; gap: 6px;
-      text-decoration: none; color: rgba(255,255,255,0.4);
+      text-decoration: none; color: rgba(255,255,255,0.52);
       font-size: 11px; font-weight: 600;
       border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
       padding: 6px 12px; transition: all 0.2s;
@@ -202,6 +202,11 @@
       <li>E-Mail-Adresse und ein gehashtes Passwort</li>
       <li>Selbst gewählter Anzeigename</li>
       <li>Spielstände, High-Scores und freigeschaltete Achievements</li>
+      <li>Freundesliste und Freundschaftsanfragen</li>
+      <li>Ein Profilbild, falls du eines hochlädst (öffentlich abrufbar)</li>
+      <li>F1-Wetten und dein Punktestand</li>
+      <li>Casino-Spielgeld: Guthaben, Runden und Auszahlungen</li>
+      <li>Favoriten-Orte der Wetter-Seite</li>
       <li>Zeitstempel deiner Aktivität</li>
     </ul>
     <p>
@@ -216,11 +221,11 @@
 
     <h2>5. Lokale Speicherung (localStorage)</h2>
     <p>
-      Diese Seite verwendet keine Tracking-Cookies. Das Casino legt als Sicherung deines Spielgeld-Guthabens ein einziges technisch notwendiges Cookie (<code>automat5dk_casino</code>, ein Jahr gültig) auf deinem Gerät ab; es wird nie an einen Server gesendet. Im <strong>localStorage</strong> deines
+      Diese Seite verwendet keine Tracking-Cookies. Das Casino legt als Sicherung deines Spielgeld-Guthabens ein einziges technisch notwendiges Cookie (<code>automat5dk_casino2</code>, ein Jahr gültig) auf deinem Gerät ab. Dein Browser schickt es wie jedes Cookie bei Seitenaufrufen an den Webserver mit; dort wird es nicht ausgewertet und nicht gespeichert. Im <strong>localStorage</strong> deines
       Browsers werden ausschließlich technisch notwendige Daten abgelegt, z.&nbsp;B. lokale
-      High-Scores, freigeschaltete Achievements und gespeicherte Favoriten-Orte für die
-      Wetter-Seite. Diese Daten verlassen deinen Browser nicht (außer du bist eingeloggt &mdash;
-      dann werden Scores/Achievements zusätzlich mit Supabase synchronisiert).
+      High-Scores, freigeschaltete Achievements, deine Einstellungen (etwa der ADHS-Modus) und
+      gespeicherte Favoriten-Orte für die Wetter-Seite. Diese Daten verlassen deinen Browser nicht (außer du bist eingeloggt &mdash;
+      dann werden Scores, Achievements und Wetter-Favoriten zusätzlich mit Supabase synchronisiert).
     </p>
 
     <h2>6. Externe APIs</h2>
@@ -233,8 +238,9 @@
       <li><strong>RainViewer</strong> (Regenradar-Tiles) &mdash; <a href="https://www.rainviewer.com/api.html" target="_blank" rel="noopener">rainviewer.com/api.html</a></li>
       <li><strong>OpenStreetMap</strong> (Kartenmaterial via Leaflet) &mdash; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">openstreetmap.org/copyright</a></li>
       <li><strong>aviationweather.gov</strong> (METAR, US-Behörde NOAA) &mdash; <a href="https://www.weather.gov/privacy" target="_blank" rel="noopener">weather.gov/privacy</a></li>
+      <li><strong>Jolpica F1</strong> (Formel-1-Kalender, WM-Stände und Ergebnisse) &mdash; <a href="https://api.jolpi.ca/" target="_blank" rel="noopener">api.jolpi.ca</a></li>
       <li><strong>OpenF1</strong> (Formel-1-Live-Daten) &mdash; <a href="https://openf1.org/" target="_blank" rel="noopener">openf1.org</a></li>
-      <li><strong>corsproxy.io</strong> (Fallback-Proxy für METAR) &mdash; <a href="https://corsproxy.io/" target="_blank" rel="noopener">corsproxy.io</a></li>
+      <li><strong>VATSIM METAR</strong> (Ausweichweg für METAR-Meldungen) &mdash; <a href="https://metar.vatsim.net/" target="_blank" rel="noopener">metar.vatsim.net</a></li>
     </ul>
     <p>
       Diese Aufrufe finden direkt aus deinem Browser statt. Rechtsgrundlage: berechtigtes Interesse

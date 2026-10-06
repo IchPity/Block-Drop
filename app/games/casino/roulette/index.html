@@ -221,8 +221,8 @@ function writeState(s) {
   } catch (e) {}
   return ok;
 }
-// Einstellungen des Automaten (Tempo, Ton, ADHS-Effekte) werden mitbenutzt
-const prefs = () => { const s = readState() || {}; return { f: SPEED_F[Number.isInteger(s.speed) ? Math.min(4, Math.max(0, s.speed)) : 1], sound: s.sound !== false, fx: s.fx !== false && !REDUCED }; };
+// Einstellungen des Automaten (Tempo, Ton) werden mitbenutzt; der ADHS-Modus gilt seitenweit (/fx.js)
+const prefs = () => { const s = readState() || {}; return { f: SPEED_F[Number.isInteger(s.speed) ? Math.min(4, Math.max(0, s.speed)) : 1], sound: s.sound !== false, fx: !REDUCED, adhs: !REDUCED && (window.FX ? FX.adhs : s.fx !== false) }; };
 
 // ── Ton ─────────────────────────────────────────────────────────────
 let actx = null;
@@ -460,7 +460,7 @@ async function spin() {
   if (ret > 0) {
     banner(`${n} ${{ red: 'Rot', black: 'Schwarz', green: 'Grün' }[colorOf(n)]} · +${money(ret)}${net > 0 ? '' : net === 0 ? ' (Einsatz zurück)' : ' · Runde ' + money(net)}`, 'win');
     [988, 988, 988].forEach((f, i) => ding(f, i * 0.19, 0.2));
-    if (px.fx && ret >= t * 3) { const tb = $('tbl'); tb.classList.remove('shake'); void tb.offsetWidth; tb.classList.add('shake'); }
+    if (px.adhs && ret >= t * 3) { const tb = $('tbl'); tb.classList.remove('shake'); void tb.offsetWidth; tb.classList.add('shake'); }
     if (px.fx && window.FX && !REDUCED) {
       // Münzen springen aus dem Ergebnisfeld; große Treffer lassen die Halle aufblitzen
       const rr = res.getBoundingClientRect(), cx = rr.left + rr.width / 2, cy = rr.top + rr.height / 2, big = ret >= t * 3;

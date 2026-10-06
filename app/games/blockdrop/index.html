@@ -101,7 +101,7 @@
     .mode-btns { display: flex; gap: 8px; width: 100%; }
     .mode-btn {
       flex: 1; background: color-mix(in srgb, #fff 4%, var(--board-raised));
-      color: rgba(255,255,255,0.4);
+      color: rgba(255,255,255,0.52);
       border: 1px solid rgba(255,255,255,0.09);
       padding: 10px 8px; font-size: 12px; font-weight: 700;
       font-family: inherit; border-radius: 10px;
@@ -145,7 +145,7 @@
 
     /* ── High Scores ────────────────────────────────────── */
     #hs-mode-label { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: #aaa0cc; margin-bottom: 10px; }
-    .highscore-list { font-size: 12px; color: rgba(255,255,255,0.4); line-height: 2; min-height: 100px; }
+    .highscore-list { font-size: 12px; color: rgba(255,255,255,0.52); line-height: 2; min-height: 100px; }
     .highscore-list span { color: var(--red); font-weight: 700; }
 
     /* ── Achievement Overlay ────────────────────────────── */
@@ -532,6 +532,7 @@
 
       const start = e => {
         e.preventDefault();
+        stop(); // zweiter Finger auf demselben Knopf: alte Wiederholung nicht verwaisen lassen
         const g = G(); if (!g || g.state !== 'playing') return;
         fn(g);
         delay = setTimeout(() => {
@@ -550,6 +551,7 @@
       el.addEventListener('mousedown', start);
       el.addEventListener('mouseup', stop);
       el.addEventListener('mouseleave', stop);
+      window.addEventListener('blur', stop);
     }
 
     bindHold('tc-left',  g => g.moveLeft());

@@ -281,7 +281,13 @@ function showAuth() {
 function checkForUpdate() {
   return new Promise(async (resolve) => {
     let info;
-    try { info = await window.blockGames?.checkForUpdate(); } catch { info = null; }
+    // Antwortet GitHub nicht zügig, startet das Spiel ohne Update-Hinweis (nächster Start fragt wieder)
+    try {
+      info = await Promise.race([
+        window.blockGames?.checkForUpdate(),
+        new Promise(r => setTimeout(() => r(null), 1500)),
+      ]);
+    } catch { info = null; }
     if (!info || !info.available) return resolve();
 
     document.getElementById('updateVersion').textContent = info.version;
@@ -515,6 +521,8 @@ function setupControlsTab() {
   });
   document.getElementById('setKeysPreset').addEventListener('change', (e) => {
     Settings.set('keysPreset', e.target.value);
+    Keybinds.clearOverrides('p1');
+    Keybinds.clearOverrides('p2');
     syncControlsPlayerUi();
     renderKeybindRows();
   });
@@ -854,6 +862,7 @@ function setupKeyboard() {
       if (inviteOpen()) { declineInvite(); return; }                 // Einladung ablehnen
       if (mgGameVoteOpen()) { cancelMgFlow(); return; }              // Spiel-Voting → zurück in die Lobby
       if (mgVoteOpen()) { cancelMgFlow(); return; }                  // Voting → zurück (Lobby/Menü)
+      if (mgCountdownOpen()) { if (NetSession.state !== 'guest') cancelMgFlow(); return; } // Countdown: nur der Host bricht ab
       if (mgRankingOpen()) { return; }                               // Ranking nur per Knopf
       if (mgPauseOpen()) { resumeGame(); return; }                   // Pause → weiter
       if (Object.values(GAME_REGISTRY).some((g) => isActive(g.screenId))) { pauseGame(); return; } // im Spiel → Pause
@@ -1930,7 +1939,11 @@ function renderOnlinePicker() {
       NetSession.join(code, currentSelfName(), () => {
         closeOnlinePicker();
         enterOnlineGuestMode();
-      }, () => { document.getElementById('onlineJoinError').textContent = 'Beitritt fehlgeschlagen — Code prüfen.'; });
+      }, (why) => {
+        const err = document.getElementById('onlineJoinError');
+        if (err) err.textContent = why === 'NO_HOST' ? 'Unter diesem Code hostet gerade niemand — Code prüfen.' : 'Beitritt fehlgeschlagen — Verbindung prüfen.';
+      });
+      document.getElementById('onlineJoinError').textContent = 'Verbinde …';
     });
     body.appendChild(form);
   }
@@ -1968,6 +1981,7 @@ async function openOnlineFriendPicker() {
 }
 
 function stopHostingOnline() {
+  peerGone.forEach(clearTimeout); peerGone.clear();
   NetSession.leave();
   stopHostNetLoop();
   // Von echten Peers belegte Slots wieder freigeben — bei Bots/lokalen
@@ -1983,7 +1997,7 @@ function assignPeerSlot(peerId, name, userId) {
   if (lobbyState.slots.some(s => s.peerId === peerId)) return; // schon zugewiesen
   let idx = lobbyState.slots.findIndex(s => s.type === 'bot');
   if (idx === -1) idx = lobbyState.slots.findIndex(s => s.type === 'empty');
-  if (idx === -1) return; // Lobby voll — Peer bleibt in der Presence, aber ohne Slot
+  if (idx === -1) { NetSession.send('full', { to: peerId }); return; } // Lobby voll: dem Peer Bescheid geben
   const s = lobbyState.slots[idx];
   s.type = 'friend'; s.name = name || 'Mitspieler'; s.userId = userId || null; s.peerId = peerId;
   if (!s.color) s.color = getNextFreeColor(idx);
@@ -2083,14 +2097,53 @@ function stopGuestNetLoop() { if (guestNetTimer) clearInterval(guestNetTimer); g
 // gerade gehostet/beigetreten wird — die einzelnen Handler prüfen ihren
 // eigenen Zustand selbst (z.B. `if (NetSession.state !== 'hosting') return;`),
 // damit hier keine Auf-/Abbau-Logik pro Session nötig ist.
+// Gast: der Host ist weg (Session beendet, App geschlossen, Verbindung verloren)
+function onHostGone() {
+  if (NetSession.state !== 'guest') return;
+  clearMgTimers();
+  ['mgGameVote', 'mgMapVote', 'mgCountdown'].forEach(id => { document.getElementById(id).hidden = true; });
+  quitGameToMenu(); // stoppt das Spiel, verlässt die Session, zurück ins Menü
+  showToast('Der Host hat die Session beendet.');
+}
+// Gast: der Host hat das Match abgebrochen, die Session läuft weiter → zurück in den Warteraum
+function onHostAbort() {
+  if (NetSession.state !== 'guest') return;
+  clearMgTimers();
+  stopGuestNetLoop();
+  ['mgGameVote', 'mgMapVote', 'mgCountdown', 'mgPause', 'mgRanking'].forEach(id => { document.getElementById(id).hidden = true; });
+  if (currentGame && window[currentGame.windowKey]) window[currentGame.windowKey].stop();
+  inSeries = false;
+  showScreen('screen-lobby');
+  renderGuestWaitingRoom();
+  showToast('Der Host hat das Match abgebrochen.');
+}
+
+// Mitten im Match fehlt ein Peer in der Presence: erst nach ein paar Sekunden zum Bot machen,
+// ein kurzer Verbindungsaussetzer soll niemanden dauerhaft aus dem Spiel werfen.
+const PEER_GRACE_MS = 5000;
+const peerGone = new Map(); // peerId → Timer
+
 function setupNetworking() {
+  // Nachrichten nach Rolle filtern: Der Host nimmt nur Eingaben an, Gäste nur, was vom Host kommt.
+  // (`from` steht im Payload und ist kein Beweis, aber ein Gast kann dem Host so nicht mehr
+  // einfach das Rundenergebnis diktieren.)
+  const asHost = (fn) => (payload, from) => { if (NetSession.state === 'hosting') fn(payload, from); };
+  const fromHost = (fn) => (payload, from) => { if (NetSession.state === 'guest' && from && from === NetSession.hostPeerId()) fn(payload, from); };
+
   NetSession.onPresence((peers) => {
     if (NetSession.state !== 'hosting') return;
     const seen = new Set(peers.map(p => p.peerId));
+    for (const [id, t] of peerGone) if (seen.has(id)) { clearTimeout(t); peerGone.delete(id); } // wieder da
     lobbyState.slots.forEach((s) => {
       if (!s.peerId || seen.has(s.peerId)) return;
-      if (inSeries) handlePeerDisconnectMidMatch(s.peerId);
-      else freePeerSlot(s.peerId);
+      if (!inSeries) { freePeerSlot(s.peerId); return; }
+      if (peerGone.has(s.peerId)) return;
+      const id = s.peerId;
+      peerGone.set(id, setTimeout(() => {
+        peerGone.delete(id);
+        if (NetSession.state !== 'hosting' || NetSession.peers().some(p => p.peerId === id)) return;
+        if (inSeries) handlePeerDisconnectMidMatch(id); else freePeerSlot(id);
+      }, PEER_GRACE_MS));
     });
     if (!inSeries) {
       peers.forEach(p => assignPeerSlot(p.peerId, p.name, p.userId));
@@ -2099,30 +2152,46 @@ function setupNetworking() {
   });
 
   // Host: Startsignal der Serie + jeder Runde, Ergebnis jeder Runde.
-  NetSession.on('input', (intent, fromPeerId) => {
+  NetSession.on('input', asHost((intent, fromPeerId) => {
+    // nur von Peers, die wirklich einen Platz am Tisch haben
+    if (!lobbyState.slots.some(s => s.peerId === fromPeerId)) return;
     if (currentGame && window[currentGame.windowKey]) window[currentGame.windowKey].feedRemoteInput(fromPeerId, intent);
-  });
+  }));
 
   // Gast: empfängt, was der Host für die Serie/Runde/das Ergebnis broadcastet.
-  NetSession.on('series_start', (payload) => {
+  NetSession.on('series_start', fromHost((payload) => {
+    if (!payload || !Array.isArray(payload.players) || !Array.isArray(payload.gameIds)) return;
     currentPlayers = payload.players;
-    seriesQueue = payload.gameIds.map(id => GAME_REGISTRY[id]);
+    seriesQueue = payload.gameIds.map(id => GAME_REGISTRY[id]).filter(Boolean);
     seriesIndex = 0;
     inSeries = true; seriesStandings = {};
     for (const pl of currentPlayers) seriesStandings[pl.id] = { id: pl.id, name: pl.name, colorHex: pl.colorHex, points: 0 };
-  });
-  NetSession.on('round_setup', (payload) => { currentGame = GAME_REGISTRY[payload.gameId]; });
+  }));
+  NetSession.on('round_setup', fromHost((payload) => { if (GAME_REGISTRY[payload.gameId]) currentGame = GAME_REGISTRY[payload.gameId]; }));
   // Gast: Warteraum-Anzeige synchron zum Host-Lobbystand halten (siehe
   // renderGuestWaitingRoom() — der eigentliche Empfänger dieser Nachricht).
-  NetSession.on('lobby', (payload) => {
+  NetSession.on('lobby', fromHost((payload) => {
     lastHostLobby = payload;
-    if (NetSession.state === 'guest' && isLobbyScreenActive()) renderGuestWaitingRoom();
-  });
-  NetSession.on('map_result', (payload) => { currentMapId = payload.mapId; runCountdown(); });
-  NetSession.on('snap', (payload) => {
+    if (isLobbyScreenActive()) renderGuestWaitingRoom();
+  }));
+  // Ohne vorheriges series_start/round_setup (zu spät beigetreten) fehlt der Rahmen: aussetzen
+  NetSession.on('map_result', fromHost((payload) => { if (!currentGame || !inSeries) return; currentMapId = payload.mapId; runCountdown(); }));
+  NetSession.on('snap', fromHost((payload) => {
     if (currentGame && window[currentGame.windowKey]) window[currentGame.windowKey].applySnapshot(payload);
-  });
-  NetSession.on('result', (result) => { onGameResult(result); stopGuestNetLoop(); });
+  }));
+  NetSession.on('result', fromHost((result) => { if (!currentGame || !inSeries) return; onGameResult(result); stopGuestNetLoop(); }));
+
+  // Host weg oder Match abgebrochen (siehe onHostGone / onHostAbort)
+  NetSession.on('host_left', onHostGone);
+  NetSession.on('bye', (_payload, from) => { if (NetSession.state === 'guest' && from === NetSession.hostPeerId()) onHostGone(); });
+  NetSession.on('abort', fromHost(onHostAbort));
+  // Kein Platz mehr am Tisch
+  NetSession.on('full', fromHost((payload) => {
+    if (!payload || payload.to !== NetSession.peerId) return;
+    leaveOnlineSession();
+    goToMenu();
+    showToast('Die Lobby ist voll.');
+  }));
 
   // Abbruch-Abstimmung bleibt in v1 lokal (nur Host/Couch-Mitspieler, siehe
   // DOKUMENTATION.md „Match-Abbruch per Abstimmung") — Online-Mitspieler
@@ -2515,6 +2584,7 @@ function buildMatchConfig() {
 const inviteOpen     = () => !document.getElementById('inviteOverlay').hidden;
 const mgGameVoteOpen = () => !document.getElementById('mgGameVote').hidden;
 const mgVoteOpen     = () => !document.getElementById('mgMapVote').hidden;
+const mgCountdownOpen = () => !document.getElementById('mgCountdown').hidden;
 const mgPauseOpen    = () => !document.getElementById('mgPause').hidden;
 const mgRankingOpen  = () => !document.getElementById('mgRanking').hidden;
 
@@ -2531,6 +2601,15 @@ let seriesIndex = 0;
 let seriesStandings = {};   // playerId → { id, name, colorHex, points }
 let lastGameResult = null;  // letztes Spielergebnis (für Gleichstand-Tiebreak)
 let lobbyCrownSlotId = null; // Slot-Id des letzten Gesamtsiegers (Lobby-Krone)
+
+// Timer des Ablaufs Abstimmung → Countdown → Rundenstart. cancelMgFlow() löscht sie alle,
+// sonst startet die Runde nach einem Abbruch trotzdem.
+let mgTimers = [];
+function mgLater(fn, ms) {
+  const id = setTimeout(() => { mgTimers = mgTimers.filter(t => t !== id); fn(); }, ms);
+  mgTimers.push(id);
+}
+function clearMgTimers() { mgTimers.forEach(clearTimeout); mgTimers = []; }
 
 // ── Serien-/Party-Modus (Einstieg aus der Lobby) ──────────────────────────
 // „Spiel starten" lässt zuerst das ERSTE Spiel der Serie abstimmen
@@ -2644,7 +2723,7 @@ function castGameVote(humanChoice) {
     NetSession.send('series_start', { players: currentPlayers, gameIds: seriesQueue.map(g => g.id) });
   }
 
-  setTimeout(() => {
+  mgLater(() => {
     document.getElementById('mgGameVote').hidden = true;
     startSeriesGame();
   }, 1300);
@@ -2713,7 +2792,7 @@ function castMapVote(humanChoice) {
   // selbst abstimmen.
   if (NetSession.state === 'hosting') NetSession.send('map_result', { mapId: currentMapId });
 
-  setTimeout(() => {
+  mgLater(() => {
     document.getElementById('mgMapVote').hidden = true;
     runCountdown();
   }, 1300);
@@ -2721,6 +2800,8 @@ function castMapVote(humanChoice) {
 
 // Esc im Spiel-/Map-Voting/Countdown: Serie abbrechen → zurück in die Lobby.
 function cancelMgFlow() {
+  clearMgTimers();
+  tellGuestsAbort();
   document.getElementById('mgGameVote').hidden = true;
   document.getElementById('mgMapVote').hidden = true;
   document.getElementById('mgCountdown').hidden = true;
@@ -2730,6 +2811,7 @@ function cancelMgFlow() {
 
 // ── 3 · 2 · 1 · GO! ──────────────────────────────────────────────────────
 function runCountdown() {
+  clearMgTimers(); // nie zwei Countdowns nebeneinander
   const overlay = document.getElementById('mgCountdown');
   const el = document.getElementById('mgCountNum');
   overlay.hidden = false;
@@ -2741,8 +2823,8 @@ function runCountdown() {
     if (seq[i] === 'GO!') { el.classList.add('go'); Sfx.play('go'); }
     else Sfx.play('count');
     i++;
-    if (i < seq.length) setTimeout(tick, 800);
-    else setTimeout(() => { overlay.hidden = true; startRound(); }, 700);
+    if (i < seq.length) mgLater(tick, 800);
+    else mgLater(() => { overlay.hidden = true; startRound(); }, 700);
   })();
 }
 
@@ -2876,8 +2958,9 @@ function quitGameToMenu() {
   // Als Online-Gast beendet „Zum Menü" auch die eigene Teilnahme an der
   // Session (die Serie läuft für den Host + die übrigen Peers unverändert
   // weiter — kein Abbruch, nur der eigene Rückzug).
+  clearMgTimers();
   if (NetSession.state === 'guest') { leaveOnlineSession(); stopGuestNetLoop(); }
-  else stopHostNetLoop();
+  else { stopHostNetLoop(); tellGuestsAbort(); }
   goToMenu();
 }
 
@@ -3003,8 +3086,16 @@ function cancelAbortVoteState() {
   document.getElementById('mgAbortVote').hidden = true;
 }
 
+// Host → Gäste: das laufende Match (oder der Ablauf davor) ist abgebrochen
+function tellGuestsAbort() {
+  if (NetSession.state === 'hosting') NetSession.send('abort', {});
+}
+
 function abortMatchToLobby() {
   cancelAbortVoteState();
+  clearMgTimers();
+  tellGuestsAbort();
+  stopHostNetLoop();
   if (currentGame && window[currentGame.windowKey]) window[currentGame.windowKey].stop();
   inSeries = false;
   showToast('Match abgebrochen.');
@@ -3020,7 +3111,22 @@ function abortMatchToLobby() {
 // den privaten Einladungs-Channel des Empfängers (siehe handleIncomingInvite/
 // setupNetworking). `fromName` bleibt reine Anzeige, kein Vertrauensanker.
 const inviteQueue = [];
+const inMatch = () => inSeries || Object.values(GAME_REGISTRY).some(g => document.getElementById(g.screenId).classList.contains('active'));
+// Der Einladungs-Kanal ist ein offener Broadcast-Kanal: wer die User-ID kennt, kann senden.
+// Deshalb zählt nur, was von jemandem aus der eigenen Freundesliste kommt, und angezeigt wird
+// der Name aus dieser Liste, nicht der mitgeschickte.
+async function handleIncomingInvite(payload) {
+  if (!payload || typeof payload.code !== 'string' || !/^[A-Z0-9]{4,8}$/.test(payload.code)) return;
+  if (!payload.fromUserId) return;
+  let friend = null;
+  try { friend = (await Auth.getFriendOverview()).friends.find(f => f.userId === payload.fromUserId) || null; } catch { friend = null; }
+  if (!friend) return;
+  // Mitten im Match kein Overlay, das den Fokus nimmt: nur ein Hinweis
+  if (inMatch()) { showToast(`${friend.username} hat dich eingeladen (Code ${payload.code}).`); return; }
+  showInvite(friend.username, payload.code);
+}
 function showInvite(fromName, code) {
+  if (inviteQueue.some(i => i.code === code)) return; // dieselbe Einladung nicht doppelt
   inviteQueue.push({ fromName: fromName || 'Ein Freund', code });
   if (inviteQueue.length === 1) renderInvite();
 }
@@ -3039,6 +3145,9 @@ function nextInvite() {
 function acceptInvite() {
   const invite = inviteQueue[0];
   if (!isOnlineAllowed()) { showToast('Melde dich an, um online zu spielen.'); nextInvite(); return; }
+  if (inMatch()) { showToast('Erst das laufende Match beenden.'); nextInvite(); return; }
+  // Wer selbst hostet, beendet seine Session ordentlich (die eigenen Gäste erfahren es)
+  if (NetSession.state === 'hosting') stopHostingOnline();
   NetSession.join(invite.code, currentSelfName(), () => {
     showToast(`Beigetreten — ${invite.fromName} ist der Host.`);
     openLobby();
@@ -3128,7 +3237,7 @@ async function boot() {
       if (accountOpen()) renderAccountHeader();
       // Eigenen Einladungs-Channel abonnieren (nur angemeldet — Gäste können
       // per Code beitreten, aber nicht per Freundes-Einladung erreicht werden).
-      NetSession.listenForInvites(Auth.userId, (payload) => showInvite(payload.fromName, payload.code));
+      NetSession.listenForInvites(Auth.userId, handleIncomingInvite);
     } else {
       // Abgemeldet: evtl. offenes Konto-Overlay schließen + Konto-Karte
       // in den Einstellungen verstecken.
@@ -3145,7 +3254,7 @@ async function boot() {
   if (user) {
     renderMenu();
     goToMenu();
-    NetSession.listenForInvites(Auth.userId, (payload) => showInvite(payload.fromName, payload.code));
+    NetSession.listenForInvites(Auth.userId, handleIncomingInvite);
   } else {
     showAuth();
   }

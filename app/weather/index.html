@@ -51,7 +51,7 @@
     .nav-left { display: flex; align-items: center; gap: 14px; }
     .nav-back {
       display: inline-flex; align-items: center; gap: 6px;
-      text-decoration: none; color: rgba(255,255,255,0.4);
+      text-decoration: none; color: rgba(255,255,255,0.52);
       font-size: 11px; font-weight: 600;
       border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
       padding: 6px 12px; transition: all 0.2s;
@@ -80,7 +80,7 @@
     }
     .search-label {
       font-size: 11px; font-weight: 800; letter-spacing: 2.5px;
-      text-transform: uppercase; color: rgba(255,255,255,0.45); margin-bottom: 10px;
+      text-transform: uppercase; color: rgba(255,255,255,0.54); margin-bottom: 10px;
     }
     .search-input {
       width: 100%;
@@ -115,7 +115,7 @@
     .suggestion:last-child { border-bottom: none; }
     .suggestion:hover, .suggestion.active { background: rgba(56,189,248,0.08); }
     .suggestion-main { font-size: 13px; font-weight: 700; color: #fff; }
-    .suggestion-sub  { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+    .suggestion-sub  { font-size: 11px; color: rgba(255,255,255,0.52); margin-top: 1px; }
 
     .fav-row {
       display: flex; flex-wrap: wrap; gap: 6px;
@@ -168,7 +168,7 @@
     }
     .current-time {
       text-align: right; font-size: 11px;
-      color: rgba(255,255,255,0.45); letter-spacing: 1px;
+      color: rgba(255,255,255,0.54); letter-spacing: 1px;
     }
     .current-time strong { display: block; color: #fff; font-size: 13px; margin-bottom: 2px; }
     .fav-btn {
@@ -209,7 +209,7 @@
       margin-top: 6px;
     }
     .current-feels {
-      font-size: 12px; color: rgba(255,255,255,0.45);
+      font-size: 12px; color: rgba(255,255,255,0.54);
       margin-top: 2px;
     }
 
@@ -225,7 +225,7 @@
     }
     .stat-lbl {
       font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
-      color: rgba(255,255,255,0.4); margin-bottom: 6px;
+      color: rgba(255,255,255,0.52); margin-bottom: 6px;
     }
     .stat-val {
       font-size: 22px; font-weight: 800; color: #fff;
@@ -233,7 +233,7 @@
     }
     .stat-val .unit { font-size: 12px; color: rgba(255,255,255,0.5); font-weight: 600; margin-left: 3px; letter-spacing: 0; }
     .stat-sub {
-      font-size: 11px; color: rgba(255,255,255,0.45);
+      font-size: 11px; color: rgba(255,255,255,0.54);
       margin-top: 4px; font-weight: 600;
     }
     .stat-pill {
@@ -299,7 +299,7 @@
     .daily-icon { font-size: 32px; line-height: 1; margin: 6px 0; }
     .daily-temps { display: flex; justify-content: center; gap: 8px; font-size: 13px; font-weight: 700; margin-top: 4px; }
     .daily-hi { color: #fff; }
-    .daily-lo { color: rgba(255,255,255,0.45); }
+    .daily-lo { color: rgba(255,255,255,0.54); }
     .daily-precip {
       font-size: 11px; color: var(--cyan); font-weight: 700;
       margin-top: 6px; display: inline-flex; align-items: center; gap: 3px;
@@ -353,7 +353,7 @@
     .leaflet-container { background: #0a0e18 !important; }
     .leaflet-control-attribution {
       background: rgba(10,14,24,0.7) !important;
-      color: rgba(255,255,255,0.4) !important;
+      color: rgba(255,255,255,0.52) !important;
       font-size: 11px !important;
     }
     .leaflet-control-attribution a { color: rgba(125,211,252,0.6) !important; }
@@ -361,7 +361,7 @@
     /* Loading / empty */
     .loading {
       padding: 60px 24px; text-align: center;
-      color: rgba(255,255,255,0.4); font-size: 13px;
+      color: rgba(255,255,255,0.52); font-size: 13px;
     }
     .loading .spinner {
       display: inline-block; width: 28px; height: 28px;
@@ -451,6 +451,7 @@
     <div class="search-label">Stadt suchen</div>
     <input
       id="search-input"
+      aria-label="Ort suchen"
       class="search-input"
       type="text"
       placeholder="Wien, Berlin, Tokio …"
@@ -598,8 +599,14 @@ async function loadFavorites() {
         .eq('id', window.Auth.user.id)
         .maybeSingle();
       if (data && Array.isArray(data.weather_favorites)) {
-        state.favorites = data.weather_favorites;
-        localStorage.setItem(FAV_KEY, JSON.stringify(state.favorites));
+        // Als Gast gemerkte Orte nicht verlieren: mit den Konto-Favoriten vereinigen
+        let local = [];
+        try { local = JSON.parse(localStorage.getItem(FAV_KEY)) || []; } catch (e) {}
+        const cloud = data.weather_favorites.filter(f => f && Number.isFinite(f.lat) && Number.isFinite(f.lon));
+        const extra = (Array.isArray(local) ? local : []).filter(l => l && Number.isFinite(l.lat) && !cloud.some(c => Math.abs(c.lat - l.lat) < 0.001 && Math.abs(c.lon - l.lon) < 0.001));
+        state.favorites = [...cloud, ...extra].slice(0, 12);
+        try { localStorage.setItem(FAV_KEY, JSON.stringify(state.favorites)); } catch (e) {}
+        if (extra.length) saveFavorites();
         return;
       }
     } catch (e) { /* fall through to local */ }
@@ -608,13 +615,15 @@ async function loadFavorites() {
   catch (e) { state.favorites = []; }
 }
 async function saveFavorites() {
-  localStorage.setItem(FAV_KEY, JSON.stringify(state.favorites));
+  try { localStorage.setItem(FAV_KEY, JSON.stringify(state.favorites)); } catch (e) {}
   if (window.Auth?.user) {
     try {
-      await window.Auth.client
+      const { error } = await window.Auth.client
         .from('profiles')
         .update({ weather_favorites: state.favorites })
         .eq('id', window.Auth.user.id);
+      // Fehlt die Spalte (security_fixes.sql nicht eingespielt), bleibt es beim lokalen Speichern
+      if (error) console.warn('[Wetter] Favoriten nicht im Konto gespeichert:', error.message);
     } catch (e) { /* silently fail */ }
   }
 }
@@ -632,7 +641,15 @@ function toggleFavorite(loc) {
   }
   saveFavorites();
   renderFavs();
-  renderCurrent();
+  syncFavButton();
+}
+// Nur den Stern aktualisieren: Karte und Radar bleiben stehen
+function syncFavButton() {
+  const btn = $('toggle-fav');
+  if (!btn || !state.loc) return;
+  const on = isFavorite(state.loc);
+  btn.classList.toggle('active', on);
+  btn.textContent = on ? '★ Favorit' : '☆ Als Favorit';
 }
 function renderFavs() {
   const row = $('fav-row');
@@ -660,7 +677,7 @@ function renderFavs() {
       state.favorites.splice(i, 1);
       saveFavorites();
       renderFavs();
-      renderCurrent();
+      syncFavButton();
     });
   });
 }
@@ -668,11 +685,14 @@ function renderFavs() {
 /* ── Pick location & load ────────────────────────────────── */
 async function pickLocation(loc) {
   state.loc = loc;
-  localStorage.setItem(LAST_KEY, JSON.stringify(loc));
+  try { localStorage.setItem(LAST_KEY, JSON.stringify(loc)); } catch (e) {}
   await loadAll();
 }
 
+// Laufnummer: wer schnell den Ort wechselt, bekommt nur die Antwort zum zuletzt gewählten
+let loadSeq = 0;
 async function loadAll() {
+  const seq = ++loadSeq;
   $('main').innerHTML = `<div class="loading"><div class="spinner"></div><div>Lade Wetter für ${esc(state.loc.name)}…</div></div>`;
   try {
     const { lat, lon } = state.loc;
@@ -690,19 +710,23 @@ async function loadAll() {
       fetch(aqiUrl).then(r => r.ok ? r.json() : null).catch(() => null),
     ]);
 
+    if (seq !== loadSeq) return;
     state.data = fRes;
     state.aqi = aRes;
 
     renderCurrent();
   } catch (e) {
+    if (seq !== loadSeq) return;
     $('main').innerHTML = `
       <div class="err-card">
         <div class="err-icon">⚠</div>
         <div class="err-body">
           <strong>Wetterdaten nicht geladen</strong>
-          <span>${esc(String(e))}</span>
+          <span>Der Wetterdienst antwortet gerade nicht (${esc(String(e && e.message || e))}). Meist geht es nach ein paar Sekunden wieder.</span>
         </div>
+        <button type="button" class="fav-btn" id="retry-load" style="margin-left:auto;flex-shrink:0">Nochmal versuchen</button>
       </div>`;
+    $('retry-load').addEventListener('click', loadAll);
   }
 }
 
@@ -810,7 +834,7 @@ function renderCurrent() {
         <h3>Karte · ${esc(loc.name)}</h3>
         <div class="map-controls">
           <button class="map-btn active" data-layer="radar">Radar</button>
-          <button class="map-btn" data-layer="clouds">Wolken</button>
+          <button class="map-btn" data-layer="clouds" title="Dasselbe Radarbild in einem zweiten Farbschema">Radar 2</button>
           <button class="map-btn" data-layer="off">Aus</button>
           <button class="map-btn" id="radar-play" title="Abspielen">▶</button>
         </div>
@@ -946,12 +970,15 @@ function drawHourly() {
     labels += `<text class="pt-label" x="${x(i).toFixed(1)}" y="${(yTemp(temps[i]) - 8).toFixed(1)}" text-anchor="middle">${Math.round(temps[i])}°</text>`;
   });
 
-  // Now line
+  // Now line. Die API liefert Ortszeit ohne Zeitzone: als UTC lesen und den Abstand des Orts abziehen,
+  // sonst sitzt die Linie für Orte in anderen Zeitzonen falsch.
   const now = Date.now();
+  const off = (state.data.utc_offset_seconds || 0) * 1000;
+  const at = iso => Date.parse(iso.length === 16 ? iso + ':00Z' : iso + 'Z') - off; // "2026-10-03T14:00"
   let nowMark = '';
   for (let i = 0; i < N - 1; i++) {
-    const t = new Date(h.time[i]).getTime();
-    const t2 = new Date(h.time[i + 1]).getTime();
+    const t = at(h.time[i]);
+    const t2 = at(h.time[i + 1]);
     if (now >= t && now <= t2) {
       const frac = (now - t) / (t2 - t);
       const px = x(i) + frac * (x(i + 1) - x(i));
@@ -984,7 +1011,10 @@ function drawHourly() {
 }
 
 /* ── Map / Radar ─────────────────────────────────────────── */
+let radarHost = 'https://tilecache.rainviewer.com';
 async function initMap() {
+  stopRadarPlay();
+  radarLayer = null;
   if (map) { map.remove(); map = null; }
   const { lat, lon } = state.loc;
   map = L.map('leaflet-map', { zoomControl: true, attributionControl: true })
@@ -993,11 +1023,12 @@ async function initMap() {
     attribution: '© OSM',
     maxZoom: 18,
   }).addTo(map);
-  L.marker([lat, lon]).addTo(map);
+  L.marker([lat, lon], { alt: 'Gewählter Ort: ' + state.loc.name, keyboard: false }).addTo(map);
 
   // Load radar frames
   try {
     const r = await fetch(RAIN).then(r => r.json());
+    if (typeof r.host === 'string' && /^https:\/\//.test(r.host)) radarHost = r.host;
     radarFrames = [...(r.radar?.past || []), ...(r.radar?.nowcast || [])];
     if (radarFrames.length) {
       radarIdx = (r.radar.past?.length || 1) - 1;
@@ -1011,10 +1042,12 @@ function setRadarFrame(i) {
   i = ((i % radarFrames.length) + radarFrames.length) % radarFrames.length;
   radarIdx = i;
   const frame = radarFrames[i];
+  if (!map) return;
   if (radarLayer) map.removeLayer(radarLayer);
+  // maxNativeZoom: RainViewer liefert Radar nur bis Zoom 7, darüber wird das Bild vergrößert
   radarLayer = L.tileLayer(
-    `https://tilecache.rainviewer.com/v2/radar/${frame.path}/256/{z}/{x}/{y}/2/1_1.png`,
-    { opacity: 0.7, tileSize: 256, attribution: 'RainViewer' }
+    `${radarHost}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`,
+    { opacity: 0.7, tileSize: 256, maxNativeZoom: 7, attribution: 'RainViewer' }
   ).addTo(map);
   const t = new Date(frame.time * 1000);
   const isFuture = t > new Date();
@@ -1034,8 +1067,8 @@ function setMapLayer(kind) {
     const r = radarFrames[radarFrames.length - 1];
     if (r) {
       radarLayer = L.tileLayer(
-        `https://tilecache.rainviewer.com/v2/radar/${r.path}/256/{z}/{x}/{y}/4/0_1.png`,
-        { opacity: 0.55, attribution: 'RainViewer' }
+        `${radarHost}${r.path}/256/{z}/{x}/{y}/4/0_1.png`,
+        { opacity: 0.55, maxNativeZoom: 7, attribution: 'RainViewer' }
       ).addTo(map);
     }
   }

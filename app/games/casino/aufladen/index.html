@@ -266,7 +266,8 @@ let busy = false;
 function view(id) { ['viewForm', 'viewBusy', 'viewDone'].forEach(v => { $(v).hidden = v !== id; }); }
 
 function parseAmt(t) {
-  const v = String(t).trim().replace(/\s|€/g, '').replace(',', '.');
+  const raw = String(t).trim().replace(/\s|€/g, '');
+  const v = raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : (/^\d{1,3}(\.\d{3})+$/.test(raw) ? raw.replace(/\./g, '') : raw);
   if (!/^\d+(\.\d{1,2})?$/.test(v)) return null;
   const n = Math.round(parseFloat(v) * 100);
   if (admin()) return n >= MIN_EUR * 100 && Number.isSafeInteger(n) ? n : null;
@@ -366,17 +367,17 @@ $('fields').addEventListener('input', e => {
 function escapeHtml(t) { return String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 function showData() {
   const m = meth;
-  const g = id => want(m.fields.find(f => f.id === id));
+  const g = id => escapeHtml(want(m.fields.find(f => f.id === id)));
   if (m.id === 'card') {
     $('dlgTitle').textContent = 'Deine Karte';
     $('dlgBody').innerHTML = `<div class="cc"><div class="brand">MUSTERBANK · CREDIT</div><div class="num">${g('num')}</div>
-      <div class="meta"><div><small>INHABER</small>${escapeHtml(g('name'))}</div><div><small>GÜLTIG BIS</small>${g('exp')}</div><div><small>CVC</small>${g('cvc')}</div></div></div>`;
+      <div class="meta"><div><small>INHABER</small>${g('name')}</div><div><small>GÜLTIG BIS</small>${g('exp')}</div><div><small>CVC</small>${g('cvc')}</div></div></div>`;
   } else if (m.id === 'paypal') {
     $('dlgTitle').textContent = 'PayPal-Konto';
     $('dlgBody').innerHTML = `<div class="acct"><small>Name</small>${escapeHtml(holder())}<small>E-Mail</small>${g('mail')}</div>`;
   } else {
     $('dlgTitle').textContent = 'Kontodaten';
-    $('dlgBody').innerHTML = `<div class="acct"><small>Kontoinhaber</small>${escapeHtml(g('name'))}<small>IBAN</small>${g('iban')}<small>Bank</small>Musterbank</div>`;
+    $('dlgBody').innerHTML = `<div class="acct"><small>Kontoinhaber</small>${g('name')}<small>IBAN</small>${g('iban')}<small>Bank</small>Musterbank</div>`;
   }
   $('dlg').show();
 }
@@ -419,7 +420,7 @@ $('pay').addEventListener('click', () => {
   const wait = REDUCED ? 300 : 900;
   if (!instant) m.steps.forEach((t, i) => setTimeout(() => { $('step').textContent = t; }, i * wait));
   const finish = (newBal, split, credited, stopped, parts) => {
-    const now = Date.now(), no = 'BD-' + String(now).slice(-8), c = credited === undefined ? eur * 100 : credited;
+    const now = Date.now(), no = 'BD-' + String(now).slice(-8), c = credited === undefined ? Math.round(eur * 100) : credited;
     lastReceipt = { no, ts: now, cents: c, method: m.name, payer: holder(), balance: newBal, fromPool: parts ? parts.fromPool : 0, fromCard: parts ? parts.fromCard : c };
     Belege.add(lastReceipt);
     $('doneText').textContent = '+' + money(c) + ' wurden deinem Konto gutgeschrieben. Neues Guthaben: ' + money(newBal) + '.' + (stopped ? ' Der Rest ging nicht durch: ' + stopped : '');
@@ -462,7 +463,7 @@ $('pay').addEventListener('click', () => {
     }
     // Gast: frisch lesen, damit ein zweiter Tab oder Gewinne zwischendurch nicht überschrieben werden
     const s = readState() || {};
-    s.balance = balanceOf(s) + eur * 100;
+    s.balance = balanceOf(s) + Math.round(eur * 100);
     $('noSave').hidden = writeState(s);
     finish(s.balance);
   }, instant ? 0 : m.steps.length * wait + 400);

@@ -23,7 +23,7 @@
             --red: #e94560;
             --orange: #fb923c;
             --text: var(--chalk);
-            --muted: rgba(255,255,255,0.28);
+            --muted: rgba(255,255,255,0.52);
             --muted2: rgba(255,255,255,0.5);
         }
 
@@ -59,7 +59,7 @@
         .nav-left { display: flex; align-items: center; gap: 14px; }
         .nav-back {
             display: inline-flex; align-items: center; gap: 6px;
-            text-decoration: none; color: rgba(255,255,255,0.4);
+            text-decoration: none; color: rgba(255,255,255,0.52);
             font-size: 11px; font-weight: 600;
             border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
             padding: 6px 12px; transition: all 0.2s;
@@ -468,6 +468,12 @@ function freeCountdown(now) {
     return dh>=24 ? `${Math.floor(dh/24)}d ${padZ(dh%24)}:${padZ(dm)}:${padZ(ds)}` : `${padZ(dh)}:${padZ(dm)}:${padZ(ds)}`;
 }
 
+// Was kommt nach einer Unterrichtsstunde? Nicht immer eine Pause.
+function endLabel(next) {
+    if (!next) return 'bis Schulschluss';
+    return next.type==='class' ? 'bis zur nächsten Stunde' : 'bis zur Pause';
+}
+
 function getState(now) {
     const day = now.getDay();
     const curMin = toMin(now.getHours(), now.getMinutes()) + now.getSeconds()/60;
@@ -547,7 +553,7 @@ function update() {
         const cdCls=isLunch?'cd-lunch':isBreak?'cd-break':'cd-class';
         const pfCls=isLunch?'pf-lunch':isBreak?'pf-break':'pf-class';
         const badge=isLunch?'Mittagspause':isBreak?'Pause':'Unterricht';
-        const cdLabel=isBreak||isLunch?'bis Unterrichtsbeginn':'bis zur Pause';
+        const cdLabel=isBreak||isLunch?'bis Unterrichtsbeginn':endLabel(next);
         const nextLabel=next?`Danach: <b>${next.name}</b> — ${fmtTime(next.h1,next.m1)} bis ${fmtTime(next.h2,next.m2)}`:'Danach: <b>Endlich Frei! 🎉</b>';
         const sched=st.isMon?[...MORNING,...MON_AFTERNOON]:MORNING;
         setTopBar(barCls);
@@ -585,9 +591,9 @@ let pipWindow = null;
 let pipInterval = null;
 
 const PIP_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Inter:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Share+Tech+Mono&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--purple:#7c6fff;--blue:#38bdf8;--green:#4ade80;--yellow:#fbbf24;--red:#f87171;--orange:#fb923c;--text: var(--chalk);--muted:#4a5568;--muted2:#718096}
+:root{--purple:#7c6fff;--blue:#38bdf8;--green:#4ade80;--yellow:#fbbf24;--red:#f87171;--orange:#fb923c;--text:#f4f1ff;--muted:#8b93a5;--muted2:#aab1c2}
 body{font-family:'Barlow','Segoe UI',sans-serif;background:#08081a;color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none}
 .topbar{height:3px;flex-shrink:0}
 .bc{background:linear-gradient(90deg,var(--purple),#a78bfa)}
@@ -605,10 +611,10 @@ body{font-family:'Barlow','Segoe UI',sans-serif;background:#08081a;color:var(--t
 .bs-b{background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.25)}
 .bl-b{background:rgba(249,115,22,.12);color:var(--orange);border:1px solid rgba(249,115,22,.25)}
 .name{font-size:.68rem;color:var(--muted2);font-weight:500;min-height:14px}
-.cd{font-family:'Orbitron',monospace;font-size:2.4rem;font-weight:900;line-height:1;letter-spacing:-1px;margin:1px 0}
+.cd{font-family:'Share Tech Mono',monospace;font-size:2.4rem;font-weight:400;line-height:1;letter-spacing:-1px;margin:1px 0}
 .cd-c{color:var(--purple)}.cd-b{color:var(--yellow)}.cd-f{color:var(--green)}.cd-s{color:var(--red)}.cd-l{color:var(--orange)}
 .lbl{font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:7px}
-.pb{background:color-mix(in srgb, #fff 5%, var(--board-raised));border-radius:100px;height:3px;overflow:hidden;margin-bottom:7px}
+.pb{background:rgba(255,255,255,.09);border-radius:100px;height:3px;overflow:hidden;margin-bottom:7px}
 .pf{height:100%;width:100%;border-radius:100px;transform-origin:0 50%;transform:scaleX(var(--p,0));transition:transform 1s linear}
 .pf-c{background:linear-gradient(90deg,var(--purple),#a78bfa)}
 .pf-b{background:linear-gradient(90deg,var(--yellow),var(--orange))}
@@ -658,6 +664,7 @@ function renderPipDoc(doc, st) {
                     break:{bar:'bb',b:'bb-b',lbl:'Pause',c:'cd-b',p:'pf-b',cl:'bis Unterrichtsbeginn'},
                     lunch:{bar:'bl',b:'bl-b',lbl:'Mittagspause',c:'cd-l',p:'pf-l',cl:'bis Unterrichtsbeginn'}};
         const cfg=cfgs[slot.type]||cfgs.class;
+        if (cfg===cfgs.class) cfg.cl=endLabel(next);
         sb(cfg.bar,cfg.b,cfg.lbl);
         N.textContent=`${slot.name} · ${fmtTime(slot.h1,slot.m1)}–${fmtTime(slot.h2,slot.m2)}`;
         C.className='cd '+cfg.c; C.style.fontSize=''; C.textContent=fmtCountdown(secsLeft);
@@ -750,7 +757,7 @@ function updateWidget(st) {
         const cd=isLunch?'cd-lunch':isBreak?'cd-break':'cd-class';
         const pf=isLunch?'pf-lunch':isBreak?'pf-break':'pf-class';
         const bLabel=isLunch?'Mittagspause':isBreak?'Pause':'Unterricht';
-        const cl=isBreak||isLunch?'bis Unterrichtsbeginn':'bis zur Pause';
+        const cl=isBreak||isLunch?'bis Unterrichtsbeginn':endLabel(next);
         sb(bar,bc,bLabel);
         fwName.textContent=`${slot.name} · ${fmtTime(slot.h1,slot.m1)}–${fmtTime(slot.h2,slot.m2)}`;
         fwCount.className='fw-countdown '+cd; fwCount.style.fontSize='';
@@ -791,7 +798,8 @@ function showToast(msg) {
 (function() {
     const w = document.getElementById('floatWidget');
     let dragging=false, sx,sy,ox,oy;
-    w.addEventListener('mousedown', e => {
+    w.style.touchAction='none';
+    w.addEventListener('pointerdown', e => {
         if (e.target.classList.contains('fw-close')) return;
         dragging=true; sx=e.clientX; sy=e.clientY;
         const r=w.getBoundingClientRect(); ox=r.left; oy=r.top;
@@ -799,28 +807,24 @@ function showToast(msg) {
         w.style.left=ox+'px'; w.style.top=oy+'px';
         w.classList.add('dragging'); e.preventDefault();
     });
-    document.addEventListener('mousemove', e => {
+    document.addEventListener('pointermove', e => {
         if (!dragging) return;
-        w.style.left=(ox+e.clientX-sx)+'px'; w.style.top=(oy+e.clientY-sy)+'px';
+        // im Fenster halten, damit man es nicht aus dem Bild schiebt
+        const x=Math.max(0,Math.min(innerWidth-60,ox+e.clientX-sx)), y=Math.max(0,Math.min(innerHeight-40,oy+e.clientY-sy));
+        w.style.left=x+'px'; w.style.top=y+'px';
     });
-    document.addEventListener('mouseup', () => { if(dragging){dragging=false;w.classList.remove('dragging');} });
+    const drop=() => { if(dragging){dragging=false;w.classList.remove('dragging');} };
+    document.addEventListener('pointerup', drop);
+    document.addEventListener('pointercancel', drop);
 })();
 
 // ─── Achievements ─────────────────────────────────────────────
 const SU_OPEN_TIME = Date.now();
 let su15Checked = false;
 
+// Speichern und Abgleich mit dem Konto übernimmt window.Achievements (auth.js)
 function tryUnlock(id, def) {
-    let list;
-    try { list = JSON.parse(localStorage.getItem('arcade_achievements')) || []; }
-    catch(e) { list = []; }
-    if (list.some(a => a.id === id)) return;
-    list.push({ id, unlockedAt: new Date().toISOString() });
-    localStorage.setItem('arcade_achievements', JSON.stringify(list));
-    if (window.showAchToast) window.showAchToast(def);
-    if (window.Auth && window.Auth.user) {
-        window.Auth.saveAchievements(list).catch(() => {});
-    }
+    if (window.Achievements) window.Achievements.unlock(id, def);
 }
 
 function checkAchievements() {

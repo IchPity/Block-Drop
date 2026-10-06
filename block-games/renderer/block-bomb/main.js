@@ -589,6 +589,7 @@ class BlockBombGame {
       this._message('Unentschieden!');
     }
     setTimeout(() => {
+      if (this.destroyed) return; // Match wurde inzwischen abgebrochen
       this.config.onResult(this._buildResult(winner));
     }, 1400);
   }
@@ -809,6 +810,7 @@ class BlockBombGame {
   }
 
   destroy() {
+    this.destroyed = true;
     this.running = false;
     this.ended = true;
     if (this.raf) cancelAnimationFrame(this.raf);

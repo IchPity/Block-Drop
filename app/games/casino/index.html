@@ -202,7 +202,10 @@
   @media (prefers-reduced-motion: reduce) {
     .cabinet.spinning .bulbs, .reels.tease, .cell.hit svg, .spin:not(:disabled):not(.refill)::after, .cabinet.shake, .cabinet.flash::before, .bigwin.show b { animation: none; }
   }
-  body.calm .cabinet.spinning .bulbs, body.calm .reels.tease, body.calm .cell.hit svg, body.calm .spin:not(:disabled):not(.refill)::after, body.calm .cabinet.shake, body.calm .cabinet.flash::before, body.calm .bigwin.show b { animation: none; }
+  /* Ohne ADHS-Modus: kein Wackeln, kein Blitz, kein Regenbogen. Lampen, Fast-Gewinn und Gewinnsymbole laufen weiter, nur langsamer. */
+  body.calm .cabinet.shake, body.calm .cabinet.flash::before, body.calm .bigwin.show b { animation: none; }
+  body.calm .cabinet.spinning .bulbs { animation-duration: 0.6s; }
+  body.calm .cell.hit svg { animation-duration: 0.7s; }
   @media (prefers-reduced-motion: reduce) {
     .bigwin.show { animation: bigwinCalm 2.6s forwards; }
     @keyframes bigwinCalm { 0%,90% { opacity: 1; } 100% { opacity: 0; } }
@@ -468,7 +471,7 @@
 <div class="settings-back" id="settingsBack" hidden>
   <div class="settings" role="dialog" aria-modal="true" aria-labelledby="setH">
     <h2 id="setH">Einstellungen</h2>
-    <p>Drehgeschwindigkeit, Ton und Effekte. Die Geschwindigkeit gilt ab der nächsten Runde, auch für Autospin.</p>
+    <p>Drehgeschwindigkeit, Ton und Effekte. Die Geschwindigkeit gilt ab der nächsten Runde, auch für Autospin. Der ADHS-Modus gilt für die ganze Seite.</p>
     <div class="lbl" id="speedLbl">Drehgeschwindigkeit</div>
     <div class="speeds" id="speeds" role="group" aria-labelledby="speedLbl"></div>
     <button type="button" class="toggle" id="soundBtn" aria-pressed="true">Ton (Klingeln bei Gewinn)<span id="soundState">An</span></button>
@@ -506,7 +509,8 @@ const maxBetIdx = () => (M.reels === 5 ? BET_STEPS.length - 1 : BET_MAX_NORMAL);
 const START_BALANCE = 2000; // Cent
 const KEY = 'automat5dk.casino.v2';
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const fxOn = () => state.fx && !REDUCED; // ADHS-Effekte
+const fxOn = () => !REDUCED; // Bewegung überhaupt
+const adhsOn = () => state.fx && !REDUCED; // volle Reizüberflutung: Wackeln, Blitze, volle Partikelmenge
 
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('de-DE');
@@ -541,12 +545,13 @@ function apply(s) {
   if (state.free > 0 && !state.freeBet) state.free = 0;
   state.speed = Math.min(SPEEDS.length - 1, num(s.speed, 1));
   state.sound = s.sound !== false;
-  state.fx = s.fx !== false;
+  state.fx = window.FX ? FX.adhs : s.fx !== false; // gehört der ganzen Seite (/fx.js)
   for (const id of ORDER) state.reels[id] = s.reels && (s.reels[id] === 3 || s.reels[id] === 5) ? s.reels[id] : MODES[id].reels;
   if (s.enyaDay === today()) {
     state.enyaMs = Math.min(ENYA_LIMIT, state.enyaDay === s.enyaDay ? Math.max(state.enyaMs, num(s.enyaMs, 0)) : num(s.enyaMs, 0));
     state.enyaDay = s.enyaDay;
   }
+  state.owner = typeof s.owner === 'string' ? s.owner : undefined;
   state.mode = MODES[s.mode] ? s.mode : 'classic';
   state.freeMode = MODES[s.freeMode] ? s.freeMode : 'classic';
   if (state.free > 0) state.mode = state.freeMode; // Freispiele laufen im Modus, in dem sie gewonnen wurden
@@ -563,6 +568,7 @@ function load() {
   try { const raw = localStorage.getItem(KEY); if (raw) s = JSON.parse(raw); } catch (e) {}
   if (!s) { try { s = readCookie(); } catch (e) {} }
   if (s) apply(s);
+  if (window.FX) state.fx = FX.adhs; // auch ohne gespeicherten Stand
   guestBalance = state.balance;
 }
 function save() {
@@ -758,6 +764,7 @@ const fx = $('fx'), fxc = fx.getContext('2d');
 let parts = [], fxRun = 0;
 function burst(n, big) {
   if (!fxOn()) return;
+  if (!state.fx) n = Math.ceil(n / 2);
   const c = fx.getBoundingClientRect();
   fx.width = c.width; fx.height = c.height;
   const r = $('reels').getBoundingClientRect();
@@ -783,7 +790,7 @@ function fxStep() {
   fxc.globalAlpha = 1;
   fxRun = parts.length ? requestAnimationFrame(fxStep) : 0;
 }
-// Die ganze Halle feiert mit: Münzregen, Blitz, Lichtstreifen (nur im ADHS-Modus)
+// Die ganze Halle feiert mit: Münzregen, Blitz, Lichtstreifen (ohne ADHS-Modus dämpft /fx.js das)
 function hallFx(res, x, award, luckStart) {
   if (!fxOn() || !window.FX) return;
   const r = $('reels').getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
@@ -807,13 +814,12 @@ function hallFx(res, x, award, luckStart) {
   }
 }
 function shake(hard) {
-  if (!fxOn()) return;
+  if (!adhsOn()) return;
   const cab = $('cabinet');
   cab.classList.remove('shake', 'hard', 'flash'); void cab.offsetWidth;
   cab.classList.add('shake', 'flash'); cab.classList.toggle('hard', !!hard);
 }
 function bigWin(title, amount) {
-  if (!state.fx) return;
   $('bwTitle').textContent = title;
   $('bwAmt').textContent = amount > 0 ? '+' + money(amount) : '';
   const b = $('bigwin'); b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
@@ -1031,7 +1037,7 @@ $('autoTog').addEventListener('click', () => {
 });
 function spaceIgnored() {
   const el = document.activeElement;
-  if (settingsOpen()) return true;
+  if (settingsOpen() || document.querySelector('dialog[open]')) return true;
   if (!el) return false;
   const t = el.tagName;
   return t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT' || !!el.closest('.navbar, .auth-modal-backdrop.open');
@@ -1062,11 +1068,30 @@ window.addEventListener('storage', e => {
 const rpc = (fn, args) => Auth.client.rpc(fn, args || {});
 let pending = 0, chain = Promise.resolve();
 const parseEur = t => {
-  const v = String(t).trim().replace(/\s|€/g, '').replace(',', '.');
+  // „1.000,50", „1000,5" und „1.000" verstehen: Punkte sind Tausendertrenner, das Komma trennt Cent
+  const raw = String(t).trim().replace(/\s|€/g, '');
+  const v = raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : (/^\d{1,3}(\.\d{3})+$/.test(raw) ? raw.replace(/\./g, '') : raw);
   return /^\d+(\.\d{1,2})?$/.test(v) ? Math.round(parseFloat(v) * 100) : null;
 };
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+// Wechselt der Besitzer (Gast → Konto oder Konto → anderes Konto), verfallen Freispiele und Glück:
+// sonst ließen sich mit Gast-Spielgeld gewonnene Freispiele aufs Konto und in die Rangliste tragen.
+// Der Auth-Callback kann sofort feuern, also noch bevor weiter unten load() den gespeicherten
+// Stand gelesen hat. Bis dahin wird nur vorgemerkt, sonst überschriebe save() den Spielstand
+// mit den Startwerten.
+let booted = false, pendingOwner = null;
+function claim(ownerId) {
+  if (!booted) { pendingOwner = ownerId; return; }
+  if (state.owner !== undefined && state.owner !== ownerId && (state.free > 0 || state.luck.length)) {
+    clearTimeout(autoTimer);
+    state.free = 0; state.freeBet = 0; state.luck = [];
+    if (!spinning) banner('Freispiele und Glück gelten nur für den, der sie gewonnen hat. Sie sind verfallen.', 'warn');
+  }
+  state.owner = ownerId;
+  save();
+  if (!spinning) render();
+}
 function setPool(v) { if (Number.isFinite(v)) { poolAmt = v; $('poolAmt').textContent = money(v); } }
 function adopt(w) {
   if (!w) return;
@@ -1087,12 +1112,14 @@ function syncRound(bet, paid, win) {
 async function loadWallet() {
   const { data, error } = await rpc('casino_wallet');
   if (error) { console.warn('[Casino] Wallet:', error.message); return false; }
+  if (!wallet) guestBalance = state.balance; // Gast-Stand von jetzt merken, nicht den vom Seitenaufruf
   wallet = true;
   $('heroSub').textContent = 'Drei oder fünf Walzen, drei Spielmodi, Spielgeld und kein Risiko. Dein Guthaben liegt in deinem Konto: Du kannst es auszahlen und dich in der Rangliste mit anderen messen.';
   $('payoutBox').hidden = false;
   setPool(data.pool);
   state.balance = data.balance; pending = 0;
   clampBet(); shown = state.balance; $('mBalance').textContent = money(shown); render();
+  if (window.Auth && Auth.user) claim(Auth.user.id);
   loadRanking();
   return true;
 }
@@ -1115,14 +1142,20 @@ $('payReceipt').addEventListener('click', () => {
 });
 $('rcpClose').addEventListener('click', () => $('rcpDlg').close());
 $('rcpDlg').addEventListener('click', e => { if (e.target === $('rcpDlg')) $('rcpDlg').close(); });
+let paying = false;
 async function payout() {
-  if (!wallet || spinning) return;
+  if (!wallet || spinning || paying) return;
   const c = parseEur($('payIn').value);
   if (!c || c < 100) return payMsg('Bitte mindestens 1 € eingeben.', true);
   if (c > state.balance) return payMsg('So viel Guthaben hast du nicht.', true);
+  paying = true; // der Enter-Weg umgeht den gesperrten Knopf
   $('payGo').disabled = true;
-  await chain;
-  const { data, error } = await rpc('casino_payout', { p_amount: c });
+  let data, error;
+  try {
+    await chain;
+    ({ data, error } = await rpc('casino_payout', { p_amount: c }));
+  } catch (e) { error = e; }
+  paying = false;
   $('payGo').disabled = false;
   if (error) { payMsg('Auszahlung fehlgeschlagen: ' + error.message, true); await loadWallet(); return; }
   adopt(data);
@@ -1156,7 +1189,7 @@ setInterval(() => {
 
 $('payoutBox').hidden = true;
 if (window.Auth && Auth.onChange) {
-  let uid = null;
+  let uid; // undefined = noch keine Meldung (auch der Gast soll einmal durchlaufen)
   Auth.onChange(user => {
     const id = user ? user.id : null;
     if (id === uid) return;
@@ -1164,6 +1197,7 @@ if (window.Auth && Auth.onChange) {
     uid = id;
     if (user) loadWallet();
     else if (hadUser) location.reload();
+    else claim('gast');
   });
 }
 
@@ -1242,7 +1276,12 @@ function renderFx() {
   $('fxState').textContent = state.fx ? 'An' : 'Aus';
   document.body.classList.toggle('calm', !state.fx);
 }
-$('fxBtn').addEventListener('click', () => { state.fx = !state.fx; save(); renderFx(); });
+$('fxBtn').addEventListener('click', () => {
+  if (window.FX) FX.setAdhs(!state.fx); // meldet sich über „fx:adhs" zurück
+  else { state.fx = !state.fx; save(); renderFx(); }
+});
+// Auch im Menü rechts oben oder in einem anderen Tab umgestellt
+addEventListener('fx:adhs', e => { state.fx = !!e.detail; save(); renderFx(); });
 function renderSound() {
   $('soundBtn').setAttribute('aria-pressed', state.sound);
   $('soundState').textContent = state.sound ? 'An' : 'Aus';
@@ -1252,7 +1291,7 @@ $('gearBtn').addEventListener('click', () => toggleSettings(true));
 $('setClose').addEventListener('click', () => toggleSettings(false));
 $('settingsBack').addEventListener('click', e => { if (e.target === e.currentTarget) toggleSettings(false); });
 document.addEventListener('keydown', e => {
-  if (e.key !== 'Escape' || document.querySelector('.auth-modal-backdrop.open')) return;
+  if (e.key !== 'Escape' || document.querySelector('.auth-modal-backdrop.open, dialog[open]')) return;
   e.preventDefault();
   toggleSettings(!settingsOpen());
 });
@@ -1289,6 +1328,8 @@ shown = state.balance;
 $('mBalance').textContent = money(shown);
 luckWas = renderLuck();
 render();
+booted = true;
+if (pendingOwner !== null) claim(pendingOwner); // vorgemerkter Besitzer (siehe claim)
 if (state.free > 0) { banner(`Freispiele laufen: noch ${state.free}.`, 'win'); scheduleAuto(); }
 else if (state.balance < BET_STEPS[0]) banner('Guthaben aufgebraucht. Drück SPIN oder die Leertaste zum Aufladen.', 'warn');
 save();

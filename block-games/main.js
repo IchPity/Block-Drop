@@ -56,8 +56,12 @@ ipcMain.handle('update:check', async () => {
 // Nur Links auf das eigene Repo öffnen (Renderer schickt uns die URL aus
 // der Releases-API-Antwort, die stammt also nicht von einer beliebigen Quelle).
 ipcMain.handle('update:open', (e, url) => {
-  if (typeof url === 'string' && url.startsWith(`https://github.com/${UPDATE_REPO}`)) {
-    shell.openExternal(url);
+  // Als URL prüfen, nicht per Präfix: "…/Block-Drop-irgendwas" darf nicht durchrutschen
+  let u;
+  try { u = new URL(String(url)); } catch { return; }
+  const base = `/${UPDATE_REPO}`;
+  if (u.protocol === 'https:' && u.hostname === 'github.com' && (u.pathname === base || u.pathname.startsWith(base + '/'))) {
+    shell.openExternal(u.href);
   }
 });
 
@@ -88,9 +92,15 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true
+      sandbox: true,
+      // Versionsnummer für preload.js (dort ist package.json nicht lesbar): eine Quelle statt zwei
+      additionalArguments: ['--app-version=' + APP_VERSION]
     }
   });
+
+  // Das Fenster zeigt nur die lokale Oberfläche: keine neuen Fenster, kein Wegnavigieren.
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.on('will-navigate', (event) => event.preventDefault());
 
   // Kein Standard-Menü (File/Edit/View) — das ist ein Spiel, kein Editor.
   Menu.setApplicationMenu(null);
@@ -124,10 +134,12 @@ ipcMain.handle('display:set-fullscreen', (e, on) => {
   if (win) win.setFullScreen(!!on);
 });
 
-ipcMain.handle('display:set-size', (e, { width, height }) => {
+ipcMain.handle('display:set-size', (e, size) => {
   const win = BrowserWindow.fromWebContents(e.sender);
   if (!win || win.isFullScreen()) return; // Fenstergröße gilt nur im Fenstermodus
-  win.setSize(Math.round(width), Math.round(height));
+  const width = Number(size && size.width), height = Number(size && size.height);
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return;
+  win.setSize(Math.max(960, Math.round(width)), Math.max(640, Math.round(height)));
   win.center();
 });
 

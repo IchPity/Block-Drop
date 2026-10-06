@@ -283,6 +283,7 @@
 <script>
 (() => {
   const KEY = 'blockpresser_v1';
+  const TAB = Math.random().toString(36).slice(2); // unterscheidet diesen Tab von anderen
   const COLORS = ['#ffb000', '#ff3d9a', '#2ee6ff', '#b8ff3d', '#a78bfa', '#ff8a2e'];
   const FX = window.FX;
 
@@ -345,6 +346,8 @@
   let buffUntil = 0, buffMult = 1;
   const buffed = () => Date.now() < buffUntil;
   const mult = () => (buffed() ? buffMult : 1);
+  // Geschenke (Glocke, Meilensteine) rechnen mit der Grundleistung, nicht mit dem laufenden Boost
+  const giftBase = secs => Math.max(bps() * secs, clickPower() * 100) / mult();
   const earn = n => { S.blocks += n; S.total += n; S.life += n; S.allTime = (S.allTime || 0) + n; };
 
   // Meilensteine: ab 10 / 25 / 50 / 100 / 200 Stück verdoppelt sich die Leistung dieser Maschine
@@ -368,19 +371,43 @@
     return (n / Math.pow(1000, e)).toFixed(2).replace('.', ',') + ' ' + SUF[e];
   }
 
+  // Zwei offene Tabs: Es gilt der Tab, in dem zuletzt geklickt oder getippt wurde (S.act).
+  // Der andere übernimmt dessen Stand, statt ihn mit seinem alten zu überschreiben.
+  function adopt(raw) {
+    S = Object.assign(fresh(), raw);
+    if (!(S.life >= S.total)) S.life = S.total;
+    if (!(S.allTime >= S.life)) S.allTime = S.life;
+    if (!S.up || typeof S.up !== 'object') S.up = {};
+    if (!S.reached || typeof S.reached !== 'object') S.reached = {};
+    if (!S.owned || typeof S.owned !== 'object') S.owned = {};
+    if (S.buffUntil > Date.now() && S.buffMult > 1) { buffUntil = S.buffUntil; buffMult = S.buffMult; }
+  }
+  // Stand eines anderen Tabs übernehmen, wenn dort zuletzt gespielt wurde. true = übernommen.
+  function pull() {
+    try {
+      const other = JSON.parse(localStorage.getItem(KEY));
+      if (other && typeof other.blocks === 'number' && other.tab && other.tab !== TAB && (other.act || 0) > (S.act || 0)) {
+        adopt(other);
+        if (menuOpen()) { buildSpShop(); updateMenu(); }
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
   function save() {
-    S.last = Date.now();
+    pull();
+    S.last = Date.now(); S.tab = TAB;
+    S.buffUntil = buffUntil; S.buffMult = buffMult;
     try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
   }
+  const acted = () => { S.act = Date.now(); };
+  document.addEventListener('pointerdown', acted, true);
+  document.addEventListener('keydown', acted, true);
   function load() {
     try {
       const raw = JSON.parse(localStorage.getItem(KEY));
       if (raw && typeof raw.blocks === 'number') {
-        S = Object.assign(fresh(), raw);
-        if (!(S.life >= S.total)) S.life = S.total;
-        if (!(S.allTime >= S.life)) S.allTime = S.life;
-        if (!S.up) S.up = {};
-        if (!S.reached) S.reached = {};
+        adopt(raw);
         const away = Math.max(0, Math.min((Date.now() - S.last) / 1000, 8 * 3600));
         const gain = bps() * away * (OFFLINE_RATE + 0.1 * lv('night')); // offline nur zur Hälfte, damit aktives Spielen lohnt
         if (gain >= 1) { earn(gain); toast('Willkommen zurück! Während du weg warst: +' + fmt(gain) + ' Blöcke'); }
@@ -494,7 +521,9 @@
   $('block').addEventListener('click', e => {
     const r = $('block').getBoundingClientRect();
     press(e.clientX || r.left + r.width / 2, e.clientY || r.top + r.height / 2);
+    $('block').blur(); // sonst feuert gehaltenes Enter den Knopf in Tastenwiederholrate
   });
+  $('block').addEventListener('keydown', e => { if (e.repeat && (e.key === 'Enter' || e.code === 'Space')) e.preventDefault(); });
   document.addEventListener('keydown', e => {
     if (e.code === 'Space' && document.activeElement === document.body && !menuOpen() && !rewardOpen()) {
       e.preventDefault();
@@ -528,7 +557,7 @@
     if (Math.random() < 0.5) {
       buffMult = 7; buffUntil = Date.now() + 30000;
     } else {
-      const g = Math.max(bps() * 300, clickPower() * 100);
+      const g = giftBase(300);
       earn(g); toast('Schulglocke! +' + fmt(g) + ' Blöcke');
       if (FX) FX.rain({ kind: 'block', ms: 900, per: 4, colors: COLORS, bounce: false });
     }
@@ -571,14 +600,13 @@
     bp_uni:     { name: 'Hausmeister Jürgen', desc: 'Schließe die Uni ab (100 Mio. Blöcke) und werde Hausmeister', icon: '🔧' },
     bp_end:     { name: 'Schulleben komplett', desc: 'Presse 500 Mio. Blöcke — durchgespielt', icon: '🏆' },
   };
+  // Die Prüfung läuft zehnmal pro Sekunde: schon gemeldete Erfolge merkt sich ein Set
+  const granted = new Set();
   function grant(id) {
-    const def = ACH[id]; if (!def) return;
-    let list; try { list = JSON.parse(localStorage.getItem('arcade_achievements')) || []; } catch (e) { list = []; }
-    if (list.some(a => a.id === id)) return;
-    list.push({ id, unlockedAt: new Date().toISOString() });
-    try { localStorage.setItem('arcade_achievements', JSON.stringify(list)); } catch (e) {}
-    if (window.showAchToast) window.showAchToast(def);
-    if (window.Auth && window.Auth.user && window.Auth.saveAchievements) window.Auth.saveAchievements(list).catch(() => {});
+    const def = ACH[id]; if (!def || granted.has(id)) return;
+    granted.add(id);
+    if (window.Achievements) window.Achievements.unlock(id, def);
+    else if (window.showAchToast) window.showAchToast(def);
   }
   // ── Meilensteine mit Kino-Screen (+10 % auf alles je Meilenstein, plus Sofort-Geschenk) ──
   const MS = [
@@ -646,7 +674,7 @@
     // Nach dem Laden eines alten Spielstands nicht alle Screens hintereinander zeigen
     const show = fresh.length > 2 ? fresh.slice(-1) : fresh;
     show.forEach(m => {
-      const gift = Math.max(bps() * 600, clickPower() * 100);
+      const gift = giftBase(600);
       earn(gift);
       pushReward({ ico: m.ico, col: m.col, tier: 'epic', title: m.title, text: m.text, cta: m.cta, particles: 'block',
         count: { from: 0, to: gift, fmt: v => '+' + fmt(v) + ' Blöcke', ms: 1500 },
@@ -735,15 +763,18 @@
   $('save').addEventListener('click', () => { save(); toast('Gespeichert ✔'); });
 
   window.addEventListener('beforeunload', save);
+  window.addEventListener('storage', e => { if (e.key === KEY && pull()) render(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
 
 
   // ── Konto-Highscore: Wert = insgesamt gepresste Blöcke ──
-  let synced = 0;
+  let synced = 0, syncedFor = null;
   const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   async function syncScore() {
     const A = window.Auth, score = Math.floor(S.allTime || S.life);
-    if (!A || !A.user || score <= synced || score < 1) return;
+    if (!A || !A.user || !A.profile) return;
+    if (syncedFor !== A.user.id) { syncedFor = A.user.id; synced = 0; }
+    if (score <= synced || score < 1 || !Number.isSafeInteger(score)) return;
     const { error } = await A.saveBestScore({ game: 'blockpresser', mode: 'total', score });
     if (error) console.warn('[Block Presser] saveBestScore:', error.message); else synced = score;
   }
@@ -759,7 +790,8 @@
   }
   setInterval(() => { syncScore(); }, 60000);
   setInterval(loadBoard, 120000);
-  setTimeout(() => { loadBoard(); syncScore(); }, 1500);
+  if (window.Auth && window.Auth.onChange) window.Auth.onChange(() => { granted.clear(); loadBoard(); syncScore(); });
+  else loadBoard();
   document.addEventListener('visibilitychange', () => { if (document.hidden) syncScore(); });
 
   $('bell').innerHTML = ICON.bell;

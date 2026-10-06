@@ -14,9 +14,16 @@
      FX.credits(opts)          Abspann → Promise
      FX.tilt(nodes)            3D-Neigung mit Lichtreflex
      FX.go(url)                Seitenwechsel mit Röhre-aus
+     FX.adhs / FX.setAdhs(on)  ADHS-Modus (volle Reizüberflutung) an oder aus
 
    Alles respektiert prefers-reduced-motion; ohne WebGL bleibt das
    Standbild aus theme.css stehen. Styles dazu: theme.css.
+
+   Ohne ADHS-Modus bleibt die Halle, wie sie ist (Kamerafahrt, Röhre,
+   Kino-Screens). Gedämpft wird, was aufs Auge schlägt: Blitze, Wackeln,
+   Partikelmengen. Wie stark, hängt vom Ort ab: in den Spielen am
+   stärksten, im Casino am wenigsten. Wechsel melden sich als
+   window-Event „fx:adhs".
    ───────────────────────────────────────────────────────────────────────── */
 (() => {
   'use strict';
@@ -37,12 +44,45 @@
   const NEON = ['#ff3d9a', '#2ee6ff', '#b8ff3d', '#ffb000', '#7b4dff', '#ffffff'];
 
   // ═══════════════════════════════════════════════════════════════════
+  // ADHS-Modus: gilt für die ganze Seite, gemerkt pro Browser
+  // ═══════════════════════════════════════════════════════════════════
+  const ADHS_KEY = 'arcade.adhs';
+  let adhs = true;
+  try {
+    const v = localStorage.getItem(ADHS_KEY);
+    if (v != null) adhs = v !== '0';
+    // Früher gab es den Schalter nur im Casino: wer ihn dort aus hatte, behält das
+    else if ((JSON.parse(localStorage.getItem('automat5dk.casino.v2')) || {}).fx === false) adhs = false;
+  } catch (e) {}
+  // Dämpfung ohne ADHS-Modus: n Partikelmenge, rain Regen, flash Deckkraft, shake Ausschlag, pulse Hallenlicht
+  const where = /\/games\/casino\//.test(location.pathname) ? 'casino' : /\/games\//.test(location.pathname) ? 'game' : 'site';
+  const CALM = {
+    site:   { n: 0.6, rain: 0.5, flash: 0,   shake: 0,   pulse: 0.7,  lines: true },
+    game:   { n: 0.3, rain: 0,   flash: 0,   shake: 0,   pulse: 0.4,  lines: false },
+    casino: { n: 0.7, rain: 0.6, flash: 0.4, shake: 0.4, pulse: 0.85, lines: true },
+  };
+  const FULL_FX = { n: 1, rain: 1, flash: 1, shake: 1, pulse: 1, lines: true };
+  // Kino-Screen und Abspann unterbrechen das Spiel ohnehin: dort gilt auch in den Spielen die Stufe der übrigen Seite
+  const lvl = () => adhs ? FULL_FX : where === 'game' && (cineOpen || credOpen) ? CALM.site : CALM[where];
+  root.classList.toggle('fx-calm', !adhs);
+  function setAdhs(on) {
+    on = !!on;
+    try { localStorage.setItem(ADHS_KEY, on ? '1' : '0'); } catch (e) {}
+    if (on === adhs) return;
+    adhs = on;
+    root.classList.toggle('fx-calm', !adhs);
+    dispatchEvent(new CustomEvent('fx:adhs', { detail: adhs }));
+  }
+  // In einem anderen Tab umgestellt: hier mitziehen
+  addEventListener('storage', e => { if (e.key === ADHS_KEY && e.newValue != null) setAdhs(e.newValue !== '0'); });
+
+  // ═══════════════════════════════════════════════════════════════════
   // Die Halle: ein Gang zwischen zwei Automatenreihen, Teppich unter
   // Schwarzlicht, Röhren an der Decke. Ein Fragment-Shader, bewusst in
   // halber Auflösung gerendert (weiche Tiefenunschärfe, wenig GPU-Last).
   // Auch die dunklen Bildränder des Objektivs entstehen hier.
   // ═══════════════════════════════════════════════════════════════════
-  const hall = { gl: null, pulse: 0, pulseCol: [1, 1, 1], mx: 0, my: 0, tx: 0, ty: 0, scale: 0.6, acc: [1, 0.24, 0.6], covered: false, wake: null };
+  const hall = { gl: null, pulse: 0, pulseCol: [1, 1, 1], mx: 0, my: 0, tx: 0, ty: 0, scale: 0.6, acc: [1, 0.24, 0.6], covered: false, wake: null, stop: null };
 
   const FRAG = `
 #ifdef GL_FRAGMENT_PRECISION_HIGH
@@ -195,6 +235,9 @@ void main(){
     gl.uniform3f(uAisle, open ? 0.42 : 0.16, open ? 0.12 : 0.34, open ? 0.8 : 0.98);
     doc.body.prepend(cv);
     hall.gl = gl;
+    // Der Browser kann den Kontext jederzeit einziehen (iOS nach Tab-Wechsel): Halle neu aufbauen
+    cv.addEventListener('webglcontextlost', e => { e.preventDefault(); if (hall.stop) hall.stop(); });
+    cv.addEventListener('webglcontextrestored', () => { if (hall.stop) hall.stop(); cv.remove(); hall.gl = null; hall.wake = null; hall.stop = null; startHall(); });
 
     const acc = getComputedStyle(root).getPropertyValue('--accent') || getComputedStyle(doc.body).getPropertyValue('--accent');
     if (acc.trim()) hall.acc = hex(acc);
@@ -233,11 +276,11 @@ void main(){
 
     // Taktung: höchstens ~60 Bilder pro Sekunde, immer ein ganzer Teiler der Bildwiederholrate
     // (144 Hz → 48, 120 Hz → 60, 60 Hz → 60), damit die Kamerafahrt gleichmäßig läuft.
-    let last = 0, vs = 16.7, n = 0, slow = 0, gaps = 0;
+    let last = 0, vs = 16.7, n = 0, slow = 0, gaps = 0, raf = 0;
     const win = [];
     function frame(now) {
       if (!running) return;
-      requestAnimationFrame(frame);
+      raf = requestAnimationFrame(frame);
       const dt = last ? now - last : vs; last = now;
       // Bildwiederholrate des Geräts: der kürzeste Abstand zählt, Ausreißer nach oben kaum
       if (dt > 3) vs = dt < vs ? dt : vs + (Math.min(dt, 34) - vs) * 0.004;
@@ -268,11 +311,13 @@ void main(){
     }
     const wake = () => {
       const want = !doc.hidden && !hall.covered;
-      if (want && !running) { running = true; last = 0; slow = gaps = 0; win.length = 0; requestAnimationFrame(frame); }
-      else if (!want) running = false;
+      if (want && !running) { running = true; last = 0; slow = gaps = 0; win.length = 0; raf = requestAnimationFrame(frame); }
+      // das schon bestellte Bild absagen, sonst laufen nach dem Aufwecken zwei Schleifen nebeneinander
+      else if (!want) { running = false; cancelAnimationFrame(raf); }
     };
     hall.wake = wake;
     doc.addEventListener('visibilitychange', wake);
+    hall.stop = () => { running = false; cancelAnimationFrame(raf); doc.removeEventListener('visibilitychange', wake); hall.wake = null; };
     draw(t0); shown(); wake();
   }
 
@@ -368,7 +413,7 @@ void main(){
     getLayer();
     if (doc.hidden) return;
     const small = innerWidth < 640 && (o.n || 40) > 8;
-    const kind = o.kind || 'spark', n = Math.min(Math.ceil((o.n || 40) * (small ? 0.5 : 1)), MAXP - parts.length);
+    const kind = o.kind || 'spark', n = Math.min(Math.ceil((o.n || 40) * (small ? 0.5 : 1) * lvl().n), MAXP - parts.length);
     const cols = o.colors || (o.color ? [o.color, '#ffffff'] : NEON);
     const sp = o.speed || 9, spread = o.spread == null ? 6.2832 : o.spread, ang = o.angle == null ? -1.5708 : o.angle;
     const heavy = kind !== 'spark' && kind !== 'ember';
@@ -386,8 +431,9 @@ void main(){
     kick();
   }
   function rain(o = {}) {
-    if (REDUCED) return;
-    const dur = o.ms || 1800, per = o.per || 7, t0 = performance.now();
+    const k = lvl().rain;
+    if (REDUCED || !k) return;
+    const dur = (o.ms || 1800) * (k < 1 ? 0.7 : 1), per = Math.max(1, Math.round((o.per || 7) * k)), t0 = performance.now();
     (function drop() {
       if (performance.now() - t0 > dur) return;
       for (let i = 0; i < per; i++) burst(rand(0, innerWidth), -20, { kind: o.kind || 'coin', n: 1, speed: 3, angle: 1.5708, spread: 0.8, life: 3.2, colors: o.colors, bounce: o.bounce !== false, size: o.size });
@@ -395,20 +441,21 @@ void main(){
     })();
   }
   function ring(x, y, color, o = {}) {
-    if (REDUCED) return;
+    if (REDUCED || !lvl().lines) return;
     getLayer();
     rings.push({ x, y, col: color || '#fff', t: 0, dur: o.dur || 0.8, r0: o.from || 10, r1: o.to || Math.max(innerWidth, innerHeight) * 0.6, w: o.width || 10 });
     kick();
   }
   function flash(color, ms) {
-    if (REDUCED) return;
+    const k = lvl().flash;
+    if (REDUCED || !k) return;
     const d = doc.createElement('div');
     d.className = 'fx-flash'; d.style.background = color || '#fff';
     doc.body.appendChild(d);
-    d.animate([{ opacity: 0.85 }, { opacity: 0 }], { duration: ms || 420, easing: 'cubic-bezier(0.16,1,0.3,1)' }).onfinish = () => d.remove();
+    d.animate([{ opacity: 0.85 * k }, { opacity: 0 }], { duration: ms || 420, easing: 'cubic-bezier(0.16,1,0.3,1)' }).onfinish = () => d.remove();
   }
   function streak(y, color) {
-    if (REDUCED) return;
+    if (REDUCED || !lvl().lines) return;
     const d = doc.createElement('div');
     d.className = 'fx-streak'; d.style.top = (y == null ? innerHeight * 0.44 : y) + 'px'; d.style.setProperty('--rc', color || '#fff');
     doc.body.appendChild(d);
@@ -419,10 +466,11 @@ void main(){
     ], { duration: 900, easing: 'cubic-bezier(0.16,1,0.3,1)' }).onfinish = () => d.remove();
   }
   function shake(el, mag, ms) {
-    if (REDUCED) return;
+    const sk = lvl().shake;
+    if (REDUCED || !sk) return;
     el = el || doc.querySelector('main, .wrap, .container, #wrapper');
     if (!el || !el.animate) return;
-    const m = mag || 8, n = 9, kf = [];
+    const m = (mag || 8) * sk, n = 9, kf = [];
     for (let i = 0; i <= n; i++) {
       const k = 1 - i / n;
       kf.push({ transform: i === n ? 'translate(0,0) rotate(0deg)' : `translate(${rand(-m, m) * k}px, ${rand(-m, m) * k}px) rotate(${rand(-0.5, 0.5) * k * m / 8}deg)` });
@@ -432,7 +480,7 @@ void main(){
   function pulse(color, amt) {
     if (hall.covered) return; // verdeckt klingt nichts ab, das Leuchten käme erst beim Aufdecken
     hall.pulseCol = hex(color || '#ffffff');
-    hall.pulse = Math.min(1.4, hall.pulse + (amt == null ? 1 : amt));
+    hall.pulse = Math.min(1.4, hall.pulse + (amt == null ? 1 : amt) * lvl().pulse);
   }
   function count(el, from, to, o = {}) {
     const fmt = o.fmt || (v => Math.round(v).toLocaleString('de-AT'));
@@ -454,6 +502,7 @@ void main(){
   // Kino-Screen
   // ═══════════════════════════════════════════════════════════════════
   let cine, cineQueue = [], cineOpen = false, cineDone = null, cineAt = 0;
+  let closing = false; // Screen oder Abspann blendet gerade aus: neue Screens warten so lange
   // Solange ein Kino-Screen oder der Abspann das Bild füllt, steht die Halle dahinter still
   function cover(on) { hall.covered = on; hall.pulse = 0; if (hall.wake) hall.wake(); }
   const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -549,9 +598,11 @@ void main(){
     cineOpen = false;
     (showCinema.timers || []).forEach(clearTimeout);
     cine.classList.add('off');
+    closing = true;
     const done = cineDone; cineDone = null;
     if (doc.activeElement && cine.contains(doc.activeElement)) doc.activeElement.blur();
     setTimeout(() => {
+      closing = false;
       cine.classList.remove('on', 'off');
       undock();
       if (done) done();
@@ -559,7 +610,7 @@ void main(){
     }, REDUCED ? 0 : 230);
   }
   function cinema(o) {
-    if (cineOpen || credOpen) return new Promise(res => cineQueue.push({ o, res }));
+    if (cineOpen || credOpen || closing) return new Promise(res => cineQueue.push({ o, res }));
     return showCinema(o);
   }
 
@@ -609,10 +660,12 @@ void main(){
       setTimeout(() => { flash(col, 500); ring(cx, cy, col, { width: 8 }); burst(cx, cy, { kind: 'spark', n: 160, speed: 22, colors: [col, '#fff'] }); rain({ kind: 'confetti', ms: 3200, per: 5 }); }, 520);
     }
     function close() {
+      if (!credOpen) return;
       credOpen = false; clearInterval(embT);
+      closing = true;
       doc.removeEventListener('keydown', onKey, true); doc.removeEventListener('keyup', onUp, true);
       el.classList.add('off');
-      setTimeout(() => { undock(); el.remove(); resolve(); if (cineQueue.length) { const n = cineQueue.shift(); showCinema(n.o).then(n.res); } else cover(false); }, REDUCED ? 0 : 480);
+      setTimeout(() => { closing = false; undock(); el.remove(); resolve(); if (cineQueue.length) { const n = cineQueue.shift(); showCinema(n.o).then(n.res); } else cover(false); }, REDUCED ? 0 : 480);
     }
     const fast = on => { if (anim) anim.playbackRate = on ? 6 : 1; };
     function onKey(e) {
@@ -686,6 +739,8 @@ void main(){
     leaving = true;
     root.classList.add('fx-leaving');
     setTimeout(() => { location.href = url; }, 280);
+    // Kommt der Seitenwechsel nicht zustande (Download, abgebrochen), nicht dunkel hängen bleiben
+    setTimeout(() => { leaving = false; root.classList.remove('fx-leaving'); }, 2500);
   }
   doc.addEventListener('click', e => {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
@@ -702,7 +757,8 @@ void main(){
   addEventListener('pageshow', () => { leaving = false; root.classList.remove('fx-leaving'); });
 
   window.FX = { burst, rain, ring, streak, flash, shake, pulse, count, cinema, credits, tilt, go, reduced: REDUCED, NEON,
-    cinemaOpen: () => cineOpen || credOpen, closeCinema };
+    cinemaOpen: () => cineOpen || credOpen || closing, closeCinema,
+    get adhs() { return adhs; }, setAdhs };
 
   // Die Halle startet erst nach dem ersten Bild: so bremst sie das Einschalten der Röhre nicht
   const boot = () => requestAnimationFrame(() => setTimeout(startHall, 60));

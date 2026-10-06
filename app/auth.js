@@ -61,11 +61,19 @@
       display: inline-flex; align-items: center;
     }
     .nav-btn, .nav-cta { min-height: 34px; padding: 8px 14px; }
-    .auth-chip { min-height: 34px; }
-    .auth-login-btn { min-height: 34px; }
+    .auth-chip { min-height: 40px; }
+    .auth-login-btn { min-height: 40px; }
+    .map-btn, .quick-tag, .recent-tag, .lb-tab, .fav-btn, .pip-btn, .mini-btn { min-height: 40px; }
+    .fw-close { min-width: 36px; min-height: 36px; }
 
     /* Suggestion-/Dropdown-Listen scrollbar mit Trägheit */
     .suggestions, .auth-menu { -webkit-overflow-scrolling: touch; }
+  }
+
+  /* Touch-Geräte jeder Breite (auch Tablets): kleine Knöpfe gut treffbar */
+  @media (pointer: coarse) {
+    .map-btn, .quick-tag, .recent-tag, .lb-tab, .fav-btn, .pip-btn, .mini-btn { min-height: 40px; }
+    .fw-close { min-width: 36px; min-height: 36px; }
   }
 
   /* Hover-Effekte auf Touch nicht "kleben lassen" */
@@ -238,17 +246,40 @@
 
   .auth-slot { position: relative; }
 
+  /* Einstellungen im Menü: ADHS-Modus (gilt für die ganze Seite, siehe /fx.js) */
+  .auth-menu-switch { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .auth-switch {
+    flex: none; width: 34px; height: 20px; border-radius: 999px; position: relative;
+    background: rgba(196,178,255,0.16); transition: background 0.18s;
+  }
+  .auth-switch::after {
+    content: ''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%;
+    background: var(--chalk-dim, rgba(255,255,255,0.7)); transition: transform 0.18s cubic-bezier(.2,.8,.2,1), background 0.18s;
+  }
+  .auth-menu-switch[aria-checked="true"] .auth-switch { background: var(--neon-pink, #ff3d9a); }
+  .auth-menu-switch[aria-checked="true"] .auth-switch::after { transform: translateX(14px); background: #fff; }
+  .auth-menu-hint { padding: 0 12px 8px; font-size: 10px; line-height: 1.4; color: var(--chalk-faint, rgba(255,255,255,0.4)); }
+  .auth-menu-sep { height: 1px; margin: 6px 0; background: var(--board-line, rgba(196,178,255,0.06)); }
+  .auth-slot.has-gear { display: inline-flex; align-items: center; gap: 8px; }
+  .auth-gear {
+    width: 34px; height: 34px; border-radius: 10px; cursor: pointer;
+    background: transparent; border: 1px solid var(--board-line, rgba(196,178,255,0.14));
+    color: var(--chalk-dim, rgba(255,255,255,0.7)); font-size: 16px; line-height: 1;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .auth-gear:hover { color: var(--chalk, #fff); border-color: rgba(196,178,255,0.3); }
+
   .auth-login-btn {
     display: inline-flex; align-items: center; gap: 6px;
     background: var(--bell, #d7263d); border: none; border-radius: 10px;
-    padding: 8px 18px; color: var(--chalk, #fff);
+    padding: 8px 18px; color: var(--ink, #0a0520);
     font-family: inherit; font-size: 12px; font-weight: 700;
     letter-spacing: 0.3px;
     cursor: pointer; text-decoration: none;
     box-shadow: 0 4px 10px rgba(0,0,0,0.35);
     transition: all 0.2s;
   }
-  .auth-login-btn:hover { background: #ea3f53; box-shadow: 0 6px 15px rgba(0,0,0,0.4); transform: translateY(-1px); }
+  .auth-login-btn:hover { background: #ff5c84; box-shadow: 0 6px 15px rgba(0,0,0,0.4); transform: translateY(-1px); }
 
   /* ─── Modal ──────────────────────────────────────────────────────────── */
   .auth-modal-backdrop {
@@ -302,7 +333,7 @@
   }
   .auth-field input:focus { border-color: rgba(215,38,61,0.5); background: rgba(196,178,255,0.06); }
   .auth-submit {
-    width: 100%; background: var(--bell, #d7263d); color: var(--chalk, #fff);
+    width: 100%; background: var(--bell, #d7263d); color: var(--ink, #0a0520);
     border: none; border-radius: 10px; padding: 14px;
     font-family: inherit; font-size: 14px; font-weight: 700;
     letter-spacing: 0.3px; cursor: pointer;
@@ -310,7 +341,7 @@
     transition: all 0.2s;
     margin-top: 6px;
   }
-  .auth-submit:hover:not(:disabled) { background: #ea3f53; box-shadow: 0 7px 18px rgba(0,0,0,0.4); transform: translateY(-1px); }
+  .auth-submit:hover:not(:disabled) { background: #ff5c84; box-shadow: 0 7px 18px rgba(0,0,0,0.4); transform: translateY(-1px); }
   .auth-submit:disabled { opacity: 0.5; cursor: not-allowed; }
   .auth-switch {
     text-align: center; margin-top: 18px;
@@ -414,8 +445,8 @@
 
         <form id="auth-form-login" method="post" action="#login" autocomplete="on" data-form-type="login" aria-label="Anmelden">
           <div class="auth-field">
-            <label for="login-email">Email</label>
-            <input id="login-email" name="email" type="email" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email" />
+            <label for="login-email">Email oder Username</label>
+            <input id="login-email" name="email" type="text" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email" />
           </div>
           <div class="auth-field">
             <label for="login-password">Passwort</label>
@@ -455,6 +486,11 @@
   modalWrap.innerHTML = modalHtml;
   document.body.appendChild(modalWrap.firstElementChild);
 
+  const USERNAME_RE = /^[a-zA-Z0-9_-]{3,20}$/;
+  const SYNTH_DOMAIN = 'blockdrop.local';
+  const synthEmail = name => String(name || '').trim().toLowerCase() + '@' + SYNTH_DOMAIN;
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
   // ─── Auth-Manager ──────────────────────────────────────────────────────────
   const Auth = {
     client,
@@ -473,30 +509,56 @@
       });
     },
 
+    // Laufnummer: überholt eine ältere Antwort eine neuere, zählt nur die neueste
+    _profSeq: 0,
     async _loadProfile() {
+      const seq = ++this._profSeq;
       if (!this.user) { this.profile = null; return; }
-      const { data, error } = await client
-        .from('profiles').select('*').eq('id', this.user.id).maybeSingle();
-      if (error) console.warn('[Auth] Profile load:', error.message);
+      let data = null;
+      try {
+        const res = await client.from('profiles').select('*').eq('id', this.user.id).maybeSingle();
+        if (res.error) console.warn('[Auth] Profile load:', res.error.message);
+        data = res.data;
+      } catch (e) { console.warn('[Auth] Profile load:', e); }
+      if (seq !== this._profSeq) return;
       this.profile = data || null;
     },
 
     async init() {
-      const { data: { session } } = await client.auth.getSession();
+      let session = null;
+      try { ({ data: { session } } = await client.auth.getSession()); }
+      catch (e) { console.warn('[Auth] Session:', e); }
       this.user = session?.user || null;
       await this._loadProfile();
       this._ready = true;
       this._notify();
 
-      client.auth.onAuthStateChange(async (_event, session) => {
-        this.user = session?.user || null;
-        await this._loadProfile();
-        this._notify();
+      // Kein await im Callback (Supabase sperrt sonst den Auth-Lock) und nur bei echtem
+      // User-Wechsel benachrichtigen: Token-Refresh und Tab-Fokus melden denselben User erneut.
+      client.auth.onAuthStateChange((_event, session) => {
+        const next = session?.user || null;
+        const changed = (next ? next.id : null) !== (this.user ? this.user.id : null);
+        this.user = next;
+        if (!changed) return;
+        // Mitten in der Registrierung gibt es das Profil noch nicht: signUp meldet selbst, wenn es fertig ist
+        setTimeout(async () => { if (this._signingUp) return; await this._loadProfile(); this._notify(); }, 0);
       });
     },
 
     async signUp(email, password, username) {
-      const { data, error } = await client.auth.signUp({ email, password });
+      this._signingUp = true;
+      try { return await this._signUp(email, password, username); }
+      finally {
+        this._signingUp = false;
+        // Egal wie es ausging: Oberfläche auf den echten Stand bringen (eingeloggt mit/ohne Profil, oder gar nicht)
+        await this._loadProfile();
+        this._notify();
+      }
+    },
+    async _signUp(email, password, username) {
+      // Erst prüfen, dann anlegen: sonst bleibt bei vergebenem Namen ein Konto ohne Profil zurück
+      if (await this.usernameTaken(username)) return { error: { message: 'Username schon vergeben' } };
+      const { data, error } = await client.auth.signUp({ email, password, options: { data: { username: username.trim() } } });
       if (error) return { error };
       if (!data.user) return { error: { message: 'Registrierung fehlgeschlagen' } };
 
@@ -514,14 +576,47 @@
         username: username.trim()
       });
       if (pErr) {
-        if (pErr.code === '23505') return { error: { message: 'Username schon vergeben' } };
+        if (pErr.code === '23505') return { error: { message: 'Username schon vergeben. Dein Konto ist angelegt: wähl oben rechts einen anderen Namen.' } };
         return { error: pErr };
       }
+      this.user = data.user;
       return { data };
     },
 
-    async signIn(email, password) {
-      return await client.auth.signInWithPassword({ email, password });
+    // true, wenn der Name (ohne Rücksicht auf Groß-/Kleinschreibung) schon jemand anderem gehört
+    async usernameTaken(username) {
+      const name = (username || '').trim();
+      if (!USERNAME_RE.test(name)) return false;
+      const { data, error } = await client.from('profiles').select('id').ilike('username', name.replace(/_/g, '\\_')).limit(2);
+      if (error) { console.warn('[Auth] usernameTaken:', error.message); return false; }
+      return (data || []).some(p => !(this.user && p.id === this.user.id));
+    },
+
+    // Eingeloggt, aber ohne Profilzeile (Registrierung war unterbrochen): Profil nachträglich anlegen
+    async createProfile(username) {
+      if (!this.user) return { error: { message: 'Nicht angemeldet' } };
+      const name = (username || '').trim();
+      if (!USERNAME_RE.test(name)) return { error: { message: 'Username: 3–20 Zeichen, nur Buchstaben, Zahlen, _ und -.' } };
+      if (await this.usernameTaken(name)) return { error: { message: 'Username schon vergeben' } };
+      const { error } = await client.from('profiles').insert({ id: this.user.id, username: name });
+      if (error) return { error: error.code === '23505' ? { message: 'Username schon vergeben' } : error };
+      await this._loadProfile();
+      this._notify();
+      return {};
+    },
+
+    // Login per E-Mail ODER Username. Konten aus Block Games haben keine echte Auth-Mail,
+    // sondern <username>@blockdrop.local; dieselbe Kaskade wie in block-games/renderer/auth.js.
+    async signIn(identifier, password) {
+      const id = (identifier || '').trim();
+      const first = await client.auth.signInWithPassword({ email: id.includes('@') ? id : synthEmail(id), password });
+      if (!first.error) return first;
+      // Username eines Kontos mit echter Auth-Mail: die Datenbank kennt die Zuordnung (falls die Funktion existiert)
+      try {
+        const { data: resolved, error } = await client.rpc('resolve_login_email', { identifier: id });
+        if (!error && resolved && resolved !== id) return await client.auth.signInWithPassword({ email: resolved, password });
+      } catch (e) { /* Funktion fehlt: beim ersten Fehler bleiben */ }
+      return first;
     },
 
     async signOut() {
@@ -599,9 +694,11 @@
 
     async loadAchievements() {
       if (!this.user) return null;
-      const { data } = await client.from('profiles')
+      // null = Lesen fehlgeschlagen oder kein Profil (darf nicht als „Cloud ist leer" gelten)
+      const { data, error } = await client.from('profiles')
         .select('achievements').eq('id', this.user.id).maybeSingle();
-      return data?.achievements || [];
+      if (error || !data) return null;
+      return Array.isArray(data.achievements) ? data.achievements : [];
     },
 
     // ─── Profil bearbeiten ───────────────────────────────────────────────────
@@ -610,12 +707,19 @@
       if (!this.user) return { error: { message: 'Nicht angemeldet' } };
       const name = (newUsername || '').trim();
       if (name.length < 3) return { error: { message: 'Username muss mindestens 3 Zeichen haben.' } };
+      if (name.length > 20) return { error: { message: 'Username darf höchstens 20 Zeichen haben.' } };
       if (!/^[a-zA-Z0-9_-]+$/.test(name)) return { error: { message: 'Username darf nur Buchstaben, Zahlen, _ und - enthalten.' } };
+      if (await this.usernameTaken(name)) return { error: { message: 'Username schon vergeben' } };
       const { error } = await client.from('profiles')
         .update({ username: name }).eq('id', this.user.id);
       if (error) {
         if (error.code === '23505') return { error: { message: 'Username schon vergeben' } };
         return { error };
+      }
+      // Block-Games-Konto: die künstliche Login-Mail zieht mit, sonst ginge der Login nur noch mit dem alten Namen
+      if ((this.user.email || '').endsWith('@' + SYNTH_DOMAIN)) {
+        const { error: aErr } = await client.auth.updateUser({ email: synthEmail(name), data: { ...(this.user.user_metadata || {}), username: name } });
+        if (aErr) console.warn('[Auth] Login-Mail nicht nachgezogen:', aErr.message);
       }
       await this._loadProfile();
       this._notify();
@@ -652,10 +756,21 @@
       const { error: pErr } = await client.from('profiles')
         .update({ avatar_url: url }).eq('id', this.user.id);
       if (pErr) return { error: pErr };
+      this._cleanAvatars(path);
 
       await this._loadProfile();
       this._notify();
       return { url };
+    },
+
+    // Alte Profilbilder aus dem Storage entfernen (alles im eigenen Ordner außer `keep`)
+    async _cleanAvatars(keep) {
+      try {
+        const dir = this.user.id;
+        const { data } = await client.storage.from('avatars').list(dir);
+        const old = (data || []).map(o => dir + '/' + o.name).filter(p => p !== keep);
+        if (old.length) await client.storage.from('avatars').remove(old);
+      } catch (e) { /* Aufräumen ist nicht kritisch */ }
     },
 
     // Profilbild entfernen.
@@ -664,6 +779,7 @@
       const { error } = await client.from('profiles')
         .update({ avatar_url: null }).eq('id', this.user.id);
       if (error) return { error };
+      this._cleanAvatars(null);
       await this._loadProfile();
       this._notify();
       return {};
@@ -674,7 +790,7 @@
     // ('pending' | 'accepted'). Anfrage + Bestätigen. Egal welche Richtung —
     // wir fragen beide Richtungen ab.
     async _friendRow(otherId) {
-      if (!this.user || !otherId) return null;
+      if (!this.user || !UUID_RE.test(otherId)) return null;
       const uid = this.user.id;
       const { data, error } = await client.from('friends')
         .select('*')
@@ -699,6 +815,7 @@
 
     async sendFriendRequest(otherId) {
       if (!this.user) return { error: { message: 'Nicht angemeldet' } };
+      if (!UUID_RE.test(otherId)) return { error: { message: 'Ungültige ID' } };
       if (otherId === this.user.id) return { error: { message: 'Du kannst dich nicht selbst hinzufügen.' } };
       const existing = await this._friendRow(otherId);
       if (existing) {
@@ -719,16 +836,20 @@
 
     async acceptFriendRequest(otherId) {
       if (!this.user) return { error: { message: 'Nicht angemeldet' } };
-      const { error } = await client.from('friends')
+      if (!UUID_RE.test(otherId)) return { error: { message: 'Ungültige ID' } };
+      const { data, error } = await client.from('friends')
         .update({ status: 'accepted', responded_at: new Date().toISOString() })
-        .eq('requester_id', otherId).eq('addressee_id', this.user.id).eq('status', 'pending');
+        .eq('requester_id', otherId).eq('addressee_id', this.user.id).eq('status', 'pending')
+        .select('id');
       if (error) return { error };
+      if (!data || !data.length) return { error: { message: 'Die Anfrage gibt es nicht mehr.' } };
       return {};
     },
 
     // Entfernt jede Beziehung: Freund entfernen / Anfrage zurückziehen / ablehnen.
     async removeFriend(otherId) {
       if (!this.user) return { error: { message: 'Nicht angemeldet' } };
+      if (!UUID_RE.test(otherId)) return { error: { message: 'Ungültige ID' } };
       const uid = this.user.id;
       const { error } = await client.from('friends')
         .delete()
@@ -880,12 +1001,13 @@
     registerForm.reset();
     msgEl.innerHTML = '';
   }
-  function showErr(text) {
-    msgEl.innerHTML = `<div class="auth-error">${text}</div>`;
+  function showMsg(cls, text) {
+    const d = document.createElement('div');
+    d.className = cls; d.textContent = text;
+    msgEl.replaceChildren(d);
   }
-  function showOk(text) {
-    msgEl.innerHTML = `<div class="auth-success">${text}</div>`;
-  }
+  function showErr(text) { showMsg('auth-error', text); }
+  function showOk(text) { showMsg('auth-success', text); }
 
   closeBtn.addEventListener('click', hideModal);
   backdrop.addEventListener('click', e => { if (e.target === backdrop) hideModal(); });
@@ -921,6 +1043,7 @@
       const email = regEmail.value.trim();
       const password = regPass.value;
       if (username.length < 3) { showErr('Username muss mindestens 3 Zeichen haben.'); return; }
+      if (username.length > 20) { showErr('Username darf höchstens 20 Zeichen haben.'); return; }
       if (!/^[a-zA-Z0-9_-]+$/.test(username)) { showErr('Username darf nur Buchstaben, Zahlen, _ und - enthalten.'); return; }
       if (regPass2.value !== password) { showErr('Passwörter stimmen nicht überein.'); return; }
       const { error } = await Auth.signUp(email, password, username);
@@ -934,17 +1057,41 @@
 
   function translateError(err) {
     const m = (err.message || '').toLowerCase();
-    if (m.includes('invalid login')) return 'Email oder Passwort falsch.';
+    if (m.includes('invalid login')) return 'Email/Username oder Passwort falsch.';
     if (m.includes('already registered') || m.includes('user already')) return 'Diese Email ist schon registriert.';
     if (m.includes('password should be')) return 'Passwort muss mindestens 6 Zeichen haben.';
     if (m.includes('rate limit')) return 'Zu viele Versuche. Bitte kurz warten.';
     return err.message || 'Unbekannter Fehler';
   }
 
+  // ─── Einstellungen im Menü ────────────────────────────────────────────────
+  // Der ADHS-Modus gehört /fx.js; ohne fx.js wird nur der gemerkte Wert umgestellt.
+  const adhsOn = () => {
+    if (window.FX && 'adhs' in window.FX) return window.FX.adhs;
+    try { return localStorage.getItem('arcade.adhs') !== '0'; } catch (e) { return true; }
+  };
+  const settingsHtml = () => `
+            <button class="auth-menu-item auth-menu-switch" data-act="adhs" type="button" role="switch" aria-checked="${adhsOn()}">
+              <span>ADHS-Modus</span><span class="auth-switch" aria-hidden="true"></span>
+            </button>
+            <div class="auth-menu-hint">Blitze, Wackeln und Konfetti-Regen. Aus: ruhiger, vor allem in den Spielen.</div>`;
+  const syncSettings = () => document.querySelectorAll('[data-act="adhs"]').forEach(b => b.setAttribute('aria-checked', adhsOn()));
+  function bindSettings(slot) {
+    slot.querySelectorAll('[data-act="adhs"]').forEach(btn => btn.addEventListener('click', e => {
+      e.stopPropagation(); // Menü bleibt offen
+      const on = !adhsOn();
+      if (window.FX && window.FX.setAdhs) window.FX.setAdhs(on);
+      else { try { localStorage.setItem('arcade.adhs', on ? '1' : '0'); } catch (err) {} }
+      syncSettings();
+    }));
+  }
+  window.addEventListener('fx:adhs', syncSettings);
+
   // ─── Auth-Slot in der Navbar mounten ──────────────────────────────────────
   function mountSlots() {
     document.querySelectorAll('[data-auth-slot]').forEach(slot => {
       slot.classList.add('auth-slot');
+      slot.classList.toggle('has-gear', !(Auth.user && Auth.profile));
       slot.innerHTML = ''; // reset
       if (Auth.user && Auth.profile) {
         const name = Auth.profile.username || Auth.user.email;
@@ -962,12 +1109,14 @@
           <div class="auth-menu">
             <div class="auth-menu-header">
               <div class="auth-menu-name">${escapeHtml(name)}</div>
-              <div class="auth-menu-email">${escapeHtml(Auth.user.email)}</div>
+              <div class="auth-menu-email">${escapeHtml((Auth.user.email || '').endsWith('@' + SYNTH_DOMAIN) ? 'Block-Games-Konto' : Auth.user.email)}</div>
             </div>
             <button class="auth-menu-item" data-act="profile" type="button">Profil</button>
             <button class="auth-menu-item" data-act="friends" type="button">Freunde</button>
             <button class="auth-menu-item" data-act="achievements" type="button">Achievements</button>
             <button class="auth-menu-item" data-act="stundenplan" type="button">Stundenplan</button>
+            <div class="auth-menu-sep"></div>${settingsHtml()}
+            <div class="auth-menu-sep"></div>
             <button class="auth-menu-item danger" data-act="logout" type="button">Abmelden</button>
           </div>
         `;
@@ -977,7 +1126,6 @@
           e.stopPropagation();
           menu.classList.toggle('open');
         });
-        document.addEventListener('click', () => menu.classList.remove('open'));
         menu.querySelectorAll('[data-act]').forEach(btn => {
           btn.addEventListener('click', () => {
             const act = btn.dataset.act;
@@ -991,12 +1139,40 @@
             if (act === 'stundenplan') window.location.href = '/stundenplan/';
           });
         });
+        bindSettings(slot);
+      } else if (Auth.user) {
+        // Eingeloggt, aber ohne Profil: Username nachholen statt wieder „Anmelden" zu zeigen
+        slot.innerHTML = gearHtml() + `<button class="auth-login-btn" type="button">Username wählen</button>`;
+        bindGear(slot);
+        slot.querySelector('.auth-login-btn').addEventListener('click', async () => {
+          const hint = (Auth.user.user_metadata && Auth.user.user_metadata.username) || '';
+          const name = window.prompt('Dein Konto hat noch keinen Username. Wähl einen (3–20 Zeichen: Buchstaben, Zahlen, _ und -). „Abbrechen" meldet dich ab.', hint);
+          if (name === null) { Auth.signOut(); return; }
+          const { error } = await Auth.createProfile(name);
+          if (error) window.alert(error.message || 'Das hat nicht geklappt.');
+        });
       } else {
-        slot.innerHTML = `<button class="auth-login-btn" type="button">Anmelden</button>`;
-        slot.querySelector('button').addEventListener('click', () => Auth.openLogin());
+        slot.innerHTML = gearHtml() + `<button class="auth-login-btn" type="button">Anmelden</button>`;
+        bindGear(slot);
+        slot.querySelector('.auth-login-btn').addEventListener('click', () => Auth.openLogin());
       }
     });
   }
+  // Ohne Konto: ein Zahnrad neben „Anmelden" öffnet dieselben Einstellungen
+  const gearHtml = () => `
+          <button class="auth-gear" type="button" aria-haspopup="true" aria-label="Einstellungen" title="Einstellungen">⚙</button>
+          <div class="auth-menu">${settingsHtml()}
+          </div>`;
+  function bindGear(slot) {
+    const menu = slot.querySelector('.auth-menu');
+    slot.querySelector('.auth-gear').addEventListener('click', e => { e.stopPropagation(); menu.classList.toggle('open'); });
+    menu.addEventListener('click', e => e.stopPropagation());
+    bindSettings(slot);
+  }
+  // Ein einziger Listener schließt offene Konto-Menüs (statt einem neuen pro Auth-Änderung)
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.auth-menu.open').forEach(m => m.classList.remove('open'));
+  });
 
   function escapeHtml(s) {
     return String(s)
@@ -1037,6 +1213,57 @@
     toast.addEventListener('click', () => { clearTimeout(auto); dismiss(); });
   }
   window.showAchToast = showAchToast;
+
+  // ─── Erfolge: eine Stelle für alle Seiten ─────────────────────────────────
+  // Lokal pro Konto getrennt (Gast: Schlüssel ohne ID). Beim Abgleich werden lokale und
+  // Cloud-Liste vereinigt, nie überschrieben. Gast-Erfolge wandern beim ersten Login ins Konto.
+  const ACH_KEY = 'arcade_achievements';
+  const achKey = () => (Auth.user ? ACH_KEY + ':' + Auth.user.id : ACH_KEY);
+  const achReadKey = k => { try { const l = JSON.parse(localStorage.getItem(k)); return Array.isArray(l) ? l.filter(a => a && a.id) : []; } catch (e) { return []; } };
+  const achWrite = l => { try { localStorage.setItem(achKey(), JSON.stringify(l)); } catch (e) {} };
+  const achMerge = (...lists) => { const m = new Map(); lists.flat().forEach(a => { if (a && a.id && !m.has(a.id)) m.set(a.id, a); }); return [...m.values()]; };
+  let achSyncing = null, achAgain = false;
+  const Achievements = {
+    list() { return achReadKey(achKey()); },
+    has(id) { return this.list().some(a => a.id === id); },
+    // Schaltet frei und zeigt den Toast; false, wenn schon vorhanden
+    unlock(id, def) {
+      const list = this.list();
+      if (list.some(a => a.id === id)) return false;
+      list.push({ id, unlockedAt: new Date().toISOString() });
+      achWrite(list);
+      if (def) showAchToast(def);
+      if (Auth.user) this.sync().catch(() => {});
+      return true;
+    },
+    // Cloud lesen, mit lokal vereinigen, bei Bedarf hochladen. Liefert die vereinigte Liste.
+    sync() {
+      if (!Auth.user) return Promise.resolve(this.list());
+      if (achSyncing) { achAgain = true; return achSyncing; }
+      const uid = Auth.user.id;
+      const run = async () => {
+        const cloud = await Auth.loadAchievements();
+        if (!Auth.user || Auth.user.id !== uid || cloud === null) return this.list();
+        const guest = achReadKey(ACH_KEY);
+        const merged = achMerge(this.list(), cloud, guest);
+        achWrite(merged);
+        if (guest.length) { try { localStorage.removeItem(ACH_KEY); } catch (e) {} }
+        if (merged.length !== cloud.length) await Auth.saveAchievements(merged);
+        return merged;
+      };
+      achSyncing = (async () => {
+        try {
+          let res = await run();
+          // Während des Abgleichs kam ein neuer Erfolg dazu: noch eine Runde
+          while (achAgain) { achAgain = false; res = await run(); }
+          return res;
+        } finally { achSyncing = null; achAgain = false; }
+      })();
+      return achSyncing;
+    },
+  };
+  window.Achievements = Achievements;
+  Auth.onChange(user => { if (user && Auth.profile) Achievements.sync().catch(() => {}); });
 
   // Expose
   window.Auth = Auth;

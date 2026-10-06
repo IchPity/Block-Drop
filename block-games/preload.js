@@ -3,8 +3,11 @@
 // (Vollbild, Fenstergröße, Bildschirm-Infos, Vollbild-Events).
 const { contextBridge, ipcRenderer } = require('electron');
 
+// Die Version kommt aus package.json über main.js (additionalArguments), nicht von Hand hier
+const versionArg = process.argv.find(a => a.startsWith('--app-version='));
+
 contextBridge.exposeInMainWorld('blockGames', {
-  version: '0.25.0',
+  version: versionArg ? versionArg.slice('--app-version='.length) : '?',
   platform: process.platform,
 
   // App beenden (Bestätigungs-Dialog macht der Renderer)

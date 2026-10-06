@@ -463,6 +463,7 @@ class ColorHuntGame {
     if (winner) this._message(`🏆 ${winner.name} gewinnt Farbjagd!`);
     this.config.sfx('colorWin');
     setTimeout(() => {
+      if (this.destroyed) return; // Match wurde inzwischen abgebrochen
       this.config.onResult({ winner, placements });
     }, 1400);
   }
@@ -593,6 +594,7 @@ class ColorHuntGame {
   }
 
   destroy() {
+    this.destroyed = true;
     this.running = false;
     this.ended = true;
     if (this.raf) cancelAnimationFrame(this.raf);

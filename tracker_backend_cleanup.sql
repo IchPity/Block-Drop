@@ -10,8 +10,8 @@
 --
 -- WICHTIG, geht dabei verloren (falls das noch irgendwo gebraucht wird,
 -- vorher sichern):
---   - members: peter.scheikl@hakwt.at (admin), peterscheikl10@gmail.com (zuschauer)
---   - whitelist: eine offene, nicht angenommene Einladung für leon.koller@hakwt.at
+--   - members: zwei Einträge (ein Admin, ein Zuschauer)
+--   - whitelist: eine offene, nicht angenommene Einladung
 --   - milestones: Meilenstein 1 "Team-Kickoff & Organisation" war auf
 --     "fertig" gesetzt — der Rest ist unverändert der Startzustand aus dem
 --     DA-Plan (Quelle bleibt DiplData/DIPL-Teams/Meilensteine_Alle.xlsx)

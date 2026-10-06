@@ -115,12 +115,16 @@ export class LocalHumanController {
     if (this.attached) return;
     window.addEventListener('keydown', this._onDown);
     window.addEventListener('keyup', this._onUp);
+    // Verliert das Fenster den Fokus (Alt+Tab), kommt kein keyup: gehaltene Tasten loslassen
+    this._onBlur = () => this.clear();
+    window.addEventListener('blur', this._onBlur);
     this.attached = true;
   }
 
   detach() {
     window.removeEventListener('keydown', this._onDown);
     window.removeEventListener('keyup', this._onUp);
+    if (this._onBlur) window.removeEventListener('blur', this._onBlur);
     this.keys.clear();
     this.attached = false;
   }
@@ -227,7 +231,12 @@ export class LocalPieceController {
       const a = this._rev.get(e.code);
       if (!a) return;
       this.held.delete(a);
-      if (a === 'left' || a === 'right') { this._dasDir = 0; this._dasTimer = 0; this._arrTimer = 0; }
+      if (a === 'left' || a === 'right') {
+        // Ist die Gegenrichtung noch gehalten, wiederholt sie weiter (statt beide zu stoppen)
+        const other = a === 'left' ? 'right' : 'left';
+        this._dasDir = this.held.has(other) ? (other === 'left' ? -1 : 1) : 0;
+        this._dasTimer = 0; this._arrTimer = 0;
+      }
       if (a === 'down') this.soft = false;
     };
   }
@@ -248,11 +257,15 @@ export class LocalPieceController {
     if (this.attached) return;
     window.addEventListener('keydown', this._onDown);
     window.addEventListener('keyup', this._onUp);
+    // Verliert das Fenster den Fokus (Alt+Tab), kommt kein keyup: gehaltene Tasten loslassen
+    this._onBlur = () => this.clear();
+    window.addEventListener('blur', this._onBlur);
     this.attached = true;
   }
   detach() {
     window.removeEventListener('keydown', this._onDown);
     window.removeEventListener('keyup', this._onUp);
+    if (this._onBlur) window.removeEventListener('blur', this._onBlur);
     this.held.clear();
     this.attached = false;
   }
@@ -331,11 +344,15 @@ export class LocalColorController {
     if (this.attached) return;
     window.addEventListener('keydown', this._onDown);
     window.addEventListener('keyup', this._onUp);
+    // Verliert das Fenster den Fokus (Alt+Tab), kommt kein keyup: gehaltene Tasten loslassen
+    this._onBlur = () => this.clear();
+    window.addEventListener('blur', this._onBlur);
     this.attached = true;
   }
   detach() {
     window.removeEventListener('keydown', this._onDown);
     window.removeEventListener('keyup', this._onUp);
+    if (this._onBlur) window.removeEventListener('blur', this._onBlur);
     this.held.clear();
     this.attached = false;
   }

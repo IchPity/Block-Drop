@@ -32,10 +32,11 @@ const Auth = {
   // (main.js → UPDATE_CHECK_TIMEOUT_MS): nach 8s ohne Antwort einfach als
   // "keine Session" werten, der Spieler landet dann normal am Login.
   async init() {
-    client.auth.onAuthStateChange(async (_event, session) => {
+    // Kein await im Callback: Supabase hält währenddessen den Auth-Lock, weitere Aufrufe
+    // (hier das Profil-Laden) könnten sonst hängen. Deshalb erst nach dem Callback laden.
+    client.auth.onAuthStateChange((_event, session) => {
       this.user = session?.user || null;
-      await this._loadProfile();
-      this._notify();
+      setTimeout(async () => { await this._loadProfile(); this._notify(); }, 0);
     });
 
     const timeout = new Promise(resolve => setTimeout(() => resolve({ data: { session: null } }), 8000));
@@ -90,6 +91,11 @@ const Auth = {
     const contact = (email || '').trim();
     const authEmail = syntheticEmail(uname);
 
+    // Erst prüfen, dann anlegen: Website-Konten haben eine echte Auth-Mail, ihr Username ist
+    // also nicht über die synthetische Mail geschützt. Ohne diese Prüfung bliebe ein Konto
+    // ohne Profil zurück, das den fremden Namen trägt.
+    if (await this.usernameTaken(uname)) return { error: { message: 'Username schon vergeben' } };
+
     const { data, error } = await client.auth.signUp({
       email: authEmail,
       password,
@@ -126,6 +132,16 @@ const Auth = {
     await this._loadProfile();
     this._notify();
     return { data };
+  },
+
+  // true, wenn der Name (ohne Rücksicht auf Groß-/Kleinschreibung) schon jemand anderem gehört
+  async usernameTaken(username) {
+    const name = String(username || '').trim();
+    if (!name) return false;
+    const { data, error } = await client.from('profiles').select('id')
+      .ilike('username', name.replace(/[\\%_]/g, m => '\\' + m)).limit(2);
+    if (error) return false;
+    return (data || []).some(p => !(this.user && p.id === this.user.id));
   },
 
   // Login per E-Mail ODER Username — gleiche Kaskade wie auf der Website.
@@ -215,6 +231,13 @@ const Auth = {
 
   async sendFriendRequest(addresseeId) {
     if (!this.user) return { error: { message: 'Nicht angemeldet.' } };
+    // Hat die andere Person schon angefragt? Dann annehmen statt eine zweite Zeile anzulegen.
+    const { data: back } = await client.from('friends').select('id, status')
+      .eq('requester_id', addresseeId).eq('addressee_id', this.user.id).limit(1);
+    if (back && back.length) {
+      if (back[0].status === 'accepted') return { error: { message: 'Ihr seid schon Freunde.' } };
+      return await this.acceptFriendRequest(back[0].id);
+    }
     const { error } = await client.from('friends').insert({
       requester_id: this.user.id,
       addressee_id: addresseeId,
@@ -253,6 +276,7 @@ const Auth = {
       return { error: { message: 'Username: 3–20 Zeichen, nur Buchstaben, Zahlen und _' } };
     }
     if (uname === this.username) return {}; // nichts zu tun
+    if (await this.usernameTaken(uname)) return { error: { message: 'Username schon vergeben' } };
 
     const { error: pErr } = await client
       .from('profiles').update({ username: uname }).eq('id', this.user.id);

@@ -144,6 +144,7 @@ Die Token-Namen `--board`, `--chalk`, `--marquee`, `--bell` stammen aus dem abge
 - Alles, was in einem Bildschirm steht, ist aus Zellen gebaut und springt in Schritten.
 - Bewegung folgt dem Material: Röhre an und aus, Neon zündet, Attract-Loops laufen leer.
 - Läuft ohne WebGL weiter und steht still bei `prefers-reduced-motion`.
+- ADHS-Modus (Schalter im Menü rechts oben, `FX.adhs`, gemerkt in `localStorage` unter `arcade.adhs`): aus heißt nicht still. Halle, Röhre und Kino-Screens bleiben; `fx.js` dämpft Blitze, Wackeln und Partikelmengen je nach Ort (Spiele am stärksten, Casino am wenigsten).
 
 ## Colors
 

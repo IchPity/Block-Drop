@@ -668,6 +668,7 @@
     el.addEventListener('click', e => {
       if (FX.reduced || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       e.preventDefault();
+      if (document.querySelector('.zoom-screen')) return; // Zoom läuft schon (Doppelklick)
       const scr = el.querySelector('.cab-screen, .mon-screen'), r = scr.getBoundingClientRect();
       const col = getComputedStyle(el).getPropertyValue('--accent').trim() || '#ffb000';
       const z = scr.cloneNode(true);

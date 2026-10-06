@@ -519,6 +519,7 @@ class LaserLinesGame {
       this._message('Unentschieden!');
     }
     setTimeout(() => {
+      if (this.destroyed) return; // Match wurde inzwischen abgebrochen
       this.config.onResult({ winner: winner ? slim(winner) : null, placements });
     }, 1400);
   }
@@ -650,6 +651,7 @@ class LaserLinesGame {
   }
 
   destroy() {
+    this.destroyed = true;
     this.running = false;
     this.ended = true;
     if (this.raf) cancelAnimationFrame(this.raf);
