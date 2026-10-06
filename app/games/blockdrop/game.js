@@ -72,26 +72,62 @@ const ROWS = 20;
 const BLOCK = 30;
 const PREVIEW_COUNT = 5;
 
-// Phosphorfarben: dieselben sieben, die auch im Automaten auf der Startseite laufen
-const COLORS = {
-  I: '#2ee6ff',
-  O: '#ffc93a',
-  T: '#a35cff',
-  S: '#6dff5a',
-  Z: '#ff3d6e',
-  J: '#4d7dff',
-  L: '#ff8a2e',
+// ── Aussehen (Esc → Anpassen) ──────────────────────────────────────────────
+// Neon sind die Phosphorfarben, die auch im Automaten auf der Startseite laufen
+const PALETTES = {
+  neon:     { name: 'Neon',     colors: { I: '#2ee6ff', O: '#ffc93a', T: '#a35cff', S: '#6dff5a', Z: '#ff3d6e', J: '#4d7dff', L: '#ff8a2e' } },
+  klassik:  { name: 'Klassik',  colors: { I: '#00e0e0', O: '#f0e000', T: '#b030f0', S: '#00d840', Z: '#f02020', J: '#2050f0', L: '#f09000' } },
+  pastell:  { name: 'Pastell',  colors: { I: '#9be7ff', O: '#ffe9a3', T: '#d3b3ff', S: '#b6f2a8', Z: '#ffa8bd', J: '#a9bdff', L: '#ffc79e' } },
+  kontrast: { name: 'Kontrast', colors: { I: '#56b4e9', O: '#f0e442', T: '#cc79a7', S: '#009e73', Z: '#d55e00', J: '#0072b2', L: '#e69f00' } }, // auch bei Farbsehschwäche gut zu trennen
 };
+const STYLES = {
+  glanz: { name: 'Glanz' },
+  flach: { name: 'Flach' },
+  neon:  { name: 'Röhre' },
+  retro: { name: 'Retro' },
+};
+const BACKDROPS = {
+  halle:   { name: 'Halle',   css: 'radial-gradient(ellipse 90% 60% at 50% 100%, #150a36, #05030c 72%)' },
+  schwarz: { name: 'Schwarz', css: '#000' },
+  tafel:   { name: 'Tafel',   css: 'radial-gradient(ellipse 90% 60% at 50% 100%, #1d3a2c, #0b1711 72%)' },
+  meer:    { name: 'Tiefsee', css: 'linear-gradient(180deg, #04101f, #0a2f4a)' },
+  glut:    { name: 'Glut',    css: 'linear-gradient(180deg, #0d0514 30%, #3a1030 78%, #5e2016)' },
+};
+const LOOK_DEFAULT = { style: 'glanz', bg: 'halle', ghost: true, grid: true };
+
+// Die Farbe hängt am Steintyp (Feld und Steine merken sich nur I, O, T …):
+// so färbt eine Änderung auch alles um, was schon liegt.
+const COLORS = { ...PALETTES.neon.colors };
+const look = { ...LOOK_DEFAULT };
+const LOOK_KEY = 'blockdrop_look';
+const HEX = /^#[0-9a-f]{6}$/i;
+const own = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
+
+(function loadLook() {
+  let s;
+  try { s = JSON.parse(localStorage.getItem(LOOK_KEY)); } catch (e) {}
+  if (!s || typeof s !== 'object') return;
+  for (const k in COLORS) if (s.colors && HEX.test(s.colors[k])) COLORS[k] = s.colors[k].toLowerCase();
+  if (own(STYLES, s.style)) look.style = s.style;
+  if (own(BACKDROPS, s.bg)) look.bg = s.bg;
+  look.ghost = s.ghost !== false;
+  look.grid  = s.grid !== false;
+})();
+
+function saveLook() {
+  try { localStorage.setItem(LOOK_KEY, JSON.stringify({ colors: COLORS, ...look })); } catch (e) {}
+}
+
 const HELD_USED = '#6a6190'; // gehaltener Stein, der in dieser Runde schon getauscht wurde
 
 const PIECES = {
-  I: { shape: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], color: COLORS.I },
-  O: { shape: [[1,1],[1,1]], color: COLORS.O },
-  T: { shape: [[0,1,0],[1,1,1],[0,0,0]], color: COLORS.T },
-  S: { shape: [[0,1,1],[1,1,0],[0,0,0]], color: COLORS.S },
-  Z: { shape: [[1,1,0],[0,1,1],[0,0,0]], color: COLORS.Z },
-  J: { shape: [[1,0,0],[1,1,1],[0,0,0]], color: COLORS.J },
-  L: { shape: [[0,0,1],[1,1,1],[0,0,0]], color: COLORS.L },
+  I: { shape: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]] },
+  O: { shape: [[1,1],[1,1]] },
+  T: { shape: [[0,1,0],[1,1,1],[0,0,0]] },
+  S: { shape: [[0,1,1],[1,1,0],[0,0,0]] },
+  Z: { shape: [[1,1,0],[0,1,1],[0,0,0]] },
+  J: { shape: [[1,0,0],[1,1,1],[0,0,0]] },
+  L: { shape: [[0,0,1],[1,1,1],[0,0,0]] },
 };
 
 const KICKS_JLSTZ = {
@@ -146,7 +182,8 @@ function easeOut(t) { return 1 - (1 - t) * (1 - t); }
 // ── Steine als Sprites ─────────────────────────────────────────────────────
 // Jeder Stein wird pro Farbe und Größe einmal gezeichnet (Verlauf, Glanzkante,
 // Schattenkante) und danach nur noch kopiert. Das ist schärfer als die alten
-// Rechtecke und kostet pro Bild fast nichts.
+// Rechtecke und kostet pro Bild fast nichts. Ändert sich das Aussehen
+// (Farbe, Stil), wird der Vorrat geleert: siehe refreshLook.
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 const SPRITES = new Map();
 function shade(hex, k) { // k < 0 dunkler, k > 0 heller
@@ -160,9 +197,10 @@ function sprite(color, bs, ghost) {
   if (cv) return cv;
   cv = document.createElement('canvas');
   cv.width = cv.height = Math.round(bs * DPR);
+  SPRITES.set(key, cv);
   const c = cv.getContext('2d');
   c.scale(DPR, DPR);
-  const r = Math.max(2, bs * 0.16), a = 1, b = bs - 1;
+  const r = look.style === 'retro' ? 0 : Math.max(2, bs * 0.16), a = 1, b = bs - 1;
   const box = (x0, y0, x1, y1, rad) => {
     c.beginPath();
     if (c.roundRect) { c.roundRect(x0, y0, x1 - x0, y1 - y0, rad); return; }
@@ -177,7 +215,27 @@ function sprite(color, bs, ghost) {
     box(a + 0.5, a + 0.5, b - 0.5, b - 0.5, r);
     c.fillStyle = color; c.globalAlpha = 0.1; c.fill();
     c.globalAlpha = 0.7; c.lineWidth = 1.5; c.strokeStyle = color; c.stroke();
-    SPRITES.set(key, cv); return cv;
+    return cv;
+  }
+  if (look.style === 'flach') {
+    box(a, a, b, b, r); c.fillStyle = color; c.fill();
+    return cv;
+  }
+  if (look.style === 'neon') {
+    // Leuchtröhre: dunkler Kern, der Rand leuchtet in der Farbe des Steins
+    box(a + 1, a + 1, b - 1, b - 1, r); c.fillStyle = shade(color, -0.8); c.fill();
+    c.lineWidth = 2; c.strokeStyle = color; c.stroke();
+    box(a + 3.5, a + 3.5, b - 3.5, b - 3.5, Math.max(0, r - 2.5));
+    c.globalAlpha = 0.45; c.lineWidth = 1; c.strokeStyle = shade(color, 0.5); c.stroke();
+    return cv;
+  }
+  if (look.style === 'retro') {
+    // Kantiger Stein mit hartem Licht von links oben
+    const t = Math.max(2, Math.round(bs * 0.14)), w = b - a;
+    c.fillStyle = color; c.fillRect(a, a, w, w);
+    c.fillStyle = shade(color, 0.45); c.fillRect(a, a, w, t); c.fillRect(a, a, t, w);
+    c.fillStyle = shade(color, -0.45); c.fillRect(a, b - t, w, t); c.fillRect(b - t, a, t, w);
+    return cv;
   }
   const g = c.createLinearGradient(0, a, 0, b);
   g.addColorStop(0, shade(color, 0.22)); g.addColorStop(0.5, color); g.addColorStop(1, shade(color, -0.3));
@@ -191,7 +249,6 @@ function sprite(color, bs, ghost) {
   box(a + 0.5, a + 0.5, b - 0.5, b - 0.5, r - 0.5); c.strokeStyle = 'rgba(255,255,255,0.3)'; c.lineWidth = 1; c.stroke();
   const m = bs * 0.3;
   box(m, m, bs - m, bs - m, r * 0.5); c.fillStyle = 'rgba(5,3,12,0.16)'; c.fill();
-  SPRITES.set(key, cv);
   return cv;
 }
 // Zeichenfläche in Gerätepixeln anlegen, gezeichnet wird weiter in den alten Maßen
@@ -261,6 +318,7 @@ class BlockDrop {
     this.hctx = h.ctx; this.hW = h.w; this.hH = h.h;
     // Gezeichnet wird nur, wenn sich etwas geändert hat (siehe draw)
     this.boardVer = 0; this.drawnKey = ''; this.nextKey = null; this.holdDrawn = null;
+    this.boardCanvas.style.background = BACKDROPS[look.bg].css;
     this.grid = this.makeGrid();
 
     this.scoreEl   = document.getElementById('score-display');
@@ -278,10 +336,18 @@ class BlockDrop {
 
     this._bindModeButtons();
     this.startBtn.addEventListener('click', () => this.startGame(this.selectedMode));
+    // „Anpassen" steht auf Start-, Pause- und Game-Over-Schirm; die werden neu gebaut, darum hier am Rahmen
+    this.overlay.addEventListener('click', e => { if (e.target.closest('[data-custom]')) Custom.open(); });
     document.addEventListener('keydown', e => this.onKey(e));
 
     this.state = 'idle';
     this.renderHighScores('standard');
+    // Deko-Steine des Startschirms: einmal würfeln, damit sie beim Umfärben liegen bleiben
+    const types = Object.keys(PIECES);
+    this.idleCells = [];
+    for (let r = 14; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++)
+        if (Math.random() > 0.4) this.idleCells.push([c, r, types[Math.floor(Math.random() * types.length)]]);
     this.drawIdleBoard();
   }
 
@@ -326,6 +392,7 @@ class BlockDrop {
     this.clearAnim = null;
     this.shake     = null;
     this.state     = 'playing';
+    Custom.close();
 
     this.queue = [];
     for (let i = 0; i < PREVIEW_COUNT; i++) this.queue.push(this.bag.next());
@@ -344,7 +411,6 @@ class BlockDrop {
     this.current = {
       type,
       shape: deepCopy(def.shape),
-      color: def.color,
       x: Math.floor(COLS / 2) - Math.floor(def.shape[0].length / 2),
       y: -1,
       rot: 0,
@@ -418,7 +484,7 @@ class BlockDrop {
       const br = this.boardCanvas.getBoundingClientRect(), cell = br.width / COLS, sh = this.current.shape;
       const bottom = sh.reduce((m, row, i) => (row.some(v => v) ? i : m), 0);
       const x = br.left + (this.current.x + sh[0].length / 2) * cell, y = br.top + (this.current.y + bottom + 1) * cell;
-      FX.burst(x, y, { kind: 'spark', n: 8 + Math.min(18, dropped), speed: 6 + dropped * 0.35, spread: 3.3, radius: cell * sh[0].length / 2, radiusY: 1, color: this.current.color || '#ffffff' });
+      FX.burst(x, y, { kind: 'spark', n: 8 + Math.min(18, dropped), speed: 6 + dropped * 0.35, spread: 3.3, radius: cell * sh[0].length / 2, radiusY: 1, color: COLORS[this.current.type] });
       if (dropped > 6) FX.shake(document.getElementById('game-area'), Math.min(7, dropped / 3), 160);
     }
     this.lock();
@@ -475,7 +541,7 @@ class BlockDrop {
         if (p.shape[r][c]) {
           const by = p.y + r;
           if (by < 0) { this.gameOver(); return; }
-          this.board[by][p.x + c] = p.color;
+          this.board[by][p.x + c] = p.type;
         }
     this.boardVer++;
 
@@ -513,7 +579,7 @@ class BlockDrop {
     const particles = [];
     for (const r of rows) {
       for (let c = 0; c < COLS; c++) {
-        const color = this.board[r][c];
+        const color = COLORS[this.board[r][c]];
         if (!color) continue;
         const cx = (c + 0.5) * BLOCK;
         const cy = (r + 0.5) * BLOCK;
@@ -636,7 +702,7 @@ class BlockDrop {
       this.holdKey = type;
       const def = PIECES[tmp];
       this.current = {
-        type: tmp, shape: deepCopy(def.shape), color: def.color,
+        type: tmp, shape: deepCopy(def.shape),
         x: Math.floor(COLS / 2) - Math.floor(def.shape[0].length / 2),
         y: -1, rot: 0,
       };
@@ -675,6 +741,7 @@ class BlockDrop {
     cv.width = this.boardCanvas.width; cv.height = this.boardCanvas.height;
     const c = cv.getContext('2d');
     c.scale(DPR, DPR);
+    if (!look.grid) return cv;
     c.fillStyle = 'rgba(196,178,255,0.022)';
     for (let col = 1; col < COLS; col += 2) c.fillRect(col * BLOCK, 0, BLOCK, this.H);
     c.fillStyle = 'rgba(196,178,255,0.1)';
@@ -724,14 +791,14 @@ class BlockDrop {
       if (clearedSet && clearedSet.has(r)) continue;
       const row = this.board[r];
       for (let c = 0; c < COLS; c++)
-        if (row[c]) this.drawCell(ctx, c, r, row[c], BLOCK);
+        if (row[c]) this.drawCell(ctx, c, r, COLORS[row[c]], BLOCK);
     }
 
     if (this.current && !isClearing) {
-      const p = this.current, gy = this.ghostY();
+      const p = this.current, gy = this.ghostY(), color = COLORS[p.type];
       // Fallspur: ein schwacher Lichtschacht vom Stein bis zum Landeplatz
-      if (gy > p.y) {
-        ctx.globalAlpha = 0.07; ctx.fillStyle = p.color;
+      if (look.ghost && gy > p.y) {
+        ctx.globalAlpha = 0.07; ctx.fillStyle = color;
         for (let c = 0; c < p.shape[0].length; c++) {
           let bottom = -1;
           for (let r = 0; r < p.shape.length; r++) if (p.shape[r][c]) bottom = r;
@@ -740,9 +807,9 @@ class BlockDrop {
           if (y1 > y0) ctx.fillRect((p.x + c) * BLOCK + 1, y0, BLOCK - 2, y1 - y0);
         }
         ctx.globalAlpha = 1;
-        this.drawPiece(ctx, p.shape, p.x, gy, p.color, BLOCK, true);
+        this.drawPiece(ctx, p.shape, p.x, gy, color, BLOCK, true);
       }
-      this.drawPiece(ctx, p.shape, p.x, p.y, p.color, BLOCK);
+      this.drawPiece(ctx, p.shape, p.x, p.y, color, BLOCK);
     }
 
     if (isClearing) this.drawClearAnim(ctx);
@@ -791,8 +858,8 @@ class BlockDrop {
         for (const r of anim.rows) {
           ctx.globalAlpha = rowFade;
           for (let c = 0; c < COLS; c++) {
-            const color = this.board[r][c];
-            if (color) this.drawCell(ctx, c, r, color, BLOCK);
+            const type = this.board[r][c];
+            if (type) this.drawCell(ctx, c, r, COLORS[type], BLOCK);
           }
           ctx.globalAlpha = 1;
         }
@@ -845,7 +912,7 @@ class BlockDrop {
     for (let i = 0; i < n; i++) {
       // der nächste Stein steht groß und hell, die weiteren kleiner und zurückgenommen
       ctx.globalAlpha = i === 0 ? 1 : 0.78 - i * 0.09;
-      this.drawCentered(ctx, this.queue[i], PIECES[this.queue[i]].color, 0, i * slotH, this.nW, slotH, i === 0 ? 20 : 16);
+      this.drawCentered(ctx, this.queue[i], COLORS[this.queue[i]], 0, i * slotH, this.nW, slotH, i === 0 ? 20 : 16);
     }
     ctx.globalAlpha = 1;
   }
@@ -854,18 +921,24 @@ class BlockDrop {
     const ctx = this.hctx;
     ctx.clearRect(0, 0, this.hW, this.hH);
     if (!this.holdKey) return;
-    this.drawCentered(ctx, this.holdKey, this.holdUsed ? HELD_USED : PIECES[this.holdKey].color, 0, 0, this.hW, this.hH, 20);
+    this.drawCentered(ctx, this.holdKey, this.holdUsed ? HELD_USED : COLORS[this.holdKey], 0, 0, this.hW, this.hH, 20);
   }
 
   drawIdleBoard() {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.W, this.H);
     ctx.drawImage(this.grid, 0, 0, this.W, this.H);
-    const types = Object.keys(PIECES);
-    for (let r = 14; r < ROWS; r++)
-      for (let c = 0; c < COLS; c++)
-        if (Math.random() > 0.4)
-          this.drawCell(ctx, c, r, PIECES[types[Math.floor(Math.random() * types.length)]].color, BLOCK);
+    for (const [c, r, type] of this.idleCells) this.drawCell(ctx, c, r, COLORS[type], BLOCK);
+  }
+
+  // Aussehen geändert (Anpassen-Fenster): Sprites verwerfen und alles neu malen
+  refreshLook() {
+    SPRITES.clear();
+    this.boardCanvas.style.background = BACKDROPS[look.bg].css;
+    this.grid = this.makeGrid();
+    if (this.state === 'idle') { this.drawIdleBoard(); return; }
+    this.nextKey = this.holdDrawn = null;
+    this.draw(true);
   }
 
   // ── UI ────────────────────────────────────────────────────────────────────
@@ -920,6 +993,7 @@ class BlockDrop {
         <button class="mode-btn ${this.mode === 'standard' ? 'selected' : ''}" id="mode-standard">Standard<small>Festes Tempo</small></button>
       </div>
       <button class="btn" id="start-btn">Nochmal spielen</button>
+      <button class="btn-alt" type="button" data-custom>🎨 Anpassen</button>
     `;
     this.overlay.style.display = 'flex';
     this._bindModeButtons();
@@ -937,6 +1011,7 @@ class BlockDrop {
         <h1>Pause</h1>
         <p>Modus: ${modeLabel}</p>
         <button class="btn" id="start-btn">Weiter</button>
+        <button class="btn-alt" type="button" data-custom>🎨 Anpassen</button>
       `;
       this.overlay.style.display = 'flex';
       document.getElementById('start-btn').addEventListener('click', () => this.resume());
@@ -945,6 +1020,7 @@ class BlockDrop {
 
   resume() {
     if (this.state !== 'paused') return;
+    Custom.close();
     this.state = 'playing';
     this.overlay.style.display = 'none';
     this.lastDrop = performance.now();
@@ -953,7 +1029,14 @@ class BlockDrop {
 
   // ── Input ─────────────────────────────────────────────────────────────────
   onKey(e) {
+    if (Custom.isOpen()) {
+      // Esc schließt das Fenster, auch wenn gerade ein Farbfeld den Fokus hat; das Spiel bekommt keine Taste
+      if (e.key === 'Escape' && !e.repeat && (!typing(e) || Custom.panel.contains(e.target))) Custom.close();
+      return;
+    }
     if (typing(e)) return;
+    // Ohne laufendes Spiel öffnet Esc direkt das Anpassen-Fenster
+    if (e.key === 'Escape' && !e.repeat && (this.state === 'idle' || this.state === 'gameover')) { Custom.open(); return; }
     // Pfeiltasten/Space scrollen sonst die Seite — auch während Pause/Räum-Animation,
     // nicht nur während 'playing' (wo der switch weiter unten preventDefault ruft)
     if (SCROLL_KEYS.has(e.key) && this.state !== 'idle' && this.state !== 'gameover') {
@@ -1032,6 +1115,91 @@ function typing(e) {
       clearInterval(downTimer); downTimer = null;
     }
   });
+})();
+
+// ── Anpassen-Fenster (Esc) ────────────────────────────────────────────────
+// Liegt über dem Start-, Pause- oder Game-Over-Schirm. Jede Änderung wirkt
+// sofort auf Spielfeld, Vorschau und Halten und wird im Browser gemerkt.
+const Custom = (() => {
+  const $ = id => document.getElementById(id);
+  const panel = $('custom-panel'), overlay = $('overlay');
+  const pv = hidpi($('custom-preview'));
+  const inputs = {};
+  let opener = null;
+
+  function chips(boxId, defs, pick) {
+    for (const id in defs) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip'; b.dataset.id = id; b.textContent = defs[id].name;
+      b.addEventListener('click', () => { pick(id); changed(); });
+      $(boxId).appendChild(b);
+    }
+  }
+  const press = (b, on) => { b.classList.toggle('selected', on); b.setAttribute('aria-pressed', on); };
+  const mark = (boxId, id) => { for (const b of $(boxId).children) press(b, b.dataset.id === id); };
+
+  chips('custom-palettes', PALETTES, id => Object.assign(COLORS, PALETTES[id].colors));
+  chips('custom-styles', STYLES, id => { look.style = id; });
+  chips('custom-bgs', BACKDROPS, id => { look.bg = id; });
+  for (const type in COLORS) {
+    const inp = document.createElement('input');
+    inp.type = 'color'; inp.title = 'Stein ' + type; inp.setAttribute('aria-label', 'Farbe für Stein ' + type);
+    inp.addEventListener('input', () => { if (HEX.test(inp.value)) { COLORS[type] = inp.value.toLowerCase(); changed(); } });
+    $('custom-colors').appendChild(inputs[type] = inp);
+  }
+  $('custom-ghost').addEventListener('click', () => { look.ghost = !look.ghost; changed(); });
+  $('custom-grid').addEventListener('click', () => { look.grid = !look.grid; changed(); });
+  $('custom-reset').addEventListener('click', () => {
+    Object.assign(COLORS, PALETTES.neon.colors); Object.assign(look, LOOK_DEFAULT); changed();
+  });
+  $('custom-done').addEventListener('click', close);
+
+  function changed() {
+    saveLook();
+    window._game.refreshLook();
+    sync();
+  }
+
+  // Knöpfe, Farbfelder und Vorschau auf den aktuellen Stand bringen
+  function sync() {
+    mark('custom-palettes', Object.keys(PALETTES).find(id => Object.keys(COLORS).every(k => PALETTES[id].colors[k] === COLORS[k])));
+    mark('custom-styles', look.style);
+    mark('custom-bgs', look.bg);
+    press($('custom-ghost'), look.ghost);
+    press($('custom-grid'), look.grid);
+    for (const type in inputs) inputs[type].value = COLORS[type];
+
+    // Vorschau: alle sieben Steine nebeneinander, auf dem gewählten Hintergrund
+    const { ctx, w, h } = pv, bs = 10, gap = 6, types = Object.keys(PIECES);
+    const cols = t => (t === 'I' ? 4 : t === 'O' ? 2 : 3);
+    ctx.canvas.style.background = BACKDROPS[look.bg].css;
+    ctx.clearRect(0, 0, w, h);
+    let x = (w - types.reduce((sum, t) => sum + cols(t) * bs, 0) - gap * (types.length - 1)) / 2;
+    for (const t of types) {
+      window._game.drawCentered(ctx, t, COLORS[t], x, 0, cols(t) * bs, h, bs);
+      x += cols(t) * bs + gap;
+    }
+  }
+
+  function open() {
+    if (!panel.hidden) return;
+    opener = document.activeElement;
+    panel.hidden = false;
+    overlay.inert = true; // der Schirm darunter ist solange nicht per Tab erreichbar
+    panel.scrollTop = 0;
+    sync();
+    $('custom-done').focus();
+  }
+
+  function close() {
+    if (panel.hidden) return;
+    panel.hidden = true;
+    overlay.inert = false;
+    if (opener && opener.isConnected) opener.focus();
+    opener = null;
+  }
+
+  return { panel, open, close, isOpen: () => !panel.hidden };
 })();
 
 // ── Boot ──────────────────────────────────────────────────────────────────

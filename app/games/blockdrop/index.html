@@ -382,6 +382,54 @@
     .level-banner { top: 28%; font-size: clamp(36px, 8vw, 84px); text-shadow: 0 0 4px #fff, 0 0 24px var(--neon-cyan), 0 0 70px var(--neon-cyan), 0 8px 0 rgba(0,0,0,0.5); }
     .tc-btn { background: var(--board-raised); border-color: var(--board-line); font-family: var(--font-cab); }
     @media (prefers-reduced-motion: reduce) { #game-area::after, .btn { animation: none; } }
+
+    /* ── Anpassen-Fenster (Esc) ─────────────────────────── */
+    .btn-alt {
+      width: 100%; padding: 10px 0; border-radius: 999px; cursor: pointer;
+      font-family: var(--font-cab); font-size: 14px; letter-spacing: 0.04em; color: var(--chalk);
+      background: var(--board-raised); border: 1px solid var(--board-line);
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-alt:hover { border-color: var(--accent); background: rgba(255,61,110,0.12); }
+    #custom-panel {
+      position: absolute; inset: 0; z-index: 5; border-radius: inherit;
+      background: rgba(10,5,30,0.97);
+      display: flex; flex-direction: column; gap: 11px;
+      padding: 16px 20px; overflow-y: auto; touch-action: pan-y;
+    }
+    #custom-panel[hidden] { display: none; }
+    #custom-panel h1 {
+      font-family: var(--font-sign); font-weight: 400; font-size: 26px; text-align: center; color: #ffe3ec;
+      text-shadow: 0 0 2px #fff, 0 0 12px var(--accent), 0 0 30px var(--accent);
+    }
+    #custom-panel h2 {
+      font-family: var(--font-cab); font-style: italic; font-weight: 800; font-size: 12px;
+      text-transform: uppercase; letter-spacing: 0.14em; color: var(--chalk-dim); margin-bottom: 5px;
+    }
+    #custom-preview {
+      display: block; width: 100%; max-width: 252px; height: auto; margin: 0 auto; flex-shrink: 0;
+      border-radius: 8px; border: 1px solid var(--board-line);
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      flex: 1 1 auto; padding: 6px 10px; border-radius: 8px; cursor: pointer;
+      font-family: var(--font-cab); font-size: 13px; color: var(--chalk-dim);
+      background: color-mix(in srgb, #fff 4%, var(--board-raised)); border: 1px solid rgba(255,255,255,0.09);
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .chip:hover { color: #fff; border-color: rgba(255,61,110,0.45); }
+    .chip.selected { color: #fff; background: rgba(255,61,110,0.34); border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .swatches { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    .swatches input {
+      width: 100%; height: 30px; padding: 0; cursor: pointer;
+      background: none; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; overflow: hidden;
+    }
+    .swatches input::-webkit-color-swatch-wrapper { padding: 0; }
+    .swatches input::-webkit-color-swatch { border: none; }
+    .swatches input::-moz-color-swatch { border: none; }
+    .custom-foot { display: flex; gap: 8px; margin-top: auto; padding-top: 4px; }
+    .custom-foot .btn { padding: 9px 0; font-size: 16px; animation: none; }
+    #custom-panel :focus-visible, .btn-alt:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 2px; }
   </style>
 </head>
 <body>
@@ -441,7 +489,8 @@
         ↓ &nbsp;&nbsp;&nbsp;&nbsp;Schneller<br>
         Leer &nbsp;Fallen lassen<br>
         Shift Halten<br>
-        P &nbsp;&nbsp;&nbsp;&nbsp;Pause
+        P &nbsp;&nbsp;&nbsp;&nbsp;Pause<br>
+        Esc &nbsp;&nbsp;Pause, Anpassen
       </div>
     </div>
   </div>
@@ -456,7 +505,24 @@
         <button class="mode-btn selected" id="mode-standard">Standard<small>Festes Tempo</small></button>
       </div>
       <button class="btn" id="start-btn">Spielen &nbsp;→</button>
+      <button class="btn-alt" type="button" data-custom>🎨 Anpassen</button>
       <p id="overlay-info" style="display:none"></p>
+    </div>
+    <div id="custom-panel" role="dialog" aria-modal="true" aria-labelledby="custom-title" hidden>
+      <h1 id="custom-title">Anpassen</h1>
+      <canvas id="custom-preview" width="252" height="40" aria-hidden="true"></canvas>
+      <div><h2>Farbpalette</h2><div class="chips" id="custom-palettes"></div></div>
+      <div><h2>Einzelne Steine</h2><div class="swatches" id="custom-colors"></div></div>
+      <div><h2>Stein-Stil</h2><div class="chips" id="custom-styles"></div></div>
+      <div><h2>Hintergrund</h2><div class="chips" id="custom-bgs"></div></div>
+      <div><h2>Hilfen</h2><div class="chips">
+        <button class="chip" type="button" id="custom-ghost">Landeplatz</button>
+        <button class="chip" type="button" id="custom-grid">Raster</button>
+      </div></div>
+      <div class="custom-foot">
+        <button class="btn-alt" type="button" id="custom-reset">Zurücksetzen</button>
+        <button class="btn" type="button" id="custom-done">Fertig</button>
+      </div>
     </div>
   </div>
 
