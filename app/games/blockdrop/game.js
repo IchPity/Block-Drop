@@ -79,12 +79,19 @@ const PALETTES = {
   klassik:  { name: 'Klassik',  colors: { I: '#00e0e0', O: '#f0e000', T: '#b030f0', S: '#00d840', Z: '#f02020', J: '#2050f0', L: '#f09000' } },
   pastell:  { name: 'Pastell',  colors: { I: '#9be7ff', O: '#ffe9a3', T: '#d3b3ff', S: '#b6f2a8', Z: '#ffa8bd', J: '#a9bdff', L: '#ffc79e' } },
   kontrast: { name: 'Kontrast', colors: { I: '#56b4e9', O: '#f0e442', T: '#cc79a7', S: '#009e73', Z: '#d55e00', J: '#0072b2', L: '#e69f00' } }, // auch bei Farbsehschwäche gut zu trennen
+  sakura:   { name: 'Sakura',   colors: { I: '#ff69b4', O: '#ffc0cb', T: '#ff1493', S: '#db7093', Z: '#c71585', J: '#ff69b4', L: '#ffa0c0' } },
+  ozean:    { name: 'Ozean',    colors: { I: '#00d4ff', O: '#0099cc', T: '#0066ff', S: '#00ccff', Z: '#0088ff', J: '#0055ff', L: '#00bbff' } },
+  feuer:    { name: 'Feuer',    colors: { I: '#ff4500', O: '#ff6347', T: '#ff8c00', S: '#ffa500', Z: '#ff3300', J: '#ff5500', L: '#ff7700' } },
+  wald:     { name: 'Wald',     colors: { I: '#00ff00', O: '#32cd32', T: '#228b22', S: '#00cc00', Z: '#008800', J: '#006600', L: '#00dd00' } },
+  traum:    { name: 'Traum',    colors: { I: '#da70d6', O: '#ee82ee', T: '#ba55d3', S: '#da70d6', Z: '#ff1493', J: '#ba55d3', L: '#ee82ee' } },
 };
 const STYLES = {
   glanz: { name: 'Glanz' },
   flach: { name: 'Flach' },
   neon:  { name: 'Röhre' },
   retro: { name: 'Retro' },
+  glas:  { name: 'Glas' },
+  matte: { name: 'Matt' },
 };
 const BACKDROPS = {
   halle:   { name: 'Halle',   css: 'radial-gradient(ellipse 90% 60% at 50% 100%, #150a36, #05030c 72%)' },
@@ -92,6 +99,9 @@ const BACKDROPS = {
   tafel:   { name: 'Tafel',   css: 'radial-gradient(ellipse 90% 60% at 50% 100%, #1d3a2c, #0b1711 72%)' },
   meer:    { name: 'Tiefsee', css: 'linear-gradient(180deg, #04101f, #0a2f4a)' },
   glut:    { name: 'Glut',    css: 'linear-gradient(180deg, #0d0514 30%, #3a1030 78%, #5e2016)' },
+  himmel:  { name: 'Himmel',  css: 'linear-gradient(180deg, #87ceeb 0%, #e0f6ff 100%)' },
+  dämmrung:{ name: 'Dämmrung', css: 'linear-gradient(180deg, #ff6b9d 0%, #c06c84 50%, #6c3483 100%)' },
+  wald:    { name: 'Wald',    css: 'linear-gradient(180deg, #1a5c3a 0%, #0d3a26 50%, #051a0f 100%)' },
 };
 const LOOK_DEFAULT = { style: 'glanz', bg: 'halle', ghost: true, grid: true };
 
@@ -235,6 +245,32 @@ function sprite(color, bs, ghost) {
     c.fillStyle = color; c.fillRect(a, a, w, w);
     c.fillStyle = shade(color, 0.45); c.fillRect(a, a, w, t); c.fillRect(a, a, t, w);
     c.fillStyle = shade(color, -0.45); c.fillRect(a, b - t, w, t); c.fillRect(b - t, a, t, w);
+    return cv;
+  }
+  if (look.style === 'glas') {
+    // Glasstil: transparenter mit Reflex und Glanz
+    box(a, a, b, b, r);
+    c.fillStyle = color;
+    c.globalAlpha = 0.85;
+    c.fill();
+    c.globalAlpha = 1;
+    c.save(); c.clip();
+    c.fillStyle = 'rgba(255,255,255,0.5)'; c.fillRect(a, a, bs, bs * 0.2);
+    c.fillStyle = 'rgba(255,255,255,0.2)'; c.fillRect(a, a, bs * 0.1, bs);
+    c.fillStyle = 'rgba(0,0,0,0.15)'; c.fillRect(a, b - bs * 0.1, bs, bs * 0.1);
+    c.restore();
+    box(a + 0.5, a + 0.5, b - 0.5, b - 0.5, r - 0.5); c.strokeStyle = 'rgba(255,255,255,0.5)'; c.lineWidth = 1; c.stroke();
+    return cv;
+  }
+  if (look.style === 'matte') {
+    // Mattgestaltung: kein Glanz, sanfte Kanten
+    box(a, a, b, b, r);
+    c.fillStyle = color;
+    c.fill();
+    box(a + 0.5, a + 0.5, b - 0.5, b - 0.5, r - 0.5);
+    c.strokeStyle = shade(color, 0.2);
+    c.lineWidth = 1;
+    c.stroke();
     return cv;
   }
   const g = c.createLinearGradient(0, a, 0, b);
