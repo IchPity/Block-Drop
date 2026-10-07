@@ -187,8 +187,7 @@
         '<label class="fxw-opt fxw-' + o[1] + '"><input type="radio" name="fxw" value="' + o[0] + '"' + (o[0] === mode() ? ' checked' : '') + '>' +
         '<span class="fxw-view" aria-hidden="true"><b>Alkomat</b>' + (o[0] === 'adhs' ? confetti : '') + '</span>' +
         '<span class="fxw-name">' + o[2] + '</span><span class="fxw-desc">' + o[3] + '</span></label>').join('') + '</div>' +
-      '<p class="fxw-note">Ändern kannst du das jederzeit im Menü rechts oben.</p>' +
-      '<div class="fxw-act"><button type="submit" class="fxw-go">Starten</button></div></form>';
+      '<p class="fxw-note">Ändern kannst du das jederzeit im Menü rechts oben.</p></form>';
     // Die Seite dahinter ist solange nicht bedienbar
     const rest = [...doc.body.children];
     rest.forEach(n => { n.inert = true; });
@@ -196,11 +195,13 @@
     root.classList.add('fxw-open');
     const mark = () => el.querySelectorAll('.fxw-opt').forEach(o => o.classList.toggle('on', o.querySelector('input').checked));
     mark(); el.addEventListener('change', mark);
-    // Tasten erreichen das Spiel dahinter nicht
-    const keys = e => e.stopPropagation();
+    // Tasten erreichen das Spiel dahinter nicht; Enter nimmt die markierte Version
+    const keys = e => { e.stopPropagation(); if (e.type === 'keydown' && e.key === 'Enter' && el.contains(e.target)) { e.preventDefault(); done(); } };
     doc.addEventListener('keydown', keys, true); doc.addEventListener('keyup', keys, true);
     (el.querySelector('input:checked') || el.querySelector('input')).focus({ preventScroll: true });
+    let gone = false;
     function done() {
+      if (gone) return; gone = true;
       const pick = (el.querySelector('input:checked') || {}).value || mode();
       const stays = pick === mode() || (pick !== 'design' && mode() !== 'design');
       picking = false;
@@ -212,7 +213,13 @@
       el.classList.add('off');
       setTimeout(() => el.remove(), REDUCED ? 0 : 320);
     }
-    el.querySelector('form').addEventListener('submit', e => { e.preventDefault(); done(); });
+    el.querySelector('form').addEventListener('submit', e => e.preventDefault());
+    // Ein Klick auf die Kachel wählt und startet. Pfeiltasten wechseln nur die Markierung (ihr Klick trifft das <input>).
+    el.addEventListener('click', e => {
+      const o = e.target.closest('.fxw-opt');
+      if (!o || e.target.tagName === 'INPUT') return;
+      e.preventDefault(); o.querySelector('input').checked = true; mark(); done();
+    });
   }
 
   // ═══════════════════════════════════════════════════════════════════

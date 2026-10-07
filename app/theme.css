@@ -621,7 +621,7 @@ html.fx-design .fxr-head { letter-spacing: 0.02em; text-transform: none; font-we
 .fxk button:focus-visible, .fxk a:focus-visible { outline: 2px solid #ecebe6; outline-offset: 3px; }
 @media (max-width: 720px) { .fxk { right: 12px; bottom: 12px; width: calc(100vw - 24px); } }
 html.fxw-open { overflow: hidden; }
-@media (max-width: 720px) { html.fxk-open .fxw { padding-bottom: 240px; } } /* „Starten" bleibt über dem Cookie-Fenster erreichbar */
+@media (max-width: 720px) { html.fxk-open .fxw { padding-bottom: 240px; } } /* alle Kacheln bleiben über dem Cookie-Fenster erreichbar */
 .fxw {
   position: fixed; inset: 0; z-index: 9900; overflow-y: auto; display: grid; place-items: center; padding: 28px 20px;
   background: #0a0a0f; color: #ecebe6; font-family: 'Barlow', -apple-system, 'Segoe UI', sans-serif;
@@ -670,13 +670,6 @@ html.fxw-open { overflow: hidden; }
 .fxw-desc { display: block; margin: 0 6px; font-size: 14px; line-height: 1.45; color: #a3a4ab; }
 .fxw-note { margin: 22px 0 0; max-width: 70ch; font-size: 14px; line-height: 1.55; color: #a3a4ab; text-wrap: pretty; }
 .fxw-note a { color: #ecebe6; text-underline-offset: 3px; }
-.fxw-act { margin-top: 22px; display: flex; align-items: center; gap: 8px 24px; flex-wrap: wrap; }
-.fxw-go {
-  min-height: 52px; padding: 0 28px; border: 0; border-radius: 999px; cursor: pointer;
-  font: 600 16px 'Barlow', sans-serif; color: #09090d; background: #ecebe6; transition: background-color 0.2s, transform 0.2s var(--ease-out);
-}
-.fxw-go:hover { background: #fff; transform: translateY(-1px); }
-.fxw-go:focus-visible { outline: 2px solid #ecebe6; outline-offset: 3px; }
 @media (max-width: 720px) {
   .fxw { place-items: start center; padding: 22px 16px; }
   .fxw-opts { grid-template-columns: 1fr; gap: 10px; }
@@ -687,5 +680,4 @@ html.fxw-open { overflow: hidden; }
   .fxw-cine .fxw-view b { font-size: 28px; }
   .fxw-name { margin: 0; align-self: end; font-size: 19px; }
   .fxw-desc { margin: 0; font-size: 13px; }
-  .fxw-go { width: 100%; }
 }
