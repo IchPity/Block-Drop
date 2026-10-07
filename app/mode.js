@@ -6,6 +6,10 @@
    kurz auf. Gemerkt ist die Wahl im Cookie „arcade_mode"; ohne
    Cookie-Zustimmung nur für diesen Besuch (sessionStorage).
 
+   Die Zustimmung steht im Cookie „arcade_consent" mit einer Nummer. Wird
+   die Nummer hier erhöht, gelten alle alten Zustimmungen nicht mehr: die
+   Cookies werden gelöscht und jeder wird neu gefragt (Fenster in /fx.js).
+
    Cinema gilt für jede Seite. Die Seiten haben ihre Hallenfarben aber
    fest im eigenen CSS stehen (Indigo, Lavendel, Neon). Statt jede Seite
    doppelt zu pflegen, werden diese Farben hier beim Laden umgerechnet:
@@ -22,7 +26,16 @@
    Neue Seiten brauchen dafür nichts zu tun.
    ───────────────────────────────────────────────────────────────────────── */
 (function () {
-  var m = null;
+  var m = null, CONSENT = '2';
+  try {
+    var ok = document.cookie.match(/(?:^|; )arcade_consent=(\w+)/);
+    if (!ok || ok[1] !== CONSENT) {
+      // keine oder eine alte Zustimmung: gemerkte Version vergessen
+      document.cookie = 'arcade_consent=; max-age=0; path=/';
+      document.cookie = 'arcade_mode=; max-age=0; path=/';
+      localStorage.removeItem('arcade.design'); localStorage.removeItem('arcade.adhs');
+    }
+  } catch (e) {}
   try {
     var c = document.cookie.match(/(?:^|; )arcade_mode=(\w+)/);
     m = c ? c[1] : sessionStorage.getItem('arcade.mode');
@@ -118,7 +131,7 @@
     for (var i = 0; i < list.length; i++) {
       var r = list[i];
       // der Dialog beim ersten Besuch zeigt alle drei Versionen in ihren echten Farben
-      if (r.selectorText && r.selectorText.indexOf('.fxw') >= 0) continue;
+      if (r.selectorText && /\.fx[wk]/.test(r.selectorText)) continue;
       if (r.style) style(r.style);
       if (r.cssRules) rules(r.cssRules);
     }
@@ -139,7 +152,7 @@
     var els = base.querySelectorAll('[style], [fill], [stroke], [stop-color]');
     for (var i = 0; i < els.length; i++) {
       var el = els[i];
-      if (el.closest && el.closest('.fxw')) continue;
+      if (el.closest && el.closest('.fxw, .fxk')) continue;
       if (el.style && el.getAttribute('style')) style(el.style);
       for (var k = 0; k < SVG.length; k++) {
         var a = el.getAttribute(SVG[k]);

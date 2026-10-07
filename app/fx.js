@@ -32,11 +32,12 @@
    theme.css. Ein Wechsel in den oder aus dem Design-Modus lädt die Seite
    neu, weil die Halle und die Startseite dann anders aufgebaut sind.
 
-   Beim ersten Besuch fragt ein Dialog nach der Version (OG, ADHS, Cinema)
-   und nach der Zustimmung zu Cookies. Mit Zustimmung steht die Wahl ein
-   Jahr im Cookie „arcade_mode" (dazu „arcade_consent"), ohne Zustimmung
-   gilt sie nur für diesen Besuch (sessionStorage) und der Dialog kommt
-   beim nächsten Besuch wieder.
+   Beim ersten Besuch schiebt sich unten ein Fenster ins Bild und fragt
+   nach Cookies. Wer ablehnt, wird bei jedem Seitenaufruf wieder gefragt.
+   Wer zustimmt, wählt danach die Version (OG, ADHS, Cinema); die steht ein
+   Jahr im Cookie „arcade_mode" (dazu „arcade_consent" mit der Nummer aus
+   /mode.js). Ohne Zustimmung gilt eine im Menü gewählte Version nur für
+   diesen Besuch (sessionStorage).
    ───────────────────────────────────────────────────────────────────────── */
 (() => {
   'use strict';
@@ -60,12 +61,12 @@
   // ADHS-Modus: gilt für die ganze Seite, gemerkt pro Browser
   // ═══════════════════════════════════════════════════════════════════
   const ADHS_KEY = 'arcade.adhs', DESIGN_KEY = 'arcade.design';
-  const MODE_CK = 'arcade_mode', OK_CK = 'arcade_consent', VISIT_KEY = 'arcade.mode', ASKED_KEY = 'arcade.asked';
+  const MODE_CK = 'arcade_mode', OK_CK = 'arcade_consent', VISIT_KEY = 'arcade.mode', CONSENT = '2'; // Nummer wie in /mode.js
   const cookie = n => { const m = doc.cookie.match(new RegExp('(?:^|; )' + n + '=([^;]*)')); return m ? m[1] : null; };
   const bake = (n, v) => { doc.cookie = n + '=' + v + '; max-age=31536000; path=/; SameSite=Lax'; };
   let adhs = true, design = false, consent = false;
   try {
-    consent = cookie(OK_CK) === '1';
+    consent = cookie(OK_CK) === CONSENT;
     const saved = cookie(MODE_CK) || sessionStorage.getItem(VISIT_KEY);
     if (saved) { design = saved === 'design'; adhs = saved === 'adhs'; }
     else {
@@ -129,14 +130,32 @@
   });
 
   // ═══════════════════════════════════════════════════════════════════
-  // Erster Besuch: Version wählen und Cookies zustimmen
-  // Sieht in jeder Version gleich aus (eigene Farben, keine Hallen-Token).
+  // Erster Besuch: erst Cookies (Fenster schiebt sich unten ins Bild),
+  // nach der Zustimmung die Version. Beides sieht in jeder Version gleich
+  // aus (eigene Farben, keine Hallen-Token).
   // ═══════════════════════════════════════════════════════════════════
   function welcome() {
-    let asked = false;
-    try { asked = sessionStorage.getItem(ASKED_KEY) === '1'; } catch (e) {}
-    // Impressum und Datenschutz bleiben ohne Dialog lesbar
-    if (consent || asked || /^\/(impressum|datenschutz)\//.test(location.pathname)) return;
+    // Impressum und Datenschutz bleiben ohne Fenster lesbar
+    if (/^\/(impressum|datenschutz)\//.test(location.pathname)) return;
+    if (consent) { if (!cookie(MODE_CK)) choose(); return; } // zugestimmt, aber noch keine Version gewählt
+    const el = doc.createElement('div');
+    el.className = 'fxk'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-labelledby', 'fxk-t');
+    el.innerHTML =
+      '<h2 id="fxk-t">Cookies erlauben?</h2>' +
+      '<p>Damit merkt sich die Seite deine Version und deine Spielstände. Kein Tracking, keine Werbung. Mehr im <a href="/datenschutz/">Datenschutz</a>.</p>' +
+      '<div class="fxk-act"><button type="button" class="fxk-yes">Erlauben</button><button type="button" class="fxk-no">Ablehnen</button></div>';
+    doc.body.appendChild(el);
+    setTimeout(() => el.classList.add('on'), REDUCED ? 0 : 700);
+    const close = () => { el.classList.remove('on'); setTimeout(() => el.remove(), REDUCED ? 0 : 500); };
+    // Ablehnen merkt sich nichts: beim nächsten Seitenaufruf kommt das Fenster wieder
+    el.querySelector('.fxk-no').addEventListener('click', close);
+    el.querySelector('.fxk-yes').addEventListener('click', () => {
+      consent = true;
+      try { bake(OK_CK, CONSENT); sessionStorage.removeItem(VISIT_KEY); } catch (e) {}
+      close(); choose();
+    });
+  }
+  function choose() {
     if (!doc.querySelector('link[href*="Bricolage"]')) {
       const l = doc.createElement('link'); l.rel = 'stylesheet';
       l.href = 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&display=swap';
@@ -157,9 +176,8 @@
         '<label class="fxw-opt fxw-' + o[1] + '"><input type="radio" name="fxw" value="' + o[0] + '"' + (o[0] === mode() ? ' checked' : '') + '>' +
         '<span class="fxw-view" aria-hidden="true"><b>Alkomat</b>' + (o[0] === 'adhs' ? confetti : '') + '</span>' +
         '<span class="fxw-name">' + o[2] + '</span><span class="fxw-desc">' + o[3] + '</span></label>').join('') + '</div>' +
-      '<p class="fxw-note">Deine Wahl und deine Spielstände merkt sich die Seite mit Cookies und im Speicher deines Browsers. Kein Tracking, keine Werbung. Mehr dazu im <a href="/datenschutz/">Datenschutz</a>. Die Version kannst du jederzeit im Menü rechts oben ändern.</p>' +
-      '<div class="fxw-act"><button type="submit" class="fxw-go">Cookies erlauben und starten</button>' +
-      '<button type="button" class="fxw-no">Ohne Cookies, nur für diesen Besuch</button></div></form>';
+      '<p class="fxw-note">Ändern kannst du das jederzeit im Menü rechts oben.</p>' +
+      '<div class="fxw-act"><button type="submit" class="fxw-go">Starten</button></div></form>';
     // Die Seite dahinter ist solange nicht bedienbar
     const rest = [...doc.body.children];
     rest.forEach(n => { n.inert = true; });
@@ -171,12 +189,8 @@
     const keys = e => e.stopPropagation();
     doc.addEventListener('keydown', keys, true); doc.addEventListener('keyup', keys, true);
     (el.querySelector('input:checked') || el.querySelector('input')).focus({ preventScroll: true });
-    function done(save) {
+    function done() {
       const pick = (el.querySelector('input:checked') || {}).value || mode();
-      try {
-        if (save) { consent = true; bake(OK_CK, '1'); sessionStorage.removeItem(VISIT_KEY); }
-        else sessionStorage.setItem(ASKED_KEY, '1');
-      } catch (e) {}
       const stays = pick === mode() || (pick !== 'design' && mode() !== 'design');
       setMode(pick);
       if (!stays) return; // die Seite lädt neu, der Dialog deckt das zu
@@ -186,8 +200,7 @@
       el.classList.add('off');
       setTimeout(() => el.remove(), REDUCED ? 0 : 320);
     }
-    el.querySelector('form').addEventListener('submit', e => { e.preventDefault(); done(true); });
-    el.querySelector('.fxw-no').addEventListener('click', () => done(false));
+    el.querySelector('form').addEventListener('submit', e => { e.preventDefault(); done(); });
   }
 
   // ═══════════════════════════════════════════════════════════════════

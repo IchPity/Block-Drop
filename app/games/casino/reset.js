@@ -18,7 +18,7 @@
       try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {}
       try {
         const { view, ...small } = s;
-        if (document.cookie.includes('arcade_consent=1')) document.cookie = CK + '=' + encodeURIComponent(JSON.stringify(small)) + '; max-age=31536000; path=/; SameSite=Lax';
+        if (document.cookie.includes('arcade_consent=2')) document.cookie = CK + '=' + encodeURIComponent(JSON.stringify(small)) + '; max-age=31536000; path=/; SameSite=Lax';
       } catch (e) {}
     }
     localStorage.setItem(FLAG, RESET_ID);

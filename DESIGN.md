@@ -146,7 +146,7 @@ Die Token-Namen `--board`, `--chalk`, `--marquee`, `--bell` stammen aus dem abge
 - Läuft ohne WebGL weiter und steht still bei `prefers-reduced-motion`.
 - ADHS-Modus (Schalter im Menü rechts oben, `FX.adhs`, gemerkt in `localStorage` unter `arcade.adhs`): aus heißt nicht still. Halle, Röhre und Kino-Screens bleiben; `fx.js` dämpft Blitze, Wackeln und Partikelmengen je nach Ort (Spiele am stärksten, Casino am wenigsten).
 
-- Drei Versionen im selben Schalter: OG (ruhige Halle, intern `standard`), ADHS und Cinema (intern `design`, Klasse `fx-design`); `FX.mode`. Beim ersten Besuch fragt ein Dialog (`.fxw`, erzeugt von `fx.js`) nach der Version und nach der Zustimmung zu Cookies. Mit Zustimmung steht die Wahl im Cookie `arcade_mode`, ohne nur für den Besuch im `sessionStorage`. Der Dialog hat feste eigene Farben und sieht in jeder Version gleich aus. Cinema ist ein eigener Look, siehe Abschnitt »Design-Modus«.
+- Drei Versionen im selben Schalter: OG (ruhige Halle, intern `standard`), ADHS und Cinema (intern `design`, Klasse `fx-design`); `FX.mode`. Beim ersten Besuch schiebt sich unten rechts ein Cookie-Fenster ins Bild (`.fxk`, erzeugt von `fx.js`). Wer ablehnt, wird bei jedem Seitenaufruf wieder gefragt; wer zustimmt, wählt danach die Version (`.fxw`). Die Wahl steht im Cookie `arcade_mode`, die Zustimmung in `arcade_consent` mit einer Nummer; wird die Nummer in `mode.js` und `fx.js` erhöht, werden alle neu gefragt. Beide Fenster haben feste eigene Farben und sehen in jeder Version gleich aus. Cinema ist ein eigener Look, siehe Abschnitt »Design-Modus«.
 
 ## Design-Modus
 

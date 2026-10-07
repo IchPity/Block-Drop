@@ -592,10 +592,34 @@ html.fx-design .fxr-head { letter-spacing: 0.02em; text-transform: none; font-we
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   Erster Besuch: Version wählen und Cookies zustimmen (von /fx.js erzeugt)
-   Eigene, feste Farben: der Dialog sieht in jeder Version gleich aus.
-   Jede Kachel zeigt ihre Version im Kleinen.
+   Erster Besuch (von /fx.js erzeugt): erst das Cookie-Fenster (.fxk), das
+   sich unten ins Bild schiebt, nach der Zustimmung die Versionswahl (.fxw).
+   Eigene, feste Farben: beides sieht in jeder Version gleich aus.
+   Jede Kachel der Versionswahl zeigt ihre Version im Kleinen.
    ═══════════════════════════════════════════════════════════════════════ */
+.fxk {
+  position: fixed; right: 20px; bottom: 20px; z-index: 9890; width: min(400px, calc(100vw - 40px));
+  padding: 22px 22px 20px; border-radius: 14px;
+  background: #121319; color: #ecebe6; border: 1px solid rgba(236,235,230,0.16); box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+  font-family: 'Barlow', -apple-system, 'Segoe UI', sans-serif;
+  transform: translateY(calc(100% + 40px)); visibility: hidden;
+  transition: transform 0.7s var(--ease-out), visibility 0s 0.7s;
+}
+.fxk.on { transform: none; visibility: visible; transition: transform 0.7s var(--ease-out); }
+.fxk h2 { margin: 0; font: 600 21px/1.15 'Barlow', sans-serif; letter-spacing: -0.01em; color: #ecebe6; }
+.fxk p { margin: 8px 0 0; font-size: 14px; line-height: 1.5; color: #a3a4ab; text-wrap: pretty; }
+.fxk a { color: #ecebe6; text-underline-offset: 3px; }
+.fxk-act { margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fxk button {
+  min-height: 46px; border-radius: 999px; cursor: pointer; font: 600 15px 'Barlow', sans-serif;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+.fxk-yes { border: 0; color: #09090d; background: #ecebe6; }
+.fxk-yes:hover { background: #fff; }
+.fxk-no { color: #a3a4ab; background: transparent; border: 1px solid rgba(236,235,230,0.2); }
+.fxk-no:hover { color: #ecebe6; border-color: rgba(236,235,230,0.5); }
+.fxk button:focus-visible, .fxk a:focus-visible { outline: 2px solid #ecebe6; outline-offset: 3px; }
+@media (max-width: 720px) { .fxk { right: 12px; bottom: 12px; width: calc(100vw - 24px); } }
 html.fxw-open { overflow: hidden; }
 .fxw {
   position: fixed; inset: 0; z-index: 9900; overflow-y: auto; display: grid; place-items: center; padding: 28px 20px;
@@ -651,12 +675,7 @@ html.fxw-open { overflow: hidden; }
   font: 600 16px 'Barlow', sans-serif; color: #09090d; background: #ecebe6; transition: background-color 0.2s, transform 0.2s var(--ease-out);
 }
 .fxw-go:hover { background: #fff; transform: translateY(-1px); }
-.fxw-no {
-  min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer;
-  font: 500 15px 'Barlow', sans-serif; color: #a3a4ab; text-decoration: underline; text-underline-offset: 4px;
-}
-.fxw-no:hover { color: #ecebe6; }
-.fxw-go:focus-visible, .fxw-no:focus-visible, .fxw-note a:focus-visible { outline: 2px solid #ecebe6; outline-offset: 3px; }
+.fxw-go:focus-visible { outline: 2px solid #ecebe6; outline-offset: 3px; }
 @media (max-width: 720px) {
   .fxw { place-items: start center; padding: 22px 16px; }
   .fxw-opts { grid-template-columns: 1fr; gap: 10px; }
