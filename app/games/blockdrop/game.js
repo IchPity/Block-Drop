@@ -661,7 +661,8 @@ class BlockDrop {
         if (!color) continue;
         const cx = (c + 0.5) * BLOCK;
         const cy = (r + 0.5) * BLOCK;
-        const count = calmFx() ? 2 + Math.floor(Math.random() * 2) : 5 + Math.floor(Math.random() * 4);
+        const mult = activeUpgrades.particles ? 2 : 1;
+        const count = calmFx() ? (2 + Math.floor(Math.random() * 2)) * mult : (5 + Math.floor(Math.random() * 4)) * mult;
         for (let i = 0; i < count; i++) {
           const angle = Math.random() * Math.PI * 2;
           const speed = 0.04 + Math.random() * 0.18;
@@ -682,16 +683,18 @@ class BlockDrop {
     // Funken und Splitter fliegen aus jeder geräumten Reihe über die ganze Seite
     if (window.FX && !FX.reduced) {
       const br = this.boardCanvas.getBoundingClientRect(), cell = br.height / ROWS, cx = br.left + br.width / 2;
-      const NEON = ['#2ee6ff', '#ffb000', '#ff3d9a', '#b8ff3d', '#a78bfa', '#ffffff'];
+      const mult = activeUpgrades.multiplier || 1;
+      const NEON = mult > 2 ? ['#ff3d6e', '#ffc93a', '#2ee6ff'] : ['#2ee6ff', '#ffb000', '#ff3d9a', '#b8ff3d', '#a78bfa', '#ffffff'];
       rows.forEach((r, i) => setTimeout(() => {
         const y = br.top + (r + 0.5) * cell;
-        FX.burst(cx, y, { kind: 'spark', n: 34, speed: 16, radius: br.width / 2, radiusY: 2, colors: NEON });
-        FX.burst(cx, y, { kind: 'block', n: 12, speed: 13, lift: -5, radius: br.width / 2, radiusY: 2, size: 5, life: 1.4, colors: NEON });
+        const scale = 1 + (mult - 1) * 0.5;
+        FX.burst(cx, y, { kind: 'spark', n: Math.round(34 * scale), speed: Math.round(16 * scale), radius: br.width / 2, radiusY: 2, colors: NEON });
+        FX.burst(cx, y, { kind: 'block', n: Math.round(12 * scale), speed: Math.round(13 * scale), lift: -5, radius: br.width / 2, radiusY: 2, size: 5, life: 1.4, colors: NEON });
       }, i * 45));
       const mid = br.top + (rows[0] + rows.length / 2) * cell;
-      FX.pulse(NEON[lineCount % NEON.length], 0.4 + lineCount * 0.3);
-      if (lineCount >= 2) FX.ring(cx, mid, '#2ee6ff', { to: 380 + lineCount * 90, width: 4 + lineCount, dur: 0.6 });
-      if (lineCount >= 3) { FX.streak(mid, '#2ee6ff'); FX.flash('#2ee6ff', 260); }
+      FX.pulse(NEON[lineCount % NEON.length], 0.4 + lineCount * 0.3 * mult);
+      if (lineCount >= 2) FX.ring(cx, mid, NEON[0], { to: 380 + lineCount * 90, width: 4 + lineCount, dur: 0.6 });
+      if (lineCount >= 3) { FX.streak(mid, NEON[0]); FX.flash(NEON[0], 260 * mult); }
     }
     const shakeIntensity = calmFx() ? 0 : [0, 0, 4, 7, 13][lineCount] || 13;
     if (shakeIntensity > 0) {
@@ -788,9 +791,14 @@ class BlockDrop {
     const x = br.left + br.width / 2;
     const y = br.top + br.height * 0.4;
     const el = document.createElement('div');
-    el.style.cssText = `position: fixed; left: ${x}px; top: ${y}px; color: #ffd700; font-weight: 900; font-size: 24px; pointer-events: none; z-index: 999; text-shadow: 0 2px 8px rgba(0,0,0,0.8); animation: currencyFloat 1.2s ease-out forwards;`;
-    el.textContent = '+$' + amount;
+    el.style.cssText = `position: fixed; left: ${x}px; top: ${y}px; color: #ffd700; font-weight: 900; font-size: 28px; pointer-events: none; z-index: 999; text-shadow: 0 2px 8px rgba(255,215,0,0.8), 0 0 16px rgba(255,215,0,0.4); animation: currencyFloat 1.2s ease-out forwards;`;
+    el.textContent = '💰 +$' + amount;
     document.body.appendChild(el);
+
+    if (window.FX && !FX.reduced) {
+      FX.burst(x, y, { kind: 'spark', n: 15, speed: 8, radius: 80, colors: ['#ffd700', '#ffed4e', '#ffc93a'] });
+    }
+
     setTimeout(() => el.remove(), 1200);
   }
 
@@ -1375,14 +1383,20 @@ const Upgrades = (() => {
     card.disabled = true;
     card.style.opacity = '0.5';
     card.style.pointerEvents = 'none';
+    card.classList.add('upgrade-bought');
 
     const el = document.createElement('div');
-    el.style.cssText = `position: fixed; left: 50%; top: 20%; color: #ffd700; font-weight: 900; font-size: 32px; pointer-events: none; z-index: 10000; transform: translateX(-50%); animation: currencyFloat 1.2s ease-out forwards;`;
-    el.textContent = '✨ ' + ug.name + ' ✨';
+    el.style.cssText = `position: fixed; left: 50%; top: 20%; color: #ffd700; font-weight: 900; font-size: 36px; pointer-events: none; z-index: 10000; transform: translateX(-50%); animation: currencyFloat 1.2s ease-out forwards; text-shadow: 0 0 20px #ffd700;`;
+    el.textContent = '🎉 ' + ug.icon + ' ' + ug.name + ' ' + ug.icon + ' 🎉';
     document.body.appendChild(el);
-    setTimeout(() => el.remove(), 1200);
 
-    renderUpgrades();
+    if (window.FX && !FX.reduced) {
+      FX.burst(window.innerWidth / 2, window.innerHeight * 0.2, { kind: 'confetti', n: 30, speed: 10, radius: 200, colors: ['#ffd700', '#ffed4e', '#ffc93a', '#ff3d6e'] });
+      FX.pulse('#ffd700', 0.8);
+    }
+
+    setTimeout(() => el.remove(), 1200);
+    setTimeout(() => renderUpgrades(), 600);
   }
 
   function open() {
