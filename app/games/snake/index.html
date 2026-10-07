@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Snake im Alkomat: Münzen fressen, wachsen, nicht in den eigenen Schwanz beißen.">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<title>Snake — Alkomat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Kanit:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600;1,700;1,800;1,900&family=Share+Tech+Mono&family=Tilt+Neon&display=swap" rel="stylesheet">
+<script src="/mode.js"></script>
+<link rel="stylesheet" href="/theme.css">
+<link rel="stylesheet" href="/games/mini.css">
+<style>
+  :root { --accent: #b8ff3d; }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="../../" class="nav-back">&larr; Arcade</a>
+    <div class="nav-game-title"><span class="pill">SN</span> Snake</div>
+  </div>
+  <div class="nav-right"><div data-auth-slot></div></div>
+</nav>
+
+<main class="mg">
+  <section class="mg-cab" aria-label="Snake">
+    <div class="mg-bar"><div class="mg-meter"><span>Punkte</span><b id="mScore">0</b></div><div class="mg-meter plain"><span>Länge</span><b id="mLen">3</b></div><div class="mg-meter plain"><span>Level</span><b id="mLvl">1</b></div><div class="mg-meter"><span>Bestwert</span><b id="mBest">–</b></div></div>
+    <div class="mg-screen">
+      <canvas id="cv" aria-label="Spielfeld"></canvas>
+      <div class="mg-over" id="mgOver" hidden></div>
+    </div>
+    <div class="mg-pad" style="grid-template-columns:repeat(4,1fr)"><button type="button" data-d="-1,0" aria-label="Links">←</button><button type="button" data-d="0,-1" aria-label="Hoch">↑</button><button type="button" data-d="0,1" aria-label="Runter">↓</button><button type="button" data-d="1,0" aria-label="Rechts">→</button></div>
+    <p class="mg-hint">Am Handy: übers Feld wischen oder die Pfeile darunter nehmen.</p>
+  </section>
+
+  <aside class="mg-side">
+    <div class="panel-box"><h3>Bestenliste</h3><ol class="mg-lb" id="mgLb"></ol><p class="mg-note" id="mgLbNote" hidden style="margin-top:8px">Melde dich an, um in die Bestenliste zu kommen.</p></div>
+    <div class="panel-box"><h3>Steuerung</h3><div class="mg-keys"><kbd>← ↑ → ↓</kbd><span>Lenken</span><kbd>W A S D</kbd><span>Lenken</span><kbd>P</kbd><span>Pause</span><kbd>Enter</kbd><span>Start</span></div></div>
+  </aside>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/fx.js"></script>
+<script src="/auth.js"></script>
+<script src="/games/mini.js"></script>
+<script>
+(() => {
+  'use strict';
+  const COLS = 24, ROWS = 18, C = 20, W = COLS * C, H = ROWS * C;
+  const cv = document.getElementById('cv');
+  const M = Mini.init({ game: 'snake', accent: '#b8ff3d', modes: [['classic', 'Klassik', 'Wände sind tödlich'], ['wrap', 'Ohne Wände', 'Durch die Wand']] });
+  const ctx = M.fit(cv, W, H);
+  let snake, dir, queue, food, bell, score, eaten, alive = false, paused = false, acc = 0, last = 0, t = 0;
+
+  const free = () => { let p; do { p = { x: Math.random() * COLS | 0, y: Math.random() * ROWS | 0 }; } while (snake.some(s => s.x === p.x && s.y === p.y) || (food && food.x === p.x && food.y === p.y)); return p; };
+  const speed = () => Math.max(60, 150 - Math.floor(eaten / 4) * 8); // ms je Feld
+  const level = () => 1 + Math.floor(eaten / 4);
+
+  function reset() {
+    snake = [{ x: 8, y: 9 }, { x: 7, y: 9 }, { x: 6, y: 9 }]; dir = { x: 1, y: 0 }; queue = [];
+    food = null; food = free(); bell = null; score = 0; eaten = 0; acc = 0;
+    M.meter('mScore', '0'); M.meter('mLen', '3'); M.meter('mLvl', '1');
+  }
+  function turn(x, y) {
+    if (!alive || paused) return;
+    const l = queue.length ? queue[queue.length - 1] : dir;
+    if ((l.x === x && l.y === y) || (l.x === -x && l.y === -y)) return;
+    if (queue.length < 2) queue.push({ x, y });
+  }
+  function tick() {
+    if (queue.length) dir = queue.shift();
+    let nx = snake[0].x + dir.x, ny = snake[0].y + dir.y;
+    if (M.mode === 'wrap') { nx = (nx + COLS) % COLS; ny = (ny + ROWS) % ROWS; }
+    else if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS) return die();
+    if (snake.some((s, i) => i < snake.length - 1 && s.x === nx && s.y === ny)) return die();
+    snake.unshift({ x: nx, y: ny });
+    const P = M.pal();
+    if (nx === food.x && ny === food.y) {
+      eaten++; score += 10 * level();
+      M.burst(cv, nx * C + C / 2, ny * C + C / 2, { n: 10, colors: [P.b] });
+      food = free();
+      if (eaten % 5 === 0) bell = Object.assign(free(), { left: 45 }); // Pausenglocke: kurz da, viel wert
+    } else if (bell && nx === bell.x && ny === bell.y) {
+      score += 50 * level(); bell = null;
+      M.burst(cv, nx * C + C / 2, ny * C + C / 2, { n: 26, colors: [P.b, P.a, '#fff'] }); M.flash(P.b);
+    } else snake.pop();
+    if (bell && --bell.left <= 0) bell = null;
+    M.meter('mScore', score.toLocaleString('de-AT')); M.meter('mLen', snake.length); M.meter('mLvl', level());
+  }
+  async function die() {
+    alive = false; M.shake(); M.flash(M.pal().d);
+    const s = score, len = snake.length;
+    const rec = await M.end(s, { level: level() });
+    M.show({ title: rec ? 'Neuer Rekord' : 'Game Over', text: '<b>' + s.toLocaleString('de-AT') + '</b> Punkte, Länge <b>' + len + '</b>.', cta: 'Nochmal', onGo: start });
+  }
+  function start() { reset(); alive = true; paused = false; last = performance.now(); }
+
+  function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill(); }
+  function draw() {
+    const P = M.pal(); t += 0.06;
+    ctx.fillStyle = P.bg; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = P.grid; for (let x = 1; x < COLS; x++) for (let y = 1; y < ROWS; y++) ctx.fillRect(x * C - 1, y * C - 1, 2, 2);
+    // Münze
+    const pu = 1 + Math.sin(t * 2) * 0.08;
+    ctx.save(); ctx.shadowColor = P.b; ctx.shadowBlur = P.glow ? 14 : 0; ctx.fillStyle = P.b;
+    ctx.beginPath(); ctx.arc(food.x * C + C / 2, food.y * C + C / 2, 6 * pu, 0, 7); ctx.fill(); ctx.restore();
+    ctx.fillStyle = P.bg; ctx.fillRect(food.x * C + C / 2 - 1, food.y * C + C / 2 - 3, 2, 6);
+    if (bell && (bell.left > 12 || (bell.left & 1))) { // Glocke blinkt, bevor sie verschwindet
+      const bx = bell.x * C + C / 2, by = bell.y * C + C / 2;
+      ctx.save(); ctx.shadowColor = P.c; ctx.shadowBlur = P.glow ? 16 : 0; ctx.fillStyle = P.glow ? P.c : P.text;
+      ctx.beginPath(); ctx.moveTo(bx - 7, by + 4); ctx.quadraticCurveTo(bx - 6, by - 8, bx, by - 8); ctx.quadraticCurveTo(bx + 6, by - 8, bx + 7, by + 4); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.arc(bx, by + 6, 2, 0, 7); ctx.fill(); ctx.restore();
+    }
+    // Schlange: vom Schwanz zum Kopf, damit der Kopf oben liegt
+    for (let i = snake.length - 1; i >= 0; i--) {
+      const s = snake[i], k = 1 - i / (snake.length + 6);
+      ctx.save(); ctx.globalAlpha = 0.45 + 0.55 * k; ctx.fillStyle = P.a;
+      if (i === 0) { ctx.shadowColor = P.a; ctx.shadowBlur = P.glow ? 16 : 0; }
+      rr(s.x * C + 1.5, s.y * C + 1.5, C - 3, C - 3, i === 0 ? 7 : 5); ctx.restore();
+    }
+    const h = snake[0]; ctx.fillStyle = P.bg; // Augen in Fahrtrichtung
+    const ex = h.x * C + C / 2 + dir.x * 4, ey = h.y * C + C / 2 + dir.y * 4;
+    ctx.beginPath(); ctx.arc(ex - dir.y * 4, ey - dir.x * 4, 2, 0, 7); ctx.arc(ex + dir.y * 4, ey + dir.x * 4, 2, 0, 7); ctx.fill();
+    if (paused) { ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0, 0, W, H); ctx.fillStyle = P.text; ctx.font = "600 22px 'Barlow', sans-serif"; ctx.textAlign = 'center'; ctx.fillText('Pause', W / 2, H / 2 + 8); }
+  }
+  function frame(now) {
+    if (alive && !paused) { acc += Math.min(200, now - last); const sp = speed(); while (acc >= sp && alive) { acc -= sp; tick(); } }
+    last = now; draw(); requestAnimationFrame(frame);
+  }
+
+  const KEYS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0] };
+  addEventListener('keydown', e => {
+    if (e.target.closest('input, textarea') || (window.FX && FX.cinemaOpen && FX.cinemaOpen())) return;
+    const k = KEYS[e.key] || KEYS[e.key.toLowerCase()];
+    if (k) { if (alive) e.preventDefault(); turn(k[0], k[1]); }
+    else if ((e.key === 'p' || e.key === 'P' || e.key === 'Escape') && alive) { paused = !paused; last = performance.now(); }
+  });
+  Mini.swipe(cv, d => turn(d === 'left' ? -1 : d === 'right' ? 1 : 0, d === 'up' ? -1 : d === 'down' ? 1 : 0));
+  document.querySelectorAll('.mg-pad [data-d]').forEach(b => b.addEventListener('pointerdown', e => { e.preventDefault(); const d = b.dataset.d.split(',').map(Number); turn(d[0], d[1]); }));
+  document.addEventListener('visibilitychange', () => { if (document.hidden && alive) paused = true; });
+
+  reset();
+  M.show({ title: 'Snake', text: 'Friss die Münzen und beiß dich nicht selbst. Jede fünfte Münze läutet die <b>Pausenglocke</b>: kurz da, viel wert.', onGo: start });
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # Alkomat
 
-> Drei Spiele, ein paar nützliche Sachen für dazwischen, und dein Stundenplan
+> Acht Spiele, ein paar nützliche Sachen für dazwischen, und dein Stundenplan
 > — alles auf einer Seite, kein zweiter Tab nötig.
 
 Klassenwebsite der 5DK im Look einer Arcade-Halle bei Nacht: Browser-Spiele,

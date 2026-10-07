@@ -286,7 +286,7 @@
     .mon p { margin: 2px 4px 0; font-size: 14px; line-height: 1.4; color: #cfc5ee; }
     .mon.big p { font-size: 16px; }
 
-    /* ── Hintere Reihe: abgeschaltet, Stecker gezogen ───────────── */
+    /* ── Hintere Reihe: die kleinen Automaten (.dead ist das Gehäuse, .live heißt angesteckt) ── */
     .backrow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 26px; padding: 0 30px; }
     .dead { position: relative; text-align: center; }
     .dead-box {
@@ -302,6 +302,13 @@
       background: #2b2068; color: #b3a8de;
     }
     .dead svg { position: absolute; left: 50%; top: 118px; width: 60px; margin-left: -30px; }
+    .dead.live { display: block; text-decoration: none; color: inherit; transition: transform 0.3s var(--ease-out); }
+    .dead.live:hover, .dead.live:focus-visible { transform: translateY(-6px); }
+    .dead.live .dead-box { position: relative; border-color: color-mix(in srgb, var(--accent) 60%, #32267a); }
+    .dead.live .dead-box::before { box-shadow: inset 0 0 0 2px #000, inset 0 0 22px color-mix(in srgb, var(--accent) 35%, transparent), 0 0 18px color-mix(in srgb, var(--accent) 30%, transparent); }
+    .dead.live .dead-box svg { top: 30px; width: 84px; height: 70px; margin-left: -42px; color: var(--accent); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 70%, transparent)); }
+    .dead.live .dead-name { z-index: 1; background: var(--accent); color: var(--ink); }
+    .dead.live .dead-state { color: var(--accent); }
     .dead-state { margin-top: 12px; font-family: var(--font-cab); font-weight: 700; font-size: 13px; text-transform: uppercase; color: var(--marquee); }
     .dead p { margin-top: 2px; font-size: 14px; line-height: 1.4; color: #b3a8de; text-shadow: 0 1px 2px rgba(9,4,30,0.9), 0 0 16px rgba(9,4,30,0.9); }
 
@@ -364,7 +371,7 @@
 
 <section class="hero">
   <h1 class="sign"><span class="sign-a">Alko</span><span class="sign-b">m<i>a</i>t</span></h1>
-  <p class="hero-sub">Drei Spiele, ein paar nützliche Sachen für dazwischen, und dein Stundenplan — alles auf einer Seite, kein zweiter Tab nötig.</p>
+  <p class="hero-sub">Acht Spiele, ein paar nützliche Sachen für dazwischen, und dein Stundenplan — alles auf einer Seite, kein zweiter Tab nötig.</p>
 </section>
 
 <div class="container">
@@ -373,7 +380,7 @@
   <section class="aisle" style="--tube: var(--neon-pink)">
     <div class="aisle-head">
       <h2>Spielen</h2>
-      <span class="aisle-note">3 Titel, jederzeit offen</span>
+      <span class="aisle-note">3 große Automaten, jederzeit offen</span>
     </div>
     <div class="row-cabs">
 
@@ -513,18 +520,18 @@
     </div>
   </section>
 
-  <!-- Wird noch gebaut -->
+  <!-- Hintere Reihe: die kleinen Automaten -->
   <section class="aisle" style="--tube: var(--marquee)">
     <div class="aisle-head">
-      <h2>Wird noch gebaut</h2>
-      <span class="aisle-note">5 Stück in Arbeit</span>
+      <h2>Kleine Automaten</h2>
+      <span class="aisle-note">5 Stück, frisch angesteckt</span>
     </div>
     <div class="backrow">
-      <div class="dead"><span class="dead-name">Snake</span><div class="dead-box"></div><svg viewBox="0 0 60 40" aria-hidden="true"><path d="M30 0v14c0 8-16 4-16 14v6" fill="none" stroke="#6a5cc0" stroke-width="3" stroke-linecap="round"/><rect x="9" y="32" width="10" height="7" rx="1.500" fill="#6a5cc0"/></svg><div class="dead-state">Außer Betrieb</div><p>Schlange füttern, Wand nicht anfassen.</p></div>
-      <div class="dead"><span class="dead-name">Pong</span><div class="dead-box"></div><svg viewBox="0 0 60 40" aria-hidden="true"><path d="M30 0v10c0 10 18 6 18 16v8" fill="none" stroke="#6a5cc0" stroke-width="3" stroke-linecap="round"/><rect x="43" y="32" width="10" height="7" rx="1.500" fill="#6a5cc0"/></svg><div class="dead-state">Noch nicht spielbar</div><p>Zwei Schläger, ein Ball, der Arcade-Urahn.</p></div>
-      <div class="dead"><span class="dead-name">Space Blaster</span><div class="dead-box"></div><svg viewBox="0 0 60 40" aria-hidden="true"><path d="M30 0v14c0 8-16 4-16 14v6" fill="none" stroke="#6a5cc0" stroke-width="3" stroke-linecap="round"/><rect x="9" y="32" width="10" height="7" rx="1.500" fill="#6a5cc0"/></svg><div class="dead-state">In Arbeit</div><p>Gegnerwellen, Power-ups, geordnetes Chaos.</p></div>
-      <div class="dead"><span class="dead-name">Memory Match</span><div class="dead-box"></div><svg viewBox="0 0 60 40" aria-hidden="true"><path d="M30 0v10c0 10 18 6 18 16v8" fill="none" stroke="#6a5cc0" stroke-width="3" stroke-linecap="round"/><rect x="43" y="32" width="10" height="7" rx="1.500" fill="#6a5cc0"/></svg><div class="dead-state">Außer Betrieb</div><p>Karten umdrehen, Paare finden, Zeit im Blick.</p></div>
-      <div class="dead"><span class="dead-name">Minesweeper</span><div class="dead-box"></div><svg viewBox="0 0 60 40" aria-hidden="true"><path d="M30 0v14c0 8-16 4-16 14v6" fill="none" stroke="#6a5cc0" stroke-width="3" stroke-linecap="round"/><rect x="9" y="32" width="10" height="7" rx="1.500" fill="#6a5cc0"/></svg><div class="dead-state">In Arbeit</div><p>Minenfeld räumen, ohne eine einzige auszulösen.</p></div>
+      <a class="dead live" href="games/snake/" style="--accent:#b8ff3d"><span class="dead-name">Snake</span><div class="dead-box"><svg viewBox="0 0 48 40" aria-hidden="true"><path d="M8 28h14v-8h-8v-8h18" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="36" cy="26" r="3" fill="#ffb000"/></svg></div><div class="dead-state">Spielen</div><p>Münzen fressen, Wand nicht anfassen.</p></a>
+      <a class="dead live" href="games/pong/" style="--accent:#2ee6ff"><span class="dead-name">Pong</span><div class="dead-box"><svg viewBox="0 0 48 40" aria-hidden="true"><rect x="6" y="8" width="5" height="20" rx="2" fill="currentColor"/><rect x="37" y="14" width="5" height="20" rx="2" fill="#ff3d9a"/><circle cx="24" cy="18" r="4" fill="#ffb000"/></svg></div><div class="dead-state">Spielen</div><p>Du gegen Hausmeister Jürgen.</p></a>
+      <a class="dead live" href="games/spaceblaster/" style="--accent:#9b7bff"><span class="dead-name">Space Blaster</span><div class="dead-box"><svg viewBox="0 0 48 40" aria-hidden="true"><path d="M24 16l10 20-7-3h-6l-7 3z" fill="#f3eeff"/><rect x="8" y="5" width="9" height="7" rx="2" fill="#ff2e63"/><rect x="20" y="5" width="9" height="7" rx="2" fill="currentColor"/><rect x="32" y="5" width="9" height="7" rx="2" fill="currentColor"/></svg></div><div class="dead-state">Spielen</div><p>Schlechte Noten abschießen.</p></a>
+      <a class="dead live" href="games/memory/" style="--accent:#ff3d9a"><span class="dead-name">Memory Match</span><div class="dead-box"><svg viewBox="0 0 48 40" aria-hidden="true"><rect x="8" y="8" width="14" height="19" rx="3" fill="currentColor"/><rect x="26" y="14" width="14" height="19" rx="3" fill="#2ee6ff"/></svg></div><div class="dead-state">Spielen</div><p>Paare finden, wenig Züge.</p></a>
+      <a class="dead live" href="games/minesweeper/" style="--accent:#ffb000"><span class="dead-name">Minesweeper</span><div class="dead-box"><svg viewBox="0 0 48 40" aria-hidden="true"><circle cx="22" cy="24" r="10" fill="currentColor"/><path d="M29 17l5-5M34 12l3-5" stroke="#f3eeff" stroke-width="3" stroke-linecap="round"/></svg></div><div class="dead-state">Spielen</div><p>Stinkbomben im Schulhof umgehen.</p></a>
     </div>
   </section>
 
@@ -549,7 +556,7 @@
           </div>
         </div>
       </div>
-      <p class="dz-say" aria-label="Drei Spiele. Sieben Werkzeuge. Eine Seite."><span aria-hidden="true"><span class="dz-w">Drei</span> <span class="dz-w">Spiele.</span></span><span aria-hidden="true"><span class="dz-w">Sieben</span> <span class="dz-w">Werkzeuge.</span></span><span aria-hidden="true"><span class="dz-w">Eine</span> <span class="dz-w">Seite.</span></span></p>
+      <p class="dz-say" aria-label="Acht Spiele. Sieben Werkzeuge. Eine Seite."><span aria-hidden="true"><span class="dz-w">Acht</span> <span class="dz-w">Spiele.</span></span><span aria-hidden="true"><span class="dz-w">Sieben</span> <span class="dz-w">Werkzeuge.</span></span><span aria-hidden="true"><span class="dz-w">Eine</span> <span class="dz-w">Seite.</span></span></p>
       <div class="dz-cue" aria-hidden="true"></div>
     </div>
   </section>
@@ -560,7 +567,12 @@
       <li><a href="games/blockdrop/" style="--i:0"><span class="dz-name">Block Drop</span><span class="dz-tag">Fallblock-Klassiker</span></a></li>
       <li><a href="games/blockpresser/" style="--i:1"><span class="dz-name">Block Presser</span><span class="dz-tag">Idle</span></a></li>
       <li><a href="games/casino/" style="--i:2"><span class="dz-name">Casino</span><span class="dz-tag">Spielgeld</span></a></li>
-      <li><a href="blockgames/" style="--i:3"><span class="dz-name">Block Games</span><span class="dz-tag">Download für Windows</span></a></li>
+      <li><a href="games/snake/" style="--i:3"><span class="dz-name">Snake</span><span class="dz-tag">Münzen fressen</span></a></li>
+      <li><a href="games/pong/" style="--i:4"><span class="dz-name">Pong</span><span class="dz-tag">Gegen Jürgen</span></a></li>
+      <li><a href="games/spaceblaster/" style="--i:5"><span class="dz-name">Space Blaster</span><span class="dz-tag">Noten abschießen</span></a></li>
+      <li><a href="games/memory/" style="--i:6"><span class="dz-name">Memory Match</span><span class="dz-tag">Paare finden</span></a></li>
+      <li><a href="games/minesweeper/" style="--i:7"><span class="dz-name">Minesweeper</span><span class="dz-tag">Stinkbomben</span></a></li>
+      <li><a href="blockgames/" style="--i:8"><span class="dz-name">Block Games</span><span class="dz-tag">Download für Windows</span></a></li>
     </ul>
   </section>
 
@@ -578,7 +590,6 @@
   </section>
 
   <footer class="dz-foot">
-    <p>In Arbeit: Snake, Pong, Space Blaster, Memory Match, Minesweeper.</p>
     <p>Klasse 5DK, Baujahr 2026</p>
   </footer>
 </main>

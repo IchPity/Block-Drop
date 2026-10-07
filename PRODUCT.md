@@ -24,7 +24,7 @@ Eine Seite, die nur dieser Klasse gehört: der echte Stundenplan der 5DK, Schul-
 - Für die Klasse: Stundenplan, SchulUhr, Weather Dashboard, METAR Browser, Formel 1 Hub, F1 Podium Wetten, Achievements.
 - Konto: Profil, Freunde, öffentliche Profile (`/u`).
 - Block Games: eigenständiges Electron-Partyspiel mit eigener Download-Seite.
-- Fünf Spiele sind angekündigt und noch nicht spielbar (Snake, Pong, Space Blaster, Memory Match, Minesweeper).
+- Kleine Automaten: Snake, Pong (gegen Hausmeister Jürgen), Space Blaster (schlechte Noten abschießen), Memory Match, Minesweeper (Stinkbomben im Schulhof). Sie teilen sich Gehäuse und Technik (`app/games/mini.css`, `app/games/mini.js`).
 
 ## Capabilities and Constraints
 

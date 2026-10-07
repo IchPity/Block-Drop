@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Minesweeper im Alkomat: alle sicheren Felder im Schulhof aufdecken, ohne eine Stinkbombe zu treffen.">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<title>Minesweeper — Alkomat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Kanit:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600;1,700;1,800;1,900&family=Share+Tech+Mono&family=Tilt+Neon&display=swap" rel="stylesheet">
+<script src="/mode.js"></script>
+<link rel="stylesheet" href="/theme.css">
+<link rel="stylesheet" href="/games/mini.css">
+<style>
+  :root { --accent: #ffb000; }
+  .ms { display: grid; grid-template-columns: repeat(var(--n, 9), minmax(0, 1fr)); gap: 3px; padding: 10px; max-width: 560px; margin: 0 auto; min-height: 300px; }
+  .ms-c { aspect-ratio: 1; display: grid; place-items: center; padding: 0; border-radius: 5px; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation;
+    border: 1px solid var(--board-line); background: color-mix(in srgb, var(--accent) 10%, var(--board-raised)); color: var(--chalk);
+    font: 700 clamp(12px, 2.6vw, 18px) 'Share Tech Mono', monospace; transition: background-color 0.12s, transform 0.12s; }
+  .ms-c:hover:not(.open) { background: color-mix(in srgb, var(--accent) 22%, var(--board-raised)); }
+  .ms-c.open { background: var(--ink); border-color: transparent; cursor: default; }
+  .ms-c.flag { color: var(--marquee); }
+  .ms-c.boom { background: var(--bell); color: var(--ink); }
+  .ms-c.mine { color: var(--bell); }
+  .ms-c svg { width: 62%; height: 62%; }
+  .ms-c[data-n="1"] { color: var(--neon-cyan); } .ms-c[data-n="2"] { color: var(--neon-lime); } .ms-c[data-n="3"] { color: var(--neon-pink); }
+  .ms-c[data-n="4"] { color: var(--marquee); } .ms-c[data-n="5"], .ms-c[data-n="6"], .ms-c[data-n="7"], .ms-c[data-n="8"] { color: var(--bell); }
+  .mg-pad button[aria-pressed="true"] { border-color: var(--marquee); color: var(--marquee); }
+  html.fx-design .ms-c { border-radius: 2px; background: #1a1b21; }
+  html.fx-design .ms-c:hover:not(.open) { background: #25262d; }
+  html.fx-design .ms-c.open { background: #09090d; }
+  html.fx-design .ms-c[data-n="1"] { color: var(--chalk); } html.fx-design .ms-c[data-n="3"] { color: var(--brass); }
+  html.fx-design .ms-c.boom { background: #c8554c; }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="../../" class="nav-back">&larr; Arcade</a>
+    <div class="nav-game-title"><span class="pill">MS</span> Minesweeper</div>
+  </div>
+  <div class="nav-right"><div data-auth-slot></div></div>
+</nav>
+
+<main class="mg">
+  <section class="mg-cab" aria-label="Minesweeper">
+    <div class="mg-bar"><div class="mg-meter plain"><span>Bomben</span><b id="mMines">10</b></div><div class="mg-meter plain"><span>Zeit</span><b id="mTime">0:00,0</b></div><div class="mg-meter"><span>Bestzeit</span><b id="mBest">–</b></div></div>
+    <div class="mg-screen">
+      <div class="ms" id="grid"></div>
+      <div class="mg-over" id="mgOver" hidden></div>
+    </div>
+    <div class="mg-pad" style="grid-template-columns:1fr"><button type="button" id="flagMode" aria-pressed="false" style="font-size:15px">Fahnen setzen: aus</button></div>
+    <p class="mg-hint">Am Handy: lang drücken setzt eine Fahne, oder den Schalter darunter umlegen.</p>
+  </section>
+
+  <aside class="mg-side">
+    <div class="panel-box"><h3>Bestenliste</h3><ol class="mg-lb" id="mgLb"></ol><p class="mg-note" id="mgLbNote" hidden style="margin-top:8px">Melde dich an, um in die Bestenliste zu kommen.</p></div>
+    <div class="panel-box"><h3>Steuerung</h3><div class="mg-keys"><kbd>Klick</kbd><span>Aufdecken</span><kbd>Rechtsklick</kbd><span>Fahne</span><kbd>F</kbd><span>Fahne (Tastatur)</span><kbd>Enter</kbd><span>Aufdecken / Start</span></div></div>
+  </aside>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/fx.js"></script>
+<script src="/auth.js"></script>
+<script src="/games/mini.js"></script>
+<script>
+(() => {
+  'use strict';
+  const SIZE = { e: [9, 10], m: [12, 24], h: [14, 36] };
+  const FLAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V4h12l-3 4 3 4H6"/></svg>';
+  const BOMB = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="14" r="6"/><path d="M15 9l3-3M18 6l2-3"/></svg>';
+  const clock = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0') + ',' + Math.floor(s * 10 % 10);
+  const grid = document.getElementById('grid'), flagBtn = document.getElementById('flagMode');
+  // Zeit: kleiner ist besser. Die Bestenliste nimmt das Maximum, also wird die Zeit umgedreht gespeichert.
+  const M = Mini.init({ game: 'minesweeper', accent: '#ffb000', lower: true, fmt: clock, store: s => Math.max(1, 99999 - Math.round(s * 10)), unstore: v => (99999 - v) / 10,
+    modes: [['e', 'Leicht', '9 × 9, 10 Bomben'], ['m', 'Mittel', '12 × 12, 24 Bomben'], ['h', 'Schwer', '14 × 14, 36 Bomben']], onMode: build });
+  let n, mines, cell, laid, left, flags, t0 = 0, timer = 0, alive = false, flagging = false;
+
+  const secs = () => (performance.now() - t0) / 1000;
+  const around = i => { const x = i % n, y = (i - x) / n, out = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const a = x + dx, b = y + dy; if ((dx || dy) && a >= 0 && b >= 0 && a < n && b < n) out.push(b * n + a); } return out; };
+  const el = i => grid.children[i];
+  function build() {
+    [n, mines] = SIZE[M.mode] || SIZE.e;
+    cell = Array.from({ length: n * n }, () => ({ mine: false, open: false, flag: false, k: 0 }));
+    laid = false; left = n * n - mines; flags = 0; clearInterval(timer);
+    grid.style.setProperty('--n', n);
+    grid.innerHTML = cell.map((_, i) => '<button type="button" class="ms-c" data-i="' + i + '" aria-label="Feld ' + (i % n + 1) + ', ' + (Math.floor(i / n) + 1) + '"></button>').join('');
+    M.meter('mMines', mines); M.meter('mTime', '0:00,0');
+  }
+  function lay(safe) { // erster Klick trifft nie eine Bombe, auch die Nachbarn bleiben frei
+    const keep = new Set([safe, ...around(safe)]); let m = 0;
+    while (m < mines) { const i = Math.random() * n * n | 0; if (!cell[i].mine && !keep.has(i)) { cell[i].mine = true; m++; } }
+    cell.forEach((c, i) => { c.k = around(i).filter(j => cell[j].mine).length; });
+    laid = true; t0 = performance.now(); timer = setInterval(() => { if (alive) M.meter('mTime', clock(secs())); }, 100);
+  }
+  function show(i) {
+    const c = cell[i], e = el(i); c.open = true; e.classList.add('open'); e.disabled = true;
+    if (c.k) { e.textContent = c.k; e.dataset.n = c.k; }
+  }
+  function reveal(i) {
+    const c = cell[i]; if (!alive || c.open || c.flag) return;
+    if (!laid) lay(i);
+    if (c.mine) return lose(i);
+    const stack = [i];
+    while (stack.length) { const j = stack.pop(), d = cell[j]; if (d.open || d.flag) continue; show(j); left--; if (!d.k) around(j).forEach(q => { if (!cell[q].open && !cell[q].mine) stack.push(q); }); }
+    if (left === 0) win();
+  }
+  function flag(i) {
+    const c = cell[i]; if (!alive || c.open) return;
+    c.flag = !c.flag; flags += c.flag ? 1 : -1; const e = el(i);
+    e.classList.toggle('flag', c.flag); e.innerHTML = c.flag ? FLAG : '';
+    M.meter('mMines', mines - flags);
+  }
+  function lose(i) {
+    alive = false; clearInterval(timer); M.shake(); M.flash(M.pal().d);
+    cell.forEach((c, j) => { if (c.mine) { const e = el(j); e.classList.add('open', 'mine'); e.innerHTML = BOMB; } });
+    el(i).classList.add('boom');
+    setTimeout(() => M.show({ title: 'Stinkbombe', text: 'Die ist hochgegangen. Der Schulhof riecht jetzt eine Woche.', cta: 'Nochmal', onGo: start }), 900);
+  }
+  async function win() {
+    alive = false; clearInterval(timer); const s = Math.round(secs() * 10) / 10; M.meter('mTime', clock(s));
+    if (window.FX) FX.rain({ n: 60 });
+    const rec = await M.end(s);
+    M.show({ title: rec ? 'Neue Bestzeit' : 'Schulhof sauber', text: 'Alle sicheren Felder in <b>' + clock(s) + '</b> aufgedeckt.', cta: 'Nochmal', onGo: start });
+  }
+  function start() { build(); alive = true; }
+
+  // Linksklick deckt auf, Rechtsklick oder langes Drücken setzt eine Fahne; am Handy gibt es dazu den Fahnen-Schalter
+  let press = 0, held = false;
+  grid.addEventListener('click', e => { const b = e.target.closest('.ms-c'); if (!b) return; if (held) { held = false; return; } const i = +b.dataset.i; if (flagging) flag(i); else reveal(i); });
+  grid.addEventListener('contextmenu', e => { const b = e.target.closest('.ms-c'); if (!b) return; e.preventDefault(); if (!held) flag(+b.dataset.i); });
+  grid.addEventListener('touchstart', e => { const b = e.target.closest('.ms-c'); if (!b) return; held = false; press = setTimeout(() => { held = true; flag(+b.dataset.i); if (navigator.vibrate) navigator.vibrate(12); }, 380); }, { passive: true });
+  ['touchend', 'touchmove', 'touchcancel'].forEach(t => grid.addEventListener(t, () => clearTimeout(press), { passive: true }));
+  grid.addEventListener('keydown', e => { if (e.key.toLowerCase() === 'f') { const b = e.target.closest('.ms-c'); if (b) flag(+b.dataset.i); } });
+  flagBtn.addEventListener('click', () => { flagging = !flagging; flagBtn.setAttribute('aria-pressed', flagging); flagBtn.textContent = flagging ? 'Fahnen setzen: an' : 'Fahnen setzen: aus'; });
+
+  build();
+  M.show({ title: 'Minesweeper', text: 'Im Schulhof liegen <b>Stinkbomben</b>. Deck alle sicheren Felder auf. Die Zahl sagt, wie viele Bomben angrenzen.', onGo: start });
+})();
+</script>
+</body>
+</html>

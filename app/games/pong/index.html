@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Pong im Alkomat: du gegen Hausmeister Jürgen, wer zuerst sieben Punkte hat, gewinnt.">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<title>Pong — Alkomat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Kanit:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600;1,700;1,800;1,900&family=Share+Tech+Mono&family=Tilt+Neon&display=swap" rel="stylesheet">
+<script src="/mode.js"></script>
+<link rel="stylesheet" href="/theme.css">
+<link rel="stylesheet" href="/games/mini.css">
+<style>
+  :root { --accent: #2ee6ff; }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="../../" class="nav-back">&larr; Arcade</a>
+    <div class="nav-game-title"><span class="pill">PG</span> Pong</div>
+  </div>
+  <div class="nav-right"><div data-auth-slot></div></div>
+</nav>
+
+<main class="mg">
+  <section class="mg-cab" aria-label="Pong">
+    <div class="mg-bar"><div class="mg-meter"><span>Du</span><b id="mYou">0</b></div><div class="mg-meter plain"><span>Jürgen</span><b id="mCpu">0</b></div><div class="mg-meter plain"><span>Ballwechsel</span><b id="mRally">0</b></div><div class="mg-meter"><span>Bestwert</span><b id="mBest">–</b></div></div>
+    <div class="mg-screen">
+      <canvas id="cv" aria-label="Spielfeld"></canvas>
+      <div class="mg-over" id="mgOver" hidden></div>
+    </div>
+    <p class="mg-hint">Am Handy: Finger aufs Feld legen, der Schläger folgt.</p>
+  </section>
+
+  <aside class="mg-side">
+    <div class="panel-box"><h3>Bestenliste</h3><ol class="mg-lb" id="mgLb"></ol><p class="mg-note" id="mgLbNote" hidden style="margin-top:8px">Melde dich an, um in die Bestenliste zu kommen.</p></div>
+    <div class="panel-box"><h3>Steuerung</h3><div class="mg-keys"><kbd>↑ ↓</kbd><span>Schläger</span><kbd>W S</kbd><span>Schläger</span><kbd>Maus</kbd><span>Schläger folgt</span><kbd>P</kbd><span>Pause</span></div></div>
+  </aside>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/fx.js"></script>
+<script src="/auth.js"></script>
+<script src="/games/mini.js"></script>
+<script>
+(() => {
+  'use strict';
+  const W = 640, H = 400, PW = 10, PH = 72, R = 7, GOAL = 7;
+  const cv = document.getElementById('cv');
+  // Gegner ist der Hausmeister: je Stufe schneller und genauer
+  const CPU = { easy: { v: 200, miss: 46, mult: 1 }, normal: { v: 285, miss: 26, mult: 2 }, hard: { v: 380, miss: 10, mult: 3 } };
+  const M = Mini.init({ game: 'pong', accent: '#2ee6ff', modes: [['easy', 'Leicht', 'Jürgen ist müde'], ['normal', 'Normal', 'Jürgen ist wach'], ['hard', 'Schwer', 'Jürgen hatte Kaffee']] });
+  const ctx = M.fit(cv, W, H);
+  let py, cy, bx, by, vx, vy, ps, cs, rally, bestRally, aim, wait, alive = false, paused = false, last = 0, target = null;
+  const held = { up: false, down: false }, trail = [];
+
+  function serve(dirX) {
+    bx = W / 2; by = H / 2; const a = (Math.random() * 0.7 - 0.35);
+    vx = Math.cos(a) * 330 * dirX; vy = Math.sin(a) * 330; rally = 0; wait = 0.7; aim = (Math.random() * 2 - 1) * CPU[M.mode].miss; trail.length = 0;
+  }
+  function reset() { py = cy = H / 2; ps = cs = 0; bestRally = 0; serve(Math.random() < 0.5 ? 1 : -1); meters(); }
+  function meters() { M.meter('mYou', ps); M.meter('mCpu', cs); M.meter('mRally', rally); }
+  function start() { reset(); alive = true; paused = false; last = performance.now(); }
+
+  function hit(paddleY, dirX) {
+    const off = Math.max(-1, Math.min(1, (by - paddleY) / (PH / 2 + R)));
+    const sp = Math.min(760, Math.hypot(vx, vy) * 1.05 + 6), a = off * 0.95;
+    vx = Math.cos(a) * sp * dirX; vy = Math.sin(a) * sp;
+    rally++; bestRally = Math.max(bestRally, rally); M.meter('mRally', rally);
+    aim = (Math.random() * 2 - 1) * CPU[M.mode].miss;
+    const P = M.pal(); M.burst(cv, bx, by, { n: 6, colors: [dirX > 0 ? P.a : P.c] });
+  }
+  async function point(you) {
+    const P = M.pal();
+    if (you) { ps++; M.burst(cv, W - 20, by, { n: 22, colors: [P.a, P.b] }); } else { cs++; M.shake(); M.flash(P.d); }
+    meters();
+    if (ps >= GOAL || cs >= GOAL) {
+      alive = false;
+      const won = ps > cs, score = Math.max(0, ps * 100 - cs * 40) * CPU[M.mode].mult + bestRally * 5;
+      const rec = await M.end(score);
+      M.show({ title: won ? (rec ? 'Neuer Rekord' : 'Gewonnen') : 'Jürgen gewinnt', text: '<b>' + ps + ' : ' + cs + '</b>, längster Ballwechsel <b>' + bestRally + '</b>. Das sind <b>' + score.toLocaleString('de-AT') + '</b> Punkte.', cta: won ? 'Nochmal' : 'Revanche', onGo: start });
+    } else serve(you ? 1 : -1);
+  }
+  function update(dt) {
+    const v = 460;
+    if (held.up || held.down) { py += (held.down ? 1 : -1) * v * dt; target = null; }
+    else if (target != null) py += Math.max(-v * 1.6 * dt, Math.min(v * 1.6 * dt, target - py));
+    py = Math.max(PH / 2, Math.min(H - PH / 2, py));
+    // Jürgen läuft dem Ball nach, wenn er auf ihn zukommt, sonst zur Mitte
+    const want = vx > 0 ? by + aim : H / 2, c = CPU[M.mode];
+    cy += Math.max(-c.v * dt, Math.min(c.v * dt, want - cy)); cy = Math.max(PH / 2, Math.min(H - PH / 2, cy));
+    if (wait > 0) { wait -= dt; return; }
+    const px0 = bx; bx += vx * dt; by += vy * dt;
+    if (by < R) { by = R; vy = Math.abs(vy); } else if (by > H - R) { by = H - R; vy = -Math.abs(vy); }
+    const lx = 24 + PW, rx = W - 24 - PW;
+    if (vx < 0 && px0 - R >= lx && bx - R < lx && Math.abs(by - py) <= PH / 2 + R) { bx = lx + R; hit(py, 1); }
+    else if (vx > 0 && px0 + R <= rx && bx + R > rx && Math.abs(by - cy) <= PH / 2 + R) { bx = rx - R; hit(cy, -1); }
+    trail.push([bx, by]); if (trail.length > 10) trail.shift();
+    if (bx < -R * 2) point(false); else if (bx > W + R * 2) point(true);
+  }
+  function draw() {
+    const P = M.pal();
+    ctx.fillStyle = P.bg; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = P.grid; for (let y = 8; y < H; y += 22) ctx.fillRect(W / 2 - 1, y, 2, 12);
+    ctx.font = "400 96px 'Share Tech Mono', monospace"; ctx.textAlign = 'center'; ctx.fillStyle = P.grid;
+    ctx.fillText(ps, W / 2 - 90, 120); ctx.fillText(cs, W / 2 + 90, 120);
+    const pad = (x, y, col) => { ctx.save(); ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = P.glow ? 14 : 0; ctx.beginPath(); ctx.roundRect(x, y - PH / 2, PW, PH, 4); ctx.fill(); ctx.restore(); };
+    pad(24, py, P.a); pad(W - 24 - PW, cy, P.glow ? P.c : P.dim);
+    trail.forEach((t, i) => { ctx.globalAlpha = (i / trail.length) * 0.3; ctx.fillStyle = P.b; ctx.beginPath(); ctx.arc(t[0], t[1], R * (0.4 + 0.6 * i / trail.length), 0, 7); ctx.fill(); });
+    ctx.globalAlpha = 1; ctx.save(); ctx.fillStyle = P.b; ctx.shadowColor = P.b; ctx.shadowBlur = P.glow ? 16 : 0; ctx.beginPath(); ctx.arc(bx, by, R, 0, 7); ctx.fill(); ctx.restore();
+    if (paused) { ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0, 0, W, H); ctx.fillStyle = P.text; ctx.font = "600 22px 'Barlow', sans-serif"; ctx.fillText('Pause', W / 2, H / 2 + 8); }
+  }
+  function frame(now) { const dt = Math.min(0.033, (now - last) / 1000); last = now; if (alive && !paused) update(dt); draw(); requestAnimationFrame(frame); }
+
+  const key = (e, on) => {
+    if (e.target.closest('input, textarea') || (window.FX && FX.cinemaOpen && FX.cinemaOpen())) return;
+    const k = e.key.toLowerCase();
+    if (k === 'arrowup' || k === 'w') { held.up = on; if (alive) e.preventDefault(); }
+    else if (k === 'arrowdown' || k === 's') { held.down = on; if (alive) e.preventDefault(); }
+    else if (on && (k === 'p' || k === 'escape') && alive) { paused = !paused; last = performance.now(); }
+  };
+  addEventListener('keydown', e => key(e, true)); addEventListener('keyup', e => key(e, false));
+  const point2 = e => { const r = cv.getBoundingClientRect(); target = (e.clientY - r.top) / r.height * H; };
+  cv.addEventListener('pointermove', point2); cv.addEventListener('pointerdown', point2);
+  document.addEventListener('visibilitychange', () => { if (document.hidden && alive) paused = true; });
+
+  reset();
+  M.show({ title: 'Pong', text: 'Du gegen <b>Hausmeister Jürgen</b>. Wer zuerst ' + GOAL + ' Punkte hat, gewinnt. Der Ball wird mit jedem Schlag schneller.', onGo: start });
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
