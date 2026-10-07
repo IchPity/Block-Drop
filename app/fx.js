@@ -32,8 +32,9 @@
    theme.css. Ein Wechsel in den oder aus dem Design-Modus lädt die Seite
    neu, weil die Halle und die Startseite dann anders aufgebaut sind.
 
-   Beim ersten Besuch schiebt sich unten ein Fenster ins Bild und fragt
-   nach Cookies. Danach wählt man die Version (OG, ADHS, Cinema). Wer
+   Beim ersten Besuch steht sofort die Versionswahl im Bild (OG, ADHS,
+   Cinema), darüber schiebt sich unten ein Fenster ins Bild und fragt nach
+   Cookies. Beides lässt sich in beliebiger Reihenfolge beantworten. Wer
    zustimmt, wählt einmal: die Version steht ein Jahr im Cookie
    „arcade_mode" (dazu „arcade_consent" mit der Nummer aus /mode.js). Wer
    ablehnt, wird bei jedem Seitenaufruf wieder nach Cookies und Version
@@ -130,34 +131,41 @@
   });
 
   // ═══════════════════════════════════════════════════════════════════
-  // Erster Besuch: erst Cookies (Fenster schiebt sich unten ins Bild),
-  // nach der Zustimmung die Version. Beides sieht in jeder Version gleich
+  // Erster Besuch: sofort die Versionswahl, darüber das Cookie-Fenster
+  // (schiebt sich unten ins Bild). Beides sieht in jeder Version gleich
   // aus (eigene Farben, keine Hallen-Token).
   // ═══════════════════════════════════════════════════════════════════
+  let picking = false, declined = false; // Versionswahl offen, Cookies abgelehnt
   function welcome() {
     // Impressum und Datenschutz bleiben ohne Fenster lesbar
     if (/^\/(impressum|datenschutz)\//.test(location.pathname)) return;
     if (consent) { if (!cookie(MODE_CK)) choose(); return; } // zugestimmt, aber noch keine Version gewählt
     // gerade ohne Cookies Cinema gewählt oder verlassen: die Seite hat dafür neu geladen, nicht gleich wieder fragen
-    try { if (sessionStorage.getItem(ASKED_KEY)) { sessionStorage.removeItem(ASKED_KEY); return; } } catch (e) {}
+    let asked = null;
+    try { asked = sessionStorage.getItem(ASKED_KEY); sessionStorage.removeItem(ASKED_KEY); } catch (e) {}
+    if (asked === 'no') return; // Cookies waren schon abgelehnt
+    if (!asked) choose();       // sonst steht die Version schon, nur die Cookie-Frage ist noch offen
     const el = doc.createElement('div');
     el.className = 'fxk'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-labelledby', 'fxk-t');
     el.innerHTML =
       '<h2 id="fxk-t">Cookies erlauben?</h2>' +
       '<p>Damit merkt sich die Seite deine Version und deine Spielstände. Kein Tracking, keine Werbung. Mehr im <a href="/datenschutz/">Datenschutz</a>.</p>' +
       '<div class="fxk-act"><button type="button" class="fxk-yes">Erlauben</button><button type="button" class="fxk-no">Ablehnen</button></div>';
-    doc.body.appendChild(el);
+    doc.body.appendChild(el); // nach der Versionswahl eingehängt: liegt darüber und bleibt bedienbar
+    root.classList.add('fxk-open');
     setTimeout(() => el.classList.add('on'), REDUCED ? 0 : 700);
-    const close = () => { el.classList.remove('on'); setTimeout(() => el.remove(), REDUCED ? 0 : 500); };
+    const close = () => { el.classList.remove('on'); root.classList.remove('fxk-open'); setTimeout(() => el.remove(), REDUCED ? 0 : 500); };
     // Ablehnen merkt sich nichts: beim nächsten Seitenaufruf kommen Fenster und Versionswahl wieder
-    el.querySelector('.fxk-no').addEventListener('click', () => { close(); choose(); });
+    el.querySelector('.fxk-no').addEventListener('click', () => { declined = true; close(); });
     el.querySelector('.fxk-yes').addEventListener('click', () => {
       consent = true;
       try { bake(OK_CK, CONSENT); sessionStorage.removeItem(VISIT_KEY); } catch (e) {}
-      close(); choose();
+      if (!picking) setMode(mode()); // Version schon gewählt: jetzt ins Cookie
+      close();
     });
   }
   function choose() {
+    picking = true;
     if (!doc.querySelector('link[href*="Bricolage"]')) {
       const l = doc.createElement('link'); l.rel = 'stylesheet';
       l.href = 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&display=swap';
@@ -194,7 +202,8 @@
     function done() {
       const pick = (el.querySelector('input:checked') || {}).value || mode();
       const stays = pick === mode() || (pick !== 'design' && mode() !== 'design');
-      if (!stays && !consent) try { sessionStorage.setItem(ASKED_KEY, '1'); } catch (e) {}
+      if (!stays && !consent) try { sessionStorage.setItem(ASKED_KEY, declined ? 'no' : 'open'); } catch (e) {}
+      picking = false;
       setMode(pick);
       if (!stays) return; // die Seite lädt neu, der Dialog deckt das zu
       doc.removeEventListener('keydown', keys, true); doc.removeEventListener('keyup', keys, true);

@@ -592,13 +592,13 @@ html.fx-design .fxr-head { letter-spacing: 0.02em; text-transform: none; font-we
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   Erster Besuch (von /fx.js erzeugt): erst das Cookie-Fenster (.fxk), das
-   sich unten ins Bild schiebt, nach der Zustimmung die Versionswahl (.fxw).
+   Erster Besuch (von /fx.js erzeugt): sofort die Versionswahl (.fxw),
+   darüber das Cookie-Fenster (.fxk), das sich unten ins Bild schiebt.
    Eigene, feste Farben: beides sieht in jeder Version gleich aus.
    Jede Kachel der Versionswahl zeigt ihre Version im Kleinen.
    ═══════════════════════════════════════════════════════════════════════ */
 .fxk {
-  position: fixed; right: 20px; bottom: 20px; z-index: 9890; width: min(400px, calc(100vw - 40px));
+  position: fixed; right: 20px; bottom: 20px; z-index: 9910; width: min(400px, calc(100vw - 40px));
   padding: 22px 22px 20px; border-radius: 14px;
   background: #121319; color: #ecebe6; border: 1px solid rgba(236,235,230,0.16); box-shadow: 0 24px 60px rgba(0,0,0,0.6);
   font-family: 'Barlow', -apple-system, 'Segoe UI', sans-serif;
@@ -621,6 +621,7 @@ html.fx-design .fxr-head { letter-spacing: 0.02em; text-transform: none; font-we
 .fxk button:focus-visible, .fxk a:focus-visible { outline: 2px solid #ecebe6; outline-offset: 3px; }
 @media (max-width: 720px) { .fxk { right: 12px; bottom: 12px; width: calc(100vw - 24px); } }
 html.fxw-open { overflow: hidden; }
+@media (max-width: 720px) { html.fxk-open .fxw { padding-bottom: 240px; } } /* „Starten" bleibt über dem Cookie-Fenster erreichbar */
 .fxw {
   position: fixed; inset: 0; z-index: 9900; overflow-y: auto; display: grid; place-items: center; padding: 28px 20px;
   background: #0a0a0f; color: #ecebe6; font-family: 'Barlow', -apple-system, 'Segoe UI', sans-serif;
