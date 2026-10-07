@@ -38,6 +38,7 @@
   </section>
 
   <aside class="mg-side">
+    <div class="panel-box"><h3>Skins</h3><div id="skinSelect" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px"></div></div>
     <div class="panel-box"><h3>Bestenliste</h3><ol class="mg-lb" id="mgLb"></ol><p class="mg-note" id="mgLbNote" hidden style="margin-top:8px">Melde dich an, um in die Bestenliste zu kommen.</p></div>
     <div class="panel-box"><h3>Steuerung</h3><div class="mg-keys"><kbd>← ↑ → ↓</kbd><span>Lenken</span><kbd>W A S D</kbd><span>Lenken</span><kbd>P</kbd><span>Pause</span><kbd>Enter</kbd><span>Start</span></div></div>
   </aside>
@@ -52,9 +53,28 @@
   'use strict';
   const COLS = 24, ROWS = 18, C = 20, W = COLS * C, H = ROWS * C;
   const cv = document.getElementById('cv');
-  const M = Mini.init({ game: 'snake', accent: '#b8ff3d', modes: [['classic', 'Klassik', 'Wände sind tödlich'], ['wrap', 'Ohne Wände', 'Durch die Wand']] });
+  const M = Mini.init({
+    game: 'snake',
+    accent: '#b8ff3d',
+    modes: [
+      ['classic', 'Klassik', 'Wände sind tödlich'],
+      ['wrap', 'Ohne Wände', 'Durch die Wand']
+    ],
+    onMode: (m) => {
+      if (M.skin && skins[M.skin]) { alive = false; M.show({ title: 'Snake', text: 'Friss die Münzen und beiß dich nicht selbst.', cta: 'Spielen', onGo: start }); }
+    }
+  });
   const ctx = M.fit(cv, W, H);
-  let snake, dir, queue, food, bell, score, eaten, alive = false, paused = false, acc = 0, last = 0, t = 0;
+
+  const skins = {
+    blocks: { name: 'Blöcke', draw: drawBlocks },
+    smooth: { name: 'Glatt', draw: drawSmooth },
+    neon: { name: 'Neon', draw: drawNeon },
+    retro: { name: 'Retro', draw: drawRetro }
+  };
+
+  let snake, dir, queue, food, bell, score, eaten, alive = false, paused = false, acc = 0, last = 0, t = 0, interpol = 0;
+  M.skin = 'smooth';
 
   const free = () => { let p; do { p = { x: Math.random() * COLS | 0, y: Math.random() * ROWS | 0 }; } while (snake.some(s => s.x === p.x && s.y === p.y) || (food && food.x === p.x && food.y === p.y)); return p; };
   const speed = () => Math.max(60, 150 - Math.floor(eaten / 4) * 8); // ms je Feld
@@ -100,6 +120,51 @@
   function start() { reset(); alive = true; paused = false; last = performance.now(); }
 
   function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill(); }
+
+  function drawBlocks(P, snakeSeg, idx, len, x, y) {
+    ctx.save();
+    const k = 1 - idx / (len + 6);
+    ctx.globalAlpha = 0.45 + 0.55 * k;
+    ctx.fillStyle = P.a;
+    if (idx === 0) { ctx.shadowColor = P.a; ctx.shadowBlur = P.glow ? 16 : 0; }
+    rr(x + 1.5, y + 1.5, C - 3, C - 3, idx === 0 ? 7 : 5);
+    ctx.restore();
+  }
+
+  function drawSmooth(P, snakeSeg, idx, len, x, y) {
+    ctx.save();
+    const k = 1 - idx / (len + 6);
+    ctx.globalAlpha = 0.5 + 0.5 * k;
+    ctx.fillStyle = P.a;
+    if (idx === 0) { ctx.shadowColor = P.a; ctx.shadowBlur = P.glow ? 20 : 0; }
+    const r = idx === 0 ? C / 2 : C / 3;
+    ctx.beginPath(); ctx.arc(x + C / 2, y + C / 2, r, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawNeon(P, snakeSeg, idx, len, x, y) {
+    ctx.save();
+    const k = 1 - idx / (len + 6);
+    ctx.globalAlpha = 0.6 + 0.4 * k;
+    ctx.fillStyle = P.a;
+    ctx.strokeStyle = idx === 0 ? P.b : 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 2;
+    if (idx === 0) { ctx.shadowColor = P.a; ctx.shadowBlur = P.glow ? 24 : 0; }
+    rr(x + 2, y + 2, C - 4, C - 4, 3);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawRetro(P, snakeSeg, idx, len, x, y) {
+    ctx.save();
+    ctx.globalAlpha = idx === 0 ? 1 : 0.6;
+    ctx.fillStyle = idx === 0 ? P.a : P.text;
+    const sz = idx === 0 ? C - 2 : C - 4;
+    const offset = idx === 0 ? 1 : 2;
+    ctx.fillRect(x + offset, y + offset, sz, sz);
+    ctx.restore();
+  }
+
   function draw() {
     const P = M.pal(); t += 0.06;
     ctx.fillStyle = P.bg; ctx.fillRect(0, 0, W, H);
@@ -116,11 +181,10 @@
       ctx.beginPath(); ctx.arc(bx, by + 6, 2, 0, 7); ctx.fill(); ctx.restore();
     }
     // Schlange: vom Schwanz zum Kopf, damit der Kopf oben liegt
+    const skinDraw = skins[M.skin]?.draw || drawSmooth;
     for (let i = snake.length - 1; i >= 0; i--) {
-      const s = snake[i], k = 1 - i / (snake.length + 6);
-      ctx.save(); ctx.globalAlpha = 0.45 + 0.55 * k; ctx.fillStyle = P.a;
-      if (i === 0) { ctx.shadowColor = P.a; ctx.shadowBlur = P.glow ? 16 : 0; }
-      rr(s.x * C + 1.5, s.y * C + 1.5, C - 3, C - 3, i === 0 ? 7 : 5); ctx.restore();
+      const s = snake[i];
+      skinDraw(P, s, i, snake.length, s.x * C, s.y * C);
     }
     const h = snake[0]; ctx.fillStyle = P.bg; // Augen in Fahrtrichtung
     const ex = h.x * C + C / 2 + dir.x * 4, ey = h.y * C + C / 2 + dir.y * 4;
@@ -142,6 +206,29 @@
   Mini.swipe(cv, d => turn(d === 'left' ? -1 : d === 'right' ? 1 : 0, d === 'up' ? -1 : d === 'down' ? 1 : 0));
   document.querySelectorAll('.mg-pad [data-d]').forEach(b => b.addEventListener('pointerdown', e => { e.preventDefault(); const d = b.dataset.d.split(',').map(Number); turn(d[0], d[1]); }));
   document.addEventListener('visibilitychange', () => { if (document.hidden && alive) paused = true; });
+
+  // Skin-Auswahl initialisieren
+  const skinSelect = document.getElementById('skinSelect');
+  Object.entries(skins).forEach(([key, skin]) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = skin.name;
+    btn.style.cssText = 'padding:8px;border:1px solid #666;border-radius:4px;background:#1a1146;color:#b8ff3d;cursor:pointer;font-family:Barlow,sans-serif;font-size:13px;transition:all 0.2s';
+    btn.addEventListener('mouseenter', () => { if (M.skin !== key) btn.style.borderColor = '#b8ff3d'; });
+    btn.addEventListener('mouseleave', () => { if (M.skin !== key) btn.style.borderColor = '#666'; });
+    btn.addEventListener('click', () => {
+      if (alive) return;
+      M.skin = key;
+      Object.querySelectorAll('#skinSelect button').forEach(b => {
+        b.style.background = '#1a1146'; b.style.color = '#b8ff3d'; b.style.borderColor = '#666';
+      });
+      btn.style.background = '#b8ff3d'; btn.style.color = '#0a0520'; btn.style.borderColor = '#b8ff3d';
+    });
+    if (key === M.skin) {
+      btn.style.background = '#b8ff3d'; btn.style.color = '#0a0520'; btn.style.borderColor = '#b8ff3d';
+    }
+    skinSelect.appendChild(btn);
+  });
 
   reset();
   M.show({ title: 'Snake', text: 'Friss die Münzen und beiß dich nicht selbst. Jede fünfte Münze läutet die <b>Pausenglocke</b>: kurz da, viel wert.', onGo: start });
