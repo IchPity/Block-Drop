@@ -37,8 +37,9 @@
    Cookies. Beides lässt sich in beliebiger Reihenfolge beantworten. Wer
    zustimmt, wählt einmal: die Version steht ein Jahr im Cookie
    „arcade_mode" (dazu „arcade_consent" mit der Nummer aus /mode.js). Wer
-   ablehnt, wird bei jedem Seitenaufruf wieder nach Cookies und Version
-   gefragt; die Wahl gilt dann nur für diesen Besuch (sessionStorage).
+   ablehnt, hat für diesen Besuch Ruhe: Ablehnung und Version stehen im
+   sessionStorage und gelten auf allen Seiten, bis der Tab geschlossen
+   wird. Beim nächsten Besuch wird wieder nach beidem gefragt.
    ───────────────────────────────────────────────────────────────────────── */
 (() => {
   'use strict';
@@ -62,7 +63,7 @@
   // ADHS-Modus: gilt für die ganze Seite, gemerkt pro Browser
   // ═══════════════════════════════════════════════════════════════════
   const ADHS_KEY = 'arcade.adhs', DESIGN_KEY = 'arcade.design';
-  const MODE_CK = 'arcade_mode', OK_CK = 'arcade_consent', VISIT_KEY = 'arcade.mode', ASKED_KEY = 'arcade.asked', CONSENT = '2'; // Nummer wie in /mode.js
+  const MODE_CK = 'arcade_mode', OK_CK = 'arcade_consent', VISIT_KEY = 'arcade.mode', NO_KEY = 'arcade.nocookies', CONSENT = '2'; // Nummer wie in /mode.js
   const cookie = n => { const m = doc.cookie.match(new RegExp('(?:^|; )' + n + '=([^;]*)')); return m ? m[1] : null; };
   const bake = (n, v) => { doc.cookie = n + '=' + v + '; max-age=31536000; path=/; SameSite=Lax'; };
   let adhs = true, design = false, consent = false;
@@ -135,16 +136,16 @@
   // (schiebt sich unten ins Bild). Beides sieht in jeder Version gleich
   // aus (eigene Farben, keine Hallen-Token).
   // ═══════════════════════════════════════════════════════════════════
-  let picking = false, declined = false; // Versionswahl offen, Cookies abgelehnt
+  let picking = false; // Versionswahl offen
   function welcome() {
     // Impressum und Datenschutz bleiben ohne Fenster lesbar
     if (/^\/(impressum|datenschutz)\//.test(location.pathname)) return;
     if (consent) { if (!cookie(MODE_CK)) choose(); return; } // zugestimmt, aber noch keine Version gewählt
-    // gerade ohne Cookies Cinema gewählt oder verlassen: die Seite hat dafür neu geladen, nicht gleich wieder fragen
-    let asked = null;
-    try { asked = sessionStorage.getItem(ASKED_KEY); sessionStorage.removeItem(ASKED_KEY); } catch (e) {}
-    if (asked === 'no') return; // Cookies waren schon abgelehnt
-    if (!asked) choose();       // sonst steht die Version schon, nur die Cookie-Frage ist noch offen
+    // Ohne Cookies gilt beides für diesen Besuch: was schon beantwortet ist, wird auf den nächsten Seiten nicht wieder gefragt
+    let picked = false, declined = false;
+    try { picked = !!sessionStorage.getItem(VISIT_KEY); declined = !!sessionStorage.getItem(NO_KEY); } catch (e) {}
+    if (!picked) choose();
+    if (declined) return;
     const el = doc.createElement('div');
     el.className = 'fxk'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-labelledby', 'fxk-t');
     el.innerHTML =
@@ -155,8 +156,8 @@
     root.classList.add('fxk-open');
     setTimeout(() => el.classList.add('on'), REDUCED ? 0 : 700);
     const close = () => { el.classList.remove('on'); root.classList.remove('fxk-open'); setTimeout(() => el.remove(), REDUCED ? 0 : 500); };
-    // Ablehnen merkt sich nichts: beim nächsten Seitenaufruf kommen Fenster und Versionswahl wieder
-    el.querySelector('.fxk-no').addEventListener('click', () => { declined = true; close(); });
+    // Ablehnen gilt bis der Tab zu ist: beim nächsten Besuch kommen Fenster und Versionswahl wieder
+    el.querySelector('.fxk-no').addEventListener('click', () => { try { sessionStorage.setItem(NO_KEY, '1'); } catch (e) {} close(); });
     el.querySelector('.fxk-yes').addEventListener('click', () => {
       consent = true;
       try { bake(OK_CK, CONSENT); sessionStorage.removeItem(VISIT_KEY); } catch (e) {}
@@ -202,7 +203,6 @@
     function done() {
       const pick = (el.querySelector('input:checked') || {}).value || mode();
       const stays = pick === mode() || (pick !== 'design' && mode() !== 'design');
-      if (!stays && !consent) try { sessionStorage.setItem(ASKED_KEY, declined ? 'no' : 'open'); } catch (e) {}
       picking = false;
       setMode(pick);
       if (!stays) return; // die Seite lädt neu, der Dialog deckt das zu
