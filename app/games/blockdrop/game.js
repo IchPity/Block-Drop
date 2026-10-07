@@ -72,6 +72,24 @@ const ROWS = 20;
 const BLOCK = 30;
 const PREVIEW_COUNT = 5;
 
+// ── Currency & Upgrades ────────────────────────────────────────────────────
+const CURRENCY_KEY = 'blockdrop_currency';
+const UPGRADES_KEY = 'blockdrop_upgrades';
+const UPGRADES = {
+  multiplier_2x:   { name: '2x Multiplikatör', desc: 'Verdopple deine Punkte', cost: 500, icon: '2️⃣', effect: () => ({ multiplier: 2 }), level: 0, maxLevel: 1 },
+  multiplier_3x:   { name: '3x Multiplikatör', desc: 'Verdreifache deine Punkte', cost: 1500, icon: '3️⃣', effect: () => ({ multiplier: 3 }), level: 0, maxLevel: 1, requires: 'multiplier_2x' },
+  multiplier_5x:   { name: '5x Multiplikatör', desc: 'Verfünffache deine Punkte', cost: 5000, icon: '5️⃣', effect: () => ({ multiplier: 5 }), level: 0, maxLevel: 1, requires: 'multiplier_3x' },
+  particle_boost:  { name: 'Particle Boost', desc: 'Mehr visuelle Effekte', cost: 300, icon: '✨', effect: () => ({ particles: true }), level: 0, maxLevel: 1 },
+  speed_x1_5:      { name: 'Speed 1.5x', desc: 'Schnelleres Spiel (1.5x)', cost: 400, icon: '⚡', effect: () => ({ speedBoost: 1.5 }), level: 0, maxLevel: 1 },
+  speed_x2:        { name: 'Speed 2x', desc: 'Viel schneller (2x)', cost: 1200, icon: '⚡⚡', effect: () => ({ speedBoost: 2 }), level: 0, maxLevel: 1, requires: 'speed_x1_5' },
+  bomb_power:      { name: 'Bomb Power', desc: 'Sprenge Reihen (10% Chance)', cost: 800, icon: '💣', effect: () => ({ bombPower: true }), level: 0, maxLevel: 1 },
+  extra_hold:      { name: 'Extra Hold', desc: 'Zweites Hold erlaubt', cost: 600, icon: '📦', effect: () => ({ extraHold: true }), level: 0, maxLevel: 1 },
+};
+
+let currency = 0;
+let activeUpgrades = {};
+const CURRENCY_PER_LINE = 50;
+
 // ── Aussehen (Esc → Anpassen) ──────────────────────────────────────────────
 // Neon sind die Phosphorfarben, die auch im Automaten auf der Startseite laufen
 const PALETTES = {
@@ -124,6 +142,28 @@ const own = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.c
   look.grid  = s.grid !== false;
 })();
 
+function saveCurrency() {
+  try { localStorage.setItem(CURRENCY_KEY, JSON.stringify({ currency, upgrades: activeUpgrades })); } catch (e) {}
+}
+
+function loadCurrency() {
+  try {
+    const data = JSON.parse(localStorage.getItem(CURRENCY_KEY));
+    if (data) {
+      currency = data.currency || 0;
+      activeUpgrades = data.upgrades || {};
+      for (const id in UPGRADES) {
+        if (activeUpgrades[id]) {
+          UPGRADES[id].level = 1;
+          Object.assign(activeUpgrades, UPGRADES[id].effect());
+        }
+      }
+    }
+  } catch (e) {}
+}
+
+loadCurrency();
+
 function saveLook() {
   try { localStorage.setItem(LOOK_KEY, JSON.stringify({ colors: COLORS, ...look })); } catch (e) {}
 }
@@ -172,7 +212,9 @@ const ANIM_EXPLODE = 320;
 const ANIM_TOTAL   = ANIM_FLASH + ANIM_EXPLODE;
 
 function dropInterval(level) {
-  return Math.max(50, 1000 * Math.pow(0.85, level - 1));
+  let interval = Math.max(50, 1000 * Math.pow(0.85, level - 1));
+  const speedBoost = activeUpgrades.speedBoost || 1;
+  return interval / speedBoost;
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────
@@ -704,12 +746,20 @@ class BlockDrop {
       this.combo++;
       const base = LINE_SCORES[lines] * this.level;
       const comboBonus = this.combo > 0 ? 50 * this.combo * this.level : 0;
-      this.score += base + comboBonus;
+      let scoreGain = base + comboBonus;
+
+      const mult = activeUpgrades.multiplier || 1;
+      scoreGain *= mult;
+      this.score += scoreGain;
       this.lines += lines;
+
+      const currencyGain = Math.floor(CURRENCY_PER_LINE * lines * mult);
+      currency += currencyGain;
+      this.showCurrencyFloat(currencyGain);
+
       const levelBefore = this.level;
       this.level = Math.floor(this.lines / 10) + 1;
       if (this.level > levelBefore && window.FX && !FX.reduced) {
-        // Levelaufstieg: Lichtstreifen und Einblendung
         FX.streak(innerHeight * 0.3, '#ffb000'); FX.pulse('#ffb000', 1.2);
         const lb = document.createElement('div');
         lb.className = 'tetris-banner level-banner'; lb.textContent = 'LEVEL ' + this.level;
@@ -722,10 +772,37 @@ class BlockDrop {
       if (this.score >= 50000)                         tryUnlock('bd_score50k');
       if (this.score >= 250000)                        tryUnlock('bd_score250k');
       if (this.lines >= 100)                           tryUnlock('bd_lines100');
+
+      if (activeUpgrades.bombPower && Math.random() < 0.1 && lines > 0) {
+        this.triggerBomb();
+      }
     } else {
       this.combo = -1;
     }
     this.updateUI();
+  }
+
+  showCurrencyFloat(amount) {
+    if (!window.FX) return;
+    const br = this.boardCanvas.getBoundingClientRect();
+    const x = br.left + br.width / 2;
+    const y = br.top + br.height * 0.4;
+    const el = document.createElement('div');
+    el.style.cssText = `position: fixed; left: ${x}px; top: ${y}px; color: #ffd700; font-weight: 900; font-size: 24px; pointer-events: none; z-index: 999; text-shadow: 0 2px 8px rgba(0,0,0,0.8); animation: currencyFloat 1.2s ease-out forwards;`;
+    el.textContent = '+$' + amount;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1200);
+  }
+
+  triggerBomb() {
+    if (!this.clearAnim) return;
+    const rows = this.clearAnim.rows;
+    const bombRow = rows[Math.floor(Math.random() * rows.length)];
+    if (window.FX && !FX.reduced) {
+      const br = this.boardCanvas.getBoundingClientRect(), cell = br.height / ROWS;
+      const y = br.top + (bombRow + 0.5) * cell;
+      FX.burst(br.left + br.width / 2, y, { kind: 'spark', n: 50, speed: 20, radius: br.width / 2, colors: ['#ff3d6e', '#ffc93a', '#2ee6ff'] });
+    }
   }
 
   holdPiece() {
@@ -983,6 +1060,8 @@ class BlockDrop {
     this.levelEl.textContent = this.level;
     this.linesEl.textContent = this.lines;
     this.levelBar.style.transform = `scaleX(${(this.lines % 10) / 10})`;
+    const currencyEl = document.getElementById('currency-display');
+    if (currencyEl) currencyEl.textContent = currency.toLocaleString();
     if (this.modeBadge) {
       this.modeBadge.textContent = this.mode === 'standard' ? 'Standard' : 'Classic';
       this.modeBadge.className   = this.mode;
@@ -1066,28 +1145,37 @@ class BlockDrop {
   // ── Input ─────────────────────────────────────────────────────────────────
   onKey(e) {
     if (Custom.isOpen()) {
-      // Esc schließt das Fenster, auch wenn gerade ein Farbfeld den Fokus hat; das Spiel bekommt keine Taste
       if (e.key === 'Escape' && !e.repeat && (!typing(e) || Custom.panel.contains(e.target))) Custom.close();
       return;
     }
+    if (Upgrades.isOpen()) {
+      if (e.key === 'Escape' && !e.repeat && (!typing(e) || Upgrades.panel.contains(e.target))) Upgrades.close();
+      return;
+    }
     if (typing(e)) return;
-    // Ohne laufendes Spiel öffnet Esc direkt das Anpassen-Fenster
-    if (e.key === 'Escape' && !e.repeat && (this.state === 'idle' || this.state === 'gameover')) { Custom.open(); return; }
-    // Pfeiltasten/Space scrollen sonst die Seite — auch während Pause/Räum-Animation,
-    // nicht nur während 'playing' (wo der switch weiter unten preventDefault ruft)
+
+    if (e.key === 'Escape' && !e.repeat) {
+      if (this.state === 'idle' || this.state === 'gameover') {
+        if (this.lastPanelWas === 'custom') Upgrades.open();
+        else { Custom.open(); this.lastPanelWas = 'custom'; }
+        return;
+      }
+      if (this.state === 'paused') { this.resume(); return; }
+      if (this.state === 'playing') { Upgrades.open(); return; }
+    }
+
     if (SCROLL_KEYS.has(e.key) && this.state !== 'idle' && this.state !== 'gameover') {
       e.preventDefault();
     }
 
     if (this.state === 'paused') {
-      if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') this.resume();
+      if (e.key === 'p' || e.key === 'P') this.resume();
       return;
     }
     if (this.state === 'clearing') return;
     if (this.state !== 'playing') return;
 
     switch (e.key) {
-      // Bewegung: nur beim ersten Druck reagieren — DAS übernimmt das Auto-Repeat
       case 'ArrowLeft':  e.preventDefault(); if (!e.repeat) this.moveLeft();  break;
       case 'ArrowRight': e.preventDefault(); if (!e.repeat) this.moveRight(); break;
       case 'ArrowDown':  e.preventDefault(); if (!e.repeat) this.softDrop(); break;
@@ -1096,7 +1184,7 @@ class BlockDrop {
       case 'x': case 'X': e.preventDefault(); if (!e.repeat) this.rotate(-1); break;
       case ' ':           e.preventDefault(); if (!e.repeat) this.hardDrop(); break;
       case 'Shift':       e.preventDefault(); if (!e.repeat) this.holdPiece(); break;
-      case 'p': case 'P': case 'Escape': if (!e.repeat) this.togglePause();   break;
+      case 'p': case 'P': if (!e.repeat) this.togglePause();   break;
     }
   }
 }
@@ -1234,6 +1322,88 @@ const Custom = (() => {
     if (opener && opener.isConnected) opener.focus();
     opener = null;
   }
+
+  return { panel, open, close, isOpen: () => !panel.hidden };
+})();
+
+// ── Upgrades Panel ────────────────────────────────────────────────────────
+const Upgrades = (() => {
+  const $ = id => document.getElementById(id);
+  const panel = $('upgrades-panel'), overlay = $('overlay');
+  let opener = null;
+
+  function renderUpgrades() {
+    const list = $('upgrades-list');
+    list.innerHTML = '';
+    $('upgrade-currency').textContent = currency.toLocaleString();
+
+    for (const id in UPGRADES) {
+      const ug = UPGRADES[id];
+      const hasPre = ug.requires && !activeUpgrades[ug.requires];
+      const alreadyBought = activeUpgrades[id];
+      const canAfford = currency >= ug.cost && !alreadyBought && !hasPre;
+
+      const card = document.createElement('div');
+      card.className = 'upgrade-card';
+      if (!canAfford) card.disabled = true;
+      card.innerHTML = `
+        <div class="upgrade-icon">${ug.icon}</div>
+        <div class="upgrade-info">
+          <div class="upgrade-name">${ug.name}${alreadyBought ? ' ✓' : ''}</div>
+          <div class="upgrade-desc">${ug.desc}</div>
+        </div>
+        <div class="upgrade-cost">${alreadyBought ? '✓' : '$' + ug.cost}</div>
+      `;
+
+      if (!alreadyBought && !hasPre) {
+        card.addEventListener('click', () => buyUpgrade(id, ug, card));
+      }
+
+      list.appendChild(card);
+    }
+  }
+
+  function buyUpgrade(id, ug, card) {
+    if (currency < ug.cost || activeUpgrades[id]) return;
+    currency -= ug.cost;
+    activeUpgrades[id] = true;
+    ug.level = 1;
+    Object.assign(activeUpgrades, ug.effect());
+    saveCurrency();
+    window._game.updateUI();
+
+    card.disabled = true;
+    card.style.opacity = '0.5';
+    card.style.pointerEvents = 'none';
+
+    const el = document.createElement('div');
+    el.style.cssText = `position: fixed; left: 50%; top: 20%; color: #ffd700; font-weight: 900; font-size: 32px; pointer-events: none; z-index: 10000; transform: translateX(-50%); animation: currencyFloat 1.2s ease-out forwards;`;
+    el.textContent = '✨ ' + ug.name + ' ✨';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1200);
+
+    renderUpgrades();
+  }
+
+  function open() {
+    if (!panel.hidden) return;
+    opener = document.activeElement;
+    panel.hidden = false;
+    overlay.inert = true;
+    panel.scrollTop = 0;
+    renderUpgrades();
+    $('upgrades-done').focus();
+  }
+
+  function close() {
+    if (panel.hidden) return;
+    panel.hidden = true;
+    overlay.inert = false;
+    if (opener && opener.isConnected) opener.focus();
+    opener = null;
+  }
+
+  $('upgrades-done').addEventListener('click', close);
 
   return { panel, open, close, isOpen: () => !panel.hidden };
 })();
