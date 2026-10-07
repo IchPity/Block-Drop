@@ -267,6 +267,21 @@
       #turn-indicator { font-size: 12px; }
       :root { --cell: min(11.2vw, 40px); }
     }
+
+    /* ── Cinema: Brett in Knochen und Graphit statt Holz ──────────────
+       Weiße Figuren bekommen eine helle Füllung (breite Kontur hinter der
+       Zeichnung), schwarze bleiben massiv: beide lesen sich auf beiden Feldern. */
+    html.fx-design #board-wrap { border-radius: 4px; box-shadow: 0 0 0 1px var(--board-line), 0 30px 70px rgba(0,0,0,0.55); }
+    html.fx-design .cell.light { background: #cbc9c0; }
+    html.fx-design .cell.dark  { background: #7e7f87; }
+    html.fx-design .cell.last-from { background: #c2b188 !important; }
+    html.fx-design .cell.last-to   { background: #d0b676 !important; }
+    html.fx-design .cell.selected  { background: var(--brass) !important; }
+    html.fx-design .piece { color: #141417; -webkit-text-stroke: 0.12em #fbfaf6; paint-order: stroke fill; text-shadow: 0 2px 3px rgba(0,0,0,0.4); }
+    html.fx-design .black-piece { color: #0b0b0c; -webkit-text-stroke: 0; text-shadow: 0 2px 3px rgba(0,0,0,0.3); }
+    html.fx-design .cell .file-lbl, html.fx-design .cell .rank-lbl { color: #141417; opacity: 0.5; }
+    html.fx-design .start-play-btn { background: var(--chalk); color: var(--ink); box-shadow: none; }
+    html.fx-design .start-play-btn:hover { background: #fff; }
   </style>
 </head>
 <body>
