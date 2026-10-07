@@ -535,7 +535,7 @@
     </div>
   </section>
 
-  <div class="plate-foot"><span>Klasse 5DK · Baujahr 2026</span></div>
+  <div class="plate-foot"><span>Klasse 5DK · <span id="age-timer">Wird berechnet…</span></span></div>
 </div>
 
 <!-- Design-Modus: eigene Bühne statt der Halle (/design-home.css, /design-home.js) -->
@@ -600,6 +600,25 @@
   </footer>
 </main>
 <script src="/design-home.js"></script>
+
+<script>
+(() => {
+  const timer = document.getElementById('age-timer');
+  if (!timer) return;
+  const start = new Date(2026, 0, 1); // 1. Januar 2026
+  function update() {
+    const now = new Date();
+    const diff = now - start;
+    const days = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+    timer.textContent = `${days}d ${hours}h ${mins}m ${secs}s alt`;
+  }
+  update();
+  setInterval(update, 1000);
+})();
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/fx.js"></script>
