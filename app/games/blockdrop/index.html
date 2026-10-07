@@ -308,6 +308,14 @@
     @media (max-width: 560px) {
       .nav-game-title { display: none; }
     }
+    /* schmale Handys: Zähler enger, sonst schieben Zahnrad und „Anmelden" sie aus dem Bild */
+    @media (max-width: 420px) {
+      .navbar { padding: 10px 8px; }
+      .nav-left, .nav-right { gap: 6px; }
+      .nav-score-display { gap: 6px; padding: 5px 6px; }
+      .nav-stat-lbl { font-size: 10px; letter-spacing: 0; }
+      .nav-divider { display: none; }
+    }
     @media (max-width: 380px) {
       #overlay h1 { font-size: 22px; }
       .panel-box .value { font-size: 16px; }

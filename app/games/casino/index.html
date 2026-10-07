@@ -157,7 +157,7 @@
   .stepper output { min-width: 62px; text-align: center; font-family: 'Share Tech Mono', monospace; font-size: 18px; color: var(--amber); font-variant-numeric: tabular-nums; }
   .spin {
     flex: 1; min-width: 0; align-self: end; height: 48px; border: 0; border-radius: 12px; cursor: pointer;
-    background: var(--bell); color: #fff; font-family: 'Kanit', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: 0.14em;
+    background: var(--bell); color: var(--on-bell, #fff); font-family: 'Kanit', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: 0.14em;
     box-shadow: 0 6px 14px rgba(0,0,0,0.4);
     transition: transform 0.15s cubic-bezier(.2,.8,.2,1), filter 0.15s, box-shadow 0.15s;
   }
@@ -296,7 +296,7 @@
 </head>
 <body>
 
-<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false" data-cinema-keep>
   <defs>
     <symbol id="s-seven" viewBox="0 0 48 48"><polygon points="8,7 40,7 40,15 23,42 13,42 29,16 8,16" fill="#d7263d" stroke="#f3eeff" stroke-width="2" stroke-linejoin="round"/></symbol>
     <symbol id="s-diamond" viewBox="0 0 48 48">

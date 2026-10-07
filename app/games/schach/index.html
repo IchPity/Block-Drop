@@ -245,8 +245,10 @@
       .move-dot { width: 14px; height: 14px; }
       .file-lbl, .rank-lbl { font-size: 8px; }
 
+      /* Das Brett ist am Handy niedriger als der Startdialog: er füllt stattdessen den Bildschirm */
+      #start-overlay { position: fixed; justify-content: flex-start; overflow-y: auto; padding: 78px 0 24px; }
       .start-logo { font-size: 28px; }
-      #start-form { gap: 14px; padding: 0 16px; max-width: 92vw; }
+      #start-form { gap: 14px; padding: 0 16px; max-width: 92vw; margin: auto; }
       .start-input { font-size: 16px; padding: 11px 12px; }
       .color-btn { font-size: 12px; padding: 9px 4px; }
       .color-btn .sym { font-size: 20px; }
@@ -257,6 +259,9 @@
       #gameover-winner { font-size: 22px; }
     }
     @media (max-width: 420px) {
+      /* eine Zeile statt zwei: der Punkt zeigt, wer dran ist, der Text bleibt für Screenreader */
+      .nav-title { display: none; }
+      #turn-indicator { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
       .nav-right { gap: 4px; }
       .turn-badge { padding: 4px 8px; }
       #turn-indicator { font-size: 12px; }

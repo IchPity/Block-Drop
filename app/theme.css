@@ -484,6 +484,10 @@ table, .tnum, [data-num] { font-variant-numeric: tabular-nums; }
   .hero-sub { font-size: 15px; }
   .doc-card { padding: 22px 18px; }
 }
+/* schmale Handys: das Kürzel vor dem Seitentitel weicht, sonst läuft die Leiste rechts über */
+@media (max-width: 420px) {
+  .nav-game-title .pill, .nav-title .pill { display: none; }
+}
 
 /* ═══════════════════════════════════════════════════════════════════════
    Design-Modus (html.fx-design, gesetzt von /mode.js)
@@ -503,6 +507,7 @@ html.fx-design {
   --brass:        #e9b454;
   --marquee:      var(--brass);
   --bell:         #ecebe6;
+  --on-bell:      #09090d; /* Schrift auf --bell: in der Halle weiß, hier dunkel */
   --ink:          #09090d;
   --neon-pink:    var(--brass);
   --neon-cyan:    #ecebe6;
@@ -551,8 +556,15 @@ html.fx-design .hero h1, html.fx-design .neon {
   animation: dzTitle 1s 0.25s var(--ease-out) both !important;
 }
 html.fx-design .hero h1 { font-size: clamp(40px, 6vw, 76px); }
-@keyframes dzTitle { from { opacity: 0; transform: translateY(0.3em); } }
+/* mit Ziel: manche Seiten setzen den Titel selbst auf opacity 0 und blenden ihn mit eigener Animation ein */
+@keyframes dzTitle { from { opacity: 0; transform: translateY(0.3em); } to { opacity: 1; transform: none; } }
 html.fx-design .hero-sub { color: var(--chalk-dim); text-shadow: none; }
+
+/* Hauptknöpfe der Seiten waren pink mit weißer Schrift; umgerechnet wäre das Weiß auf Mittelgrau */
+html.fx-design :is(.btn-primary, .login-btn, .submit-btn, .search-btn):not(:disabled) {
+  background: var(--chalk); color: var(--ink); box-shadow: none; text-shadow: none;
+}
+html.fx-design :is(.btn-primary, .login-btn, .submit-btn, .search-btn):not(:disabled):hover { background: #fff; }
 
 html.fx-design .doc-card, html.fx-design .panel-box {
   background: var(--board-raised); border-radius: 6px; box-shadow: none;

@@ -152,7 +152,7 @@
     var els = base.querySelectorAll('[style], [fill], [stroke], [stop-color]');
     for (var i = 0; i < els.length; i++) {
       var el = els[i];
-      if (el.closest && el.closest('.fxw, .fxk')) continue;
+      if (el.closest && el.closest('.fxw, .fxk, [data-cinema-keep]')) continue; // data-cinema-keep: Spielsymbole behalten ihre Farben
       if (el.style && el.getAttribute('style')) style(el.style);
       for (var k = 0; k < SVG.length; k++) {
         var a = el.getAttribute(SVG[k]);

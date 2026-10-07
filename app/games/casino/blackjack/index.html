@@ -85,7 +85,7 @@
   .tool:disabled { opacity: 0.45; cursor: not-allowed; }
   .tool kbd { margin-left: 6px; font: 400 11px 'Share Tech Mono', monospace; color: var(--chalk-dim); }
   .act { flex: 1; min-width: 110px; min-height: 48px; }
-  .go { flex: 1; min-width: 160px; min-height: 48px; border: 0; border-radius: 12px; cursor: pointer; background: var(--bell); color: #fff; font: 800 22px 'Kanit', sans-serif; letter-spacing: 0.14em; box-shadow: 0 6px 14px rgba(0,0,0,0.4); transition: transform 0.15s, filter 0.15s; }
+  .go { flex: 1; min-width: 160px; min-height: 48px; border: 0; border-radius: 12px; cursor: pointer; background: var(--bell); color: var(--on-bell, #fff); font: 800 22px 'Kanit', sans-serif; letter-spacing: 0.14em; box-shadow: 0 6px 14px rgba(0,0,0,0.4); transition: transform 0.15s, filter 0.15s; }
   .go:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.08); }
   .go:disabled { background: #3a2226; color: #a08488; box-shadow: none; cursor: not-allowed; }
   .go.refill { background: var(--amber); color: var(--ink); }
