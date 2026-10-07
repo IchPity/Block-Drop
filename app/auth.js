@@ -246,6 +246,10 @@
 
   .auth-slot { position: relative; }
 
+  /* gezeichnete Symbole (ersetzen Emojis, siehe ICONS unten) */
+  .ico { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.2em; flex-shrink: 0; }
+  .ach-toast-icon, .ach-card:not(.locked) .ach-icon { color: var(--marquee, #ffb000); }
+
   /* Einstellungen im Menü: Version (gilt für die ganze Seite, siehe /fx.js) */
   .auth-menu-label { padding: 6px 12px 8px; font-size: 12px; font-weight: 600; color: var(--chalk-dim, rgba(255,255,255,0.7)); }
   .auth-modes {
@@ -1293,6 +1297,72 @@
   };
   window.Achievements = Achievements;
   Auth.onChange(user => { if (user && Auth.profile) Achievements.sync().catch(() => {}); });
+
+  // ─── Gezeichnete Symbole statt Emojis ─────────────────────────────────────
+  // Die Seiten schreiben weiter Emojis in ihre Texte und Daten (Erfolge, Kartenköpfe,
+  // Hinweise). Hier werden die bekannten beim Einhängen durch ein SVG in einer
+  // Strichstärke ersetzt, in der Schriftfarbe der Umgebung. Unbekannte bleiben stehen.
+  // Ein Bereich mit data-no-icons bleibt unangetastet.
+  const ICONS = {
+    '🎮': '<rect x="2" y="7" width="20" height="10" rx="5"/><path d="M7 10v4M5 12h4M15.5 11h.01M18 13h.01"/>',
+    '✨': '<path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9zM19 15v5M16.500 17.500h5"/>',
+    '🔥': '<path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-6 1-9z"/>',
+    '⚡': '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    '💰': '<circle cx="9" cy="9" r="6"/><path d="M15.500 9.500a6 6 0 1 1-6 6M9 7v4"/>',
+    '💥': '<path d="M12 2l2.200 5.300L20 5l-2.300 5.800L22 14l-5.600.6L17 21l-5-3.800L7 21l.6-6.400L2 14l4.300-3.200L4 5l5.800 2.300z"/>',
+    '⬇': '<path d="M12 4v16M5 13l7 7 7-7"/>',
+    '👆': '<path d="M12 20V4M5 11l7-7 7 7"/>',
+    '🙅': '<circle cx="12" cy="12" r="9"/><path d="M5.600 5.600l12.800 12.800"/>',
+    '🏆': '<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4a4 4 0 0 0 4 4M16 6h4a4 4 0 0 1-4 4M12 13v5M8 20h8"/>',
+    '🧱': '<rect x="3" y="5" width="18" height="14" rx="1"/><path d="M3 12h18M12 5v7M8 12v7M16 12v7"/>',
+    '🏭': '<path d="M3 21V10l6 4v-4l6 4V5h4v16zM7 17h2M12 17h2"/>',
+    '💎': '<path d="M6 4h12l4 6-10 11L2 10zM2 10h20M9 4l3 6 3-6M12 10v11"/>',
+    '🔔': '<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/>',
+    '🕹': '<circle cx="12" cy="5" r="3"/><path d="M12 8v7M5 15h14v5H5z"/>',
+    '🎓': '<path d="M2 9l10-5 10 5-10 5zM6 11.500V16c2 2 10 2 12 0v-4.500M22 9v6"/>',
+    '🔧': '<path d="M15 6a4 4 0 0 0-5 5l-7 7 3 3 7-7a4 4 0 0 0 5-5l-3 3-2-2z"/>',
+    '😴': '<path d="M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10zM14 4h4l-4 4h4"/>',
+    '🎰': '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 5v14M15 5v14M5.500 12h1M11.500 12h1M17.500 12h1"/>',
+    '🎨': '<path d="M12 3a9 9 0 1 0 0 18c1.500 0 2-1 2-2 0-1.500 1-2 2-2h2a3 3 0 0 0 3-3c0-6-4-11-9-11z"/><path d="M7.500 12h.01M9.500 8h.01M14.500 7.500h.01"/>',
+    '📷': '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.500"/>',
+    '✏': '<path d="M4 20l1-5L16 4l4 4L9 19zM14 6l4 4"/>',
+    '🔑': '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/>',
+    '🔎': '<circle cx="11" cy="11" r="6.500"/><path d="M16 16l5 5"/>',
+    '📨': '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+    '🤝': '<circle cx="9" cy="8" r="3.500"/><path d="M2.500 20a6.500 6.500 0 0 1 13 0M16 4.600a3.500 3.500 0 0 1 0 6.800M18 14.500a6.500 6.500 0 0 1 3.500 5.500"/>',
+    '📤': '<path d="M21 3L3 10l7 3 3 7zM10 13l5-5"/>',
+    '🎉': '<path d="M4 20l4-12 8 8zM14 4v3M18 6l-2 2M20 10h-3"/>',
+    '⏳': '<path d="M6 3h12M6 21h12M7 3c0 5 10 5 10 9s-10 4-10 9M17 3c0 5-10 5-10 9s10 4 10 9"/>',
+    '🤷': '<circle cx="12" cy="12" r="9"/><path d="M9.500 9.500a2.500 2.500 0 1 1 3.500 2.300c-.7.4-1 .9-1 1.700M12 17h.01"/>',
+    '⚠': '<path d="M12 3l10 18H2zM12 10v5M12 18h.01"/>',
+    '🏁': '<path d="M5 21V4h13l-2 4 2 4H5"/>',
+    '💀': '<path d="M5 11a7 7 0 0 1 14 0v4l-2 1v3H7v-3l-2-1zM9 12h.01M15 12h.01M10 19v-2M14 19v-2"/>',
+    '🔺': '<path d="M12 4l9 16H3z"/>',
+    '💣': '<circle cx="10" cy="14" r="7"/><path d="M15 9l3-3M18 6l2-3M18 6l3 1"/>',
+  };
+  ICONS['🔍'] = ICONS['🔎'];
+  const ICON_RE = new RegExp('(' + Object.keys(ICONS).join('|') + ')\uFE0F?', 'u');
+  const iconSvg = key => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[key]}</svg>`;
+  function iconizeText(node) {
+    const p = node.parentElement;
+    if (!p || !ICON_RE.test(node.nodeValue) || p.closest('script, style, textarea, title, svg, [data-no-icons]')) return;
+    const parts = node.nodeValue.split(new RegExp(ICON_RE.source, 'gu')), tpl = document.createElement('template');
+    tpl.innerHTML = parts.map((s, i) => i % 2 ? iconSvg(s) : escapeHtml(s)).join('');
+    node.replaceWith(tpl.content);
+  }
+  function iconize(root) {
+    if (root.nodeType === 3) return iconizeText(root);
+    if (root.nodeType !== 1) return;
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), list = [];
+    while (w.nextNode()) list.push(w.currentNode);
+    list.forEach(iconizeText);
+  }
+  function startIcons() {
+    iconize(document.body);
+    new MutationObserver(muts => { for (const m of muts) { if (m.type === 'characterData') iconizeText(m.target); else m.addedNodes.forEach(iconize); } })
+      .observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+  if (document.body) startIcons(); else document.addEventListener('DOMContentLoaded', startIcons);
 
   // Expose
   window.Auth = Auth;

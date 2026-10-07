@@ -110,6 +110,8 @@
     /* ── Pieces ─────────────────────────────────────────── */
     .piece {
       font-size:42px;line-height:1;pointer-events:none;transition:transform 0.1s;
+      /* weiße Figuren: helle Füllung hinter der dunklen Zeichnung, sonst verschwinden sie auf hellen Feldern */
+      color:#1b1410;-webkit-text-stroke:0.12em #fbf6ea;paint-order:stroke fill;
       text-shadow:0 1px 3px rgba(0,0,0,0.5);
     }
     .cell:hover .piece { transform:scale(1.08); }
@@ -117,7 +119,7 @@
     /* Black pieces — dark fill, white outline for visibility */
     .black-piece {
       color:#0c0c14;
-      -webkit-text-stroke:0.8px rgba(220,220,255,0.28);
+      -webkit-text-stroke:0.8px rgba(220,220,255,0.28);paint-order:normal;
       text-shadow:0 2px 4px rgba(0,0,0,0.5),0 1px 2px rgba(0,0,0,0.9);
     }
 
@@ -172,7 +174,7 @@
       display:flex;flex-direction:column;align-items:center;gap:4px;
     }
     .color-btn .sym { font-size:22px; }
-    .color-btn .sym.black-piece { color:#0c0c14; -webkit-text-stroke:0.8px rgba(220,220,255,0.28); filter:drop-shadow(0 4px 8px rgba(0,0,0,0.45)); }
+    .color-btn .sym.black-piece { color:#0c0c14; -webkit-text-stroke:1.1px rgba(236,235,240,0.8); filter:drop-shadow(0 4px 8px rgba(0,0,0,0.45)); }
     .color-btn.selected { background:rgba(34,197,94,0.12);border-color:rgba(34,197,94,0.4);color:#fff; }
     .color-btn:hover:not(.selected) { border-color:rgba(255,255,255,0.2);color:rgba(255,255,255,0.7); }
 
@@ -280,8 +282,8 @@
     html.fx-design .piece { color: #141417; -webkit-text-stroke: 0.12em #fbfaf6; paint-order: stroke fill; text-shadow: 0 2px 3px rgba(0,0,0,0.4); }
     html.fx-design .black-piece { color: #0b0b0c; -webkit-text-stroke: 0; text-shadow: 0 2px 3px rgba(0,0,0,0.3); }
     html.fx-design .cell .file-lbl, html.fx-design .cell .rank-lbl { color: #141417; opacity: 0.5; }
-    html.fx-design .start-play-btn { background: var(--chalk); color: var(--ink); box-shadow: none; }
-    html.fx-design .start-play-btn:hover { background: #fff; }
+    html.fx-design .start-play-btn, html.fx-design .btn-go-new { background: var(--chalk); color: var(--ink); box-shadow: none; }
+    html.fx-design .start-play-btn:hover, html.fx-design .btn-go-new:hover { background: #fff; }
   </style>
 </head>
 <body>
