@@ -33,11 +33,11 @@
    neu, weil die Halle und die Startseite dann anders aufgebaut sind.
 
    Beim ersten Besuch schiebt sich unten ein Fenster ins Bild und fragt
-   nach Cookies. Wer ablehnt, wird bei jedem Seitenaufruf wieder gefragt.
-   Wer zustimmt, wählt danach die Version (OG, ADHS, Cinema); die steht ein
-   Jahr im Cookie „arcade_mode" (dazu „arcade_consent" mit der Nummer aus
-   /mode.js). Ohne Zustimmung gilt eine im Menü gewählte Version nur für
-   diesen Besuch (sessionStorage).
+   nach Cookies. Danach wählt man die Version (OG, ADHS, Cinema). Wer
+   zustimmt, wählt einmal: die Version steht ein Jahr im Cookie
+   „arcade_mode" (dazu „arcade_consent" mit der Nummer aus /mode.js). Wer
+   ablehnt, wird bei jedem Seitenaufruf wieder nach Cookies und Version
+   gefragt; die Wahl gilt dann nur für diesen Besuch (sessionStorage).
    ───────────────────────────────────────────────────────────────────────── */
 (() => {
   'use strict';
@@ -61,7 +61,7 @@
   // ADHS-Modus: gilt für die ganze Seite, gemerkt pro Browser
   // ═══════════════════════════════════════════════════════════════════
   const ADHS_KEY = 'arcade.adhs', DESIGN_KEY = 'arcade.design';
-  const MODE_CK = 'arcade_mode', OK_CK = 'arcade_consent', VISIT_KEY = 'arcade.mode', CONSENT = '2'; // Nummer wie in /mode.js
+  const MODE_CK = 'arcade_mode', OK_CK = 'arcade_consent', VISIT_KEY = 'arcade.mode', ASKED_KEY = 'arcade.asked', CONSENT = '2'; // Nummer wie in /mode.js
   const cookie = n => { const m = doc.cookie.match(new RegExp('(?:^|; )' + n + '=([^;]*)')); return m ? m[1] : null; };
   const bake = (n, v) => { doc.cookie = n + '=' + v + '; max-age=31536000; path=/; SameSite=Lax'; };
   let adhs = true, design = false, consent = false;
@@ -138,6 +138,8 @@
     // Impressum und Datenschutz bleiben ohne Fenster lesbar
     if (/^\/(impressum|datenschutz)\//.test(location.pathname)) return;
     if (consent) { if (!cookie(MODE_CK)) choose(); return; } // zugestimmt, aber noch keine Version gewählt
+    // gerade ohne Cookies Cinema gewählt oder verlassen: die Seite hat dafür neu geladen, nicht gleich wieder fragen
+    try { if (sessionStorage.getItem(ASKED_KEY)) { sessionStorage.removeItem(ASKED_KEY); return; } } catch (e) {}
     const el = doc.createElement('div');
     el.className = 'fxk'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-labelledby', 'fxk-t');
     el.innerHTML =
@@ -147,8 +149,8 @@
     doc.body.appendChild(el);
     setTimeout(() => el.classList.add('on'), REDUCED ? 0 : 700);
     const close = () => { el.classList.remove('on'); setTimeout(() => el.remove(), REDUCED ? 0 : 500); };
-    // Ablehnen merkt sich nichts: beim nächsten Seitenaufruf kommt das Fenster wieder
-    el.querySelector('.fxk-no').addEventListener('click', close);
+    // Ablehnen merkt sich nichts: beim nächsten Seitenaufruf kommen Fenster und Versionswahl wieder
+    el.querySelector('.fxk-no').addEventListener('click', () => { close(); choose(); });
     el.querySelector('.fxk-yes').addEventListener('click', () => {
       consent = true;
       try { bake(OK_CK, CONSENT); sessionStorage.removeItem(VISIT_KEY); } catch (e) {}
@@ -192,6 +194,7 @@
     function done() {
       const pick = (el.querySelector('input:checked') || {}).value || mode();
       const stays = pick === mode() || (pick !== 'design' && mode() !== 'design');
+      if (!stays && !consent) try { sessionStorage.setItem(ASKED_KEY, '1'); } catch (e) {}
       setMode(pick);
       if (!stays) return; // die Seite lädt neu, der Dialog deckt das zu
       doc.removeEventListener('keydown', keys, true); doc.removeEventListener('keyup', keys, true);
