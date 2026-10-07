@@ -1081,7 +1081,17 @@
             <div class="auth-menu-label">Version</div>
             <div class="auth-modes" role="radiogroup" aria-label="Version">${MODES.map(([id, name]) =>
               `<button class="auth-mode" data-mode="${id}" type="button" role="radio" aria-checked="${id === now}">${name}</button>`).join('')}</div>
-            <div class="auth-menu-hint" data-mode-hint>${modeHint(now)}</div>`;
+            <div class="auth-menu-hint" data-mode-hint>${modeHint(now)}</div>
+            <div class="auth-menu-label">Cookies</div>
+            <div class="auth-modes" role="radiogroup" aria-label="Cookies">${[[1, 'Erlaubt'], [0, 'Aus']].map(([v, name]) =>
+              `<button class="auth-mode" data-consent="${v}" type="button" role="radio" aria-checked="${!!v === consentNow()}">${name}</button>`).join('')}</div>
+            <div class="auth-menu-hint" data-consent-hint>${consentHint()}</div>`;
+  };
+  const consentNow = () => !!(window.FX && window.FX.consent);
+  const consentHint = () => consentNow() ? 'Version und Spielstände bleiben ein Jahr gemerkt.' : 'Nichts wird gemerkt. Beim nächsten Besuch fragt die Seite wieder.';
+  const syncConsent = () => {
+    document.querySelectorAll('[data-consent]').forEach(b => b.setAttribute('aria-checked', (b.dataset.consent === '1') === consentNow()));
+    document.querySelectorAll('[data-consent-hint]').forEach(h => { h.textContent = consentHint(); });
   };
   const syncSettings = () => {
     const now = modeNow();
@@ -1098,8 +1108,13 @@
       document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-checked', b.dataset.mode === m));
       document.querySelectorAll('[data-mode-hint]').forEach(h => { h.textContent = modeHint(m); });
     }));
+    slot.querySelectorAll('[data-consent]').forEach(btn => btn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (window.FX && window.FX.setConsent) window.FX.setConsent(btn.dataset.consent === '1');
+    }));
   }
   window.addEventListener('fx:adhs', syncSettings);
+  window.addEventListener('fx:consent', syncConsent);
 
   // ─── Auth-Slot in der Navbar mounten ──────────────────────────────────────
   function mountSlots() {

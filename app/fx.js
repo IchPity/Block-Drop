@@ -123,6 +123,25 @@
     }
     applyAdhs(m === 'adhs');
   }
+  // Cookies nachträglich erlauben oder zurücknehmen (Menü rechts oben)
+  function setConsent(on) {
+    on = !!on;
+    try {
+      if (on) {
+        consent = true;
+        bake(OK_CK, CONSENT); sessionStorage.removeItem(NO_KEY); sessionStorage.removeItem(VISIT_KEY);
+        if (!picking) setMode(mode()); // die laufende Version ins Cookie
+        const k = doc.querySelector('.fxk'); if (k) { root.classList.remove('fxk-open'); k.remove(); }
+      } else {
+        consent = false;
+        [OK_CK, MODE_CK, 'automat5dk_casino2'].forEach(n => { doc.cookie = n + '=; max-age=0; path=/'; });
+        localStorage.removeItem(DESIGN_KEY); localStorage.removeItem(ADHS_KEY);
+        // für diesen Besuch bleibt alles, wie es ist, ohne erneute Frage
+        sessionStorage.setItem(NO_KEY, '1'); sessionStorage.setItem(VISIT_KEY, mode());
+      }
+    } catch (e) {}
+    dispatchEvent(new CustomEvent('fx:consent', { detail: consent }));
+  }
   // Einschalten verlässt den Design-Modus, Ausschalten lässt ihn stehen
   const setAdhs = on => setMode(on ? 'adhs' : design ? 'design' : 'standard');
   // In einem anderen Tab umgestellt: hier mitziehen
@@ -905,7 +924,8 @@ void main(){
   window.FX = { burst, rain, ring, streak, flash, shake, pulse, count, cinema, credits, tilt, go, reduced: REDUCED, NEON,
     cinemaOpen: () => cineOpen || credOpen || closing, closeCinema,
     get adhs() { return adhs; }, setAdhs,
-    get mode() { return mode(); }, setMode };
+    get mode() { return mode(); }, setMode,
+    get consent() { return consent; }, setConsent };
 
   // Die Halle startet erst nach dem ersten Bild: so bremst sie das Einschalten der Röhre nicht
   // (im Design-Modus bleibt sie aus)
