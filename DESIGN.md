@@ -157,7 +157,7 @@ Im Menü heißt er »Cinema«. Derselbe Raum bei ausgeschaltetem Licht. `/mode.j
 - **Raum:** keine Halle, keine Deckenröhre, kein Schein. Ein weiches Licht von oben, Flächen mit Haarlinie statt Schatten. Seitenwechsel blenden auf und ab statt über die Röhre.
 - **Startseite:** der Stapel aus Block Drop als Skulptur (Canvas 2D), der nächste Stein in Messing darüber. Einstieg als eine Zeitleiste (Steine fallen, das Wort steigt auf, dann Unterzeile, Knopf, Navigation). Beim Scrollen löst sich der Stapel auf und bleibt gedimmt hinter dem Verzeichnis stehen. Sehr wenig Text: ein Wort, eine Unterzeile, ein Knopf.
 - **Effekte:** Blitze, Wackeln und Hallenlicht sind aus, Partikel stark reduziert (`QUIET` in `fx.js`). Kino-Screen und Abspann bleiben, ohne Strahlenkranz und Schein.
-- Jede Unterseite behält ihr eigenes UI und ihre Farben; umgestellt ist nur die geteilte Ebene.
+- **Alle Seiten:** Cinema gilt überall, OG und ADHS teilen sich die Halle. Die Seiten haben ihre Hallenfarben fest im eigenen CSS; `/mode.js` rechnet sie beim Laden um, statt jede Seite doppelt zu pflegen: Indigo, Violett, Magenta, Cyan und Blau werden Grau gleicher Helligkeit, Bernstein und Gelb bleiben, Rot und Grün bleiben gedämpft, heller Schein um Schrift entfällt, heller Schein um Flächen wird schwach. Das gilt für CSS, style-Attribute und SVG-Farben im Markup. Farben, die ein Skript zur Laufzeit setzt (Teamfarben, Spielsteine, Canvas), bleiben. Neue Seiten müssen dafür nichts tun; wo die Umrechnung nicht reicht, kommt eine eigene Regel unter `html.fx-design` dazu (Beispiel: Block Drop).
 
 ## Colors
 
