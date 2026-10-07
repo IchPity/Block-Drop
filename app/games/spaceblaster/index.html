@@ -29,7 +29,7 @@
 
 <main class="mg">
   <section class="mg-cab" aria-label="Space Blaster">
-    <div class="mg-bar"><div class="mg-meter"><span>Punkte</span><b id="mScore">0</b></div><div class="mg-meter plain"><span>Welle</span><b id="mWave">1</b></div><div class="mg-meter plain"><span>Leben</span><b id="mLives">3</b></div><div class="mg-meter"><span>Bestwert</span><b id="mBest">–</b></div></div>
+    <div class="mg-bar"><div class="mg-meter"><span>Punkte</span><b id="mScore">0</b></div><div class="mg-meter plain"><span>Zeit</span><b id="mTime">0:00</b></div><div class="mg-meter plain"><span>Leben</span><b id="mLives">3</b></div><div class="mg-meter"><span>Bestwert</span><b id="mBest">–</b></div></div>
     <div class="mg-screen">
       <canvas id="cv" aria-label="Spielfeld"></canvas>
       <div class="mg-over" id="mgOver" hidden></div>
@@ -50,94 +50,245 @@
 <script>
 (() => {
   'use strict';
-  const W = 480, H = 560, COLS = 7, FW = 38, FH = 30, GAP = 14;
+  const W = 480, H = 560;
   const cv = document.getElementById('cv');
   const M = Mini.init({ game: 'spaceblaster', accent: '#7b4dff' });
   const ctx = M.fit(cv, W, H);
-  // Die Gegner sind Noten: je schlechter, desto mehr Punkte
-  const GRADE = [['5', 30, 'd'], ['4', 20, 'c'], ['3', 10, 'a']];
-  let x, shots, foes, drops, dir, speed, score, lives, wave, cool, hurt, alive = false, paused = false, last = 0, target = null, t = 0;
-  const held = { l: false, r: false };
-  const stars = Array.from({ length: 46 }, () => [Math.random() * W, Math.random() * H, 0.3 + Math.random() * 1.2]);
 
-  function spawn() {
-    const rows = Math.min(2 + Math.floor((wave + 1) / 2), 5), left = (W - (COLS * FW + (COLS - 1) * GAP)) / 2;
+  // Gegner-Typen: Fünfer, Vierer, Dreier
+  const ENEMIES = { '5': { hp: 3, pts: 50, sz: 24 }, '4': { hp: 2, pts: 30, sz: 20 }, '3': { hp: 1, pts: 15, sz: 16 } };
+  const BOSS = { juergen: { hp: 20, pts: 200, name: 'Jürgen' }, rausschmiss: { hp: 50, pts: 500, name: 'RAUSSCHMISS' } };
+
+  let x, shots, foes, boss, score, lives, playTime, cool, hurt, alive = false, paused = false, last = 0, target = null, t = 0, startTime = 0;
+  const held = { l: false, r: false };
+  const stars = Array.from({ length: 50 }, () => [Math.random() * W, Math.random() * H, 0.3 + Math.random() * 1.2, Math.random() * 0.5]);
+
+  function spawnWave(time) {
     foes = [];
-    for (let r = 0; r < rows; r++) for (let c = 0; c < COLS; c++) foes.push({ x: left + c * (FW + GAP), y: 56 + r * (FH + 12), g: GRADE[Math.min(2, Math.floor(r * 3 / rows))] });
-    dir = 1; speed = 26 + wave * 7; drops = []; shots = [];
+    const waves = Math.floor(time / 15); // Alle 15 Sekunden neue Welle
+    const count = 4 + waves * 2;
+    for (let i = 0; i < count; i++) {
+      const type = Math.random() < 0.3 ? '5' : Math.random() < 0.6 ? '4' : '3';
+      foes.push({
+        x: 40 + Math.random() * (W - 80),
+        y: -30 - Math.random() * 100,
+        vx: (Math.random() - 0.5) * 80,
+        vy: 60 + Math.random() * 60,
+        type,
+        hp: ENEMIES[type].hp
+      });
+    }
   }
-  function reset() { x = W / 2; score = 0; lives = 3; wave = 1; cool = 0; hurt = 0; spawn(); meters(); }
-  function meters() { M.meter('mScore', score.toLocaleString('de-AT')); M.meter('mWave', wave); M.meter('mLives', lives); }
-  function start() { reset(); alive = true; paused = false; last = performance.now(); }
-  async function over() {
+
+  function spawnBoss(name) {
+    const cfg = BOSS[name];
+    boss = { x: W / 2, y: 60, vx: 0, vy: 0, name, hp: cfg.hp, maxHp: cfg.hp, type: name, size: name === 'juergen' ? 50 : 70, bob: 0 };
+  }
+
+  function reset() { x = W / 2; score = 0; lives = 3; playTime = 0; cool = 0; hurt = 0; shots = []; foes = []; boss = null; startTime = performance.now(); spawnWave(0); }
+  function meters() {
+    M.meter('mScore', score.toLocaleString('de-AT'));
+    const m = Math.floor(playTime / 60), s = Math.floor(playTime % 60);
+    M.meter('mTime', m + ':' + (s < 10 ? '0' : '') + s);
+    M.meter('mLives', lives);
+  }
+  function start() { reset(); alive = true; paused = false; }
+
+  async function gameOver(win) {
     alive = false; M.shake(); M.flash(M.pal().d);
-    const s = score, w = wave, rec = await M.end(s, { level: w });
-    M.show({ title: rec ? 'Neuer Rekord' : 'Sitzen geblieben', text: '<b>' + s.toLocaleString('de-AT') + '</b> Punkte bis Welle <b>' + w + '</b>.', cta: 'Nochmal', onGo: start });
+    const s = score, t = Math.floor(playTime), rec = await M.end(s, { time: t });
+    const msg = win ? '<b>Du bist entkommen!</b> ' + s.toLocaleString('de-AT') + ' Punkte, ' + t + ' Sekunden.'
+              : '<b>Erwischt!</b> ' + s.toLocaleString('de-AT') + ' Punkte nach ' + t + ' Sekunden.';
+    M.show({ title: rec ? 'Neuer Rekord' : (win ? 'Flucht gelungen' : 'Game Over'), text: msg, cta: 'Nochmal', onGo: start });
   }
+
   function update(dt) {
-    const P = M.pal(), v = 330;
+    const P = M.pal(), v = 320;
+    playTime += dt;
     if (held.l || held.r) { x += (held.r ? 1 : -1) * v * dt; target = null; }
-    else if (target != null) x += Math.max(-v * 1.8 * dt, Math.min(v * 1.8 * dt, target - x));
-    x = Math.max(22, Math.min(W - 22, x));
+    else if (target != null) x += Math.max(-v * 2 * dt, Math.min(v * 2 * dt, target - x));
+    x = Math.max(24, Math.min(W - 24, x));
+
     cool -= dt; hurt -= dt;
-    if (cool <= 0) { shots.push({ x, y: H - 54 }); cool = 0.3; } // Dauerfeuer
-    shots.forEach(s => { s.y -= 520 * dt; }); shots = shots.filter(s => s.y > -10);
-    // Der Block wandert seitwärts und rückt am Rand eine Zeile nach unten
-    let edge = false; const sp = speed * (1 + (1 - foes.length / (COLS * 5)) * 0.9);
-    foes.forEach(f => { f.x += dir * sp * dt; if (f.x < 8 || f.x + FW > W - 8) edge = true; });
-    if (edge) { dir = -dir; foes.forEach(f => { f.x += dir * sp * dt * 2; f.y += 16; }); }
-    if (Math.random() < dt * (0.5 + wave * 0.18) && foes.length) { const f = foes[Math.random() * foes.length | 0]; drops.push({ x: f.x + FW / 2, y: f.y + FH }); }
-    drops.forEach(d => { d.y += (150 + wave * 12) * dt; });
-    for (const s of shots) for (const f of foes) {
-      if (!f.dead && !s.dead && s.x > f.x && s.x < f.x + FW && s.y > f.y && s.y < f.y + FH) {
-        f.dead = s.dead = true; score += f.g[1] * wave;
-        M.burst(cv, f.x + FW / 2, f.y + FH / 2, { n: 9, colors: [P[f.g[2]], P.b] });
+    if (cool <= 0) { shots.push({ x, y: H - 48, vy: -600 }); cool = 0.15; }
+    shots.forEach(s => { s.y += s.vy * dt; });
+    shots = shots.filter(s => s.y > -20);
+
+    // Gegner updaten
+    foes.forEach(f => { f.x += f.vx * dt; f.y += f.vy * dt; if (f.y > H + 50) f.dead = true; });
+
+    // Boss updaten
+    if (boss) {
+      const prog = playTime / 20; // 20 Sekunden bis Endboss
+      if (prog < 1 && boss.type === 'juergen') {
+        boss.bob = Math.sin(t * 2.5) * 15;
+        boss.vx = Math.sin(t * 0.8) * 80;
+        boss.x += boss.vx * dt;
+        boss.x = Math.max(boss.size / 2, Math.min(W - boss.size / 2, boss.x));
+      } else if (boss.type === 'rausschmiss') {
+        boss.bob = Math.sin(t * 3) * 20;
+        boss.vx = Math.sin(t * 0.5) * 120;
+        boss.x += boss.vx * dt;
+        boss.x = Math.max(boss.size / 2, Math.min(W - boss.size / 2, boss.x));
       }
     }
-    shots = shots.filter(s => !s.dead); foes = foes.filter(f => !f.dead);
-    drops = drops.filter(d => {
-      if (d.y > H) return false;
-      if (hurt <= 0 && Math.abs(d.x - x) < 18 && d.y > H - 52 && d.y < H - 22) { lives--; hurt = 1.2; M.shake(); M.flash(P.d); meters(); return false; }
+
+    // Schüsse vs Gegner
+    for (const s of shots) {
+      for (const f of foes) {
+        const dx = s.x - (f.x + 12), dy = s.y - (f.y + 12);
+        if (dx * dx + dy * dy < (ENEMIES[f.type].sz / 2 + 3) ** 2) {
+          f.hp--;
+          if (f.hp <= 0) {
+            f.dead = true;
+            score += ENEMIES[f.type].pts * (1 + Math.floor(playTime / 10));
+            M.burst(cv, f.x + 12, f.y + 12, { n: 8, colors: [P.a, P.b] });
+          }
+          s.dead = true;
+        }
+      }
+      if (boss && !s.dead) {
+        const dx = s.x - boss.x, dy = s.y - (boss.y + boss.bob);
+        if (dx * dx + dy * dy < (boss.size / 2 + 2) ** 2) {
+          boss.hp--;
+          score += 20;
+          if (boss.hp <= 0) {
+            M.burst(cv, boss.x, boss.y + boss.bob, { n: 30, colors: [P.a, P.b, P.c] });
+            if (boss.type === 'juergen') {
+              spawnBoss('rausschmiss');
+            } else {
+              gameOver(true);
+            }
+          }
+          s.dead = true;
+        }
+      }
+    }
+    shots = shots.filter(s => !s.dead);
+    foes = foes.filter(f => !f.dead);
+
+    // Spawn Jürgen nach 10 Sekunden
+    if (!boss && playTime > 10) spawnBoss('juergen');
+
+    // Spawn Rausschmiss nach 20 Sekunden
+    if (boss && boss.type === 'juergen' && playTime > 20) {
+      boss = null;
+      spawnBoss('rausschmiss');
+    }
+
+    // Neue Wellen spawnen
+    if (Math.random() < dt * 0.6 && !boss) spawnWave(playTime);
+
+    // Treffer registrieren
+    foes = foes.filter(f => {
+      if (hurt > 0) return true;
+      const dx = f.x - x, dy = f.y - (H - 48);
+      if (dx * dx + dy * dy < 500) {
+        lives--; hurt = 1;
+        M.shake(); M.flash(P.d);
+        meters();
+        if (lives <= 0) gameOver(false);
+      }
       return true;
     });
+
+    // Time's up (1200 Sekunden = 20 min)
+    if (playTime > 1200 && !boss) {
+      gameOver(true);
+    }
+
     meters();
-    if (lives <= 0 || foes.some(f => f.y + FH > H - 60)) return over();
-    if (!foes.length) { wave++; score += 100 * (wave - 1); M.flash(P.b); spawn(); meters(); }
   }
+
   function draw() {
     const P = M.pal(); t += 0.016;
     ctx.fillStyle = P.bg; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = P.dim; stars.forEach(s => { s[1] = (s[1] + s[2] * 0.4) % H; ctx.globalAlpha = 0.15 + s[2] * 0.25; ctx.fillRect(s[0], s[1], s[2], s[2]); }); ctx.globalAlpha = 1;
-    ctx.font = "700 17px 'Kanit', sans-serif"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    foes.forEach(f => {
-      const col = P[f.g[2]], bob = Math.sin(t * 3 + f.x * 0.05) * 2;
-      ctx.save(); ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = P.glow ? 10 : 0; ctx.beginPath(); ctx.roundRect(f.x, f.y + bob, FW, FH, 6); ctx.fill(); ctx.restore();
-      ctx.fillStyle = P.bg; ctx.fillText(f.g[0], f.x + FW / 2, f.y + bob + FH / 2 + 1);
+
+    // Sterne: World scrollt nach unten (fliegen nach oben)
+    ctx.fillStyle = P.dim;
+    stars.forEach(s => {
+      s[1] = (s[1] + s[3] * 30 * 0.016) % H;
+      ctx.globalAlpha = 0.2 + s[2] * 0.3;
+      ctx.fillRect(s[0], s[1], s[2], s[2]);
     });
-    ctx.fillStyle = P.b; shots.forEach(s => ctx.fillRect(s.x - 2, s.y - 8, 4, 12));
-    ctx.fillStyle = P.d; drops.forEach(d => { ctx.beginPath(); ctx.arc(d.x, d.y, 4, 0, 7); ctx.fill(); });
-    if (hurt <= 0 || Math.floor(hurt * 10) % 2) { // Schiff blinkt nach einem Treffer
-      ctx.save(); ctx.fillStyle = P.text; ctx.shadowColor = P.a; ctx.shadowBlur = P.glow ? 16 : 0;
-      ctx.beginPath(); ctx.moveTo(x, H - 54); ctx.lineTo(x + 18, H - 24); ctx.lineTo(x + 6, H - 30); ctx.lineTo(x - 6, H - 30); ctx.lineTo(x - 18, H - 24); ctx.closePath(); ctx.fill(); ctx.restore();
+    ctx.globalAlpha = 1;
+
+    // Gegner: Fünfer, Vierer, Dreier
+    ctx.font = "700 16px 'Kanit', sans-serif"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    foes.forEach(f => {
+      const cfg = ENEMIES[f.type];
+      const bob = Math.sin(t * 2 + f.x * 0.05) * 1.5;
+      ctx.save();
+      ctx.fillStyle = f.type === '5' ? P.d : f.type === '4' ? P.c : P.a;
+      ctx.shadowColor = ctx.fillStyle;
+      ctx.shadowBlur = P.glow ? 12 : 0;
+      ctx.beginPath(); ctx.arc(f.x + 12, f.y + 12 + bob, cfg.sz / 2, 0, 7); ctx.fill();
+      ctx.fillStyle = P.bg;
+      ctx.fillText(f.type, f.x + 12, f.y + 12 + bob + 1);
+      ctx.restore();
+    });
+
+    // Boss
+    if (boss) {
+      ctx.save();
+      const sz = boss.size;
+      ctx.fillStyle = boss.type === 'juergen' ? '#ffa500' : '#ff0000';
+      ctx.shadowColor = ctx.fillStyle;
+      ctx.shadowBlur = P.glow ? 20 : 0;
+      ctx.beginPath(); ctx.arc(boss.x, boss.y + boss.bob, sz / 2, 0, 7); ctx.fill();
+      ctx.fillStyle = '#000';
+      ctx.font = "700 12px 'Kanit', sans-serif";
+      ctx.fillText(boss.name, boss.x, boss.y + boss.bob - 5);
+      // HP Bar
+      const barW = sz + 8, barH = 6;
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(boss.x - barW / 2, boss.y + boss.bob + sz / 2 + 8, barW, barH);
+      ctx.fillStyle = boss.type === 'juergen' ? '#ffff00' : '#ff3d3d';
+      ctx.fillRect(boss.x - barW / 2, boss.y + boss.bob + sz / 2 + 8, barW * (boss.hp / boss.maxHp), barH);
+      ctx.restore();
     }
-    if (paused) { ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0, 0, W, H); ctx.fillStyle = P.text; ctx.font = "600 22px 'Barlow', sans-serif"; ctx.fillText('Pause', W / 2, H / 2); }
+
+    // Schüsse
+    ctx.fillStyle = P.b;
+    shots.forEach(s => { ctx.fillRect(s.x - 1.5, s.y - 6, 3, 10); });
+
+    // Schiff
+    if (hurt <= 0 || Math.floor(hurt * 15) % 2) {
+      ctx.save(); ctx.fillStyle = P.text; ctx.shadowColor = P.a; ctx.shadowBlur = P.glow ? 16 : 0;
+      ctx.beginPath(); ctx.moveTo(x, H - 48); ctx.lineTo(x + 20, H - 20); ctx.lineTo(x + 8, H - 28); ctx.lineTo(x - 8, H - 28); ctx.lineTo(x - 20, H - 20); ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+
+    if (paused) { ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0, 0, W, H); ctx.fillStyle = P.text; ctx.font = "600 22px 'Barlow', sans-serif"; ctx.textAlign = 'center'; ctx.fillText('Pause', W / 2, H / 2); }
   }
-  function frame(now) { const dt = Math.min(0.033, (now - last) / 1000); last = now; if (alive && !paused) update(dt); draw(); requestAnimationFrame(frame); }
+
+  function frame(now) {
+    const dt = Math.min(0.033, (now - (last || now)) / 1000);
+    last = now;
+    if (alive && !paused) update(dt);
+    draw();
+    requestAnimationFrame(frame);
+  }
 
   const key = (e, on) => {
     if (e.target.closest('input, textarea') || (window.FX && FX.cinemaOpen && FX.cinemaOpen())) return;
     const k = e.key.toLowerCase();
     if (k === 'arrowleft' || k === 'a') { held.l = on; if (alive) e.preventDefault(); }
     else if (k === 'arrowright' || k === 'd') { held.r = on; if (alive) e.preventDefault(); }
-    else if (on && (k === 'p' || k === 'escape') && alive) { paused = !paused; last = performance.now(); }
+    else if (on && (k === 'p' || k === 'escape') && alive) { paused = !paused; }
   };
-  addEventListener('keydown', e => key(e, true)); addEventListener('keyup', e => key(e, false));
+  addEventListener('keydown', e => key(e, true));
+  addEventListener('keyup', e => key(e, false));
   const aim = e => { const r = cv.getBoundingClientRect(); target = (e.clientX - r.left) / r.width * W; };
-  cv.addEventListener('pointermove', aim); cv.addEventListener('pointerdown', aim);
+  cv.addEventListener('pointermove', aim);
+  cv.addEventListener('pointerdown', aim);
   document.addEventListener('visibilitychange', () => { if (document.hidden && alive) paused = true; });
 
   reset();
-  M.show({ title: 'Space Blaster', text: 'Schieß die schlechten Noten ab, bevor sie im Zeugnis landen. <b>Fünfer</b> bringen am meisten. Drei Leben, das Schiff feuert von selbst.', onGo: start });
+  M.show({
+    title: 'Space Blaster',
+    text: 'Flieh von der Schule! Schieß die <b>Fünfer</b> ab (rot), dann die Vierer und Dreier. Nach 10 Sekunden kommt <b>Jürgen</b>. Nach 20 Sekunden der <b>Rausschmiss</b> als Endboss. Überstehe 20 Minuten!',
+    onGo: () => { start(); last = performance.now(); }
+  });
   requestAnimationFrame(frame);
 })();
 </script>
