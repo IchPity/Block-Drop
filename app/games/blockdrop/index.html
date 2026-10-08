@@ -140,9 +140,10 @@
     }
     #mode-badge.classic  { background: rgba(233,69,96,0.15); color: #ff9aaa; }
     #mode-badge.standard { background: rgba(56,189,248,0.12); color: #38bdf8; }
+    #mode-badge.vs       { background: rgba(46,230,255,0.12); color: #2ee6ff; }
 
     /* ── Controls ───────────────────────────────────────── */
-    #controls-hint { font-size: 12px; color: #aaa0cc; line-height: 2.1; }
+    #controls-hint, #vs-hint { font-size: 12px; color: #aaa0cc; line-height: 2.1; }
 
     /* ── High Scores ────────────────────────────────────── */
     #hs-mode-label { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: #aaa0cc; margin-bottom: 10px; }
@@ -417,7 +418,7 @@
     .btn:hover { background: linear-gradient(180deg, #ff4a7c, #e32458 55%, #a80f3b); }
     @keyframes startLamp { 50% { filter: brightness(1.22); } }
     #level-bar { background: linear-gradient(90deg, var(--neon-pink), var(--marquee)); box-shadow: 0 0 10px var(--marquee); }
-    #controls-hint { font-family: var(--font-data); color: var(--chalk-dim); white-space: nowrap; }
+    #controls-hint, #vs-hint { font-family: var(--font-data); color: var(--chalk-dim); white-space: nowrap; }
     @media (min-width: 761px) { #left-panel { width: 178px; } }
     .highscore-list { font-family: var(--font-data); color: var(--chalk-dim); }
     .highscore-list span { color: #ffc23a; font-weight: 400; }
@@ -478,6 +479,46 @@
     .custom-foot .btn { padding: 9px 0; font-size: 16px; animation: none; }
     #custom-panel :focus-visible, .btn-alt:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 2px; }
 
+    /* ── Moduswahl: Standard | VS, darunter die Auswahl zur gewählten Spielart ── */
+    #mode-menu { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+    #mode-menu p { line-height: 1.5; }
+    #overlay :focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 2px; }
+    @media (hover: none) and (pointer: coarse) { #mode-menu [data-foe="friend"] { display: none; } } /* zu zweit braucht eine Tastatur */
+
+    /* ── Duell (VS): zweites Feld rechts neben der eigenen Vorschau ── */
+    #vs-area, #vs-panel { display: none; }
+    body.vs #vs-area { display: block; position: relative; }
+    body.vs #hs-box { display: none; }
+    body.vs-duo #vs-panel { display: flex; flex-direction: column; gap: 8px; width: 178px; }
+    #vs-screen {
+      position: relative; border-radius: 14px;
+      box-shadow: 0 0 0 2px #05030c, 0 0 0 4px rgba(46,230,255,0.75), 0 0 0 5px rgba(255,255,255,0.25), 0 24px 70px rgba(46,230,255,0.3), 0 40px 90px rgba(8,4,26,0.9);
+    }
+    #vs-board { display: block; width: 300px; height: 600px; border-radius: inherit; }
+    #vs-next { display: block; width: 100px; height: 260px; }
+    #vs-hold { display: block; width: 100px; height: 80px; }
+    #vs-head {
+      position: absolute; left: 0; right: 0; bottom: 100%; padding: 0 4px 12px;
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-family: var(--font-cab); font-style: italic; font-weight: 800; font-size: 14px;
+      text-transform: uppercase; letter-spacing: 0.1em; color: var(--chalk-dim); white-space: nowrap;
+    }
+    #vs-head b { font-family: var(--font-data); font-style: normal; font-weight: 400; color: #fff; }
+    /* schmale Fenster: beide Felder samt Seitenleisten verkleinern, statt rechts abzuschneiden */
+    @media (min-width: 761px) and (max-width: 1010px) { body.vs #wrapper { zoom: 0.75; } }
+    @media (min-width: 761px) and (max-width: 1200px) { body.vs-duo #wrapper { zoom: 0.8; } }
+    @media (min-width: 761px) and (max-width: 970px)  { body.vs-duo #wrapper { zoom: 0.63; } }
+    /* Handy: das eigene Feld rückt nach links, der Gegner steht klein daneben */
+    @media (max-width: 760px) {
+      body.vs #wrapper { align-items: flex-start; }
+      body.vs #game-area { max-width: min(100vw - 116px, 288px); }
+      body.vs #vs-area { position: absolute; top: 0; right: 0; width: 84px; }
+      #vs-board { width: 84px; height: 168px; }
+      #vs-screen { border-radius: 8px; box-shadow: 0 0 0 1px #05030c, 0 0 0 2px rgba(46,230,255,0.75); }
+      #vs-head { position: static; flex-direction: column; gap: 2px; padding: 0 0 8px; font-size: 12px; letter-spacing: 0.04em; white-space: normal; }
+      body.vs-duo #vs-panel { display: none; }
+    }
+
     /* ── Cinema (html.fx-design): das Feld ohne Röhre, Schein und Lampe ── */
     html.fx-design .panel-box { background: var(--board-raised); box-shadow: none; }
     html.fx-design #score-display { color: var(--brass); text-shadow: none; }
@@ -499,6 +540,7 @@
     html.fx-design .chip:hover { border-color: var(--chalk-dim); }
     html.fx-design .chip.selected { color: var(--ink); background: var(--chalk); border-color: var(--chalk); box-shadow: none; }
     html.fx-design #level-bar { background: var(--brass); box-shadow: none; }
+    html.fx-design #vs-screen { border-radius: 6px; box-shadow: 0 0 0 1px var(--board-line), 0 40px 90px rgba(0,0,0,0.6); }
     html.fx-design .tetris-banner, html.fx-design .level-banner { font-weight: 700; letter-spacing: -0.03em; text-shadow: 0 6px 30px rgba(0,0,0,0.8); }
   </style>
 </head>
@@ -574,10 +616,7 @@
     <div id="overlay">
       <h1>BLOCK DROP</h1>
       <div class="overlay-sub">Wähl deinen Modus</div>
-      <div class="mode-btns">
-        <button class="mode-btn" id="mode-classic">Classic<small>Wird schneller</small></button>
-        <button class="mode-btn selected" id="mode-standard">Standard<small>Festes Tempo</small></button>
-      </div>
+      <div id="mode-menu"></div>
       <button class="btn" id="start-btn">Spielen &nbsp;→</button>
       <button class="btn-alt" type="button" data-custom>🎨 Anpassen</button>
       <p id="overlay-info" style="display:none"></p>
@@ -613,10 +652,36 @@
       <h2>Nächste</h2>
       <canvas id="next-canvas" width="100" height="260"></canvas>
     </div>
-    <div class="panel-box">
+    <div class="panel-box" id="hs-box">
       <h2>Bestenliste</h2>
       <div id="hs-mode-label">Standard</div>
       <div class="highscore-list" id="hs-list"></div>
+    </div>
+  </div>
+
+  <!-- Duell (VS): das Feld des Gegners, zu zweit dazu seine Vorschau und Tasten -->
+  <div id="vs-area">
+    <div id="vs-head"><span id="vs-name">Computer</span><span>Reihen <b id="vs-lines">0</b></span></div>
+    <div id="vs-screen"><canvas id="vs-board" width="300" height="600"></canvas></div>
+  </div>
+  <div id="vs-panel">
+    <div class="panel-box">
+      <h2>Nächste</h2>
+      <canvas id="vs-next" width="100" height="260"></canvas>
+    </div>
+    <div class="panel-box">
+      <h2>Halten</h2>
+      <canvas id="vs-hold" width="100" height="80"></canvas>
+    </div>
+    <div class="panel-box controls-hint-box">
+      <h2>Spieler 2</h2>
+      <div id="vs-hint">
+        ← → &nbsp;&nbsp;Bewegen<br>
+        ↑ &nbsp;&nbsp;&nbsp;&nbsp;Drehen<br>
+        ↓ &nbsp;&nbsp;&nbsp;&nbsp;Schneller<br>
+        Enter Fallen lassen<br>
+        Shift Halten (rechts)
+      </div>
     </div>
   </div>
 </div>

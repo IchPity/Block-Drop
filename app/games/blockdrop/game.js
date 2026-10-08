@@ -169,6 +169,8 @@ function saveLook() {
 }
 
 const HELD_USED = '#6a6190'; // gehaltener Stein, der in dieser Runde schon getauscht wurde
+const GARBAGE = '#8a84a6';   // Müllreihen im Duell: gehören zu keinem Steintyp und färben sich nicht mit um
+const tint = type => COLORS[type] || GARBAGE;
 
 const PIECES = {
   I: { shape: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]] },
@@ -204,6 +206,7 @@ const KICKS_I = {
 
 const LINE_SCORES   = [0, 100, 300, 500, 800];
 const STANDARD_SPEED = 800;
+const MODE_NAMES = { standard: 'Standard', classic: 'Classic', vs: 'VS' };
 const SCROLL_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' ']);
 
 // Animation timing (ms)
@@ -386,10 +389,11 @@ function dbLoadScores(mode) {
 
 // ── Game ───────────────────────────────────────────────────────────────────
 class BlockDrop {
-  constructor() {
-    this.boardCanvas = document.getElementById('board');
-    this.nextCanvas  = document.getElementById('next-canvas');
-    this.holdCanvas  = document.getElementById('hold-canvas');
+  constructor(o = {}) {
+    this.isRival = !!o.rival; // das zweite Feld im Duell: gleiche Regeln, aber ohne Menü, Geld und Erfolge
+    this.boardCanvas = document.getElementById(o.board || 'board');
+    this.nextCanvas  = document.getElementById(o.next  || 'next-canvas');
+    this.holdCanvas  = document.getElementById(o.hold  || 'hold-canvas');
     const b = hidpi(this.boardCanvas), n = hidpi(this.nextCanvas), h = hidpi(this.holdCanvas);
     this.ctx = b.ctx; this.W = b.w; this.H = b.h;
     this.nctx = n.ctx; this.nW = n.w; this.nH = n.h;
@@ -398,6 +402,16 @@ class BlockDrop {
     this.boardVer = 0; this.drawnKey = ''; this.nextKey = null; this.holdDrawn = null;
     this.boardCanvas.style.background = BACKDROPS[look.bg].css;
     this.grid = this.makeGrid();
+    this.clearAnim = null;
+    this.shake     = null;
+    this.pending   = 0; // Müllreihen, die der Gegner schon geschickt hat (nur im Duell)
+    this.state     = 'idle';
+    this.idleCells = [];
+    if (this.isRival) {
+      this.scoreEl = document.createElement('i'); // der Gegner zeigt nur seine Reihen
+      this.linesEl = document.getElementById('vs-lines');
+      return;
+    }
 
     this.scoreEl   = document.getElementById('score-display');
     this.levelEl   = document.getElementById('level-display');
@@ -408,49 +422,88 @@ class BlockDrop {
     this.overlay   = document.getElementById('overlay');
     this.startBtn  = document.getElementById('start-btn');
 
-    this.selectedMode = 'standard';
-    this.clearAnim    = null;
-    this.shake        = null;
+    this.play         = 'solo';     // links „Standard" (allein), rechts „VS" (Duell)
+    this.selectedMode = 'standard'; // Tempo beim Spiel allein: standard oder classic
 
-    this._bindModeButtons();
-    this.startBtn.addEventListener('click', () => this.startGame(this.selectedMode));
-    // „Anpassen" steht auf Start-, Pause- und Game-Over-Schirm; die werden neu gebaut, darum hier am Rahmen
-    this.overlay.addEventListener('click', e => { if (e.target.closest('[data-custom]')) Custom.open(); });
+    this.startBtn.addEventListener('click', () => this.start());
+    // Moduswahl und „Anpassen" stehen auf Start-, Pause- und Game-Over-Schirm; die werden neu gebaut, darum hier am Rahmen
+    this.overlay.addEventListener('click', e => {
+      if (e.target.closest('[data-custom]')) { Custom.open(); return; }
+      const b = e.target.closest('#mode-menu button');
+      if (b) this.pick(b);
+    });
     document.addEventListener('keydown', e => this.onKey(e));
 
-    this.state = 'idle';
-    this.renderHighScores('standard');
+    this.renderMenu();
     // Deko-Steine des Startschirms: einmal würfeln, damit sie beim Umfärben liegen bleiben
     const types = Object.keys(PIECES);
-    this.idleCells = [];
     for (let r = 14; r < ROWS; r++)
       for (let c = 0; c < COLS; c++)
         if (Math.random() > 0.4) this.idleCells.push([c, r, types[Math.floor(Math.random() * types.length)]]);
     this.drawIdleBoard();
   }
 
-  _bindModeButtons() {
-    const btnClassic  = document.getElementById('mode-classic');
-    const btnStandard = document.getElementById('mode-standard');
-    if (!btnClassic) return;
-    btnClassic.addEventListener('click', () => {
-      this.selectedMode = 'classic';
-      btnClassic.classList.add('selected');
-      btnStandard.classList.remove('selected');
-      this.renderHighScores('classic');
-    });
-    btnStandard.addEventListener('click', () => {
-      this.selectedMode = 'standard';
-      btnStandard.classList.add('selected');
-      btnClassic.classList.remove('selected');
-      this.renderHighScores('standard');
-    });
+  // ── Moduswahl ─────────────────────────────────────────────────────────────
+  // Oben die beiden Spielarten, darunter das, was zur gewählten gehört:
+  // allein das Tempo, im Duell der Gegner und beim Computer seine Stärke.
+  renderMenu() {
+    const box = document.getElementById('mode-menu');
+    if (!box) return;
+    const vs = this.play === 'vs', cpu = Vs.foe === 'cpu';
+    const big = (id, on, label, sub) =>
+      `<button class="mode-btn${on ? ' selected' : ''}" type="button" data-play="${id}" aria-pressed="${on}">${label}<small>${sub}</small></button>`;
+    const chip = (attr, id, on, label) =>
+      `<button class="chip${on ? ' selected' : ''}" type="button" data-${attr}="${id}" aria-pressed="${on}">${label}</button>`;
+    let sub;
+    if (!vs) {
+      sub = '<div class="chips">' +
+        chip('tempo', 'standard', this.selectedMode === 'standard', 'Festes Tempo') +
+        chip('tempo', 'classic', this.selectedMode === 'classic', 'Classic · schneller') + '</div>';
+    } else {
+      sub = '<div class="chips">' +
+        chip('foe', 'cpu', cpu, '🤖 Computer') + chip('foe', 'friend', !cpu, '👥 Freund') + '</div>' +
+        (cpu
+          ? '<div class="chips">' + Object.keys(CPU).map(id => chip('cpu', id, Vs.cpu === id, CPU[id].name)).join('') + '</div>'
+          : '<p>Zu zweit an einer Tastatur:<br><strong>WASD</strong> links, <strong>Pfeiltasten</strong> rechts</p>');
+    }
+    box.innerHTML = '<div class="mode-btns">' +
+      big('solo', !vs, 'Standard', 'Allein auf Punkte') + big('vs', vs, 'VS', 'Duell, 1 gegen 1') + '</div>' + sub;
+    if (!vs) this.renderHighScores(this.selectedMode);
+  }
+
+  pick(b) {
+    const d = b.dataset, key = ['play', 'tempo', 'foe', 'cpu'].find(k => d[k]);
+    if (!key) return;
+    if (key === 'play') this.play = d.play;
+    else if (key === 'tempo') this.selectedMode = d.tempo;
+    else if (key === 'foe') Vs.foe = d.foe;
+    else Vs.cpu = d.cpu;
+    this.renderMenu();
+    // das Menü ist neu gebaut: der Fokus soll auf dem gewählten Knopf bleiben
+    const again = document.querySelector(`#mode-menu [data-${key}="${d[key]}"]`);
+    if (again) again.focus();
+  }
+
+  start() {
+    if (this.play === 'vs') Vs.start();
+    else this.startGame(this.selectedMode);
   }
 
   startGame(mode) {
     if (mode === undefined) mode = this.selectedMode || 'classic';
+    if (mode !== 'vs') { this.selectedMode = mode; Vs.leave(); }
+    this.reset(mode);
+    Custom.close();
+    this.overlay.style.display = 'none';
+    this.updateUI();
+    tryUnlock('bd_first');
+    this.loop();
+  }
+
+  // Leeres Feld, neue Steine, erster Stein im Spiel
+  reset(mode) {
     this.mode = mode;
-    this.selectedMode = mode;
+    this.pending   = 0;
     this.board     = Array.from({length: ROWS}, () => Array(COLS).fill(null));
     this.boardVer++;
     this.score     = 0;
@@ -470,16 +523,11 @@ class BlockDrop {
     this.clearAnim = null;
     this.shake     = null;
     this.state     = 'playing';
-    Custom.close();
 
     this.queue = [];
     for (let i = 0; i < PREVIEW_COUNT; i++) this.queue.push(this.bag.next());
 
     this.spawnPiece();
-    this.overlay.style.display = 'none';
-    this.updateUI();
-    tryUnlock('bd_first');
-    this.loop();
   }
 
   spawnPiece() {
@@ -500,6 +548,7 @@ class BlockDrop {
   }
 
   currentDropInterval() {
+    if (this.mode === 'vs') return Vs.speed();
     return this.mode === 'standard' ? STANDARD_SPEED : dropInterval(this.level);
   }
 
@@ -527,6 +576,17 @@ class BlockDrop {
   get live() { return this.state === 'playing'; }
   moveLeft()  { if (this.live) this.tryMove(-1, 0); }
   moveRight() { if (this.live) this.tryMove(1, 0); }
+
+  // Ein Zug beim Namen: so teilen sich Tastatur, DAS und beide Spieler im Duell dieselbe Belegung
+  act(a) {
+    if (a === 'left') this.moveLeft();
+    else if (a === 'right') this.moveRight();
+    else if (a === 'down') this.softDrop();
+    else if (a === 'cw') this.rotate(1);
+    else if (a === 'ccw') this.rotate(-1);
+    else if (a === 'drop') this.hardDrop();
+    else if (a === 'hold') this.holdPiece();
+  }
 
   tryMove(dx, dy) {
     const nx = this.current.x + dx;
@@ -556,14 +616,14 @@ class BlockDrop {
     while (this.tryMove(0, 1)) dropped++;
     this.score += dropped * 2;
     this.hardDropCount++;
-    if (this.hardDropCount === 25) tryUnlock('bd_harddrop');
+    if (this.hardDropCount === 25 && !this.isRival) tryUnlock('bd_harddrop');
     // Aufschlag: Staub unter dem Stein, das Spielfeld ruckt kurz
     if (window.FX && !FX.reduced && dropped > 1 && this.current) {
       const br = this.boardCanvas.getBoundingClientRect(), cell = br.width / COLS, sh = this.current.shape;
       const bottom = sh.reduce((m, row, i) => (row.some(v => v) ? i : m), 0);
       const x = br.left + (this.current.x + sh[0].length / 2) * cell, y = br.top + (this.current.y + bottom + 1) * cell;
       FX.burst(x, y, { kind: 'spark', n: 8 + Math.min(18, dropped), speed: 6 + dropped * 0.35, spread: 3.3, radius: cell * sh[0].length / 2, radiusY: 1, color: COLORS[this.current.type] });
-      if (dropped > 6) FX.shake(document.getElementById('game-area'), Math.min(7, dropped / 3), 160);
+      if (dropped > 6) FX.shake(this.boardCanvas.parentElement, Math.min(7, dropped / 3), 160);
     }
     this.lock();
   }
@@ -628,9 +688,23 @@ class BlockDrop {
       this.startLineClearAnim(clearedRows);
     } else {
       this.calcScore(0);
+      if (this.pending) this.takeGarbage();
       this.spawnPiece();
       this.lastDrop = performance.now();
     }
+  }
+
+  // Duell: die Müllreihen des Gegners schieben das Feld von unten hoch, mit einer Lücke pro Schub.
+  // Sie kommen erst, wenn ein Stein liegt, ohne eine Reihe zu räumen.
+  takeGarbage() {
+    const n = this.pending, hole = Math.floor(Math.random() * COLS);
+    this.pending = 0;
+    for (let i = 0; i < n; i++) {
+      this.board.shift();
+      this.board.push(Array.from({length: COLS}, (_, c) => (c === hole ? null : 'G')));
+    }
+    this.boardVer++;
+    if (!calmFx()) this.shake = { intensity: 3 + n, start: performance.now(), duration: 260 };
   }
 
   findClearedRows() {
@@ -657,8 +731,8 @@ class BlockDrop {
     const particles = [];
     for (const r of rows) {
       for (let c = 0; c < COLS; c++) {
-        const color = COLORS[this.board[r][c]];
-        if (!color) continue;
+        if (!this.board[r][c]) continue;
+        const color = tint(this.board[r][c]);
         const cx = (c + 0.5) * BLOCK;
         const cy = (r + 0.5) * BLOCK;
         const mult = activeUpgrades.particles ? 2 : 1;
@@ -692,9 +766,12 @@ class BlockDrop {
         FX.burst(cx, y, { kind: 'block', n: Math.round(12 * scale), speed: Math.round(13 * scale), lift: -5, radius: br.width / 2, radiusY: 2, size: 5, life: 1.4, colors: NEON });
       }, i * 45));
       const mid = br.top + (rows[0] + rows.length / 2) * cell;
-      FX.pulse(NEON[lineCount % NEON.length], 0.4 + lineCount * 0.3 * mult);
-      if (lineCount >= 2) FX.ring(cx, mid, NEON[0], { to: 380 + lineCount * 90, width: 4 + lineCount, dur: 0.6 });
-      if (lineCount >= 3) { FX.streak(mid, NEON[0]); FX.flash(NEON[0], 260 * mult); }
+      // Licht über die ganze Seite nur fürs eigene Feld: was der Gegner räumt, soll nicht blenden
+      if (!this.isRival) {
+        FX.pulse(NEON[lineCount % NEON.length], 0.4 + lineCount * 0.3 * mult);
+        if (lineCount >= 2) FX.ring(cx, mid, NEON[0], { to: 380 + lineCount * 90, width: 4 + lineCount, dur: 0.6 });
+        if (lineCount >= 3) { FX.streak(mid, NEON[0]); FX.flash(NEON[0], 260 * mult); }
+      }
     }
     const shakeIntensity = calmFx() ? 0 : [0, 0, 4, 7, 13][lineCount] || 13;
     if (shakeIntensity > 0) {
@@ -755,6 +832,7 @@ class BlockDrop {
       scoreGain *= mult;
       this.score += scoreGain;
       this.lines += lines;
+      if (this.mode === 'vs') Vs.attack(this, lines);
 
       const currencyGain = Math.floor(CURRENCY_PER_LINE * lines * mult);
       currency += currencyGain;
@@ -873,7 +951,7 @@ class BlockDrop {
   // force: Animation läuft (Räumen); sonst wird nur neu gemalt, wenn sich das Bild geändert hat
   draw(force) {
     const cur = this.current;
-    const key = cur ? cur.x + ',' + cur.y + ',' + cur.rot + cur.type + this.boardVer : 'x' + this.boardVer;
+    const key = (cur ? cur.x + ',' + cur.y + ',' + cur.rot + cur.type : 'x') + this.boardVer + '|' + this.pending;
     if (force || this.shake || key !== this.drawnKey) { this.drawnKey = key; this.drawBoard(); }
     const nk = this.queue.join('');
     if (nk !== this.nextKey) { this.nextKey = nk; this.drawNextQueue(); }
@@ -912,7 +990,13 @@ class BlockDrop {
       if (clearedSet && clearedSet.has(r)) continue;
       const row = this.board[r];
       for (let c = 0; c < COLS; c++)
-        if (row[c]) this.drawCell(ctx, c, r, COLORS[row[c]], BLOCK);
+        if (row[c]) this.drawCell(ctx, c, r, tint(row[c]), BLOCK);
+    }
+
+    // Duell: roter Balken am Rand, so hoch wie der Müll, der beim nächsten Stein kommt
+    if (this.pending) {
+      ctx.fillStyle = '#ff2e63';
+      ctx.fillRect(0, H - this.pending * BLOCK, 4, this.pending * BLOCK);
     }
 
     if (this.current && !isClearing) {
@@ -980,7 +1064,7 @@ class BlockDrop {
           ctx.globalAlpha = rowFade;
           for (let c = 0; c < COLS; c++) {
             const type = this.board[r][c];
-            if (type) this.drawCell(ctx, c, r, COLORS[type], BLOCK);
+            if (type) this.drawCell(ctx, c, r, tint(type), BLOCK);
           }
           ctx.globalAlpha = 1;
         }
@@ -1071,7 +1155,7 @@ class BlockDrop {
     const currencyEl = document.getElementById('currency-display');
     if (currencyEl) currencyEl.textContent = currency.toLocaleString();
     if (this.modeBadge) {
-      this.modeBadge.textContent = this.mode === 'standard' ? 'Standard' : 'Classic';
+      this.modeBadge.textContent = MODE_NAMES[this.mode];
       this.modeBadge.className   = this.mode;
       this.modeBadge.id = 'mode-badge';
     }
@@ -1089,38 +1173,46 @@ class BlockDrop {
       : '<em>Noch keine</em>';
   }
 
-  async gameOver() {
+  // Spiel anhalten, ohne Abspann: im Duell bleibt so auch das Feld des Siegers stehen
+  halt() {
     this.state = 'gameover';
     cancelAnimationFrame(this.animFrame);
     this.clearLockDelay();
     this.clearAnim = null;
     this.draw(true);
+  }
+
+  async gameOver() {
+    this.halt();
     // Game Over: roter Blitz, das Feld zerbröselt
     if (window.FX && !FX.reduced) {
       const br = this.boardCanvas.getBoundingClientRect();
-      FX.flash('#ff2e63', 520); FX.pulse('#ff2e63', 1.4); FX.shake(document.getElementById('wrapper'), 14, 620);
+      if (!this.isRival) { FX.flash('#ff2e63', 520); FX.pulse('#ff2e63', 1.4); FX.shake(document.getElementById('wrapper'), 14, 620); }
       FX.burst(br.left + br.width / 2, br.top + br.height * 0.3, { kind: 'block', n: 90, speed: 12, lift: -3, radius: br.width / 2, radiusY: br.height * 0.3, size: 7, life: 2.2, colors: Object.values(COLORS), bounce: true });
       FX.ring(br.left + br.width / 2, br.top + br.height / 2, '#ff2e63', { width: 9 });
     }
+    if (this.mode === 'vs') { Vs.finish(this); return; } // wer zuerst oben anstößt, verliert: keine Bestenliste
     if (!this.holdEverUsed && this.score > 0) tryUnlock('bd_no_hold');
     await dbSaveScore(this.score, this.mode, this.level, this.lines);
     await this.renderHighScores(this.mode);
-    const modeLabel = this.mode === 'standard' ? 'Standard' : 'Classic';
-    this.overlay.innerHTML = `
+    this.endScreen(`
       <h1>Game Over</h1>
-      <p>Modus: <strong>${modeLabel}</strong></p>
+      <p>Modus: <strong>${MODE_NAMES[this.mode]}</strong></p>
       <p>Score: <strong>${this.score.toLocaleString()}</strong></p>
       <p>Level: <strong>${this.level}</strong> &nbsp; Reihen: <strong>${this.lines}</strong></p>
-      <div class="mode-btns">
-        <button class="mode-btn ${this.mode === 'classic'  ? 'selected' : ''}" id="mode-classic">Classic<small>Wird schneller</small></button>
-        <button class="mode-btn ${this.mode === 'standard' ? 'selected' : ''}" id="mode-standard">Standard<small>Festes Tempo</small></button>
-      </div>
+    `);
+  }
+
+  // Schirm nach dem Spiel: oben das Ergebnis, darunter wieder die Moduswahl
+  endScreen(result) {
+    this.overlay.innerHTML = result + `
+      <div id="mode-menu"></div>
       <button class="btn" id="start-btn">Nochmal spielen</button>
       <button class="btn-alt" type="button" data-custom>🎨 Anpassen</button>
     `;
     this.overlay.style.display = 'flex';
-    this._bindModeButtons();
-    document.getElementById('start-btn').addEventListener('click', () => this.startGame(this.selectedMode));
+    this.renderMenu();
+    document.getElementById('start-btn').addEventListener('click', () => this.start());
   }
 
   togglePause() {
@@ -1129,7 +1221,8 @@ class BlockDrop {
       this.state = 'paused';
       cancelAnimationFrame(this.animFrame);
       this.clearLockDelay();
-      const modeLabel = this.mode === 'standard' ? 'Standard' : 'Classic';
+      Vs.freeze();
+      const modeLabel = MODE_NAMES[this.mode];
       this.overlay.innerHTML = `
         <h1>Pause</h1>
         <p>Modus: ${modeLabel}</p>
@@ -1148,6 +1241,7 @@ class BlockDrop {
     this.overlay.style.display = 'none';
     this.lastDrop = performance.now();
     this.loop(performance.now());
+    Vs.thaw();
   }
 
   // ── Input ─────────────────────────────────────────────────────────────────
@@ -1169,7 +1263,11 @@ class BlockDrop {
         return;
       }
       if (this.state === 'paused') { this.resume(); return; }
-      if (this.state === 'playing') { Upgrades.open(); return; }
+      if (this.state === 'playing') {
+        if (this.mode === 'vs') this.togglePause(); // im Duell kein Laden nebenher: Esc hält beide Felder an
+        else Upgrades.open();
+        return;
+      }
     }
 
     if (SCROLL_KEYS.has(e.key) && this.state !== 'idle' && this.state !== 'gameover') {
@@ -1180,21 +1278,152 @@ class BlockDrop {
       if (e.key === 'p' || e.key === 'P') this.resume();
       return;
     }
-    if (this.state === 'clearing') return;
-    if (this.state !== 'playing') return;
+    if (this.state !== 'playing' && this.state !== 'clearing') return;
 
-    switch (e.key) {
-      case 'ArrowLeft':  e.preventDefault(); if (!e.repeat) this.moveLeft();  break;
-      case 'ArrowRight': e.preventDefault(); if (!e.repeat) this.moveRight(); break;
-      case 'ArrowDown':  e.preventDefault(); if (!e.repeat) this.softDrop(); break;
-      case 'ArrowUp':
-      case 'z': case 'Z': e.preventDefault(); if (!e.repeat) this.rotate(1);  break;
-      case 'x': case 'X': e.preventDefault(); if (!e.repeat) this.rotate(-1); break;
-      case ' ':           e.preventDefault(); if (!e.repeat) this.hardDrop(); break;
-      case 'Shift':       e.preventDefault(); if (!e.repeat) this.holdPiece(); break;
-      case 'p': case 'P': if (!e.repeat) this.togglePause();   break;
+    // Die Züge prüfen selbst, ob ihr Feld gerade spielt: im Duell räumt oft nur eines von beiden
+    const hit = keyAction(e);
+    if (hit) { e.preventDefault(); if (!e.repeat) hit[0].act(hit[1]); return; }
+    if ((e.key === 'p' || e.key === 'P') && !e.repeat) this.togglePause();
+  }
+}
+
+// ── Tastenbelegung ─────────────────────────────────────────────────────────
+// Allein und gegen den Computer die gewohnten Tasten. Zu zweit teilt man sich die Tastatur:
+// dort zählt die Lage der Taste (e.code), damit WASD auf jeder Belegung an derselben Stelle liegt.
+const KEYS_SOLO = {
+  ArrowLeft: 'left', ArrowRight: 'right', ArrowDown: 'down', ArrowUp: 'cw',
+  z: 'cw', Z: 'cw', x: 'ccw', X: 'ccw', ' ': 'drop', Shift: 'hold',
+};
+const KEYS_P1 = { KeyA: 'left', KeyD: 'right', KeyS: 'down', KeyW: 'cw', KeyE: 'ccw', Space: 'drop', KeyQ: 'hold' };
+const KEYS_P2 = {
+  ArrowLeft: 'left', ArrowRight: 'right', ArrowDown: 'down', ArrowUp: 'cw',
+  Enter: 'drop', NumpadEnter: 'drop', ShiftRight: 'hold',
+};
+
+// Welches Feld meint diese Taste, und welchen Zug? → [Spiel, Zug] oder null
+function keyAction(e) {
+  if (Vs.duo) {
+    if (own(KEYS_P1, e.code)) return [window._game, KEYS_P1[e.code]];
+    if (own(KEYS_P2, e.code)) return [Vs.rival, KEYS_P2[e.code]];
+    return null;
+  }
+  return own(KEYS_SOLO, e.key) ? [window._game, KEYS_SOLO[e.key]] : null;
+}
+
+// ── Duell: das Feld des Gegners ────────────────────────────────────────────
+// Ein zweites, vollwertiges Spielfeld. Es gehört im Duell entweder dem zweiten
+// Menschen an der Tastatur oder dem Computer (cpu gesetzt).
+class Rival extends BlockDrop {
+  constructor() {
+    super({ rival: true, board: 'vs-board', next: 'vs-next', hold: 'vs-hold' });
+    this.cpu = null;
+  }
+
+  startGame() {
+    this.aim = null;
+    this.reset('vs');
+    this.updateUI();
+    this.loop();
+  }
+
+  updateUI() { this.linesEl.textContent = this.lines; }
+
+  // Punkte wie drüben, aber ohne Geld, Erfolge und Banner
+  calcScore(lines) {
+    if (lines > 0) {
+      this.combo++;
+      this.score += LINE_SCORES[lines] * this.level + (this.combo > 0 ? 50 * this.combo * this.level : 0);
+      this.lines += lines;
+      this.level = Math.floor(this.lines / 10) + 1;
+      Vs.attack(this, lines);
+    } else {
+      this.combo = -1;
+    }
+    this.updateUI();
+  }
+
+  loop(ts = 0) {
+    if (this.cpu && this.state === 'playing') this.think();
+    super.loop(ts);
+  }
+
+  // Der Computer tippt wie ein Mensch: erst überlegen, dann Zug für Zug zum gewählten Platz
+  think() {
+    const now = performance.now(), cur = this.current;
+    if (cur !== this.aim) {
+      this.aim = cur;
+      this.plan = cpuPlan(this, this.cpu.slip);
+      this.nextAt = now + this.cpu.think;
+      return;
+    }
+    if (now < this.nextAt) return;
+    this.nextAt = now + this.cpu.step;
+    const plan = this.plan;
+    if (!plan) { this.hardDrop(); return; }
+    if (plan.turns) {
+      const dir = plan.turns === 3 ? -1 : 1, before = cur.rot;
+      this.rotate(dir);
+      plan.turns = dir < 0 ? 0 : plan.turns - 1;
+      if (cur.rot === before) this.plan = null; // kein Platz zum Drehen: fallen lassen, wo er ist
+    } else if (cur.x !== plan.x) {
+      const before = cur.x;
+      if (cur.x < plan.x) this.moveRight(); else this.moveLeft();
+      if (cur.x === before) this.plan = null;   // Weg versperrt
+    } else {
+      this.hardDrop();
     }
   }
+}
+
+// ── Computer-Gegner ────────────────────────────────────────────────────────
+// think: Bedenkzeit pro Stein, step: Zeit pro Tastendruck (beides ms),
+// slip: wie oft er statt des besten nur einen der besseren Plätze nimmt.
+const CPU = {
+  leicht: { name: 'Leicht', think: 700, step: 340, slip: 0.3 },
+  mittel: { name: 'Mittel', think: 340, step: 170, slip: 0.1 },
+  schwer: { name: 'Schwer', think: 120, step: 70,  slip: 0 },
+};
+
+// Jede Drehung an jeder Stelle fallen lassen und das Feld danach bewerten
+function cpuPlan(g, slip) {
+  const p = g.current, spots = [];
+  let shape = p.shape;
+  for (let turns = 0; turns < 4; turns++) {
+    for (let x = -2; x < COLS; x++) {
+      if (!g.isValid(shape, x, p.y)) continue;
+      let y = p.y;
+      while (g.isValid(shape, x, y + 1)) y++;
+      spots.push({ turns, x, score: cpuRate(g.board, shape, x, y) });
+    }
+    shape = rotate(shape, 1);
+  }
+  if (!spots.length) return null;
+  spots.sort((a, b) => b.score - a.score);
+  return spots[Math.random() < slip ? Math.floor(Math.random() * Math.min(6, spots.length)) : 0];
+}
+
+// Bewertung nach den üblichen vier Größen: Gesamthöhe, volle Reihen, Löcher, Unebenheit
+function cpuRate(board, shape, ox, oy) {
+  const rows = board.map(r => r.slice());
+  for (let r = 0; r < shape.length; r++)
+    for (let c = 0; c < shape[r].length; c++)
+      if (shape[r][c]) {
+        if (oy + r < 0) return -1e9; // ragt oben heraus: das wäre das Ende
+        rows[oy + r][ox + c] = 'X';
+      }
+  const left = rows.filter(r => !r.every(Boolean)), cleared = ROWS - left.length;
+  let height = 0, holes = 0, bumps = 0, prev = 0;
+  for (let c = 0; c < COLS; c++) {
+    let h = 0;
+    for (let i = 0; i < left.length; i++) {
+      if (left[i][c]) { if (!h) h = left.length - i; }
+      else if (h) holes++;
+    }
+    height += h;
+    if (c) bumps += Math.abs(h - prev);
+    prev = h;
+  }
+  return -0.51 * height + 0.76 * cleared - 0.36 * holes - 0.18 * bumps;
 }
 
 // Tippt jemand gerade in ein Eingabefeld (z. B. Login über dem laufenden Spiel)?
@@ -1207,44 +1436,43 @@ function typing(e) {
 (function addDAS() {
   const DAS_DELAY = 150, DAS_REPEAT = 50;
   const SOFT_DROP_REPEAT = 25; // Soft-Drop: instant + sehr schnelle Wiederholung
-  let dasTimer = null, dasDir = 0;
-  let downTimer = null;
+  // Je Spielfeld eigene Timer: im Duell halten zwei Leute gleichzeitig Tasten.
+  // Gemerkt wird die Taste (e.code), die die Wiederholung gestartet hat, damit ihr keyup sie sicher beendet.
+  const sides = new Map();
+  const side = g => {
+    if (!sides.has(g)) sides.set(g, { das: null, dasKey: null, down: null, downKey: null });
+    return sides.get(g);
+  };
+  const stopDas  = s => { clearTimeout(s.das); clearInterval(s.das); s.das = null; s.dasKey = null; };
+  const stopDown = s => { clearInterval(s.down); s.down = null; s.downKey = null; };
 
   // Verliert das Fenster den Fokus, kommt kein keyup mehr: Wiederholung beenden
-  const stopAll = () => {
-    clearTimeout(dasTimer); clearInterval(dasTimer); dasTimer = null; dasDir = 0;
-    clearInterval(downTimer); downTimer = null;
-  };
+  const stopAll = () => { for (const s of sides.values()) { stopDas(s); stopDown(s); } };
   window.addEventListener('blur', stopAll);
   document.addEventListener('visibilitychange', () => { if (document.hidden) stopAll(); });
 
   document.addEventListener('keydown', e => {
     if (e.repeat) return; // Native Browser-Repeat ignorieren — DAS macht das
     if (typing(e)) return;
-    if (!window._game || window._game.state !== 'playing') return;
-    if (e.key === 'ArrowLeft' && dasDir !== -1) {
-      clearTimeout(dasTimer); clearInterval(dasTimer); dasDir = -1;
-      dasTimer = setTimeout(() => {
-        dasTimer = setInterval(() => window._game.moveLeft(), DAS_REPEAT);
+    const hit = keyAction(e);
+    if (!hit || !hit[0] || hit[0].state !== 'playing') return;
+    const [g, a] = hit, s = side(g);
+    if ((a === 'left' || a === 'right') && s.dasKey !== e.code) {
+      stopDas(s); s.dasKey = e.code;
+      s.das = setTimeout(() => {
+        s.das = setInterval(() => g.act(a), DAS_REPEAT);
       }, DAS_DELAY);
-    } else if (e.key === 'ArrowRight' && dasDir !== 1) {
-      clearTimeout(dasTimer); clearInterval(dasTimer); dasDir = 1;
-      dasTimer = setTimeout(() => {
-        dasTimer = setInterval(() => window._game.moveRight(), DAS_REPEAT);
-      }, DAS_DELAY);
-    } else if (e.key === 'ArrowDown' && !downTimer) {
+    } else if (a === 'down' && !s.down) {
       // Soft Drop: ohne Initial-Delay direkt durchgängig dropen
-      downTimer = setInterval(() => {
-        if (window._game && window._game.state === 'playing') window._game.softDrop();
-      }, SOFT_DROP_REPEAT);
+      s.downKey = e.code;
+      s.down = setInterval(() => g.act('down'), SOFT_DROP_REPEAT);
     }
   });
 
   document.addEventListener('keyup', e => {
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      clearTimeout(dasTimer); clearInterval(dasTimer); dasTimer = null; dasDir = 0;
-    } else if (e.key === 'ArrowDown') {
-      clearInterval(downTimer); downTimer = null;
+    for (const s of sides.values()) {
+      if (s.dasKey === e.code) stopDas(s);
+      if (s.downKey === e.code) stopDown(s);
     }
   });
 })();
@@ -1289,6 +1517,7 @@ const Custom = (() => {
   function changed() {
     saveLook();
     window._game.refreshLook();
+    if (Vs.rival) Vs.rival.refreshLook();
     sync();
   }
 
@@ -1420,6 +1649,96 @@ const Upgrades = (() => {
   $('upgrades-done').addEventListener('click', close);
 
   return { panel, open, close, isOpen: () => !panel.hidden };
+})();
+
+// ── Duell (VS) ────────────────────────────────────────────────────────────
+// Zwei Felder nebeneinander, gegen den Computer oder zu zweit an einer Tastatur.
+// Wer mehrere Reihen auf einmal räumt, schickt dem Gegner Müllreihen;
+// wer zuerst oben anstößt, verliert.
+const Vs = (() => {
+  const $ = id => document.getElementById(id);
+  const hint = $('controls-hint'), soloHint = hint.innerHTML;
+  const DUO_HINT = 'A D &nbsp;&nbsp;Bewegen<br>W &nbsp;&nbsp;&nbsp;&nbsp;Drehen<br>E &nbsp;&nbsp;&nbsp;&nbsp;Zurückdrehen<br>' +
+    'S &nbsp;&nbsp;&nbsp;&nbsp;Schneller<br>Leer &nbsp;Fallen lassen<br>Q &nbsp;&nbsp;&nbsp;&nbsp;Halten<br>P &nbsp;&nbsp;&nbsp;&nbsp;Pause';
+  const SENT = [0, 0, 1, 2, 4]; // Müllreihen für 1 bis 4 geräumte Reihen
+  const MAX_PENDING = 12;
+  const me = () => window._game;
+
+  const v = {
+    active: false, // ein Duell läuft
+    duo: false,    // … und zwar zu zweit an der Tastatur
+    rival: null,   // das zweite Feld; entsteht beim ersten Duell
+    foe: 'cpu',    // Auswahl im Menü: cpu oder friend
+    cpu: 'mittel', // Stärke des Computers
+  };
+
+  v.start = () => {
+    v.rival = v.rival || new Rival();
+    v.active = true;
+    v.duo = v.foe === 'friend';
+    document.body.classList.add('vs');
+    document.body.classList.toggle('vs-duo', v.duo);
+    $('vs-name').textContent = v.duo ? 'Spieler 2' : 'Computer · ' + CPU[v.cpu].name;
+    hint.innerHTML = v.duo ? DUO_HINT : soloHint;
+    v.rival.cpu = v.duo ? null : CPU[v.cpu];
+    me().startGame('vs');
+    v.rival.startGame();
+  };
+
+  // Zurück zum Spiel allein: zweites Feld weg, gewohnte Tasten
+  v.leave = () => {
+    v.active = v.duo = false;
+    document.body.classList.remove('vs', 'vs-duo');
+    hint.innerHTML = soloHint;
+    if (v.rival) v.rival.halt();
+  };
+
+  // Beide fallen gleich schnell, und je mehr Reihen zusammen geräumt sind, desto schneller
+  v.speed = () => Math.max(120, STANDARD_SPEED * Math.pow(0.93, Math.floor(((me().lines + v.rival.lines) || 0) / 6)));
+
+  // Geräumte Reihen tragen erst den eigenen wartenden Müll ab, der Rest geht zum Gegner
+  v.attack = (from, lines) => {
+    if (!v.active) return;
+    let n = SENT[lines] + Math.floor(Math.max(0, from.combo) / 2);
+    const back = Math.min(n, from.pending);
+    from.pending -= back; n -= back;
+    const to = from === v.rival ? me() : v.rival;
+    to.pending = Math.min(MAX_PENDING, to.pending + n);
+  };
+
+  v.finish = loser => {
+    if (!v.active) return;
+    const g = me(), won = loser !== g, duo = v.duo;
+    v.active = v.duo = false;
+    (won ? g : v.rival).halt();
+    if (won && window.FX && !FX.reduced) {
+      FX.pulse('#ffb000', 1.2);
+      FX.rain({ kind: 'confetti', ms: 1800, per: 5, bounce: false });
+    }
+    const head = duo
+      ? `<h1>Spieler ${won ? 1 : 2}</h1><p>gewinnt das Duell</p>`
+      : `<h1>${won ? 'Sieg!' : 'Verloren'}</h1><p>Gegner: <strong>${$('vs-name').textContent}</strong></p>`;
+    g.endScreen(head + `<p>Reihen: <strong>${g.lines}</strong> : <strong>${v.rival.lines}</strong></p>`);
+  };
+
+  // Pause gilt für beide Felder
+  v.freeze = () => {
+    const r = v.rival;
+    if (!v.active || r.state === 'paused') return;
+    r.heldState = r.state;
+    r.state = 'paused';
+    cancelAnimationFrame(r.animFrame);
+    r.clearLockDelay();
+  };
+  v.thaw = () => {
+    const r = v.rival;
+    if (!v.active || r.state !== 'paused') return;
+    r.state = r.heldState;
+    r.lastDrop = performance.now();
+    r.loop(performance.now());
+  };
+
+  return v;
 })();
 
 // ── Boot ──────────────────────────────────────────────────────────────────
