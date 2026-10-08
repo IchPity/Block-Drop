@@ -56,8 +56,15 @@
   const ctx = M.fit(cv, W, H);
 
   // Gegner-Typen: Fünfer, Vierer, Dreier
-  const ENEMIES = { '5': { hp: 3, pts: 50, sz: 24 }, '4': { hp: 2, pts: 30, sz: 20 }, '3': { hp: 1, pts: 15, sz: 16 } };
-  const BOSS = { juergen: { hp: 20, pts: 200, name: 'Jürgen' }, rausschmiss: { hp: 50, pts: 500, name: 'RAUSSCHMISS' } };
+  const ENEMIES = {
+    '5': { hp: 3, pts: 50, sz: 24, color: '#ff1493', glow: '#ff69b4' },
+    '4': { hp: 2, pts: 30, sz: 20, color: '#00d4ff', glow: '#0099cc' },
+    '3': { hp: 1, pts: 15, sz: 16, color: '#ffa500', glow: '#ffb84d' }
+  };
+  const BOSS = {
+    juergen: { hp: 20, pts: 200, name: 'Jürgen', color: '#ffa500', size: 50 },
+    rausschmiss: { hp: 50, pts: 500, name: 'RAUSSCHMISS', color: '#ff0000', size: 70 }
+  };
 
   let x, shots, foes, boss, score, lives, playTime, cool, hurt, alive = false, paused = false, last = 0, target = null, t = 0, startTime = 0;
   const held = { l: false, r: false };
