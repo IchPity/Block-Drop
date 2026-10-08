@@ -482,6 +482,14 @@
     /* ── Moduswahl: Standard | VS, darunter die Auswahl zur gewählten Spielart ── */
     #mode-menu { display: flex; flex-direction: column; gap: 10px; width: 100%; }
     #mode-menu p { line-height: 1.5; }
+    /* Auswahl-Tasten im Menü: so hoch wie jede Gehäusetaste (36px, am Handy 40px), damit der Daumen sie trifft */
+    #mode-menu .chip { min-height: 36px; }
+    @media (max-width: 760px) { #mode-menu .chip { min-height: 40px; } }
+    /* Stärken des Computers: alle in einer Reihe und gleich breit, auch wenn es vier sind */
+    .chips-row { flex-wrap: nowrap; }
+    .chips-row .chip { flex: 1 1 0; min-width: 0; padding-inline: 4px; }
+    /* was die gewählte Stärke anders macht: immer Platz für zwei Zeilen, damit beim Wechseln nichts springt */
+    #mode-menu .mode-hint { min-height: 3em; margin-top: -2px; text-wrap: balance; }
     #overlay :focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 2px; }
     @media (hover: none) and (pointer: coarse) { #mode-menu [data-foe="friend"] { display: none; } } /* zu zweit braucht eine Tastatur */
 
@@ -504,6 +512,12 @@
       text-transform: uppercase; letter-spacing: 0.1em; color: var(--chalk-dim); white-space: nowrap;
     }
     #vs-head b { font-family: var(--font-data); font-style: normal; font-weight: 400; color: #fff; }
+    #vs-head { text-shadow: 0 1px 2px rgba(9,4,30,0.9), 0 0 18px rgba(9,4,30,0.9); } /* steht ohne Gehäuse über der Halle */
+    #vs-name i { font-style: inherit; }
+    /* Im Duell bleibt der eigene Rahmen Magenta: Cyan gehört dem Gegner, sonst sehen beide Felder zeitweise gleich aus */
+    body.vs #game-area::after { animation: none; }
+    /* Gegen den Computer hängt sein Halten-Fach am eigenen Feld (Vs.start setzt es um): links oben neben dem Feld, in der Spalte der Vorschau */
+    #vs-area #vs-hold-box { position: absolute; top: 0; right: calc(100% + 14px); width: 140px; }
     /* schmale Fenster: beide Felder samt Seitenleisten verkleinern, statt rechts abzuschneiden */
     @media (min-width: 761px) and (max-width: 1010px) { body.vs #wrapper { zoom: 0.75; } }
     @media (min-width: 761px) and (max-width: 1200px) { body.vs-duo #wrapper { zoom: 0.8; } }
@@ -517,6 +531,23 @@
       #vs-screen { border-radius: 8px; box-shadow: 0 0 0 1px #05030c, 0 0 0 2px rgba(46,230,255,0.75); }
       #vs-head { position: static; flex-direction: column; gap: 2px; padding: 0 0 8px; font-size: 12px; letter-spacing: 0.04em; white-space: normal; }
       body.vs-duo #vs-panel { display: none; }
+      /* Name und Stärke untereinander statt mit hängendem Punkt; das Halten-Fach des Computers steht unter seinem Feld */
+      #vs-name { display: flex; flex-direction: column; }
+      #vs-name i, #vs-hold-box h2 span { display: none; }
+      #vs-area #vs-hold-box { position: static; width: auto; margin-top: 10px; padding: 8px 8px 6px; flex: none; min-width: 0; }
+      #vs-hold { width: 60px; height: 48px; margin: 0 auto; }
+      body.vs .chips-row .chip { padding-inline: 2px; }
+    }
+    /* schmale Handys: im Duell ist das eigene Feld nur 200 bis 250px breit, der Endschirm samt Moduswahl muss trotzdem hineinpassen */
+    @media (max-width: 400px) { body.vs #overlay { gap: 10px; } }
+    @media (max-width: 350px) {
+      body.vs .mode-btn small, body.vs #mode-menu .mode-hint { display: none; }
+      body.vs .chips-row { flex-wrap: wrap; }
+      body.vs .chips-row .chip { flex-basis: 40%; }
+      /* drei Reihen Tasten im 408px hohen Feld: 36px statt 40px, und die Abstände geben die fehlenden Pixel her */
+      body.vs #mode-menu .chip { min-height: 36px; }
+      body.vs #mode-menu { gap: 8px; }
+      body.vs #overlay { gap: 9px; }
     }
 
     /* ── Cinema (html.fx-design): das Feld ohne Röhre, Schein und Lampe ── */
@@ -669,7 +700,7 @@
       <h2>Nächste</h2>
       <canvas id="vs-next" width="100" height="260"></canvas>
     </div>
-    <div class="panel-box">
+    <div class="panel-box" id="vs-hold-box">
       <h2>Halten</h2>
       <canvas id="vs-hold" width="100" height="80"></canvas>
     </div>
