@@ -302,8 +302,27 @@
       background: #2b2068; color: #b3a8de;
     }
     .dead svg { position: absolute; left: 50%; top: 118px; width: 60px; margin-left: -30px; }
-    .dead.live { display: block; text-decoration: none; color: inherit; transition: transform 0.3s var(--ease-out); }
-    .dead.live:hover, .dead.live:focus-visible { transform: translateY(-6px); }
+    .dead.live { --turn: 0deg; display: block; text-decoration: none; color: inherit; perspective: 760px; transition: translate 0.3s var(--ease-out); }
+    .dead.live:hover, .dead.live:focus-visible { translate: 0 -6px; }
+    .dead.live:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 6px; border-radius: 8px; }
+    .dead.live:nth-child(1) { --turn: 15deg; } .dead.live:nth-child(2) { --turn: 8deg; }
+    .dead.live:nth-child(4) { --turn: -8deg; } .dead.live:nth-child(5) { --turn: -15deg; }
+    /* Gehäuse als Körper: Front, zwei Flanken, der Würfelkörper steht vor der Röhre */
+    .dead-cab {
+      position: relative; margin: 0 10px; transform-style: preserve-3d;
+      transform: rotateX(var(--rx, 0deg)) rotateY(calc(var(--turn) + var(--ry, 0deg)));
+    }
+    .dead-cab .dead-name { left: 0; right: 0; }
+    .dead-cab .dead-box { margin: 0; height: 172px; }
+    .dead-cab .dead-box::before { height: 100px; }
+    .dead-side {
+      position: absolute; top: 6px; bottom: 0; width: 52px;
+      background: linear-gradient(115deg, transparent 0 40%, color-mix(in srgb, var(--accent) 80%, transparent) 40% 52%, transparent 52%), linear-gradient(180deg, #24175a, #130b36);
+      box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 60%, #32267a), inset 0 0 26px rgba(9,4,30,0.8);
+    }
+    .dead-side.l { left: 0; transform-origin: 0 50%; transform: rotateY(90deg); }
+    .dead-side.r { right: 0; transform-origin: 100% 50%; transform: rotateY(-90deg); }
+    .dead-cab .v3 { position: absolute; left: 50%; top: 24px; width: 156px; height: 126px; margin-left: -78px; transform: translateZ(36px); }
     .dead.live .dead-box { position: relative; border-color: color-mix(in srgb, var(--accent) 60%, #32267a); }
     .dead.live .dead-box::before { box-shadow: inset 0 0 0 2px #000, inset 0 0 22px color-mix(in srgb, var(--accent) 35%, transparent), 0 0 18px color-mix(in srgb, var(--accent) 30%, transparent); }
     .dead.live .dead-box svg { top: 30px; width: 84px; height: 70px; margin-left: -42px; color: var(--accent); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 70%, transparent)); }
@@ -311,6 +330,28 @@
     .dead.live .dead-state { color: var(--accent); }
     .dead-state { margin-top: 12px; font-family: var(--font-cab); font-weight: 700; font-size: 13px; text-transform: uppercase; color: var(--marquee); }
     .dead p { margin-top: 2px; font-size: 14px; line-height: 1.4; color: #b3a8de; text-shadow: 0 1px 2px rgba(9,4,30,0.9), 0 0 16px rgba(9,4,30,0.9); }
+
+    /* ── Körper aus Würfeln (/home-3d.js) ───────────────────────────
+       Jedes Spiel hat sein Ding im Raum stehen: auf den großen
+       Automaten dreht es sich als Aufsatz an der Stange, bei den
+       kleinen und bei Block Games ragt es aus der Röhre. */
+    canvas.v3 { display: none; pointer-events: none; }
+    .js-3d canvas.v3 { display: block; }
+    .js-3d .row-cabs { padding-top: 162px; }
+    .cab-top {
+      position: absolute; left: 50%; bottom: calc(100% + 2px); width: 236px; height: 176px; margin-left: -118px;
+      /* die Marquee leuchtet den Aufsatz von unten an */
+      background: radial-gradient(ellipse 44% 24% at 50% 100%, color-mix(in srgb, var(--accent) 46%, transparent), transparent 72%);
+      transition: translate 0.4s var(--ease-out);
+    }
+    .cab.is-near .cab-top, .cab:focus-visible .cab-top { translate: 0 -5px; }
+    .js-3d .cab::before { /* die Stange, an der sich der Aufsatz dreht */
+      content: ''; position: absolute; left: 50%; top: -22px; width: 6px; height: 26px; margin-left: -3px; border-radius: 2px 2px 0 0;
+      background: linear-gradient(90deg, #5a5a66, #e4e4ee 40%, #4a4a56); box-shadow: 0 0 0 1px rgba(10,5,32,0.8);
+    }
+    .showcase-stage { position: relative; }
+    .showcase-stage .v3 { position: absolute; left: -16px; top: -34px; width: calc(100% + 32px); height: calc(100% + 68px); }
+    .js-3d .showcase-art canvas.px, .js-3d .dead.live .dead-box svg { display: none; }
 
     /* ── Typenschild ────────────────────────────────────────────── */
     .plate-foot { margin: 80px auto 60px; text-align: center; font-family: var(--font-data); font-size: 13px; letter-spacing: 0.04em; color: #b3a8de; }
@@ -333,12 +374,13 @@
       .wall { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; }
       .mon, .mon.wide { grid-column: span 1; } .mon.big { grid-column: span 2; grid-row: auto; } .mon.big .mon-screen { min-height: 190px; }
       .mon-screen { min-height: 120px; }
-      .backrow { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 0; }
+      .backrow { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 0; } .dead.live { --turn: 0deg !important; }
       .showcase { grid-template-columns: 180px 1fr; } .showcase .cabinet-start { grid-column: 2; }
     }
     @media (max-width: 860px) {
       .container { padding: 0 20px; }
       .row-cabs { grid-template-columns: 1fr; gap: 60px; max-width: 400px; margin: 0 auto; }
+      .js-3d .row-cabs { gap: 200px; }
       .wall { padding: 12px; gap: 18px 12px; }
       .mon.big .mon-screen { min-height: 150px; }
       .mon.big .a-plan { grid-template-columns: repeat(5, 22px); grid-template-rows: repeat(4, 22px); gap: 4px; }
@@ -385,6 +427,7 @@
     <div class="row-cabs">
 
       <a class="cab" href="games/blockdrop/" style="--accent:#ff3d6e; --turn:13deg">
+        <canvas class="v3 cab-top" data-model="blockdrop" aria-hidden="true"></canvas>
         <div class="cab-box">
           <span class="cab-side l" aria-hidden="true"></span><span class="cab-side r" aria-hidden="true"></span>
           <div class="cab-marquee"><span class="cab-name">Block Drop</span></div>
@@ -415,6 +458,7 @@
       </a>
 
       <a class="cab" href="games/blockpresser/" style="--accent:#ffb000">
+        <canvas class="v3 cab-top" data-model="presser" aria-hidden="true"></canvas>
         <div class="cab-box">
           <span class="cab-side l" aria-hidden="true"></span><span class="cab-side r" aria-hidden="true"></span>
           <div class="cab-marquee" style="--d:1.2s"><span class="cab-name">Block Presser</span></div>
@@ -433,6 +477,7 @@
       </a>
 
       <a class="cab" href="games/casino/" style="--accent:#ffd23f; --turn:-13deg">
+        <canvas class="v3 cab-top" data-model="casino" aria-hidden="true"></canvas>
         <div class="cab-box">
           <span class="cab-side l" aria-hidden="true"></span><span class="cab-side r" aria-hidden="true"></span>
           <div class="cab-marquee" style="--d:2.4s"><span class="cab-name">Casino</span></div>
@@ -453,7 +498,11 @@
     </div>
 
     <a class="showcase zoomable" href="blockgames/">
-      <div class="showcase-art crt mon-screen"><canvas class="px" data-art="dice" aria-hidden="true"></canvas><span class="scr-tag">Demo · Download</span></div>
+      <div class="showcase-stage">
+        <div class="showcase-art crt mon-screen"><canvas class="px" data-art="dice" aria-hidden="true"></canvas></div>
+        <canvas class="v3" data-model="dice" aria-hidden="true"></canvas>
+        <span class="scr-tag">Demo · Download</span>
+      </div>
       <div>
         <h3>Block Games</h3>
         <p>Mario-Party-Style Minigames für bis zu 4 Spieler. Windows-App zum Herunterladen — Details &amp; Download hier.</p>
@@ -527,11 +576,11 @@
       <span class="aisle-note">5 Spiele, frisch angesteckt</span>
     </div>
     <div class="backrow">
-      <a class="dead live" href="games/snake/" style="--accent:#b8ff3d"><span class="dead-name">Snake</span><div class="dead-box"><svg viewBox="0 0 48 40" aria-hidden="true"><path d="M8 28h14v-8h-8v-8h18" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="36" cy="26" r="3" fill="#ffb000"/></svg></div><div class="dead-state">Spielen</div><p>Münzen fressen, Wand nicht anfassen.</p></a>
-      <a class="dead live" href="games/pong/" style="--accent:#2ee6ff"><span class="dead-name">Pong</span><div class="dead-box"><svg viewBox="0 0 48 40" aria-hidden="true"><rect x="6" y="8" width="5" height="20" rx="2" fill="currentColor"/><rect x="37" y="14" width="5" height="20" rx="2" fill="#ff3d9a"/><circle cx="24" cy="18" r="4" fill="#ffb000"/></svg></div><div class="dead-state">Spielen</div><p>Du gegen Hausmeister Jürgen.</p></a>
-      <a class="dead live" href="games/spaceblaster/" style="--accent:#9b7bff"><span class="dead-name">Space Blaster</span><div class="dead-box"><svg viewBox="0 0 48 40" aria-hidden="true"><path d="M24 16l10 20-7-3h-6l-7 3z" fill="#f3eeff"/><rect x="8" y="5" width="9" height="7" rx="2" fill="#ff2e63"/><rect x="20" y="5" width="9" height="7" rx="2" fill="currentColor"/><rect x="32" y="5" width="9" height="7" rx="2" fill="currentColor"/></svg></div><div class="dead-state">Spielen</div><p>Schlechte Noten abschießen.</p></a>
-      <a class="dead live" href="games/memory/" style="--accent:#ff3d9a"><span class="dead-name">Memory Match</span><div class="dead-box"><svg viewBox="0 0 48 40" aria-hidden="true"><rect x="8" y="8" width="14" height="19" rx="3" fill="currentColor"/><rect x="26" y="14" width="14" height="19" rx="3" fill="#2ee6ff"/></svg></div><div class="dead-state">Spielen</div><p>Paare finden, wenig Züge.</p></a>
-      <a class="dead live" href="games/minesweeper/" style="--accent:#ffb000"><span class="dead-name">Minesweeper</span><div class="dead-box"><svg viewBox="0 0 48 40" aria-hidden="true"><circle cx="22" cy="24" r="10" fill="currentColor"/><path d="M29 17l5-5M34 12l3-5" stroke="#f3eeff" stroke-width="3" stroke-linecap="round"/></svg></div><div class="dead-state">Spielen</div><p>Stinkbomben im Schulhof umgehen.</p></a>
+      <a class="dead live" href="games/snake/" style="--accent:#b8ff3d"><div class="dead-cab"><span class="dead-side l" aria-hidden="true"></span><span class="dead-side r" aria-hidden="true"></span><span class="dead-name">Snake</span><div class="dead-box"><svg viewBox="0 0 48 40" aria-hidden="true"><path d="M8 28h14v-8h-8v-8h18" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="36" cy="26" r="3" fill="#ffb000"/></svg></div><canvas class="v3" data-model="snake" aria-hidden="true"></canvas></div><div class="dead-state">Spielen</div><p>Münzen fressen, Wand nicht anfassen.</p></a>
+      <a class="dead live" href="games/pong/" style="--accent:#2ee6ff"><div class="dead-cab"><span class="dead-side l" aria-hidden="true"></span><span class="dead-side r" aria-hidden="true"></span><span class="dead-name">Pong</span><div class="dead-box"><svg viewBox="0 0 48 40" aria-hidden="true"><rect x="6" y="8" width="5" height="20" rx="2" fill="currentColor"/><rect x="37" y="14" width="5" height="20" rx="2" fill="#ff3d9a"/><circle cx="24" cy="18" r="4" fill="#ffb000"/></svg></div><canvas class="v3" data-model="pong" aria-hidden="true"></canvas></div><div class="dead-state">Spielen</div><p>Du gegen Hausmeister Jürgen.</p></a>
+      <a class="dead live" href="games/spaceblaster/" style="--accent:#9b7bff"><div class="dead-cab"><span class="dead-side l" aria-hidden="true"></span><span class="dead-side r" aria-hidden="true"></span><span class="dead-name">Space Blaster</span><div class="dead-box"><svg viewBox="0 0 48 40" aria-hidden="true"><path d="M24 16l10 20-7-3h-6l-7 3z" fill="#f3eeff"/><rect x="8" y="5" width="9" height="7" rx="2" fill="#ff2e63"/><rect x="20" y="5" width="9" height="7" rx="2" fill="currentColor"/><rect x="32" y="5" width="9" height="7" rx="2" fill="currentColor"/></svg></div><canvas class="v3" data-model="space" aria-hidden="true"></canvas></div><div class="dead-state">Spielen</div><p>Schlechte Noten abschießen.</p></a>
+      <a class="dead live" href="games/memory/" style="--accent:#ff3d9a"><div class="dead-cab"><span class="dead-side l" aria-hidden="true"></span><span class="dead-side r" aria-hidden="true"></span><span class="dead-name">Memory Match</span><div class="dead-box"><svg viewBox="0 0 48 40" aria-hidden="true"><rect x="8" y="8" width="14" height="19" rx="3" fill="currentColor"/><rect x="26" y="14" width="14" height="19" rx="3" fill="#2ee6ff"/></svg></div><canvas class="v3" data-model="memory" aria-hidden="true"></canvas></div><div class="dead-state">Spielen</div><p>Paare finden, wenig Züge.</p></a>
+      <a class="dead live" href="games/minesweeper/" style="--accent:#ffb000"><div class="dead-cab"><span class="dead-side l" aria-hidden="true"></span><span class="dead-side r" aria-hidden="true"></span><span class="dead-name">Minesweeper</span><div class="dead-box"><svg viewBox="0 0 48 40" aria-hidden="true"><circle cx="22" cy="24" r="10" fill="currentColor"/><path d="M29 17l5-5M34 12l3-5" stroke="#f3eeff" stroke-width="3" stroke-linecap="round"/></svg></div><canvas class="v3" data-model="mines" aria-hidden="true"></canvas></div><div class="dead-state">Spielen</div><p>Stinkbomben im Schulhof umgehen.</p></a>
     </div>
   </section>
 
@@ -623,6 +672,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/fx.js"></script>
 <script src="/auth.js"></script>
+<script src="/home-3d.js"></script>
 <script>
 (() => {
   // Im Design-Modus ist die Halle ausgeblendet: /design-home.js übernimmt
@@ -740,6 +790,7 @@
 
   FX.tilt(document.querySelectorAll('.cab'), { max: 9, body: '.cab-box', glass: '.cab-screen' });
   FX.tilt(document.querySelectorAll('.mon, .showcase'), { glass: '.mon-screen' }); // nur der Lichtreflex auf dem Glas
+  FX.tilt(document.querySelectorAll('.dead.live'), { max: 12, body: '.dead-cab' });
 
   // Das Schild zündet: Lichtstreifen und ein Aufleuchten der ganzen Halle
   if (!FX.reduced) {
