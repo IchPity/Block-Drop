@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════════════
-   Startseite: 3D-Objekte der Halle (OG und ADHS)
+   Startseite: 3D-Objekte der Halle (OG und ADHS) und des Verzeichnisses (Cinema)
 
    Jedes Spiel hat einen Körper aus Würfeln, die Zelle der Röhren im
    Raum weitergedacht: auf den großen Automaten dreht er sich als
@@ -8,11 +8,15 @@
    (eigene Perspektive, Flächen nach Tiefe sortiert), also auch ohne
    WebGL. Licht wie überall: UV von oben, von unten die Akzentfarbe
    des Geräts. Bei prefers-reduced-motion steht ein Standbild.
+
+   Im Cinema stehen dieselben Körper statt der Namen im Verzeichnis
+   (.dz-grid): Knochenweiß in der Helligkeit ihrer Farbe, was Bernstein
+   war, ist Messing. Kein Schein von unten, ruhigeres Tempo.
    ════════════════════════════════════════════════════════════════════ */
 (() => {
-  const root = document.documentElement;
-  if (root.classList.contains('fx-design')) return; // Cinema hat seine eigene Bühne
-  const canvases = [...document.querySelectorAll('canvas.v3')];
+  const root = document.documentElement, CINE = root.classList.contains('fx-design');
+  // Halle und Cinema-Bühne (.dz) stehen beide im Markup, sichtbar ist nur eine
+  const canvases = [...document.querySelectorAll('canvas.v3')].filter(cv => !!cv.closest('.dz') === CINE);
   if (!canvases.length || !canvases[0].getContext) return;
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -142,6 +146,66 @@
         { v: [[4, 10, 3, '#ffb000']], glow: true, vis: t => Math.floor(t / 0.09) % 2 ? 2 : 1, at: t => { const k = 0.7 + fr(t * 7.3) * 0.6; return trs([0, 0, 0], [0, 0, t * 5], [k, k, k], [4.5, 10.3, 3.5]); } },
       ] };
     },
+    // Stundenplan: fünf Tage, vier Stunden, die laufende Stunde wandert durch die Woche
+    plan: () => {
+      const cells = [[1, 3], [3, 3], [0, 2], [1, 2], [4, 2], [1, 1], [2, 1], [3, 1], [0, 0], [3, 0]];
+      const now = t => Math.floor(t / 0.7) % cells.length;
+      return { c: [2.5, 2.5, 0.8], ex: [3.6, 3.5], swing: [0.6, 0.6], pitch: 0.3, still: 2, groups: [
+        { v: [...box(0, 0, 0, 5, 4, 1, '#3d2f92'), ...box(0, 4, 0, 5, 1, 1, '#a99bff')] },
+        ...cells.map(([x, y], i) => ({ v: [[x, y, 1, i % 3 ? '#a99bff' : '#7cc4ff']], vis: t => now(t) === i ? 0 : 1, at: () => trs([0, 0, 0], null, [0.8, 0.8, 0.45], [x + 0.5, y + 0.5, 1]) })),
+        { v: [[0, 0, 1, '#ffb000']], glow: true, at: t => { const p = cells[now(t)]; return trs([p[0], p[1], 0], null, [0.8, 0.8, 0.9], [0.5, 0.5, 1]); } },
+      ] };
+    },
+    // SchulUhr: der große Zeiger springt von Strich zu Strich
+    clock: () => {
+      const face = []; for (let x = 0; x < 9; x++) for (let y = 0; y < 9; y++) { const d = Math.hypot(x - 4, y - 4); if (d <= 4.5) face.push([x, y, 0, d > 3.4 ? '#2ee6ff' : '#1c1830']); }
+      const hand = (len, col, w, ang) => ({ v: box(4, 5, 1, 1, len, 1, col), at: t => trs([0, 0, 0], [0, 0, ang(t)], [w, 1, 0.5], [4.5, 4.5, 1]) });
+      return { c: [4.5, 4.5, 0.6], ex: [5.3, 5.3], swing: [0.6, 0.5], pitch: 0.2, still: 1, groups: [
+        { v: face },
+        hand(3, '#f3eeff', 0.5, t => -Math.floor(t / 0.5) * Math.PI / 6),
+        hand(2, '#ffb000', 0.7, t => -1 - t * 0.05),
+        { v: [[4, 4, 1, '#ffb000']], glow: true, at: () => trs([0, 0, 0], null, [0.6, 0.6, 0.6], [4.5, 4.5, 1]) },
+      ] };
+    },
+    // Wetter: die Sonne dreht sich, davor zieht die Wolke
+    wx: () => ({ c: [4.3, 5, 1], ex: [6.7, 5.4], swing: [0.55, 0.5], pitch: 0.2, groups: [
+      { v: [...rows(['.###.', '#####', '#####', '#####', '.###.'], { '#': '#ffc93a' }), [2, 6, 0, '#ffc93a'], [2, -2, 0, '#ffc93a'], [-2, 2, 0, '#ffc93a'], [6, 2, 0, '#ffc93a']],
+        at: t => trs([0, 3, 0], [0, 0, t * 0.5], null, [2.5, 2.5, 0.5]) },
+      { v: rows(['..###...', '.#####..', '########', '########'], { '#': '#f3eeff' }, 1, 2), at: t => T(2 + Math.sin(t * 0.8) * 0.6, 0, 0) },
+    ] }),
+    // METAR: der Flieger von oben, er legt sich in die Kurve
+    plane: () => ({ c: [3.5, 4, 0.5], ex: [4.7, 5.1], swing: [0.3, 0.6], pitch: 0.3, groups: [
+      { v: [...rows(['...#...', '...#...', '..###..', '#######', 'A#####A', '...#...', '...#...', '..###..'], { '#': '#f3eeff', A: '#ffb000' }), [3, 6, 1, '#2ee6ff'], [3, 0, 1, '#f3eeff'], [3, 1, 1, '#f3eeff']],
+        at: t => trs([0, Math.sin(t * 1.3) * 0.35, 0], [0, Math.sin(t * 0.8) * 0.4, Math.sin(t * 0.8) * 0.1], null, [3.5, 4, 0.5]) },
+    ] }),
+    // F1 Wetten: das Podium fährt hoch, über Platz eins dreht sich die Münze
+    podium: () => {
+      const k = t => { const a = fr(t / 4.5) * 4.5; return 0.25 + 0.75 * (smooth(a / 1.1) - smooth((a - 4) / 0.5)); };
+      const step = (x, h, col, lag) => ({ v: box(x, 0, 0, 2, h, 2, col), at: t => trs([0, 0, 0], null, [1, k(t - lag), 1], [x + 1, 0, 1]) });
+      return { c: [3, 2.1, 1], ex: [4.3, 3.3], swing: [0.7, 0.5], pitch: 0.36, still: 2, groups: [
+        step(0, 2, '#d9d9d9', 0.15), step(2, 3, '#ffd23f', 0), step(4, 1, '#e09a58', 0.3),
+        { v: [[2.5, 3, 0.5, '#ffd23f']], glow: true, at: t => trs([0, 3 * k(t) - 2.65, 0], [0, t * 2.6, 0], [0.8, 0.8, 0.3], [3, 3.5, 1]) },
+      ] };
+    },
+    // Formel 1: der Wagen fährt, die Bahn läuft unter ihm durch
+    f1: () => {
+      const R = '#ff2e2e', W = '#f3eeff';
+      const wheel = (x, z) => ({ v: box(x, 0, z, 2, 2, 1, '#1c1830') });
+      return { c: [5.5, 1.3, 2], ex: [6.9, 3.7], swing: [0.6, 0.5], pitch: 0.34, yaw0: 0.3, groups: [
+        { v: [...box(0, 0, 1, 10, 1, 2, R), ...box(2, 1, 1, 2, 1, 2, R), ...box(4, 1, 1, 1, 1, 2, '#ffb000'), ...box(5, 1, 1, 1, 1, 2, R), ...box(2, 2, 1, 1, 1, 2, R), ...box(0, 1, 1, 1, 1, 2, R), ...box(0, 2, 0, 1, 1, 4, W), ...box(10, 0, 0, 1, 1, 4, W)],
+          at: t => T(0, 0.5 + Math.sin(t * 9) * 0.04, 0) },
+        wheel(1, 0), wheel(1, 3), wheel(7, 0), wheel(7, 3),
+        { v: [0, 4, 8].map(x => [x, -1, 1.5, '#8d82c8']), at: t => trs([3 - fr(t * 1.6) * 4, 0, 0], null, [1, 0.2, 0.5], [0, 0, 2]) },
+      ] };
+    },
+    // Achievements: der Pokal
+    cup: () => {
+      const G = '#ffc93a', v = [];
+      const disc = (y, r, hole = -1) => { for (let x = -3; x <= 3; x++) for (let z = -3; z <= 3; z++) if (x * x + z * z <= r && x * x + z * z > hole) v.push([x, y, z, G]); };
+      disc(0, 5); disc(1, 2); disc(2, 0); disc(3, 0); disc(4, 2); disc(5, 5); disc(6, 8); disc(7, 8); disc(8, 8, 2);
+      [3, 4].forEach(x => [5, 7].forEach(y => v.push([x, y, 0, G], [-x, y, 0, G]))); v.push([4, 6, 0, G], [-4, 6, 0, G]);
+      return { c: [0.5, 4.5, 0.5], ex: [5.6, 5.5], spin: 0.6, pitch: 0.3, yaw0: 0.4, groups: [{ v }] };
+    },
   };
 
   // ── Würfel in Flächen zerlegen: nur was außen liegt ──
@@ -150,6 +214,14 @@
     [0, 1, 0, [0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0]], [0, -1, 0, [0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1]],
     [0, 0, 1, [0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1]], [0, 0, -1, [0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0]],
   ];
+  // Cinema: was Bernstein war, wird Messing; alles andere Knochenweiß in der Helligkeit der Farbe
+  const quiet = ([r, g, b]) => {
+    const mx = Math.max(r, g, b), d = mx - Math.min(r, g, b);
+    const h = !d ? -1 : mx === r ? ((g - b) / d + 6) % 6 * 60 : mx === g ? ((b - r) / d + 2) * 60 : ((r - g) / d + 4) * 60;
+    if (mx > 120 && d / mx > 0.35 && h >= 22 && h < 66) { const k = 0.5 + 0.5 * mx / 255; return [233 * k, 180 * k, 84 * k]; }
+    const k = 0.3 + 0.7 * (0.3 * r + 0.59 * g + 0.11 * b) / 255;
+    return [236 * k, 235 * k, 230 * k];
+  };
   const hex = h => { h = h.replace('#', ''); if (h.length === 3) h = h.replace(/./g, '$&$&'); const n = parseInt(h, 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
   function build(model) {
     let total = 0;
@@ -164,7 +236,7 @@
           ns.push(ni); cs.push(ci);
         });
       });
-      g.fv = new Float32Array(vs); g.fn = ns; g.fc = cs; g.rgb = cols.map(hex); g.n = ns.length;
+      g.fv = new Float32Array(vs); g.fn = ns; g.fc = cs; g.rgb = cols.map(c => CINE ? quiet(hex(c)) : hex(c)); g.n = ns.length;
       total += g.n;
     });
     model.total = total;
@@ -173,13 +245,14 @@
 
   // ── Zeichnen ──
   const L = [-0.42, 0.78, 0.46]; // Licht von oben links vorn
+  const FLASH = CINE ? 'rgb(233,180,84)' : '#ffffff', SEAM = CINE ? 'rgba(9,9,13,0.6)' : 'rgba(10,5,32,0.6)';
   const P = new Float32Array(8 * 900), DEP = new Float32Array(900), STY = new Array(900), ORD = [];
   const NRM = new Float32Array(18), sty = [];
   function render(o) {
     const { ctx, W, H, model: m, acc } = o, t = o.t;
     ctx.clearRect(0, 0, W, H);
     const D = m.dist || Math.max(m.ex[0], m.ex[1]) * 3.4;
-    const u = Math.min(W / (2 * m.ex[0]), H / (2 * m.ex[1])) * 0.86;
+    const u = Math.min(W / (2 * m.ex[0]), H / (2 * m.ex[1])) * (CINE ? 0.9 : 0.86);
     const G = mul(RX(m.pitch == null ? 0.32 : m.pitch), mul(RY(o.yaw), T(-m.c[0], -m.c[1], -m.c[2])));
     let n = 0;
     for (const g of m.groups) {
@@ -195,7 +268,9 @@
         const nx = NRM[ni * 3], ny = NRM[ni * 3 + 1], nz = NRM[ni * 3 + 2];
         const d = nx * L[0] + ny * L[1] + nz * L[2], lit = 0.45 + 0.55 * Math.max(0, d), dark = 1 - lit;
         const under = Math.max(0, -ny) * 0.6 + Math.max(0, -d) * 0.12; // Schein des Geräts von unten
-        sty[ni] = g.rgb.map(c => vis === 2 ? '#ffffff' : g.glow ? `rgb(${c[0]},${c[1]},${c[2]})` :
+        const lc = 0.3 + 0.7 * Math.max(0, d); // Cinema: ein Licht von oben, Schatten fallen ins Leere
+        sty[ni] = g.rgb.map(c => vis === 2 ? FLASH : g.glow ? `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})` :
+          CINE ? `rgb(${c[0] * lc + (1 - lc) * 9 | 0},${c[1] * lc + (1 - lc) * 9 | 0},${c[2] * lc + (1 - lc) * 13 | 0})` :
           `rgb(${Math.min(255, c[0] * lit * (1 - under * 0.6) + acc[0] * under * 0.8 + dark * 16) | 0},${Math.min(255, c[1] * lit * (1 - under * 0.6) + acc[1] * under * 0.8 + dark * 9) | 0},${Math.min(255, c[2] * lit * (1 - under * 0.6) + acc[2] * under * 0.8 + dark * 44) | 0})`);
       }
       const fv = g.fv;
@@ -222,7 +297,7 @@
       const lamp = s.charCodeAt(s.length - 1) === 42; if (lamp) s = s.slice(0, -1);
       ctx.beginPath(); ctx.moveTo(P[i], P[i + 1]); ctx.lineTo(P[i + 2], P[i + 3]); ctx.lineTo(P[i + 4], P[i + 5]); ctx.lineTo(P[i + 6], P[i + 7]); ctx.closePath();
       ctx.fillStyle = s; ctx.fill();
-      ctx.strokeStyle = lamp ? s : 'rgba(10,5,32,0.6)'; ctx.stroke(); // die Fuge zwischen den Zellen
+      ctx.strokeStyle = lamp ? s : SEAM; ctx.stroke(); // die Fuge zwischen den Zellen
     }
   }
 
@@ -233,7 +308,7 @@
     let acc = [255, 176, 0];
     try { const a = getComputedStyle(host || cv).getPropertyValue('--accent').trim(); if (/^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(a)) acc = hex(a); } catch (e) {}
     const model = build(make());
-    return { cv, i, host, acc, model, ctx: cv.getContext('2d'), W: 0, H: 0, dpr: 1, t: model.still || 0, spin: 0, yaw: model.yaw0 || 0, near: 0, vis: true };
+    return { cv, i, host, acc, model, ctx: cv.getContext('2d'), W: 0, H: 0, dpr: 1, t: model.still || 0, spin: 0, yaw: model.yaw0 || 0, near: 0, over: false, vis: true };
   }).filter(Boolean);
   if (!objs.length) return;
   root.classList.add('js-3d');
@@ -254,14 +329,16 @@
     const seen = new IntersectionObserver(es => es.forEach(en => { const o = objs.find(x => x.cv === en.target); if (o) o.vis = en.isIntersecting; }), { rootMargin: '60px' });
     objs.forEach(o => seen.observe(o.cv));
   }
+  // die Halle meldet die Maus über FX.tilt (.is-near), im Cinema gibt es das nicht
+  objs.forEach(o => { if (!o.host) return; o.host.addEventListener('pointerenter', () => { o.over = true; }); o.host.addEventListener('pointerleave', () => { o.over = false; }); });
   let last = 0, frame = 0;
   function tick(now) {
     requestAnimationFrame(tick);
     const dt = Math.min(0.05, (now - last) / 1000 || 0); last = now; frame++;
-    const calm = root.classList.contains('fx-calm') ? 0.75 : 1.15; // OG ruhiger, ADHS schneller
+    const calm = CINE ? 0.6 : root.classList.contains('fx-calm') ? 0.75 : 1.15; // Cinema still, OG ruhiger, ADHS schneller
     for (const o of objs) {
       if (!o.vis || !o.W || !o.H) continue;
-      const want = o.host && (o.host.classList.contains('is-near') || o.host === document.activeElement) ? 1 : 0;
+      const want = o.host && (o.over || o.host.classList.contains('is-near') || o.host === document.activeElement) ? 1 : 0;
       o.near += (want - o.near) * Math.min(1, dt * 7);
       o.t += dt * calm * (1 + o.near * 0.9);
       o.spin += dt * calm * (1 + o.near * 2.4);

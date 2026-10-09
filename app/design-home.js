@@ -80,7 +80,7 @@
     const yaw = -0.6 + sway + p * 1.5 + mx * 0.22 + rest * (REDUCED ? 0 : t * 0.012);
     const pitch = mix(-0.4, -0.2, centre) + my * 0.1;
     const cyw = Math.cos(yaw), syw = Math.sin(yaw), cpt = Math.cos(pitch), spt = Math.sin(pitch);
-    const field = 1 - 0.74 * rest;
+    const field = 1 - 0.87 * rest; // hinter den Körpern des Verzeichnisses nur noch ein Schimmer
 
     for (const q2 of cubes) {
       // Einstieg: jeder Stein fällt von oben an seinen Platz
@@ -173,8 +173,8 @@
     });
   }
 
-  // ── Verzeichnis: Zeilen steigen einmal aus ihrer Linie ──
-  const lists = dz.querySelectorAll('.dz-list');
+  // ── Verzeichnis: die Körper (/home-3d.js) steigen einmal aus ihrer Linie ──
+  const lists = dz.querySelectorAll('.dz-grid');
   if ('IntersectionObserver' in window && !REDUCED) {
     const io = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }), { threshold: 0.12 });
     lists.forEach(l => io.observe(l));

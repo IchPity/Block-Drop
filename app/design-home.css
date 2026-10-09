@@ -89,7 +89,7 @@ html.fx-design .nav-logo::before { content: none; }
   transition: color 0.3s, background-size 0.5s var(--ease-out);
 }
 .dz-alt:hover { color: var(--chalk); background-size: 0 1px; background-position: 100% calc(100% - 10px); }
-.dz-cta:focus-visible, .dz-alt:focus-visible, .dz-list a:focus-visible { outline: 2px solid var(--chalk); outline-offset: 4px; }
+.dz-cta:focus-visible, .dz-alt:focus-visible, .dz-obj:focus-visible { outline: 2px solid var(--chalk); outline-offset: 4px; }
 
 /* Zweites Bild der Sequenz: drei Zeilen, getreppt wie fallende Steine */
 .dz-say {
@@ -125,41 +125,38 @@ html.fx-design .nav-logo::before { content: none; }
   position: sticky; top: 96px; margin: 0; padding-top: 0.9em;
   font-family: var(--font-body); font-size: 16px; font-weight: 500; letter-spacing: 0; color: var(--chalk-dim);
 }
-.dz-list { list-style: none; margin: 0; padding: 0; }
-.dz-list li { overflow: hidden; border-top: 1px solid var(--board-line); }
-.dz-list li:last-child { border-bottom: 1px solid var(--board-line); }
-.dz-list a {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 6px 28px; flex-wrap: wrap;
-  padding: 0.5em 0 0.62em; font-size: clamp(15px, 1.15vw, 18px);
-  color: var(--chalk); text-decoration: none;
-  transform: translateY(104%);
-  transition: transform 1.2s calc(var(--i, 0) * 80ms) cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s;
+/* Jedes Ziel ist ein Körper aus Würfeln (/home-3d.js), der Name steht klein darunter */
+.dz-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 32px; }
+.dz-grid.big { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.dz-grid.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.dz-grid li { border-top: 1px solid var(--board-line); }
+.dz-obj {
+  display: block; padding: 14px 0 30px; font-size: 15px; font-weight: 500;
+  color: var(--chalk-dim); text-decoration: none; transition: opacity 0.45s, color 0.3s;
 }
-.dz-list.in a { transform: none; }
-.dz-name {
-  position: relative; display: inline-block; font-family: var(--display); font-weight: 600;
-  font-size: clamp(40px, 8.6vw, 150px); line-height: 0.96; letter-spacing: -0.05em;
-  transition: transform 0.7s var(--ease-out);
+.dz-obj > * {
+  opacity: 0; transform: translateY(40px);
+  transition: transform 1.2s calc(var(--i, 0) * 80ms) cubic-bezier(0.16, 1, 0.3, 1), opacity 0.9s calc(var(--i, 0) * 80ms), translate 0.7s var(--ease-out);
 }
+.dz-grid.in .dz-obj > * { opacity: 1; transform: none; }
+.dz-obj canvas.v3 { width: 100%; aspect-ratio: 1; }
+.dz-grid.big canvas.v3 { aspect-ratio: 3 / 2; }
+.dz-name { position: relative; display: inline-block; }
 /* Ein Stein rückt vor den Namen */
 .dz-name::before {
-  content: ''; position: absolute; left: -0.36em; top: 0.44em; width: 0.2em; height: 0.2em; background: var(--brass);
-  transform: scale(0); transition: transform 0.5s var(--ease-out);
+  content: ''; position: absolute; left: -15px; top: 0.5em; width: 7px; height: 7px; background: var(--brass);
+  scale: 0; transition: scale 0.5s var(--ease-out);
 }
-.dz-tag { color: var(--chalk-dim); white-space: nowrap; }
 @media (hover: hover) {
-  .dz-list:hover a:not(:hover) { opacity: 0.3; }
-  .dz-list a:hover .dz-name { transform: translateX(0.36em); }
-  .dz-list a:hover .dz-name::before { transform: none; }
+  .dz-grid:hover .dz-obj:not(:hover) { opacity: 0.35; }
+  .dz-obj:hover { color: var(--chalk); }
+  .dz-obj:hover canvas.v3 { translate: 0 -8px; }
+  .dz-obj:hover .dz-name { translate: 15px 0; }
+  .dz-obj:hover .dz-name::before { scale: 1; }
 }
-.dz-list a:focus-visible .dz-name { transform: translateX(0.36em); }
-.dz-list a:focus-visible .dz-name::before { transform: none; }
-.dz-list a:focus-visible { outline-offset: -2px; }
-
-.dz-list.small { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; }
-.dz-list.small li:nth-last-child(2):nth-child(odd) { border-bottom: 1px solid var(--board-line); }
-.dz-list.small .dz-name { font-size: clamp(28px, 3.5vw, 60px); letter-spacing: -0.04em; }
-.dz-list.small a { padding: 0.9em 0 1em; }
+.dz-obj:focus-visible { color: var(--chalk); }
+.dz-obj:focus-visible .dz-name { translate: 15px 0; }
+.dz-obj:focus-visible .dz-name::before { scale: 1; }
 
 .dz-foot {
   position: relative; z-index: 1; padding: 16vh var(--gut) 9vh;
@@ -174,8 +171,9 @@ html.fx-design .nav-logo::before { content: none; }
   .dz-sec { padding-top: 16vh; }
   .dz-sec h2 { position: static; padding: 0 0 22px; }
   .dz-foot p { grid-column: 1; }
-  .dz-list.small { grid-template-columns: 1fr; }
-  .dz-list.small li:nth-last-child(2):nth-child(odd) { border-bottom: 0; }
+}
+@media (max-width: 1100px) {
+  .dz-grid, .dz-grid.five { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 600px) {
   html.fx-design body[data-hall] .navbar { padding: 14px var(--gut, 20px); }
@@ -184,11 +182,9 @@ html.fx-design .nav-logo::before { content: none; }
   .dz-say { font-size: clamp(28px, 9.6vw, 60px); }
   .dz-say > span:nth-child(2) { margin-left: 0.4em; }
   .dz-say > span:nth-child(3) { margin-left: 0.8em; }
-  .dz-list a { display: block; }
-  .dz-tag { display: block; margin-top: 4px; }
   .dz-cue { display: none; }
-  .dz-name { font-size: clamp(40px, 13.5vw, 72px); }
-  .dz-list.small .dz-name { font-size: clamp(28px, 8.6vw, 40px); }
+  .dz-grid, .dz-grid.five { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+  .dz-grid.big { grid-template-columns: 1fr; }
 }
 
 /* Ohne Bewegung: die Bühne ist ein Standbild, das Verzeichnis folgt direkt */
@@ -200,6 +196,6 @@ html.fx-design .nav-logo::before { content: none; }
   .dz-canvas { position: absolute; height: 100vh; height: 100svh; }
   .dz-say, .dz-cue, .dz-dawn { display: none; }
   .dz-light { position: absolute; }
-  .dz-ch, .dz-list a { transform: none; }
+  .dz-ch, .dz-obj > * { transform: none; opacity: 1; }
   .dz-sub, .dz-actions { opacity: 1; }
 }
